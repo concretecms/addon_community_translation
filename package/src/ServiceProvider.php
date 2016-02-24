@@ -35,7 +35,7 @@ class ServiceProvider extends Provider
 
         foreach (array(
             'community_translation/git/fetcher' => array('Concrete\Package\CommunityTranslation\Src\Git\Fetcher', false),
-            'community_translation/git/importer' => array('Concrete\Package\CommunityTranslation\Src\Git\Importer', false),
+            'community_translation/git/importer' => array('Concrete\Package\CommunityTranslation\Src\Git\Importer', true),
             'community_translation/translatable/importer' => array('Concrete\Package\CommunityTranslation\Src\Translatable\Importer', true),
             'community_translation/translation/importer' => array('Concrete\Package\CommunityTranslation\Src\Translation\Importer', true),
         ) as $abstract => $info) {

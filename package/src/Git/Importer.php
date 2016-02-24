@@ -23,44 +23,27 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
     }
 
     /**
-     * The associated Repository.
-     *
-     * @var Repository
-     */
-    protected $repository;
-
-    /**
-     * Initializes the instance.
-     *
-     * @param Repository $repository            
-     */
-    public function __construct(Repository $repository)
-    {
-        $this->repository = $repository;
-    }
-
-    /**
      * Import the strings from the git repository.
      */
-    public function import()
+    public function import(Repository $repository)
     {
         $importer = $this->app->make('community_translation/translatable/importer');
         /* @var \Concrete\Package\CommunityTranslation\Src\Translatable\Importer $importer */
-        $fetcher = $this->app->make('community_translation/git/fetcher', array($this->repository));
+        $fetcher = $this->app->make('community_translation/git/fetcher', array($repository));
         /* @var Fetcher $fetcher */
         $placeRepo = $this->app->make('community_translation/translatable/place');
         /* @var \Doctrine\ORM\EntityRepository $placeRepo */
         $fetcher->update();
-        if ($this->repository->getDevBranch() !== '') {
-            $importer->importDirectory($fetcher->getWebDirectory(), $this->repository->getPackage(), $this->repository->getDevVersion());
+        if ($repository->getDevBranch() !== '') {
+            $importer->importDirectory($fetcher->getWebDirectory(), $repository->getPackage(), $repository->getDevVersion());
         }
         foreach ($fetcher->getTaggedVersions() as $tag => $version) {
             if ($placeRepo->findOneBy(array(
-                'tpPackage' => $this->repository->getPackage(),
+                'tpPackage' => $repository->getPackage(),
                 'tpVersion' => $tag,
             )) === null) {
                 $fetcher->switchToTag($tag);
-                $importer->importDirectory($fetcher->getWebDirectory(), $this->repository->getPackage(), $version);
+                $importer->importDirectory($fetcher->getWebDirectory(), $repository->getPackage(), $version);
             }
         }
     }

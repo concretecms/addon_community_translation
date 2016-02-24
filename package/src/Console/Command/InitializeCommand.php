@@ -69,7 +69,7 @@ class InitializeCommand extends Command
                 $em->persist($git);
                 $em->flush();
                 $output->write(sprintf('Importing strings from %s (development and tagged versions)... ', $git->getName()));
-                $app->make('community_translation/git/importer', array($git))->import();
+                $app->make('community_translation/git/importer')->import($git);
                 $output->writeln("<info>done</info>");
             }
             if ($gitRepo->findOneBy(array('grURL' => 'https://github.com/concrete5/concrete5.git')) === null) {
@@ -84,7 +84,7 @@ class InitializeCommand extends Command
                 $em->persist($git);
                 $em->flush();
                 $output->write(sprintf('Importing strings from %s (development and tagged versions)... ', $git->getName()));
-                $app->make('community_translation/git/importer', array($git))->import();
+                $app->make('community_translation/git/importer')->import($git);
                 $output->writeln("<info>done</info>");
             }
 
