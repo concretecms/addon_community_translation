@@ -2,7 +2,7 @@
 namespace Concrete\Package\CommunityTranslation\Src\Locale;
 
 use DateTime;
-use Exception;
+use Concrete\Package\CommunityTranslation\Src\Exception;
 
 /**
  * Represents an locale.
@@ -116,6 +116,16 @@ class Locale
     public function getName()
     {
         return $this->lName;
+    }
+
+    /**
+     * Get the localized name of this locale.
+     *
+     * @return string
+     */
+    public function getDisplayName()
+    {
+        return \Punic\Language::getName($this->lID);
     }
 
     /**

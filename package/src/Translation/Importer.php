@@ -3,7 +3,7 @@ namespace Concrete\Package\CommunityTranslation\Src\Translation;
 
 use Concrete\Core\Application\Application;
 use Concrete\Core\Database\Connection\Connection;
-use Exception;
+use Concrete\Package\CommunityTranslation\Src\Exception;
 
 class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
 {
@@ -249,10 +249,10 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
                 );
             }
             $connection->commit();
-        } catch (Exception $x) {
+        } catch (\Exception $x) {
             try {
                 $connection->rollBack();
-            } catch (Exception $foo) {
+            } catch (\Exception $foo) {
             }
             throw $x;
         }

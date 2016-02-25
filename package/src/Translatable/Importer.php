@@ -1,7 +1,7 @@
 <?php
 namespace Concrete\Package\CommunityTranslation\Src\Translatable;
 
-use Exception;
+use Concrete\Package\CommunityTranslation\Src\Exception;
 
 class Importer
 {
@@ -130,10 +130,10 @@ class Importer
                 );
             }
             $connection->commit();
-        } catch (Exception $x) {
+        } catch (\Exception $x) {
             try {
                 $connection->rollBack();
-            } catch (Exception $foo) {
+            } catch (\Exception $foo) {
             }
             throw $x;
         }

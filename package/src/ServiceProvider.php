@@ -38,6 +38,9 @@ class ServiceProvider extends Provider
             'community_translation/git/importer' => array('Concrete\Package\CommunityTranslation\Src\Git\Importer', true),
             'community_translation/translatable/importer' => array('Concrete\Package\CommunityTranslation\Src\Translatable\Importer', true),
             'community_translation/translation/importer' => array('Concrete\Package\CommunityTranslation\Src\Translation\Importer', true),
+            'community_translation/groups' => array('Concrete\Package\CommunityTranslation\Src\Service\Groups', true),
+            'community_translation/access' => array('Concrete\Package\CommunityTranslation\Src\Service\Access', true),
+            'community_translation/events' => array('Concrete\Package\CommunityTranslation\Src\Service\Events', true),
         ) as $abstract => $info) {
             // $info[0]: concrete
             // $info[1]: shared (aka singleton)

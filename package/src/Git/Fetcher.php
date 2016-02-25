@@ -4,7 +4,7 @@ namespace Concrete\Package\CommunityTranslation\Src\Git;
 use Concrete\Core\Application\Application;
 use Concrete\Core\Package\Package;
 use Illuminate\Filesystem\Filesystem;
-use Exception;
+use Concrete\Package\CommunityTranslation\Src\Exception;
 
 class Fetcher implements \Concrete\Core\Application\ApplicationAwareInterface
 {
@@ -183,10 +183,10 @@ EOT
             }
             $cmd .= ' '.escapeshellarg($this->repository->getURL()).' '.escapeshellarg(str_replace('/', DIRECTORY_SEPARATOR, $directory));
             $this->runGit($cmd, false);
-        } catch (Exception $x) {
+        } catch (\Exception $x) {
             try {
                 $fs->deleteDirectory($directory);
-            } catch (Exception $foo) {
+            } catch (\Exception $foo) {
             }
             throw $x;
         }
