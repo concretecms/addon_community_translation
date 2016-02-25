@@ -10,6 +10,7 @@ class Teams extends PageController
     public function view()
     {
         $this->requireAsset('community_translation/common');
+        $this->requireAsset('jquery/ui');
         $this->set('token', $this->app->make('helper/validation/token'));
         $this->set('dh', $this->app->make('helper/date'));
         $me = new \User();
@@ -91,7 +92,7 @@ class Teams extends PageController
                 throw new Exception(t('Invalid user rights'));
             }
             $this->app->make('community_translation/access')->setLocaleAccess($locale, Access::NONE);
-            $this->flash('message', t('Your request to join the %s translation group has been submitted. Thank you!'));
+            $this->flash('message', t('Your request to join the %s translation group has been canceled. Thank you!', $locale->getDisplayName()));
             $this->redirect('/teams');
         } catch (Exception $x) {
             $this->flash('error', $x->getMessage());

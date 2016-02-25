@@ -15,37 +15,37 @@ id(new Area('Opening'))->display($c);
     <div class="panel-body">
         <table class="table table-hover">
             <tbody><?php
-               foreach ($approved as $l) {
+                foreach ($approved as $l) {
                     ?><tr>
                         <td><a href="<?php echo URL::to('/teams/details', $l['id']); ?>"><?php echo h($l['name']); ?></a></td>
                         <td><?php
-                           if (!isset($me)) {
-                               ?><a class="btn btn-sm btn-default pull-right" href="#" onclick="<?php echo h('alert('.json_encode(t('You must sign-in in order to join this translation group.')).'); return false'); ?>"><?php echo t('Join'); ?></a><?php
-                           } else {
-                               switch ($l['access']) {
-                                   case Access::GLOBAL_ADMIN:
-                                       break;
-                                   case Access::ADMIN:
-                                   case Access::TRANSLATE:
-                                       ?><form method="POST" action="<?php echo $this->action('leave', $l['id']); ?>" onsubmit="<?php echo h('return confirm('.json_encode('Are you sure?').')'); ?>">
-                                           <?php $token->output('comtra_leave'.$l['id']); ?>
-                                           <input type="submit" class="btn btn-sm btn-danger pull-right" value="<?php echo h(t('Leave')); ?>" /> 
-                                       </form><?php
-                                       break;
-                                   case Access::ASPRIRING:
-                                       ?><form method="POST" action="<?php echo $this->action('cancel_request', $l['id']); ?>" onsubmit="<?php echo h('return confirm('.json_encode('Are you sure?').')'); ?>">
-                                           <?php $token->output('comtra_cancel_request'.$l['id']); ?>
-                                           <input type="submit" class="btn btn-sm btn-warning pull-right" value="<?php echo h(t('Cancel request')); ?>" /> 
-                                       </form><?php
-                                       break;
-                                   case Access::NONE:
-                                       ?><form method="POST" action="<?php echo $this->action('join', $l['id']); ?>" onsubmit="<?php echo h('return confirm('.json_encode('Are you sure?').')'); ?>">
-                                           <?php $token->output('comtra_join'.$l['id']); ?>
-                                           <input type="submit" class="btn btn-sm btn-success pull-right" value="<?php echo h(t('Join')); ?>" /> 
-                                       </form><?php
-                                       break;
-                               }
-                           }
+                            if (!isset($me)) {
+                                ?><a class="btn btn-sm btn-default pull-right" href="#" onclick="comtraAlert('dlg-join-must-login'); return false"><?php echo t('Join'); ?></a><?php
+                            } else {
+                                switch ($l['access']) {
+                                    case Access::GLOBAL_ADMIN:
+                                        break;
+                                    case Access::ADMIN:
+                                    case Access::TRANSLATE:
+                                        ?><form method="POST" action="<?php echo $this->action('leave', $l['id']); ?>" onsubmit="comtraConfirmPost(this); return false">
+                                            <?php $token->output('comtra_leave'.$l['id']); ?>
+                                            <input type="submit" class="btn btn-sm btn-danger pull-right" value="<?php echo h(t('Leave')); ?>" /> 
+                                        </form><?php
+                                        break;
+                                    case Access::ASPRIRING:
+                                        ?><form method="POST" action="<?php echo $this->action('cancel_request', $l['id']); ?>" onsubmit="comtraConfirmPost(this); return false">
+                                            <?php $token->output('comtra_cancel_request'.$l['id']); ?>
+                                            <input type="submit" class="btn btn-sm btn-warning pull-right" value="<?php echo h(t('Cancel request')); ?>" /> 
+                                        </form><?php
+                                        break;
+                                    case Access::NONE:
+                                        ?><form method="POST" action="<?php echo $this->action('join', $l['id']); ?>" onsubmit="comtraConfirmPost(this); return false">
+                                            <?php $token->output('comtra_join'.$l['id']); ?>
+                                            <input type="submit" class="btn btn-sm btn-success pull-right" value="<?php echo h(t('Join')); ?>" /> 
+                                        </form><?php
+                                        break;
+                                }
+                            }
                         ?></td>
                     </tr><?php
                 }
@@ -62,7 +62,7 @@ if (!empty($requested)) {
         <div class="panel-body">
             <table class="table table-hover">
                 <tbody><?php
-                   foreach ($requested as $l) {
+                    foreach ($requested as $l) {
                         ?><tr>
                             <td>
                                 <b><?php echo h($l['name']); ?></b><br />
@@ -71,17 +71,17 @@ if (!empty($requested)) {
                             </td>
                             <td><?php
                                 if ($l['canApprove']) {
-                                   ?><form method="POST" action="<?php echo $this->action('approve_locale', $l['id']); ?>" onsubmit="<?php echo h('return confirm('.json_encode('Are you sure?').')'); ?>">
-                                       <?php $token->output('comtra_approve_locale'.$l['id']); ?>
-                                       <input type="submit" class="btn btn-sm btn-success pull-right" value="<?php echo h(t('Approve')); ?>" /> 
-                                   </form><?php
+                                    ?><form method="POST" action="<?php echo $this->action('approve_locale', $l['id']); ?>" onsubmit="comtraConfirmPost(this); return false">
+                                        <?php $token->output('comtra_approve_locale'.$l['id']); ?>
+                                        <input type="submit" class="btn btn-sm btn-success pull-right" value="<?php echo h(t('Approve')); ?>" /> 
+                                    </form><?php
                                 }
                                 if ($l['canCancel']) {
-                                   ?><form method="POST" action="<?php echo $this->action('cancel_locale', $l['id']); ?>" onsubmit="<?php echo h('return confirm('.json_encode('Are you sure?').')'); ?>">
-                                       <?php $token->output('comtra_cancel_locale'.$l['id']); ?>
-                                       <input type="submit" class="btn btn-sm btn-danger pull-right" value="<?php echo h(t('Cancel')); ?>" /> 
-                                   </form><?php
-                               }
+                                    ?><form method="POST" action="<?php echo $this->action('cancel_locale', $l['id']); ?>" onsubmit="comtraConfirmPost(this); return false">
+                                        <?php $token->output('comtra_cancel_locale'.$l['id']); ?>
+                                        <input type="submit" class="btn btn-sm btn-danger pull-right" value="<?php echo h(t('Cancel')); ?>" /> 
+                                    </form><?php
+                                }
                             ?></td>
                         </tr><?php
                     }
@@ -96,9 +96,57 @@ if (!empty($requested)) {
 <div class="panel panel-default">
     <div class="panel-heading"><h3><?php echo t('Would you like a new translation group?'); ?></h3></div>
     <div class="panel-body">
-    	<p><?php echo t("If you'd like to help us translating concrete5 to a new language, you can ask us to <a href=\"%s\">create a new Translators Team</a>.", URL::to('/teams/create')); ?></p>
+        <p><?php echo t("If you'd like to help us translating concrete5 to a new language, you can ask us to <a href=\"%s\">create a new Translators Team</a>.", URL::to('/teams/create')); ?></p>
     </div>
 </div>
+
+<div id="dlg-join-must-login" title="<?php echo h(t('Login required')); ?>" style="display: none">
+    <?php echo t('You must sign-in in order to join this translation group.'); ?>
+</div>
+
+<script>
+function comtraAlert(id) {
+    var $dlg = $('#'+id);
+    $('#'+id).dialog({
+        resizable: false,
+        modal: true,
+        buttons: [
+            {
+                text: <?php echo json_encode(t('Close')); ?>,
+                click: function() {
+                    $dlg.dialog('close');
+                }
+            }
+        ]
+    });
+}
+function comtraConfirmPost(form) {
+    var $dlg = $('<div />').append($('<p />').text(<?php echo json_encode(t('Are you sure?')); ?>));
+    $(document.body).append($dlg);
+    $dlg.dialog({
+        close: function() {
+            $dlg.remove();
+        },
+        modal: true,
+        resizable: false,
+        buttons: [
+            {
+                text: <?php echo json_encode(t('Yes')); ?>,
+                click: function() {
+                    form.submit();
+                    $dlg.dialog('close');
+                }
+            },
+            {
+                text: <?php echo json_encode(t('No')); ?>,
+                click: function() {
+                    $dlg.dialog('close');
+                }
+            }          
+        ]
+    });
+}
+</script>
 <?php
 
 id(new Area('Closing'))->display($c);

@@ -52,6 +52,7 @@ class Controller extends Package
             $sp->update(array(
                 'cName' => t('Create new Translation Team'),
             ));
+            $sp->setAttribute('exclude_nav', 1);
         }
     }
 
