@@ -26,7 +26,14 @@ class Create extends PageController
         $iAmGlobalAdmin = $me ? ($me->getUserID() == USER_SUPER_ID || $me->inGroup($this->app->make('community_translation/groups')->getGlobalAdministrators())) : false;
         $this->set('canApprove', $iAmGlobalAdmin);
         
-        $this->set('languages', $this->app->make('localization/languages')->getLanguageList());
+        $languages = array();
+        foreach (\Gettext\Languages\Language::getAll() as $l) {
+            if (strpos($l->id, '_') === false) {
+                $languages[$l->id] = \Punic\Language::getName($l->id);
+            }
+        }
+        id(new \Punic\Comparer())->sort($languages, true);
+        $this->set('languages', $languages);
         $this->set('countries', $this->app->make('lists/countries')->getCountries());
     }
 
