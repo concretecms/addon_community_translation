@@ -42,17 +42,18 @@ class Events implements \Symfony\Component\EventDispatcher\EventSubscriberInterf
                 if ($locale !== null) {
                     $mail = $this->app->make('mail');
                     /* @var \Concrete\Core\Mail\Service $mail */
-                    $mail->reset();
                     $config = \Package::getByHandle('community_translation')->getFileConfig();
                     $senderAddress = $config->get('options.notificationsSenderAddress');
                     if ($senderAddress) {
                         $senderName = $config->get('options.notificationsSenderName');
                         $mail->from($senderAddress, $senderName ?: null);
                     }
-                    $mail->addParameter('siteName', $this->app->make('config')->get('concrete.site'));
-                    $mail->addParameter('localeName', $locale->getName());
-                    $mail->addParameter('aspirantName', h($user->getUserName()));
-                    $mail->addParameter('teamUrl', h($this->app->make('url/manager')->resolve(array('/team/details/', $locale->getID()))));
+                    $params = array(
+                        'siteName' => $this->app->make('config')->get('concrete.site'),
+                        'localeName' => $locale->getName(),
+                        'aspirantName' => h($user->getUserName()),
+                        'teamUrl' => h($this->app->make('url/manager')->resolve(array('/team/details/', $locale->getID()))),
+                    );
                     $subscribed = array();
                     foreach ($groupManager->getGlobalAdministrators()->getGroupMembers() as $ui) {
                         if (!isset($subscribed[$ui->getUserID()])) {
@@ -67,6 +68,10 @@ class Events implements \Symfony\Component\EventDispatcher\EventSubscriberInterf
                     foreach ($subscribed as $ui) {
                         try {
                             /* @var \Concrete\Core\User\UserInfo $ui */
+                            $mail->reset();
+                            foreach ($params as $key => $val) {
+                                $mail->addParameter($key, $val);
+                            }
                             $mail->addParameter('recipientName', h($ui->getUserName()));
                             $mail->load('new_aspirant_translator', 'community_translation');
                             $mail->to($ui->getUserEmail(), $ui->getUserName());
@@ -109,29 +114,34 @@ class Events implements \Symfony\Component\EventDispatcher\EventSubscriberInterf
             }
             $mail = $this->app->make('mail');
             /* @var \Concrete\Core\Mail\Service $mail */
-            $mail->reset();
             $config = \Package::getByHandle('community_translation')->getFileConfig();
             $senderAddress = $config->get('options.notificationsSenderAddress');
             if ($senderAddress) {
                 $senderName = $config->get('options.notificationsSenderName');
                 $mail->from($senderAddress, $senderName ?: null);
             }
-            $mail->addParameter('siteName', $this->app->make('config')->get('concrete.site'));
-            $mail->addParameter('localeName', $locale->getName());
-            $mail->addParameter('approverName', $approver ? $approver->getUserName() : '?');
-            $mail->addParameter('requestedBy', $requestedBy ? $requestedBy->getUserName() : '?');
             $lang = \Localization::activeLocale();
-            if ($lang != 'en_US') {
+            if ($lang !== 'en_US') {
                 \Localization::changeLocale('en_US');
             }
-            $mail->addParameter('requestedOn', $this->app->make('helper/date')->formatDateTime($locale->getRequestedOn(), true, false));
-            if ($lang != 'en_US') {
+            $params = array(
+                'siteName' => $this->app->make('config')->get('concrete.site'),
+                'localeName' => $locale->getName(),
+                'approverName' => $approver ? $approver->getUserName() : '?',
+                'requestedBy' => $requestedBy ? $requestedBy->getUserName() : '?',
+                'requestedOn' => $this->app->make('helper/date')->formatDateTime($locale->getRequestedOn(), true, false),
+                'teamUrl', h($this->app->make('url/manager')->resolve(array('/team/details/', $locale->getID()))),
+            );
+            if ($lang !== 'en_US') {
                 \Localization::changeLocale($lang);
             }
-            $mail->addParameter('teamUrl', h($this->app->make('url/manager')->resolve(array('/team/details/', $locale->getID()))));
             foreach ($recipients as $ui) {
                 try {
                     /* @var \Concrete\Core\User\UserInfo $ui */
+                    $mail->reset();
+                    foreach ($params as $key => $val) {
+                        $mail->addParameter($key, $val);
+                    }
                     $mail->addParameter('recipientName', h($ui->getUserName()));
                     $mail->load('new_locale_approved', 'community_translation');
                     $mail->to($ui->getUserEmail(), $ui->getUserName());
