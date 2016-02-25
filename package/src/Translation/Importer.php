@@ -124,6 +124,7 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
                     Translatables.tHash = ?
                 limit 1
             ')->getWrappedStatement();
+            $insertQueryFields = 'tCreatedOn, tCreatedBy, tLocale, tStatus, tTranslatable, tText0, tText1, tText2, tText3, tText4, tText5';
             $insertQueryChunk = ' ('.implode(', ', array(
                 $connection->getDatabasePlatform()->getNowExpression(),
                 $userID,
@@ -134,7 +135,7 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
                 '?, ?, ?, ?, ?',
             )).'),';
             $insertQuery = $connection->prepare(
-                'INSERT INTO Translations (tCreatedOn, tCreatedBy, tLocale, tStatus, tTranslatable, tText0, tText1, tText2, tText3, tText4, tText5) VALUES '
+                'INSERT INTO Translations ('.$insertQueryFields.') VALUES '
                 .rtrim(str_repeat($insertQueryChunk, self::IMPORT_BATCH_SIZE), ',')
             )->getWrappedStatement();
             $insertParams = array();
@@ -243,7 +244,7 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
             }
             if ($insertCount > 0) {
                 $connection->executeQuery(
-                    'INSERT INTO Translations (tCreatedOn, tCreatedBy, tStatus, tLocale, tTranslatable, tText0, tText1, tText2, tText3, tText4, tText5) VALUES '.rtrim(str_repeat($insertQueryChunk, $insertCount), ','),
+                    'INSERT INTO Translations ('.$insertQueryFields.') VALUES '.rtrim(str_repeat($insertQueryChunk, $insertCount), ','),
                     $insertParams
                 );
             }
