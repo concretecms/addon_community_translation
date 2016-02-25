@@ -92,4 +92,13 @@ if (!empty($requested)) {
     <?php
 }
 
+?>
+<div class="panel panel-default">
+    <div class="panel-heading"><h3><?php echo t('Would you like a new translation group?'); ?></h3></div>
+    <div class="panel-body">
+    	<p><?php echo t("If you'd like to help us translating concrete5 to a new language, you can ask us to <a href=\"%s\">create a new Translators Team</a>.", URL::to('/teams/create')); ?></p>
+    </div>
+</div>
+<?php
+
 id(new Area('Closing'))->display($c);

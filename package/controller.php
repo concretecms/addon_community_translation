@@ -46,6 +46,13 @@ class Controller extends Package
                 'cName' => t('Translation teams'),
             ));
         }
+        $sp = Page::getByPath('/teams/create');
+        if (!is_object($sp) || $sp->getError() === COLLECTION_NOT_FOUND) {
+            $sp = SinglePage::add('/teams/create', $pkg);
+            $sp->update(array(
+                'cName' => t('Create new Translation Team'),
+            ));
+        }
     }
 
     public function on_start()
