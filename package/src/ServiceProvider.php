@@ -41,6 +41,7 @@ class ServiceProvider extends Provider
             'community_translation/groups' => array('Concrete\Package\CommunityTranslation\Src\Service\Groups', true),
             'community_translation/access' => array('Concrete\Package\CommunityTranslation\Src\Service\Access', true),
             'community_translation/events' => array('Concrete\Package\CommunityTranslation\Src\Service\Events', true),
+            'community_translation/notify' => array('Concrete\Package\CommunityTranslation\Src\Service\Notify', true),
         ) as $abstract => $info) {
             // $info[0]: concrete
             // $info[1]: shared (aka singleton)
