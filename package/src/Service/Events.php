@@ -9,7 +9,6 @@ class Events implements \Symfony\Component\EventDispatcher\EventSubscriberInterf
     {
         return array(
             'on_user_enter_group' => 'userEnterGroup',
-            'community_translation.on_locale_approved' => 'localeApproved',
         );
     }
 
@@ -41,14 +40,6 @@ class Events implements \Symfony\Component\EventDispatcher\EventSubscriberInterf
                     $this->app->make('community_translation/notify')->newAspirantTranslator($user, $locale);
                 }
             }
-        } catch (Exception $x) {
-        }
-    }
-
-    public function localeApproved(\Concrete\Package\CommunityTranslation\Src\Service\Event\LocaleApproved $evt)
-    {
-        try {
-            $this->app->make('community_translation/notify')->newLocaleApproved($evt->getLocale(), $evt->getApprover());
         } catch (Exception $x) {
         }
     }

@@ -121,7 +121,7 @@ class Notify implements \Concrete\Core\Application\ApplicationAwareInterface
         );
     }
 
-    public function newLocaleApproved(Locale $locale, User $approver = null)
+    public function newLocaleApproved(Locale $locale, User $approver)
     {
         $recipients = $this->getGlobalAdministrators();
         $requestedBy = \UserInfo::getByID($locale->getRequestedBy()) ?: null;
@@ -134,7 +134,7 @@ class Notify implements \Concrete\Core\Application\ApplicationAwareInterface
         }
         $params = array(
             'localeName' => $locale->getName(),
-            'approverName' => $approver ? $approver->getUserName() : '?',
+            'approverName' => $approver->getUserName(),
             'requestedBy' => $requestedBy ? $requestedBy->getUserName() : '?',
             'requestedOn' => $this->app->make('helper/date')->formatDateTime($locale->getRequestedOn(), true, false),
             'teamUrl' => h($this->app->make('url/manager')->resolve(array('/team/details/', $locale->getID()))),

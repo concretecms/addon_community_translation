@@ -155,13 +155,11 @@ class Teams extends PageController
             $em = $this->app->make('community_translation/em');
             $em->persist($locale);
             $em->flush();
-            $this->flash('message', t("The '%s' translation group has been approved", $locale->getDisplayName()));
             try {
-                $this->app->make('director')->dispatch('community_translation.on_locale_approved', new \Concrete\Package\CommunityTranslation\Src\Service\Event\LocaleApproved($locale));
-                
+                $this->app->make('community_translation/notify')->newLocaleApproved($locale, new \User());
             } catch (\Exception $foo) {
             }
-            $this->redirect('/teams');
+            $this->redirect('/teams', 'approved', $locale->getID());
         } catch (Exception $x) {
             $this->flash('error', $x->getMessage());
             $this->redirect('/teams');
@@ -188,6 +186,7 @@ class Teams extends PageController
                      if (!$me->isRegistered() || $me->getUserID() != $locale->getRequestedBy()) {
                          throw new Exception(t('Invalid user rights'));
                      }
+                     break;
              }
             $em = $this->app->make('community_translation/em');
             $em->remove($locale);
@@ -215,6 +214,16 @@ class Teams extends PageController
         $locale = $this->app->make('community_translation/locale')->find($localeID);
         if ($locale !== null) {
             $this->set('message', t("The language team for '%s' has been created", $locale->getDisplayName()));
+            $this->set('highlightLocale', $locale->getID());
+        }
+        $this->view();
+    }
+
+    public function approved($localeID)
+    {
+        $locale = $this->app->make('community_translation/locale')->find($localeID);
+        if ($locale !== null) {
+            $this->set('message', t("The language team for '%s' has been approved", $locale->getDisplayName()));
             $this->set('highlightLocale', $locale->getID());
         }
         $this->view();
