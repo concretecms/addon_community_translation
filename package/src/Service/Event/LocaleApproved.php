@@ -23,7 +23,7 @@ class LocaleApproved extends AbstractEvent
         $this->approver = $approver;
         if ($this->approver === null) {
             $me = new \User();
-            if ($me->isLoggedIn()) {
+            if ($me->isRegistered()) {
                 $this->approver = $me;
             }
         }

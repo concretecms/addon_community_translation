@@ -34,7 +34,7 @@ class Events implements \Symfony\Component\EventDispatcher\EventSubscriberInterf
     {
         try {
             $user = new \User();
-            if ($user->isLoggedIn() && $user->getUserID() == $evt->getUserObject()->getUserID()) {
+            if ($user->isRegistered() && $user->getUserID() == $evt->getUserObject()->getUserID()) {
                 $groupManager = $this->app->make('community_translation/groups');
                 $locale = $groupManager->decodeAspiringTranslatorsGroup($evt->getGroupObject());
                 if ($locale !== null) {

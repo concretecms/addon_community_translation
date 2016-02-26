@@ -75,7 +75,7 @@ class Access implements \Concrete\Core\Application\ApplicationAwareInterface
             $user = \User::getByUserID($user);
         }
 
-        return (is_object($user) && $user->isLoggedIn()) ? $user : null;
+        return (is_object($user) && $user->isRegistered()) ? $user : null;
     }
 
     /**

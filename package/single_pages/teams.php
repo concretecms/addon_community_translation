@@ -16,7 +16,7 @@ id(new Area('Opening'))->display($c);
         <table class="table table-hover">
             <tbody><?php
                 foreach ($approved as $l) {
-                    ?><tr>
+                    ?><tr data-locale-id="<?php echo h($l['id']); ?>">
                         <td><a href="<?php echo URL::to('/teams/details', $l['id']); ?>"><?php echo h($l['name']); ?></a></td>
                         <td><?php
                             if (!isset($me)) {
@@ -63,7 +63,7 @@ if (!empty($requested)) {
             <table class="table table-hover">
                 <tbody><?php
                     foreach ($requested as $l) {
-                        ?><tr>
+                        ?><tr data-locale-id="<?php echo h($l['id']); ?>">
                             <td>
                                 <b><?php echo h($l['name']); ?></b><br />
                                 <?php echo tc('Language', 'Requested by: %s', $l['requestedBy'] ? h($l['requestedBy']->getUserName()) : '?'); ?><br />
@@ -146,6 +146,23 @@ function comtraConfirmPost(form) {
         ]
     });
 }
+<?php if (isset($highlightLocale)) { ?> 
+    $(document).ready(function() {
+        var $row = $(<?php echo json_encode("tr[data-locale-id=\"$highlightLocale\"]") ?>);
+        if ($row.length === 1) {
+			var offset = $row.offset().top - 20;
+			if (offset > 0) {
+            	$(window).scrollTo(offset, 750);
+			}
+			var oldBG = $row.css('background-color');
+			$row
+				.animate({backgroundColor: '#b5efad'}, 1000)
+				.animate({backgroundColor: oldBG}, 1000)
+			;
+        }
+   });
+<?php } ?>
+
 </script>
 <?php
 

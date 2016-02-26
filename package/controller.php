@@ -69,11 +69,20 @@ class Controller extends Package
         } else {
             $al = \AssetList::getInstance();
             $al->registerMultiple(array(
+                'jquery/scroll-to' => array(
+                    array('javascript', 'js/jquery.scrollTo.min.js', array('minify' => true, 'combine' => true, 'version' => '2.1.2'), $this),
+                ),
                 'community_translation/common' => array(
-                    array('javascript', 'js/common.js', array('minify' => false, 'combine' => false), $this),
+                    array('javascript', 'js/common.js', array('minify' => true, 'combine' => true), $this),
                 ),
             ));
             $al->registerGroupMultiple(array(
+                'jquery/scroll-to' => array(
+                    array(
+                        array('javascript', 'jquery'),
+                        array('javascript', 'jquery/scroll-to'),
+                    )
+                ),
                 'community_translation/common' => array(
                     array(
                         array('javascript', 'jquery'),

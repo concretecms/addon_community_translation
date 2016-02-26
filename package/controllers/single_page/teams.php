@@ -9,12 +9,13 @@ class Teams extends PageController
 {
     public function view()
     {
+        $this->requireAsset('jquery/scroll-to');
         $this->requireAsset('community_translation/common');
         $this->requireAsset('jquery/ui');
         $this->set('token', $this->app->make('helper/validation/token'));
         $this->set('dh', $this->app->make('helper/date'));
         $me = new \User();
-        if (!$me->isLoggedIn()) {
+        if (!$me->isRegistered()) {
             $me = null;
         }
         $this->set('me', $me);
@@ -184,7 +185,7 @@ class Teams extends PageController
                      break;
                  default:
                      $me = new \User();
-                     if (!$me->isLoggedIn() || $me->getUserID() != $locale->getRequestedBy()) {
+                     if (!$me->isRegistered() || $me->getUserID() != $locale->getRequestedBy()) {
                          throw new Exception(t('Invalid user rights'));
                      }
              }
@@ -197,5 +198,25 @@ class Teams extends PageController
             $this->flash('error', $x->getMessage());
             $this->redirect('/teams');
         }
+    }
+
+    public function requested($localeID)
+    {
+        $locale = $this->app->make('community_translation/locale')->find($localeID);
+        if ($locale !== null) {
+            $this->set('message', t("The language team for '%s' has been requested. Thank you!", $locale->getDisplayName()));
+            $this->set('highlightLocale', $locale->getID());
+        }
+        $this->view();
+    }
+
+    public function created($localeID)
+    {
+        $locale = $this->app->make('community_translation/locale')->find($localeID);
+        if ($locale !== null) {
+            $this->set('message', t("The language team for '%s' has been created", $locale->getDisplayName()));
+            $this->set('highlightLocale', $locale->getID());
+        }
+        $this->view();
     }
 }

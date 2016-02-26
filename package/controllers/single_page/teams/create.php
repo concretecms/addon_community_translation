@@ -9,12 +9,25 @@ use Concrete\Package\CommunityTranslation\Src\Locale\Locale;
 
 class Create extends PageController
 {
+    protected function userIsGlobalAdmin()
+    {
+        $result = false;
+        $me = new \User();
+        if ($me->isRegistered()) {
+            if ($me->getUserID() == USER_SUPER_ID || $me->inGroup($this->app->make('community_translation/groups')->getGlobalAdministrators())) {
+                $result = true;
+            }
+        }
+
+        return $result;
+    }
+
     public function view()
     {
         $this->requireAsset('community_translation/common');
         $this->set('token', $this->app->make('helper/validation/token'));
         $me = new \User();
-        if (!$me->isLoggedIn()) {
+        if (!$me->isRegistered()) {
             $me = null;
         }
         if ($me === null) {
@@ -22,9 +35,7 @@ class Create extends PageController
             $this->set('skip', true);
             return;
         }
-        $this->set('me', $me);
-        $iAmGlobalAdmin = $me ? ($me->getUserID() == USER_SUPER_ID || $me->inGroup($this->app->make('community_translation/groups')->getGlobalAdministrators())) : false;
-        $this->set('canApprove', $iAmGlobalAdmin);
+        $this->set('canApprove', $this->userIsGlobalAdmin());
         
         $languages = array();
         foreach (\Gettext\Languages\Language::getAll() as $l) {
@@ -55,22 +66,33 @@ class Create extends PageController
 
     public function create_locale()
     {
-        $language = $this->post('language') ?: '';
-        $country = $this->post('country') ?: '';
+        $me = new \User();
+        if (!$me->isRegistered()) {
+            $this->view();
+            return;
+        }
+        $iAmGlobalAdmin = $this->userIsGlobalAdmin();
+        $language = trim((string) $this->post('language') ?: '');
+        $country = trim((string) $this->post('country') ?: '');
+        $approve = ($iAmGlobalAdmin && $this->post('approve')) ? true : false;
         $noCountry = $this->post('no-country') ? true : false;
-        $approve = $this->post('approve') ? true : false;
+        $whyNoCountry = trim((string) $this->post('why-no-country') ?: '');
         try {
             $token = $this->app->make('helper/validation/token');
             if (!$token->validate('comtra_create_locale')) {
                 throw new Exception($token->getErrorMessage());
             }
-            if (!$language) {
+            if ($language === '') {
                 throw new Exception(t('Please specify the language that you want to create'));
             }
             $localeID = $language;
-            if (!$noCountry) {
-                if (!$country) {
-                    throw new Exception(t('Please specify the country associated to the language that you want to create'));
+            if ($noCountry) {
+                if ($whyNoCountry === '' && !$iAmGlobalAdmin) {
+                    throw new Exception(t('Please explain why this language should not be associated to a Country'));
+                }
+            } else {
+                if ($country === '') {
+                    throw new Exception(t('Please specify the Country associated to the language that you want to create'));
                 }
                 $localeID .= '_'.$country;
             }
@@ -83,12 +105,26 @@ class Create extends PageController
                     throw new Exception(t("The language team for '%s' has already been requested", $already->getDisplayName()));
                 }
             }
-            throw new Exception('@todo');
+            $locale->setRequestedBy($me->getUserID());
+            if ($approve) {
+                $locale->setIsApproved(true);
+            }
+            $em = $this->app->make('community_translation/em');
+            $em->persist($locale);
+            $em->flush();
+            if (!$approve) {
+                try {
+                    $this->app->make('community_translation/notify')->newLocaleRequested($locale, $noCountry ? $whyNoCountry : '');
+                } catch (\Exceptipon $x) {
+                }
+            }
+            $this->redirect('/teams', $approve ? 'created' : 'requested', $locale->getID());
         } catch (Exception $x) {
-            $this->set('preselectLanguage', $language);
-            $this->set('preselectCountry', $country);
-            $this->set('precheckNoCountry', $noCountry);
-            $this->set('precheckApprove', $approve);
+            $this->set('language', $language);
+            $this->set('country', $country);
+            $this->set('approve', $approve);
+            $this->set('noCountry', $noCountry);
+            $this->set('whyNoCountry', $whyNoCountry);
             $this->set('error', $x->getMessage());
             $this->view();
         }

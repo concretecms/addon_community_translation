@@ -9,18 +9,21 @@ id(new Area('Opening'))->display($c);
 
 if (!isset($skip) || !$skip) {
 
-if (!isset($preselectLanguage)) {
-	$preselectLanguage = '';
+if (!isset($language)) {
+    $language = '';
 }
 
-if (!isset($preselectCountry)) {
-	$preselectCountry = '';
+if (!isset($country)) {
+    $country = '';
 }
-if (!isset($precheckNoCountry)) {
-    $precheckNoCountry = false;
+if (!isset($approve)) {
+    $approve = true;
 }
-if (!isset($precheckApprove)) {
-    $precheckApprove = true;
+if (!isset($noCountry)) {
+    $noCountry = false;
+}
+if (!isset($whyNoCountry)) {
+    $whyNoCountry = '';
 }
 ?>
 <div class="panel panel-default">
@@ -31,10 +34,10 @@ if (!isset($precheckApprove)) {
             <div class="form-group">
                 <label class="control-label" for="language"><?php echo t('Language'); ?></label>
                 <select name="language" id="language" class="form-control" required="required">
-                    <option value=""<?php echo $preselectLanguage ? '' : ' selected="selected"'; ?>><?php echo t('Please select'); ?></option>
+                    <option value=""<?php echo $language ? '' : ' selected="selected"'; ?>><?php echo t('Please select'); ?></option>
                     <?php
                     foreach ($languages as $id => $name) {
-                        ?><option value="<?php echo h($id); ?>"<?php echo ($preselectLanguage === $id) ? ' selected="selected"' : ''; ?>><?php echo h($name); ?></option><?php
+                        ?><option value="<?php echo h($id); ?>"<?php echo ($language === $id) ? ' selected="selected"' : ''; ?>><?php echo h($name); ?></option><?php
                     }
                     ?>
                 </select>
@@ -42,24 +45,28 @@ if (!isset($precheckApprove)) {
             <div class="form-group">
                 <label class="control-label" for="country"><?php echo t('Country'); ?></label>
                 <select name="country" id="country" class="form-control" required="required">
-                    <option value=""<?php echo $preselectCountry ? '' : ' selected="selected"'; ?>><?php echo t('Please select'); ?></option>
+                    <option value=""<?php echo $country ? '' : ' selected="selected"'; ?>><?php echo t('Please select'); ?></option>
                     <?php
                     foreach ($countries as $id => $name) {
-                        ?><option value="<?php echo h($id); ?>"<?php echo ($preselectCountry === $id) ? ' selected="selected"' : ''; ?>><?php echo h($name); ?></option><?php
+                        ?><option value="<?php echo h($id); ?>"<?php echo ($country === $id) ? ' selected="selected"' : ''; ?>><?php echo h($name); ?></option><?php
                     }
                     ?>
                 </select>
             </div>
             <div class="form-group">
                 <label class="control-label"><?php echo t('Options'); ?></label>
-                <div class="checkbox">
-                    <label><input type="checkbox" id="no-country"<?php echo $precheckNoCountry ? ' checked="checked"': ''; ?>> <?php echo t('This language is not Country-specific'); ?></label>
-                </div>
                 <?php if ($canApprove) { ?>
                     <div class="checkbox">
-                        <label><input type="checkbox" id="approve"<?php echo $precheckApprove ? ' checked="checked"': ''; ?>> <?php echo t('Enable this locale immediately'); ?></label>
+                        <label><input type="checkbox" id="approve" name="approve"<?php echo $approve ? ' checked="checked"': ''; ?>> <?php echo t('Enable this locale immediately'); ?></label>
                     </div>
                 <?php } ?>
+                <div class="checkbox">
+                    <label><input type="checkbox" id="no-country" name="no-country"<?php echo $noCountry ? ' checked="checked"': ''; ?>> <?php echo t('This language is not Country-specific'); ?></label>
+                </div>
+            </div>
+            <div class="form-group" style="display: none">
+                <label class="control-label" for="why-no-country"><?php echo t('Please explain why this language should not be associated to a Country'); ?></label>
+                <textarea class="form-control" id="why-no-country" name="why-no-country" rows="5"><?php echo h($whyNoCountry); ?></textarea>
             </div>
             <div class="form-actions">
                 <input type="submit" class="btn btn-primary" value="<?php echo t('Submit request'); ?>">
@@ -69,20 +76,18 @@ if (!isset($precheckApprove)) {
 </div>
 
 <script>$(document).ready(function() {
+
 var $language = $('#language'), $country = $('#country');
-var originalCountries = null, sortCache = {};
+var countries = null, sortCache = {};
 $language.on('change', function() {
     var language = this.value;
-    if (!language) {
-        return;
-    }
-    if (originalCountries === null) {
-        originalCountries = [];
+    if (countries === null) {
+        countries = [];
         $country.find('option').each(function() {
-            originalCountries.push([this.value, $(this).text()]);
+            countries.push([this.value, $(this).text()]);
         });
     }
-    if (language in sortCache) {
+    if (!language || (language in sortCache)) {
         sortCountries();
     } else {
         $.ajax({
@@ -102,28 +107,46 @@ $language.on('change', function() {
         })
         ;
     }
-});
+}).trigger('change');
 function sortCountries() {
-    var language = $language.val();
-    if (!(language && (language in sortCache))) {
-        return;
+    var language = $language.val(), preferred;
+    if (language && (language in sortCache)) {
+        preferred = sortCache[language];
+    } else {
+        preferred = [];
     }
-    var preferred = sortCache[language];
     var cur = $country.val();
     $country.empty();
-    $country.append($('<option value="" />').text(originalCountries[0][1]));
-    $.each(preferred, function(_, id) {
-        $.each(originalCountries, function(_, o) {
-            if (o[0] === id) {
-                $country.append($('<option />').val(o[0]).text(o[1]));
+    var $suggested = null, $others = $('<optgroup />').attr('label', <?php echo json_encode(t('Other Countries')); ?>);
+    $.each(preferred, function(_, preferredCountryID) {
+        var found = null;
+        $.each(countries, function(_, country) {
+            if (country[0] === preferredCountryID) {
+                found = country;
+                return false;
             }
         });
-    });
-    $.each(originalCountries, function(i, o) {
-        if (i > 0 && $.inArray(o[0], preferred) < 0) {
-            $country.append($('<option />').val(o[0]).text(o[1]));
+        if (found !== null) {
+            if ($suggested === null) {
+                $suggested = $('<optgroup />').attr('label', <?php echo json_encode(t('Suggested Countries')); ?>);
+            }
+            $suggested.append($('<option />').val(found[0]).text(found[1]));
+        }
+    })
+    $.each(countries, function(i, country) {
+        var $parent = null;
+        if (i === 0 || $suggested === null) {
+            $parent = $country;
+        } else if($.inArray(country[0], preferred) < 0) {
+            $parent = $others;
+        }
+        if ($parent !== null) {
+            $parent.append($('<option />').val(country[0]).text(country[1]));
         }
     });
+    if ($suggested !== null) {
+        $country.append($suggested).append($others);
+    }
     $country.val(cur);
 }
 $('#no-country').on('change', function() {
@@ -131,11 +154,22 @@ $('#no-country').on('change', function() {
     if (b) {
         $country.removeAttr('required');
         $country.attr('disabled', 'disabled');
+        <?php if (!$canApprove) { ?>
+        $('#why-no-country')
+            .attr('required', 'required')
+            .closest('.form-group').show('fast');
+        <?php } ?>
     } else {
         $country.attr('required', 'required');
         $country.removeAttr('disabled');
+        <?php if (!$canApprove) { ?>
+        $('#why-no-country')
+            .removeAttr('required')
+            .closest('.form-group').hide('fast');
+        <?php } ?>
     }
 }).trigger('change');
+
 });</script>
 <?php }
 

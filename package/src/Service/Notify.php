@@ -89,6 +89,7 @@ class Notify implements \Concrete\Core\Application\ApplicationAwareInterface
                 if (isset($doneRecipentAddress[$recipentAddress])) {
                     continue;
                 }
+                $doneRecipentAddress[$recipentAddress] = true;
                 $recipientName = $recipient->getUserName();
                 $this->mail->reset();
                 foreach ($params as $key => $val) {
@@ -136,7 +137,7 @@ class Notify implements \Concrete\Core\Application\ApplicationAwareInterface
             'approverName' => $approver ? $approver->getUserName() : '?',
             'requestedBy' => $requestedBy ? $requestedBy->getUserName() : '?',
             'requestedOn' => $this->app->make('helper/date')->formatDateTime($locale->getRequestedOn(), true, false),
-            'teamUrl', h($this->app->make('url/manager')->resolve(array('/team/details/', $locale->getID()))),
+            'teamUrl' => h($this->app->make('url/manager')->resolve(array('/team/details/', $locale->getID()))),
         );
         if ($lang !== 'en_US') {
             \Localization::changeLocale($lang);
@@ -145,6 +146,21 @@ class Notify implements \Concrete\Core\Application\ApplicationAwareInterface
             'new_locale_approved',
             $recipients,
             $params
+        );
+    }
+
+    public function newLocaleRequested(Locale $locale, $notes = '')
+    {
+        $requestedBy = \UserInfo::getByID($locale->getRequestedBy()) ?: null;
+        $this->send(
+            'new_locale_requested',
+            $this->getGlobalAdministrators(),
+            array(
+                'localeName' => $locale->getName(),
+                'requestedBy' => $requestedBy ? $requestedBy->getUserName() : '?',
+                'teamsUrl' => h($this->app->make('url/manager')->resolve(array('/teams'))),
+                'notes' => nl2br(h(trim((string) $notes))),
+            )
         );
     }
 }
