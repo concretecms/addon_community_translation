@@ -34,6 +34,7 @@ class InitializeCommand extends Command
             $transifexPassword = $input->getArgument('transifex-password');
             if ($transifexPassword === null) {
                 $question = new Question('Please enter the Transifex password for '.$transifexUsername.': ', '');
+                $question->setHidden(true);
                 $transifexPassword = trim($this->getHelper('question')->ask($input, $output, $question));
                 if ($transifexPassword === '') {
                     $output->writeln('<error>Aborted</error>');
