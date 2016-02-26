@@ -20,7 +20,7 @@ class ServiceProvider extends Provider
 
         foreach (array(
             'community_translation/git' => '\Concrete\Package\CommunityTranslation\Src\Git\Repository',
-            'community_translation/translatable' => '\Concrete\Package\CommunityTranslation\Src\Translatable',
+            'community_translation/translatable' => '\Concrete\Package\CommunityTranslation\Src\Translatable\Translatable',
             'community_translation/translatable/place' => '\Concrete\Package\CommunityTranslation\Src\Translatable\Place\Place',
             'community_translation/translation' => '\Concrete\Package\CommunityTranslation\Src\Translation\Translation',
             'community_translation/locale' => '\Concrete\Package\CommunityTranslation\Src\Locale\Locale',
