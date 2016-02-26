@@ -2,6 +2,7 @@
 namespace Concrete\Package\CommunityTranslation\Src\Translatable\Place;
 
 use Concrete\Package\CommunityTranslation\Src\Translatable\Translatable;
+use Concrete\Package\CommunityTranslation\Src\Package\Package;
 
 /**
  * Packages where translatable strings are defined.
@@ -17,6 +18,17 @@ class Place
     // Properties
 
     /**
+     * Associated Package.
+     *
+     * @Id
+     * @ManyToOne(targetEntity="Concrete\Package\CommunityTranslation\Src\Package\Package", inversedBy="places")
+     * @JoinColumn(name="tpPackage", referencedColumnName="pID", nullable=false, onDelete="CASCADE")
+     *
+     * @var Package
+     */
+    protected $tpPackage;
+
+    /**
      * Associated Translatable string.
      *
      * @Id
@@ -26,26 +38,6 @@ class Place
      * @var Translatable
      */
     protected $tpTranslatable;
-
-    /**
-     * Package handle ('' for core).
-     *
-     * @Id
-     * @Column(type="string", length=64, nullable=false, options={"comment": "Package handle ('' for core)"})
-     *
-     * @var string
-     */
-    protected $tpPackage;
-
-    /**
-     * Package version ('dev-...' for development versions).
-     *
-     * @Id 
-     * @Column(type="string", length=64, nullable=false, options={"comment": "Package version ('dev-...' for development versions)"})
-     *
-     * @var string
-     */
-    protected $tpVersion;
 
     /**
      * File paths where the translatable string is defined.
@@ -76,29 +68,9 @@ class Place
     // Getters and setters
 
     /**
-     * Get the associated Translatable string.
+     * Get the associated Package.
      *
-     * @return Translatable
-     */
-    public function getTranslatable()
-    {
-        return $this->tpTranslatable;
-    }
-
-    /**
-     * Set the associated Translatable string.
-     *
-     * @param Translatable $value
-     */
-    public function setTranslatable(Translatable $value)
-    {
-        $this->tpTranslatable = $value;
-    }
-
-    /**
-     * Get the package handle ('' for core).
-     *
-     * @return string 
+     * @return Package
      */
     public function getPackage()
     {
@@ -106,33 +78,13 @@ class Place
     }
 
     /**
-     * Set the package handle ('' for core).
+     * Get the associated Translatable string.
      *
-     * @param string $value
+     * @return Translatable
      */
-    public function setPackage($value)
+    public function getTranslatable()
     {
-        $this->tpPackage = (string) $value;
-    }
-
-    /**
-     * Get the package version ('dev-...' for development versions).
-     *
-     * @return string 
-     */
-    public function getVersion()
-    {
-        return $this->tpVersion;
-    }
-
-    /**
-     * Set the package version ('dev-...' for development versions).
-     *
-     * @param string value
-     */
-    public function setVersion($value)
-    {
-        $this->tpVersion = (string) $value;
+        return $this->tpTranslatable;
     }
 
     /**
@@ -173,5 +125,21 @@ class Place
     public function setComments(array $value)
     {
         $this->tpComments = $value;
+    }
+
+    // Helper functions
+
+    /**
+     * Create a new (unsaved) instance.
+     *
+     * @return self
+     */
+    public static function create(Package $package, Translatable $translatable)
+    {
+        $place = new self();
+        $place->tpPackage = $package;
+        $place->tpTranslatable = $translatable;
+
+        return $place;
     }
 }
