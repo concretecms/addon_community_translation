@@ -60,6 +60,28 @@ class Translatable
      */
     protected $tPlural;
 
+    /**
+     * Places associated to this translatable string.
+     *
+     * @OneToMany(targetEntity="Concrete\Package\CommunityTranslation\Src\Translatable\Place\Place", mappedBy="tpTranslatable")
+     */
+    protected $places;
+
+    /**
+     * Translations associated to this translatable string.
+     *
+     * @OneToMany(targetEntity="Concrete\Package\CommunityTranslation\Src\Translation\Translation", mappedBy="tTranslatable")
+     */
+    protected $translations;
+
+    // Constructor
+
+    public function __construct()
+    {
+        $this->places = new \ArrayCollection();
+        $this->translations = new \ArrayCollection();
+    }
+
     // Getters & setters
 
     /**

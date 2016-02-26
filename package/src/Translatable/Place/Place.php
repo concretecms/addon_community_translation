@@ -20,7 +20,7 @@ class Place
      * Associated Translatable string.
      *
      * @Id
-     * @ManyToOne(targetEntity="Concrete\Package\CommunityTranslation\Src\Translatable\Translatable")
+     * @ManyToOne(targetEntity="Concrete\Package\CommunityTranslation\Src\Translatable\Translatable", inversedBy="places")
      * @JoinColumn(name="tpTranslatable", referencedColumnName="tID", nullable=false, onDelete="CASCADE")
      *
      * @var Translatable

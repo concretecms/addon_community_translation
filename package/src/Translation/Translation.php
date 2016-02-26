@@ -31,7 +31,7 @@ class Translation
     /**
      * Associated Locale.
      *
-     * @ManyToOne(targetEntity="Concrete\Package\CommunityTranslation\Src\Locale\Locale")
+     * @ManyToOne(targetEntity="Concrete\Package\CommunityTranslation\Src\Locale\Locale", inversedBy="translations")
      * @JoinColumn(name="tLocale", referencedColumnName="lID", nullable=false, onDelete="CASCADE")
      *
      * @var string
@@ -41,7 +41,7 @@ class Translation
     /**
      * Associated Translatable.
      *
-     * @ManyToOne(targetEntity="Concrete\Package\CommunityTranslation\Src\Translatable\Translatable")
+     * @ManyToOne(targetEntity="Concrete\Package\CommunityTranslation\Src\Translatable\Translatable", inversedBy="translations")
      * @JoinColumn(name="tTranslatable", referencedColumnName="tID", nullable=false, onDelete="CASCADE")
      *
      * @var int

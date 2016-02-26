@@ -86,6 +86,20 @@ class Locale
      */
     protected $lRequestedOn;
 
+    /**
+     * Translations associated to this locale.
+     *
+     * @OneToMany(targetEntity="Concrete\Package\CommunityTranslation\Src\Translation\Translation", mappedBy="tLocale")
+     */
+    protected $translations;
+
+    // Constructor
+
+    public function __construct()
+    {
+        $this->translations = new \ArrayCollection();
+    }
+
     // Getters & setters
 
     /**
