@@ -1,6 +1,8 @@
 <?php
 namespace Concrete\Package\CommunityTranslation\Src\Translatable;
 
+use Doctrine\Common\Collections\ArrayCollection;
+
 /**
  * Represents an translatable string.
  *
@@ -78,8 +80,8 @@ class Translatable
 
     public function __construct()
     {
-        $this->places = new \ArrayCollection();
-        $this->translations = new \ArrayCollection();
+        $this->places = new ArrayCollection();
+        $this->translations = new ArrayCollection();
     }
 
     // Getters & setters

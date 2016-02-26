@@ -3,6 +3,7 @@ namespace Concrete\Package\CommunityTranslation\Src\Locale;
 
 use DateTime;
 use Concrete\Package\CommunityTranslation\Src\Exception;
+use Doctrine\Common\Collections\ArrayCollection;
 
 /**
  * Represents an locale.
@@ -97,7 +98,7 @@ class Locale
 
     public function __construct()
     {
-        $this->translations = new \ArrayCollection();
+        $this->translations = new ArrayCollection();
     }
 
     // Getters & setters
