@@ -39,6 +39,20 @@ class Controller extends Package
 
     private static function installReal(Controller $pkg, $fromVersion)
     {
+        $sp = Page::getByPath('/dashboard/system/community_translation');
+        if (!is_object($sp) || $sp->getError() === COLLECTION_NOT_FOUND) {
+            $sp = SinglePage::add('/dashboard/system/community_translation', $pkg);
+            $sp->update(array(
+                'cName' => t('Community Translation'),
+            ));
+        }
+        $sp = Page::getByPath('/dashboard/system/community_translation/options');
+        if (!is_object($sp) || $sp->getError() === COLLECTION_NOT_FOUND) {
+            $sp = SinglePage::add('/dashboard/system/community_translation/options', $pkg);
+            $sp->update(array(
+                'cName' => t('Community Translation Options'),
+            ));
+        }
         $sp = Page::getByPath('/teams');
         if (!is_object($sp) || $sp->getError() === COLLECTION_NOT_FOUND) {
             $sp = SinglePage::add('/teams', $pkg);
