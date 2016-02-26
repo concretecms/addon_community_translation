@@ -18,6 +18,8 @@ class Teams extends PageController
         if (!$me->isRegistered()) {
             $me = null;
         }
+        $groups = $this->app->make('community_translation/groups');
+        /* @var \Concrete\Package\CommunityTranslation\Src\Service\Groups $groups */
         $this->set('me', $me);
         $repo = $this->app->make('community_translation/locale');
         $access = $this->app->make('community_translation/access');
@@ -27,6 +29,8 @@ class Teams extends PageController
                 'id' => $locale->getID(),
                 'name' => $locale->getDisplayName(),
                 'access' => $me ? $access->getLocaleAccess($locale, $me) : null,
+                'translators' => ((int) $groups->getAdministrators($locale)->getGroupMembersNum()) + ((int) $groups->getTranslators($locale)->getGroupMembersNum()),
+                'aspiring' => (int) $groups->getAspiringTranslators($locale)->getGroupMembersNum(),
             );
         }
         usort($approved, function ($a, $b) {
@@ -35,13 +39,13 @@ class Teams extends PageController
         $this->set('approved', $approved);
 
         $requested = array();
-        $iAmGlobalAdmin = $me ? ($me->getUserID() == USER_SUPER_ID || $me->inGroup($this->app->make('community_translation/groups')->getGlobalAdministrators())) : false;
+        $iAmGlobalAdmin = $me ? ($me->getUserID() == USER_SUPER_ID || $me->inGroup($groups->getGlobalAdministrators())) : false;
         foreach ($repo->findBy(array('lIsApproved' => false)) as $locale) {
             $requested[] = array(
                 'id' => $locale->getID(),
                 'name' => $locale->getDisplayName(),
                 'requestedOn' => $locale->getRequestedOn(),
-                'requestedBy' => \User::getByUserID($locale->getRequestedBy()),
+                'requestedBy' => $locale->getRequestedBy(),
                 'canApprove' => $iAmGlobalAdmin,
                 'canCancel' => $iAmGlobalAdmin || ($me && $locale->getRequestedBy() == $me->getUserID()),
             );
@@ -51,30 +55,6 @@ class Teams extends PageController
         });
 
         $this->set('requested', $requested);
-    }
-
-    public function join($localeID)
-    {
-        try {
-            $token = $this->app->make('helper/validation/token');
-            if (!$token->validate('comtra_join'.$localeID)) {
-                throw new Exception($token->getErrorMessage());
-            }
-            $locale = $this->app->make('community_translation/locale')->find($localeID);
-            if ($locale === null || !$locale->isApproved() || $locale->isSource()) {
-                throw new Exception(t("The locale identifier '%s' is not valid", $localeID));
-            }
-            $access = $this->app->make('community_translation/access')->getLocaleAccess($locale);
-            if ($access !== Access::NONE) {
-                throw new Exception(t('Invalid user rights'));
-            }
-            $this->app->make('community_translation/access')->setLocaleAccess($locale, Access::ASPRIRING);
-            $this->flash('message', t('Your request to join the %s translation group has been submitted. Thank you!', $locale->getDisplayName()));
-            $this->redirect('/teams');
-        } catch (Exception $x) {
-            $this->flash('error', $x->getMessage());
-            $this->redirect('/teams');
-        }
     }
 
     public function cancel_request($localeID)
@@ -155,6 +135,16 @@ class Teams extends PageController
             $em = $this->app->make('community_translation/em');
             $em->persist($locale);
             $em->flush();
+            try {
+                $requester = \User::getByUserID($locale->getRequestedBy());
+                if ($requester) {
+                    $requesterAccess = $this->app->make('community_translation/access')->getLocaleAccess($locale, $requester);
+                    if ($requesterAccess === Access::NONE) {
+                        $this->app->make('community_translation/access')->setLocaleAccess($locale, Access::TRANSLATE, $requester);
+                    }
+                }
+            } catch (\Exception $foo) {
+            }
             try {
                 $this->app->make('community_translation/notify')->newLocaleApproved($locale, new \User());
             } catch (\Exception $foo) {

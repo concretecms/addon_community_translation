@@ -163,4 +163,39 @@ class Notify implements \Concrete\Core\Application\ApplicationAwareInterface
             )
         );
     }
+
+    public function userApproved(Locale $locale, User $user)
+    {
+        $operator = new \User();
+        if (!$operator->isRegistered()) {
+            $operator = null;
+        }
+        $this->send(
+            'new_translator_approved',
+            array_merge($this->getGlobalAdministrators(), $this->getLocaleAdministrators($locale), array(\UserInfo::getByID($user->getUserID()))),
+            array(
+                'localeName' => $locale->getName(),
+                'applicant' => $user->getUserName(),
+                'operator' => $operator ? $operator->getUserName() : '?',
+                'teamUrl' => h($this->app->make('url/manager')->resolve(array('/team/details/', $locale->getID()))),
+            )
+        );
+    }
+    public function userDenied(Locale $locale, User $user)
+    {
+        $operator = new \User();
+        if (!$operator->isRegistered()) {
+            $operator = null;
+        }
+        $this->send(
+            'new_translator_denied',
+            array_merge($this->getGlobalAdministrators(), $this->getLocaleAdministrators($locale), array(\UserInfo::getByID($user->getUserID()))),
+            array(
+                'localeName' => $locale->getName(),
+                'applicant' => $user->getUserName(),
+                'operator' => $operator ? $operator->getUserName() : '?',
+                'teamUrl' => h($this->app->make('url/manager')->resolve(array('/team/details/', $locale->getID()))),
+            )
+        );
+    }
 }

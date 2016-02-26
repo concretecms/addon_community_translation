@@ -9,6 +9,13 @@ use Concrete\Package\CommunityTranslation\Src\Exception;
 class Access implements \Concrete\Core\Application\ApplicationAwareInterface
 {
     /**
+     * User is not logged in.
+     *
+     * @var int
+     */
+    const NOT_LOGGED_IN = 0;
+
+    /**
      * No access.
      *
      * @var int
@@ -90,7 +97,10 @@ class Access implements \Concrete\Core\Application\ApplicationAwareInterface
     {
         $result = self::NONE;
         $user = $this->getUser($user);
-        if ($user !== null) {
+        if ($user === null) {
+            $result = self::NOT_LOGGED_IN;
+        } else {
+            $result = self::NONE;
             if ($user->getUserID() == USER_SUPER_ID) {
                 $result = self::GLOBAL_ADMIN;
             } else {

@@ -14,37 +14,37 @@ id(new Area('Opening'))->display($c);
     <div class="panel-heading"><h3><?php echo t('Translators Teams'); ?></h3></div>
     <div class="panel-body">
         <table class="table table-hover">
+        	<thead>
+        		<tr>
+        			<th><?php echo t('Team'); ?></th>
+        			<th><?php echo t('Translators'); ?></th>
+        			<th><?php echo t('Join Requests'); ?></th>
+        			<th></th>
+        		</tr>
+        	</thead>
             <tbody><?php
                 foreach ($approved as $l) {
                     ?><tr data-locale-id="<?php echo h($l['id']); ?>">
                         <td><a href="<?php echo URL::to('/teams/details', $l['id']); ?>"><?php echo h($l['name']); ?></a></td>
+                        <td><?php echo $l['translators'] ? ('<span class="label label-success">'.$l['translators'].'</span>') : '<span class="label label-default">0</span>'; ?></td>
+                        <td><?php echo $l['aspiring'] ? ('<span class="label label-success">'.$l['aspiring'].'</span>') : '<span class="label label-default">0</span>'; ?></td>
                         <td><?php
-                            if (!isset($me)) {
-                                ?><a class="btn btn-sm btn-default pull-right" href="#" onclick="comtraAlert('dlg-join-must-login'); return false"><?php echo t('Join'); ?></a><?php
-                            } else {
-                                switch ($l['access']) {
-                                    case Access::GLOBAL_ADMIN:
-                                        break;
-                                    case Access::ADMIN:
-                                    case Access::TRANSLATE:
-                                        ?><form method="POST" action="<?php echo $this->action('leave', $l['id']); ?>" onsubmit="comtraConfirmPost(this); return false">
-                                            <?php $token->output('comtra_leave'.$l['id']); ?>
-                                            <input type="submit" class="btn btn-sm btn-danger pull-right" value="<?php echo h(t('Leave')); ?>" /> 
-                                        </form><?php
-                                        break;
-                                    case Access::ASPRIRING:
-                                        ?><form method="POST" action="<?php echo $this->action('cancel_request', $l['id']); ?>" onsubmit="comtraConfirmPost(this); return false">
-                                            <?php $token->output('comtra_cancel_request'.$l['id']); ?>
-                                            <input type="submit" class="btn btn-sm btn-warning pull-right" value="<?php echo h(t('Cancel request')); ?>" /> 
-                                        </form><?php
-                                        break;
-                                    case Access::NONE:
-                                        ?><form method="POST" action="<?php echo $this->action('join', $l['id']); ?>" onsubmit="comtraConfirmPost(this); return false">
-                                            <?php $token->output('comtra_join'.$l['id']); ?>
-                                            <input type="submit" class="btn btn-sm btn-success pull-right" value="<?php echo h(t('Join')); ?>" /> 
-                                        </form><?php
-                                        break;
-                                }
+                            switch ($l['access']) {
+                                case Access::GLOBAL_ADMIN:
+                                    break;
+                                case Access::ADMIN:
+                                case Access::TRANSLATE:
+                                    ?><form method="POST" action="<?php echo $this->action('leave', $l['id']); ?>" onsubmit="comtraConfirmPost(this); return false">
+                                        <?php $token->output('comtra_leave'.$l['id']); ?>
+                                        <input type="submit" class="btn btn-sm btn-danger pull-right" value="<?php echo h(t('Leave')); ?>" /> 
+                                    </form><?php
+                                    break;
+                                case Access::ASPRIRING:
+                                    ?><form method="POST" action="<?php echo $this->action('cancel_request', $l['id']); ?>" onsubmit="comtraConfirmPost(this); return false">
+                                        <?php $token->output('comtra_cancel_request'.$l['id']); ?>
+                                        <input type="submit" class="btn btn-sm btn-warning pull-right" value="<?php echo h(t('Cancel request')); ?>" /> 
+                                    </form><?php
+                                    break;
                             }
                         ?></td>
                     </tr><?php
@@ -66,8 +66,8 @@ if (!empty($requested)) {
                         ?><tr data-locale-id="<?php echo h($l['id']); ?>">
                             <td>
                                 <b><?php echo h($l['name']); ?></b><br />
-                                <?php echo tc('Language', 'Requested by: %s', $l['requestedBy'] ? h($l['requestedBy']->getUserName()) : '?'); ?><br />
-                                <?php echo tc('Language', 'Requested on: %s', $dh->formatPrettyDateTime($l['requestedOn'], true, true)); ?>
+                                <?php echo tc('Language', 'Requested by:'); ?> <?php View::element('username', array('user' => $l['requestedBy']), 'community_translation'); ?><br />
+                                <?php echo tc('Language', 'Requested on:'); ?> <?php echo $dh->formatPrettyDateTime($l['requestedOn'], true, true); ?>
                             </td>
                             <td><?php
                                 if ($l['canApprove']) {
