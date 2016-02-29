@@ -31,11 +31,57 @@ class Exporter implements \Concrete\Core\Application\ApplicationAwareInterface
      * @param \Gettext\Translations $translations
      * @param Locale $locale
      *
-     * @return Locale
+     * @return \Gettext\Translations
      */
-    public function fromPot(\Gettext\Translations $translations, Locale $locale)
+    public function fromPot(\Gettext\Translations $pot, Locale $locale)
     {
-        $po = clone $translations;
+        $cn = $this->app->make('community_translation/em')->getConnection();
+        $po = clone $pot;
+        $po->setLanguage($locale->getID());
+        $numPlurals = $locale->getPluralCount();
+        $searchQuery = $cn->prepare('
+            select
+                Translations.*
+            from
+                Translatables
+                inner join Translations on Translatables.tID = Translations.tTranslatable
+            where
+                Translatables.tHash = ?
+                and Translations.tLocale = '.$cn->quote($locale->getID()).'
+            limit 1
+        ')->getWrappedStatement();
+        foreach ($po as $translationKey => $translation) {
+            $plural = $translation->getPlural();
+            $hash = md5(($plural === '') ? $translationKey : "$translationKey\005$plural");
+            $searchQuery->execute(array($hash));
+            $row = $searchQuery->fetch();
+            $searchQuery->closeCursor();
+            if ($row !== false) {
+                $translation->setTranslation($row['tText0']);
+                if ($plural !== '') {
+                    switch ($numPlurals) {
+                        case 6:
+                            $translation->setPluralTranslation($row['tText5'], 4);
+                            /* @noinspection PhpMissingBreakStatementInspection */
+                        case 5:
+                            $translation->setPluralTranslation($row['tText4'], 3);
+                            /* @noinspection PhpMissingBreakStatementInspection */
+                        case 4:
+                            $translation->setPluralTranslation($row['tText3'], 2);
+                            /* @noinspection PhpMissingBreakStatementInspection */
+                        case 3:
+                            $translation->setPluralTranslation($row['tText2'], 1);
+                            /* @noinspection PhpMissingBreakStatementInspection */
+                        case 2:
+                            $translation->setPluralTranslation($row['tText1'], 0);
+                            /* @noinspection PhpMissingBreakStatementInspection */
+                            break;
+                    }
+                }
+            }
+        }
+
+        return $po;
     }
 
     /**
