@@ -68,65 +68,73 @@ class Exporter implements \Concrete\Core\Application\ApplicationAwareInterface
         if ($package === null) {
             throw new Exception(t('Invalid translated package specified'));
         }
-        $em = $this->app->make('community_translation/em');
-        /* @var \Doctrine\ORM\EntityManager $em */
-        $qb = $em->createQueryBuilder();
-        if ($excludeUntranslatedStrings) {
-            $join = 'innerJoin';
-            $where = 'r.tLocale = :locale';
-        } else {
-            $join = 'leftJoin';
-            $where = $qb->expr()->orX(
-                $qb->expr()->eq('r.tLocale', ':locale'),
-                $qb->expr()->isNull('r.tLocale')
-            );
-        }
-        $qb
-            ->select(array('t', 'p', 'r'))
-            ->from('Concrete\Package\CommunityTranslation\Src\Translatable\Translatable', 't')
-            ->innerJoin('Concrete\Package\CommunityTranslation\Src\Translatable\Place\Place', 'p', \Doctrine\ORM\Query\Expr\Join::WITH, 't.tID = p.tpTranslatable')
-            ->$join('Concrete\Package\CommunityTranslation\Src\Translation\Translation', 'r', \Doctrine\ORM\Query\Expr\Join::WITH, 't.tID = r.tTranslatable AND 1 = r.tCurrent')
-            ->where('p.tpPackage = :package')
-            ->andWhere($where)
-            ->orderBy('p.tpSort')
-            ->setParameter('package', $package)
-            ->setParameter('locale', $locale)
-        ;
-        $q = $qb->getQuery();
-        $list = $q->getResult();
+        $cn = $this->app->make('community_translation/em')->getConnection();
+        /* @var \Concrete\Core\Database\Connection\Connection $cn */
+        $rs = $cn->executeQuery(
+            '
+                select
+                    tContext,
+                    tText,
+                    tPlural,
+                    tpLocations,
+                    tpComments,
+                    tText0,
+                    tText1,
+                    tText2,
+                    tText3,
+                    tText4,
+                    tText5
+                from
+                    Translatables
+                    inner join TranslatablePlaces on Translatables.tID = TranslatablePlaces.tpTranslatable
+                    '.(
+                        $excludeUntranslatedStrings ?
+                        'inner join' :
+                        'left join'
+                    ).' Translations on Translatables.tID = Translations.tTranslatable
+                where
+                    TranslatablePlaces.tpPackage = '.((int) $package->getID()).'
+                    and '.(
+                        $excludeUntranslatedStrings ?
+                        ('Translations.tLocale = '.$cn->quote($locale->getID())) :
+                        ('Translations.tLocale = '.$cn->quote($locale->getID()).' or Translations.tLocale is null')
+                    ).'
+                order by
+                    TranslatablePlaces.tpSort
+            ',
+            array(
+
+            )
+        );
         $translations = new \Gettext\Translations();
         $translations->setLanguage($locale->getID());
         $numPlurals = $locale->getPluralCount();
-        while (!empty($list)) {
-            $translatable = array_shift($list);
-            $translation = new \Gettext\Translation($translatable->getContext(), $translatable->getText(), $translatable->getPlural());
-            $place = array_shift($list);
-            foreach ($place->getLocations() as $location) {
+        while (($row = $rs->fetch()) !== false) {
+            $translation = new \Gettext\Translation($row['tContext'], $row['tText'], $row['tPlural']);
+            foreach (unserialize($row['tpLocations']) as $location) {
                 $translation->addReference($location);
             }
-            foreach ($place->getComments() as $comment) {
+            foreach (unserialize($row['tpComments']) as $comment) {
                 $translation->addExtractedComment($comment);
             }
-            $translated = array_shift($list);
-            if ($translated !== null) {
-                /* @var \Concrete\Package\CommunityTranslation\Src\Translation\Translation $translated */
-                $translation->setTranslation($translated->getText0());
+            if ($row['tText0'] !== null) {
+                $translation->setTranslation($row['tText0']);
                 if ($translation->hasPlural()) {
                     switch ($numPlurals) {
                         case 6:
-                            $translation->setPluralTranslation($translated->getText5(), 4);
+                            $translation->setPluralTranslation($row['tText5'], 4);
                             /* @noinspection PhpMissingBreakStatementInspection */
                         case 5:
-                            $translation->setPluralTranslation($translated->getText4(), 3);
+                            $translation->setPluralTranslation($row['tText4'], 3);
                             /* @noinspection PhpMissingBreakStatementInspection */
                         case 4:
-                            $translation->setPluralTranslation($translated->getText3(), 2);
+                            $translation->setPluralTranslation($row['tText3'], 2);
                             /* @noinspection PhpMissingBreakStatementInspection */
                         case 3:
-                            $translation->setPluralTranslation($translated->getText2(), 1);
+                            $translation->setPluralTranslation($row['tText2'], 1);
                             /* @noinspection PhpMissingBreakStatementInspection */
                         case 2:
-                            $translation->setPluralTranslation($translated->getText1(), 0);
+                            $translation->setPluralTranslation($row['tText1'], 0);
                             /* @noinspection PhpMissingBreakStatementInspection */
                             break;
                     }
