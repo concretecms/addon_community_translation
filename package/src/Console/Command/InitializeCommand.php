@@ -63,8 +63,9 @@ class InitializeCommand extends Command
                 $git->setName('concrete5 Core pre 5.7');
                 $git->setPackage('');
                 $git->setURL('https://github.com/concrete5/concrete5-legacy.git');
-                $git->setDevBranch('master');
-                $git->setDevVersion('dev-5.6');
+                $git->setDevBranches(array(
+                    'master' => 'dev-5.6',
+                ));
                 $git->setTagsFilter('< 5.7');
                 $git->setWebRoot('web');
                 $em->persist($git);
@@ -78,8 +79,9 @@ class InitializeCommand extends Command
                 $git->setName('concrete5 Core from 5.7');
                 $git->setPackage('');
                 $git->setURL('https://github.com/concrete5/concrete5.git');
-                $git->setDevBranch('develop');
-                $git->setDevVersion('dev-5.7');
+                $git->setDevBranches(array(
+                    'develop' => 'dev-5.7',
+                ));
                 $git->setTagsFilter('>= 5.7');
                 $git->setWebRoot('web');
                 $em->persist($git);
@@ -103,8 +105,18 @@ class InitializeCommand extends Command
             $localeIDs = array('en_US');
             foreach ($txLocales as $txLocale) {
                 $id = $txLocale['language_code'];
-                if ($id !== 'en' && $id !== 'en_US') {
-                    $localeIDs[] = $id;
+                switch ($id) {
+                    case 'en':
+                    case 'en_US':
+                        // Source language
+                        break;
+                    case 'cs': // Czech
+                    case 'en_AT': // English (Austria)
+                        // Why these languages are there??? Transifex bug!
+                        break;
+                    default:
+                        $localeIDs[] = $id;
+                        break;
                 }
             }
             $output->writeln("<info>done (".count($localeIDs)." found).</info>");
@@ -141,7 +153,7 @@ class InitializeCommand extends Command
             /* @var \Concrete\Package\CommunityTranslation\Src\Translation\Importer $translationsImporter */
             foreach ($localeIDs as $localeID) {
                 $output->writeln('Working on '.$localeID);
-                $output->write(sprintf(' - checking entity... ', $localeID));
+                $output->write(sprintf(' - checking Locale entity... ', $localeID));
                 $locale = $localeRepo->find($localeID);
                 if ($locale === null) {
                     $locale = Locale::createForLocaleID($localeID);
@@ -156,7 +168,8 @@ class InitializeCommand extends Command
                 $output->writeln("<info>$msg.</info>");
                 if ($localeID !== 'en_US') {
                     foreach ($resources as $slug => $version) {
-                        $output->write(sprintf(' - fetching translations for %s... ', $version));
+                        $output->writeln(sprintf(' - working on %s', $version));
+                        $output->write(sprintf('   > fetching translations for %s... ', $version));
                         $client->setUri('https://www.transifex.com/api/2/project/concrete5/resource/'.$slug.'/translation/'.$localeID.'/');
                         $client->setMethod('GET');
                         $response = $client->send();
@@ -167,6 +180,8 @@ class InitializeCommand extends Command
                         if (!is_array($data) || !isset($data['mimetype']) || $data['mimetype'] !== 'text/x-po' || !isset($data['content']) || !is_string($data['content']) || $data['content'] === '') {
                             throw new Exception('Failed to decode response');
                         }
+                        $output->writeln('<info>done.</info>');
+                        $output->write(sprintf('   > parsing translations... '));
                         $translations = \Gettext\Translations::fromPoString($data['content']);
                         if (count($translations) < 100) {
                             throw new Exception('Too few translations downloaded');
@@ -176,12 +191,12 @@ class InitializeCommand extends Command
                         $txPlurals = $translations->getPluralForms();
                         $count = isset($txPlurals) ? $txPlurals[0] : null;
                         if ($count !== $locale->getPluralCount()) {
-                            $output->write(sprintf(' - fixing plural count (from %1$s to %2$s)... ', $count, $locale->getPluralCount()));
+                            $output->write(sprintf('   > fixing plural count (from %1$s to %2$s)... ', $count, $locale->getPluralCount()));
                             $translations->setLanguage($locale->getID());
                             $output->writeln('<info>done.</info>');
                         }
-                        $output->write(' - saving... ');
-                        $translationsImporter->import($translations, $locale, 2);
+                        $output->write('   > saving... ');
+                        $translationsImporter->import($translations, $locale, true);
                         $output->writeln('<info>done.</info>');
                     }
                 }

@@ -4,7 +4,6 @@ namespace Concrete\Package\CommunityTranslation\Controller\SinglePage\Teams;
 use Concrete\Core\Page\Controller\PageController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Concrete\Package\CommunityTranslation\Src\Exception;
-use Concrete\Package\CommunityTranslation\Src\Service\Access;
 use Concrete\Package\CommunityTranslation\Src\Locale\Locale;
 
 class Create extends PageController
@@ -33,10 +32,11 @@ class Create extends PageController
         if ($me === null) {
             $this->set('error', t('You need to sign-in in order to ask the creation of a new Translation Team'));
             $this->set('skip', true);
+
             return;
         }
         $this->set('canApprove', $this->userIsGlobalAdmin());
-        
+
         $languages = array();
         foreach (\Gettext\Languages\Language::getAll() as $l) {
             if (strpos($l->id, '_') === false) {
@@ -69,6 +69,7 @@ class Create extends PageController
         $me = new \User();
         if (!$me->isRegistered()) {
             $this->view();
+
             return;
         }
         $iAmGlobalAdmin = $this->userIsGlobalAdmin();

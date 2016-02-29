@@ -9,6 +9,7 @@ class ServiceProvider extends Provider
     {
         $app = $this->app;
 
+        // Entity manager
         $this->app->singleton(
             'community_translation/em',
             function () use ($app) {
@@ -18,6 +19,7 @@ class ServiceProvider extends Provider
             }
         );
 
+        // Repositories
         foreach (array(
             'community_translation/git' => '\Concrete\Package\CommunityTranslation\Src\Git\Repository',
             'community_translation/package' => '\Concrete\Package\CommunityTranslation\Src\Package\Package',
@@ -34,11 +36,13 @@ class ServiceProvider extends Provider
             );
         }
 
+        // Services
         foreach (array(
             'community_translation/git/fetcher' => array('Concrete\Package\CommunityTranslation\Src\Git\Fetcher', false),
             'community_translation/git/importer' => array('Concrete\Package\CommunityTranslation\Src\Git\Importer', true),
             'community_translation/translatable/importer' => array('Concrete\Package\CommunityTranslation\Src\Translatable\Importer', true),
             'community_translation/translation/importer' => array('Concrete\Package\CommunityTranslation\Src\Translation\Importer', true),
+            'community_translation/translation/exporter' => array('Concrete\Package\CommunityTranslation\Src\Translation\Exporter', true),
             'community_translation/groups' => array('Concrete\Package\CommunityTranslation\Src\Service\Groups', true),
             'community_translation/access' => array('Concrete\Package\CommunityTranslation\Src\Service\Access', true),
             'community_translation/events' => array('Concrete\Package\CommunityTranslation\Src\Service\Events', true),

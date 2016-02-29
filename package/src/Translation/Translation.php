@@ -6,11 +6,12 @@ use Concrete\Package\CommunityTranslation\Src\Translatable\Translatable;
 use DateTime;
 
 /**
- * Represents an translatable string.
+ * Represents an translated string.
  *
  * @Entity
  * @Table(
  *     name="Translations",
+ *     uniqueConstraints={@UniqueConstraint(name="ActiveTranslatedString", columns={"tLocale", "tTranslatable", "tCurrent"})},
  *     options={"comment": "Translated strings"}
  * )
  */
@@ -67,13 +68,22 @@ class Translation
     protected $tCreatedBy;
 
     /**
-     * Status of this translation (0: neither current not approved, 1: current but not approved, 2: current and approved).
+     * Is this the current translation? (true: yes, null: no).
      *
-     * @Column(type="smallint", nullable=false, options={"unsigned": true, "comment": "Status of this translation (0: neither current not approved, 1: current but not approved, 2: current and approved)"})
+     * @Column(type="boolean", nullable=true, options={"comment": "Is this the current translation? (true: yes, null: no)"})
      *
-     * @var int
+     * @var true|null
      */
-    protected $tStatus;
+    protected $tCurrent;
+
+    /**
+     * Is this translation reviewed?
+     *
+     * @Column(type="boolean", nullable=false, options={"comment": "Is this translation reviewed?"})
+     *
+     * @var bool
+     */
+    protected $tReviewed;
 
     /**
      * Translation (singular / plural 0).
@@ -230,23 +240,43 @@ class Translation
     }
 
     /**
-     * Get the status of this translation (0: neither current not approved, 1: current but not approved, 2: current and approved).
+     * Is this the current translation?
      *
-     * @return int
+     * @return bool
      */
-    public function getStatus()
+    public function isCurrent()
     {
-        return $this->tStatus;
+        return (bool) $this->tCurrent;
     }
 
     /**
-     * Set the status of this translation (0: neither current not approved, 1: current but not approved, 2: current and approved).
+     * Is this the current translation?
      *
-     * @param int $value
+     * @param bool $value
      */
-    public function setStatus($value)
+    public function setIsCurrent($value)
     {
-        $this->tStatus = (int) $value;
+        $this->tCurrent = $value ? true : null;
+    }
+
+    /**
+     * Is this translation reviewed?
+     *
+     * @return bool
+     */
+    public function isReviewed()
+    {
+        return $this->tReviewed;
+    }
+
+    /**
+     * Is this translation reviewed?
+     *
+     * @param bool $value
+     */
+    public function setIsReviewed($value)
+    {
+        $this->tReviewed = (bool) $value;
     }
 
     /**

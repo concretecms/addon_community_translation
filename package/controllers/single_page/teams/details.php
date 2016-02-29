@@ -13,7 +13,7 @@ class Details extends PageController
         foreach ($group->getGroupMembers() as $m) {
             $result[] = array('ui' => $m, 'since' => $group->getGroupDateTimeEntered($m));
         }
-        usort($result, function($a, $b) {
+        usort($result, function ($a, $b) {
             return strcasecmp($a['ui']->getUserName(), $b['ui']->getUserName());
         });
 
@@ -104,7 +104,7 @@ class Details extends PageController
             }
         }
     }
-    
+
     public function answer($localeID, $userID, $approve)
     {
         $gotoLocale = null;
@@ -201,7 +201,5 @@ class Details extends PageController
                 $this->redirect('/teams/details', $gotoLocale->getID());
             }
         }
-        
     }
-    
 }

@@ -54,7 +54,7 @@ class Package
      * @var DateTime
      */
     protected $pCreatedOn;
-    
+
     /**
      * Last date/time when the translatable strings changed.
      *
@@ -63,7 +63,7 @@ class Package
      * @var DateTime
      */
     protected $pUpdatedOn;
-    
+
     /**
      * Places associated to this string.
      *
@@ -121,7 +121,7 @@ class Package
     {
         return $this->pCreatedOn;
     }
-    
+
     /**
      * Get the last date/time when the translatable strings changed.
      *

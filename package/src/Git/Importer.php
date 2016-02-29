@@ -34,8 +34,9 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
         $package = $this->app->make('community_translation/package');
         /* @var \Doctrine\ORM\EntityRepository $package */
         $fetcher->update();
-        if ($repository->getDevBranch() !== '') {
-            $importer->importDirectory($fetcher->getWebDirectory(), $repository->getPackage(), $repository->getDevVersion());
+        foreach ($repository->getDevBranches() as $branch => $version) {
+            $fetcher->switchToBranch($branch);
+            $importer->importDirectory($fetcher->getWebDirectory(), $repository->getPackage(), $version);
         }
         foreach ($fetcher->getTaggedVersions() as $tag => $version) {
             if ($package->findOneBy(array(

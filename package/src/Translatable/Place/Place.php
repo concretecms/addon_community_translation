@@ -57,6 +57,15 @@ class Place
      */
     protected $tpComments;
 
+    /**
+     * Sorting key for a translation in a locale.
+     *
+     * @Column(type="integer", nullable=false, options={"unsigned": true, "comment": "Sorting key for a translation in a locale"})
+     *
+     * @var int
+     */
+    protected $tpSort;
+
     // Constructor
 
     public function __construct()
@@ -125,6 +134,26 @@ class Place
     public function setComments(array $value)
     {
         $this->tpComments = $value;
+    }
+
+    /**
+     * Get the sorting key for a translation in a locale.
+     *
+     * @return int
+     */
+    public function getSort()
+    {
+        return $this->tpSort;
+    }
+
+    /**
+     * Set the sorting key for a translation in a locale.
+     *
+     * @param int $value
+     */
+    public function setSort($value)
+    {
+        $this->tpSort = (int) $value;
     }
 
     // Helper functions

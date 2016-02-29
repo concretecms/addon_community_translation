@@ -156,7 +156,7 @@ EOT
     }
 
     /**
-     * Initializes the git repository (if the local directory exists it will be erased), with the development branch set as the current one.
+     * Initializes the git repository (if the local directory exists it will be erased), checking out the first development branch (if defined) or the repository default one.
      *
      * @throws Exception
      */
@@ -176,11 +176,7 @@ EOT
             }
         }
         try {
-            $devBranch = $this->repository->getDevBranch();
-            $cmd = 'clone --quiet';
-            if ($devBranch !== '') {
-                $cmd .= ' --branch '.escapeshellarg($devBranch);
-            }
+            $cmd = 'clone --quiet --no-checkout';
             $cmd .= ' '.escapeshellarg($this->repository->getURL()).' '.escapeshellarg(str_replace('/', DIRECTORY_SEPARATOR, $directory));
             $this->runGit($cmd, false);
         } catch (\Exception $x) {
@@ -193,7 +189,7 @@ EOT
     }
 
     /**
-     * Initializes or update the git repository, switching to the development branch.
+     * Initializes or update the git repository.
      *
      * @throws Exception
      */
@@ -202,17 +198,22 @@ EOT
         $directory = $this->getDirectory();
         $fs = $this->getFilesystem();
         if ($fs->isDirectory($directory) && $fs->isDirectory($directory.'/.git')) {
-            $devBranch = $this->repository->getDevBranch();
-            if ($devBranch !== '') {
-                $this->runGit('checkout '.escapeshellarg($devBranch));
-            }
             $this->runGit('fetch origin --tags');
-            if ($devBranch !== '') {
-                $this->runGit('merge --ff-only '.escapeshellarg('origin/'.$devBranch));
-            }
         } else {
             $this->initialize();
         }
+    }
+
+    /**
+     * Checkout the specified remote branch.
+     *
+     * @param string $name
+     *
+     * @throws Exception
+     */
+    public function switchToBranch($name)
+    {
+        $this->runGit('checkout '.escapeshellarg('remotes/origin/'.$name));
     }
 
     /**

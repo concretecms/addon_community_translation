@@ -15,7 +15,7 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
      * @var Application
      */
     protected $app;
-    
+
     /**
      * Set the application object.
      *
@@ -43,10 +43,10 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
         if ($this->entityManager === null) {
             $this->entityManager = $this->app->make('community_translation/em');
         }
-    
+
         return $this->entityManager;
     }
-    
+
     /**
      * Database connection.
      *
@@ -123,20 +123,20 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
             } else {
                 $packageIsNew = false;
             }
-        
+
             $searchHash = $connection->prepare('SELECT tID FROM Translatables WHERE tHash = ? LIMIT 1')->getWrappedStatement();
             /* @var \Concrete\Core\Database\Driver\PDOStatement $searchHash */
             $insertTranslatable = $connection->prepare('INSERT INTO Translatables SET tHash = ?, tContext = ?, tText = ?, tPlural = ?')->getWrappedStatement();
             /* @var \Concrete\Core\Database\Driver\PDOStatement $insertTranslatable */
-            $insertPlacesFields = 'tpPackage, tpTranslatable, tpLocations, tpComments';
-            $insertPlacesChunk = ' ('.$package->getID().', ?, ?, ?),';
+            $insertPlacesFields = 'tpPackage, tpTranslatable, tpLocations, tpComments, tpSort';
+            $insertPlacesChunk = ' ('.$package->getID().', ?, ?, ?, ?),';
             $insertPlaces = $connection->prepare('INSERT INTO TranslatablePlaces ('.$insertPlacesFields.') VALUES'.rtrim(str_repeat($insertPlacesChunk, self::IMPORT_BATCH_SIZE), ','))->getWrappedStatement();
             /* @var \Concrete\Core\Database\Driver\PDOStatement $insertPlaces */
             if ($packageIsNew) {
                 $prevHash = null;
             } else {
                 $prevHash = (string) $connection->fetchColumn('
-                    select md5(group_concat(tpTranslatable)) from IntegratedTranslatablePlaces where tpPackage = ? order by tpTranslatable',
+                    select md5(group_concat(tpTranslatable)) from TranslatablePlaces where tpPackage = ? order by tpTranslatable',
                     array($package->getID())
                 );
                 $connection->executeQuery(
@@ -146,10 +146,11 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
             }
             $insertPlacesParams = array();
             $insertPlacesCount = 0;
+            $importCount = 0;
             foreach ($translations as $translationKey => $translation) {
                 /* @var \Gettext\Translation $translation */
                 $plural = $translation->getPlural();
-                $hash = md5($plural ? "$translationKey\005$plural" : $translationKey);
+                $hash = md5(($plural === '') ? $translationKey : "$translationKey\005$plural");
                 $searchHash->execute(array($hash));
                 $tID = $searchHash->fetchColumn(0);
                 $searchHash->closeCursor();
@@ -176,12 +177,15 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
                 $insertPlacesParams[] = serialize($locations);
                 // tpComments
                 $insertPlacesParams[] = serialize($translation->getComments());
+                // tpSort
+                $insertPlacesParams[] = $importCount;
                 ++$insertPlacesCount;
                 if ($insertPlacesCount === self::IMPORT_BATCH_SIZE) {
                     $insertPlaces->execute($insertPlacesParams);
                     $insertPlacesParams = array();
                     $insertPlacesCount = 0;
                 }
+                ++$importCount;
             }
             if ($insertPlacesCount > 0) {
                 $connection->executeQuery(
@@ -191,7 +195,7 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
             }
             if ($updated === false && !$packageIsNew) {
                 $newHash = (string) $connection->fetchColumn('
-                    select md5(group_concat(tpTranslatable)) from IntegratedTranslatablePlaces where tpPackage = ? order by tpTranslatable',
+                    select md5(group_concat(tpTranslatable)) from TranslatablePlaces where tpPackage = ? order by tpTranslatable',
                     array($package->getID())
                 );
                 if ($newHash !== $prevHash) {

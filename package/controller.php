@@ -103,7 +103,7 @@ class Controller extends Package
                     array(
                         array('javascript', 'jquery'),
                         array('javascript', 'jquery/scroll-to'),
-                    )
+                    ),
                 ),
                 'community_translation/common' => array(
                     array(

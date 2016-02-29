@@ -1,4 +1,5 @@
 <?php
+
 defined('C5_EXECUTE') or die('Access Denied.');
 
 $subject = "[$siteName] User denied for the team $localeName";

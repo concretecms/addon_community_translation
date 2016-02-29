@@ -1,4 +1,5 @@
 <?php
+
 defined('C5_EXECUTE') or die('Access Denied.');
 
 $subject = "[$siteName] User requested to join the team for $localeName";

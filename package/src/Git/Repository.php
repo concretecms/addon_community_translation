@@ -49,22 +49,13 @@ class Repository
     protected $grURL;
 
     /**
-     * Repository development branch.
+     * Development branches (keys are the branch name, values are the version - they should start with dev-).
      *
-     * @Column(type="string", length=255, nullable=false, options={"comment": "Repository development branch"})
+     * @Column(type="array", nullable=false, options={"comment": "Development branches (keys are the branch name, values are the version - they should start with dev-)"})
      *
-     * @var string
+     * @var array
      */
-    protected $grDevBranch;
-
-    /**
-     * Repository development version.
-     *
-     * @Column(type="string", length=255, nullable=false, options={"comment": "Repository development version"})
-     *
-     * @var string
-     */
-    protected $grDevVersion;
+    protected $grDevBranches;
 
     /**
      * Repository tags filter.
@@ -83,6 +74,13 @@ class Repository
      * @var string
      */
     protected $grWebRoot;
+
+    // Constructor
+
+    public function __construct()
+    {
+        $this->grDevBranches = array();
+    }
 
     // Getters and setters
 
@@ -157,43 +155,23 @@ class Repository
     }
 
     /**
-     * Get the repository development branch.
+     * Get the development branches (keys are the branch name, values are the version - they should start with dev-).
      *
-     * @return string
+     * @return array
      */
-    public function getDevBranch()
+    public function getDevBranches()
     {
-        return $this->grDevBranch;
+        return $this->grDevBranches;
     }
 
     /**
-     * Set the repository development branch.
+     * Set the development branches (keys are the branch name, values are the version - they should start with dev-).
      *
-     * @param string $value
+     * @param array $value
      */
-    public function setDevBranch($value)
+    public function setDevBranches(array $value)
     {
-        $this->grDevBranch = (string) $value;
-    }
-
-    /**
-     * Get the repository development version.
-     *
-     * @return string
-     */
-    public function getDevVersion()
-    {
-        return $this->grDevVersion;
-    }
-
-    /**
-     * Set the repository development version.
-     *
-     * @param string $value
-     */
-    public function setDevVersion($value)
-    {
-        $this->grDevVersion = (string) $value;
+        $this->grDevBranches = $value;
     }
 
     /**
