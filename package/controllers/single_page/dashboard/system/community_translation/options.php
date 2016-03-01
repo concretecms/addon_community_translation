@@ -9,6 +9,7 @@ class Options extends DashboardPageController
     public function view()
     {
         $config = \Package::getByHandle('community_translation')->getFileConfig();
+        $this->set('translatedThreshold', $config->get('options.translatedThreshold', 90));
         $this->set('tempDir', $config->get('options.tempDir'));
         $this->set('notificationsSenderAddress', $config->get('options.notificationsSenderAddress'));
         $this->set('notificationsSenderName', $config->get('options.notificationsSenderName'));
@@ -21,6 +22,17 @@ class Options extends DashboardPageController
             $this->view();
 
             return;
+        }
+        $translatedThreshold = null;
+        $s = $this->post('translatedThreshold');
+        if (is_string($s) && is_numeric($s)) {
+            $s = (int) $s;
+            if ($s >= 0 && $s <= 100) {
+                $translatedThreshold = $s;
+            }
+        }
+        if ($translatedThreshold === null) {
+            $this->error->add(t('Please specify the translation thresold used to consider a language as translated'));
         }
         $tempDir = $this->post('tempDir', '');
         if (!is_string($tempDir)) {
@@ -38,6 +50,7 @@ class Options extends DashboardPageController
         }
         if (!$this->error->has()) {
             $config = \Package::getByHandle('community_translation')->getFileConfig();
+            $config->save('options.translatedThreshold', $translatedThreshold);
             $config->save('options.tempDir', $tempDir);
             $config->save('options.notificationsSenderAddress', (string) $this->post('notificationsSenderAddress'));
             $config->save('options.notificationsSenderName', (string) $this->post('notificationsSenderName'));

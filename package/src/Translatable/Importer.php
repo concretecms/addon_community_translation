@@ -91,19 +91,11 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
             $directoryToPotify = '';
             $relDirectory = 'packages/'.$packageHandle;
         }
-        $translations = new \Gettext\Translations();
-        $translations->setLanguage('en_US');
-        \C5TL\Parser::clearCache();
-        foreach (\C5TL\Parser::getAllParsers() as $parser) {
-            if ($parser->canParseDirectory()) {
-                $parser->parseDirectory(
-                    $directory.$directoryToPotify,
-                    $relDirectory,
-                    $translations,
-                    false,
-                    true
-                );
-            }
+        $parsed = $this->app->make('community_translation/parser')->parseDirectory($directory.$directoryToPotify, $relDirectory, 0);
+        $translations = $parsed ? $parsed->getPot() : null;
+        if ($translations === null) {
+            $translations = new \Gettext\Translations();
+            $translations->setLanguage('en_US');
         }
         $packageRepo = $this->app->make('community_translation/package');
         $updated = false;
@@ -214,6 +206,13 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
             } catch (\Exception $foo) {
             }
             throw $x;
+        }
+
+        if ($updated) {
+            try {
+                $this->app->make('cache/expensive')->getItem('community_translation')->clear();
+            } catch (\Exception $foo) {
+            }
         }
 
         return $updated;

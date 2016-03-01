@@ -11,6 +11,24 @@ defined('C5_EXECUTE') or die('Access Denied.');
 	<?php echo $token->output('ct-options-save'); ?>
 
 	<fieldset>
+		<legend><?php echo t('Translations'); ?></legend>
+		<div class="row">
+			<div class="form-group">
+				<label for="translatedThreshold" class="control-label col-sm-3"><?php echo t("Translation threshold"); ?></label>
+				<div class="col-sm-2">
+					<div class="input-group">
+						<?php echo $form->number('translatedThreshold', $translatedThreshold, array('min' => 0, 'max' => 100)); ?>
+						<span class="input-group-addon">%</span>
+					</div>
+				</div>
+				<div class="col-sm-5 text-muted">
+					<?php echo t('Translations below this value as considered as <i>not translated</i>'); ?>
+				</div>
+			</div>
+		</div>
+	</fieldset>
+
+	<fieldset>
 		<legend><?php echo t('Paths'); ?></legend>
 		<div class="row">
 			<div class="form-group">

@@ -27,6 +27,8 @@ class Controller extends Package
     public function install()
     {
         $pkg = parent::install();
+        $config = $this->getFileConfig();
+        $config->get('options.translatedThreshold', 90);
         self::installReal($pkg, '');
     }
 
@@ -75,6 +77,13 @@ class Controller extends Package
                 'cName' => t('Translation Team Details'),
             ));
             $sp->setAttribute('exclude_nav', 1);
+        }
+        $sp = Page::getByPath('/utilities/fill_translations');
+        if (!is_object($sp) || $sp->getError() === COLLECTION_NOT_FOUND) {
+            $sp = SinglePage::add('/utilities/fill_translations', $pkg);
+            $sp->update(array(
+                'cName' => t('Fill translations'),
+            ));
         }
     }
 

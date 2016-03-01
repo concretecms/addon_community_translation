@@ -1,4 +1,5 @@
 <?php
+
 use Concrete\Core\User\User;
 use Concrete\Core\User\UserInfo;
 

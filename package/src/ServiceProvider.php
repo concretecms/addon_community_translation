@@ -47,6 +47,9 @@ class ServiceProvider extends Provider
             'community_translation/access' => array('Concrete\Package\CommunityTranslation\Src\Service\Access', true),
             'community_translation/events' => array('Concrete\Package\CommunityTranslation\Src\Service\Events', true),
             'community_translation/notify' => array('Concrete\Package\CommunityTranslation\Src\Service\Notify', true),
+            'community_translation/tempdir' => array('Concrete\Package\CommunityTranslation\Src\Service\VolatileDirectory', false),
+            'community_translation/parser' => array('Concrete\Package\CommunityTranslation\Src\Service\Parser\Parser', true),
+            'community_translation/stats' => array('Concrete\Package\CommunityTranslation\Src\Service\Stats', true),
         ) as $abstract => $info) {
             // $info[0]: concrete
             // $info[1]: shared (aka singleton)
