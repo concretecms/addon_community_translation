@@ -116,7 +116,7 @@ class Notify implements \Concrete\Core\Application\ApplicationAwareInterface
             array(
                 'localeName' => $locale->getName(),
                 'aspirantName' => h($aspirant->getUserName()),
-                'teamUrl' => h($this->app->make('url/manager')->resolve(array('/team/details/', $locale->getID()))),
+                'teamUrl' => h($this->app->make('url/manager')->resolve(array('/teams/details/', $locale->getID()))),
             )
         );
     }
@@ -137,7 +137,7 @@ class Notify implements \Concrete\Core\Application\ApplicationAwareInterface
             'approverName' => $approver->getUserName(),
             'requestedBy' => $requestedBy ? $requestedBy->getUserName() : '?',
             'requestedOn' => $this->app->make('helper/date')->formatDateTime($locale->getRequestedOn(), true, false),
-            'teamUrl' => h($this->app->make('url/manager')->resolve(array('/team/details/', $locale->getID()))),
+            'teamUrl' => h($this->app->make('url/manager')->resolve(array('/teams/details/', $locale->getID()))),
         );
         if ($lang !== 'en_US') {
             \Localization::changeLocale($lang);
@@ -177,7 +177,7 @@ class Notify implements \Concrete\Core\Application\ApplicationAwareInterface
                 'localeName' => $locale->getName(),
                 'applicant' => $user->getUserName(),
                 'operator' => $operator ? $operator->getUserName() : '?',
-                'teamUrl' => h($this->app->make('url/manager')->resolve(array('/team/details/', $locale->getID()))),
+                'teamUrl' => h($this->app->make('url/manager')->resolve(array('/teams/details/', $locale->getID()))),
             )
         );
     }
@@ -194,7 +194,7 @@ class Notify implements \Concrete\Core\Application\ApplicationAwareInterface
                 'localeName' => $locale->getName(),
                 'applicant' => $user->getUserName(),
                 'operator' => $operator ? $operator->getUserName() : '?',
-                'teamUrl' => h($this->app->make('url/manager')->resolve(array('/team/details/', $locale->getID()))),
+                'teamUrl' => h($this->app->make('url/manager')->resolve(array('/teams/details/', $locale->getID()))),
             )
         );
     }
