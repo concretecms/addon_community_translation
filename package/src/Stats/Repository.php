@@ -1,9 +1,9 @@
 <?php
-
 namespace Concrete\Package\CommunityTranslation\Src\Stats;
 
 use Concrete\Package\CommunityTranslation\Src\Package\Package;
 use Concrete\Package\CommunityTranslation\Src\Locale\Locale;
+use Concrete\Package\CommunityTranslation\Src\Translatable\Translatable;
 use Concrete\Core\Application\Application;
 use Concrete\Core\Application\ApplicationAwareInterface;
 use Concrete\Package\CommunityTranslation\Src\Exception;
@@ -176,6 +176,41 @@ class Repository extends EntityRepository implements ApplicationAwareInterface
             ->createQuery('delete from '.$this->getEntityName().' as s where s.sLocale = :locale')
                 ->setParameter('locale', $locale)
                 ->execute();
+    }
+
+    public function resetForLocaleTranslatables(Locale $locale, $translatables)
+    {
+        $translatableIDs = array();
+        if ($translatables) {
+            if ($translatables instanceof Translatable) {
+                $translatableIDs[] = $translatables->getID();
+            } elseif (is_int($translatables)) {
+                $translatableIDs[] = $translatables;
+            } elseif (is_array($translatables)) {
+                foreach ($translatables as $translatable) {
+                    if ($translatable instanceof Translatable) {
+                        $translatableIDs[] = $translatable->getID();
+                    } elseif (is_int($translatable)) {
+                        $translatableIDs[] = $translatable;
+                    } else {
+                        throw new Exception(t('Invalid translatable string specified'));
+                    }
+                }
+            }
+        }
+        if (empty($translatableIDs)) {
+            throw new Exception(t('Invalid translatable string specified'));
+        }
+        $this->getEntityManager()->getConnection()->executeQuery(
+            '
+                delete s.*
+                from TranslationStats as s
+                inner join TranslatablePlaces as p on s.sPackage = p.tpPackage
+                where s.sLocale = ?
+                and (p.tpTranslatable = '.implode(' or p.tpTranslatable = ', $translatableIDs).')
+            ',
+            array($locale->getID())
+        );
     }
 
     /**

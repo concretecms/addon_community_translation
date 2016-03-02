@@ -2,34 +2,12 @@
 namespace Concrete\Package\CommunityTranslation\Src\Translation;
 
 use Concrete\Core\Application\Application;
-use Concrete\Core\Database\Connection\Connection;
 use Concrete\Package\CommunityTranslation\Src\Exception;
 use Concrete\Package\CommunityTranslation\Src\Service\Access;
 
 class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
 {
     const IMPORT_BATCH_SIZE = 50;
-
-    /**
-     * The database connection.
-     *
-     * @var Connection
-     */
-    protected $connection;
-
-    /**
-     * Get the database connection.
-     *
-     * @return  Connection
-     */
-    protected function getConnection()
-    {
-        if ($this->connection === null) {
-            $this->connection = \Core::make('community_translation/em')->getConnection();
-        }
-
-        return $this->connection;
-    }
 
     /**
      * The application object.
@@ -46,16 +24,6 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
     public function setApplication(Application $app)
     {
         $this->app = $app;
-    }
-
-    /**
-     * Initializes the instance.
-     *
-     * @param Connection $connection
-     */
-    public function __construct()
-    {
-        $this->connection = null;
     }
 
     /**
@@ -98,8 +66,11 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
         $userID = (int) ($me->isRegistered() ? $me->getUserID() : USER_SUPER_ID);
         $pluralCount = $locale->getPluralCount();
         // Start working - This a bit hacky but it's lightning fast
-        $connection = $this->getConnection();
+        $connection = $this->app->make('community_translation/em')->getConnection();
+        $nowExpression = $connection->getDatabasePlatform()->getNowExpression();
+        $now = id(new \DateTime())->format($connection->getDatabasePlatform()->getDateTimeFormatString());
         $connection->beginTransaction();
+        $translatablesChanged = array();
         try {
             // Prepare some queries
             $searchQuery = $connection->prepare('
@@ -113,27 +84,33 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
                     Translatables.tHash = ?
             ')->getWrappedStatement();
             /* @var \Doctrine\DBAL\Driver\Statement $searchQuery */
-            $insertQueryFields = 'tCreatedOn, tCreatedBy, tLocale, tCurrent, tReviewed, tTranslatable, tText0, tText1, tText2, tText3, tText4, tText5';
+            $insertQueryFields = 'tCreatedOn, tCreatedBy, tLocale, tCurrent, tCurrentSince, tReviewed, tTranslatable, tText0, tText1, tText2, tText3, tText4, tText5';
             $insertQueryChunk = ' ('.implode(', ', array(
-                $connection->getDatabasePlatform()->getNowExpression(),
+                $nowExpression,
                 $userID,
                 $connection->quote($locale->getID()),
                 '?', // tCurrent
+                '?', // tCurrentSince
                 '?', // tReviewed
                 '?', // tTranslatable
-                '?', '?, ?, ?, ?, ?', // tText0... tText5
+                '?, ?, ?, ?, ?, ?', // tText0... tText5
             )).'),';
             $insertQuery = $connection->prepare(
                 'INSERT INTO Translations ('.$insertQueryFields.') VALUES '
                 .rtrim(str_repeat($insertQueryChunk, self::IMPORT_BATCH_SIZE), ',')
             )->getWrappedStatement();
+            /* @var \Doctrine\DBAL\Driver\Statement $insertQuery */
             $insertParams = array();
             $insertCount = 0;
-            $updateTranslationQuery = $connection->prepare(
-                'UPDATE Translations SET tCurrent = ?, tReviewed = ? WHERE tID = ? LIMIT 1'
+            $unsetCurrentTranslationQuery = $connection->prepare(
+                'UPDATE Translations SET tCurrent = NULL, tCurrentSince = NULL, tReviewed = ? WHERE tID = ? LIMIT 1'
             )->getWrappedStatement();
-            /* @var \Doctrine\DBAL\Driver\Statement $updateTranslationQuery */
-
+            /* @var \Doctrine\DBAL\Driver\Statement $unsetCurrentTranslationQuery */
+            $setCurrentTranslationQuery = $connection->prepare(
+                'UPDATE Translations SET tCurrent = 1, tCurrentSince = '.$nowExpression.', tReviewed = ? WHERE tID = ? LIMIT 1'
+            )->getWrappedStatement();
+            /* @var \Doctrine\DBAL\Driver\Statement $setCurrentTranslationQuery */
+            
             // Check every strings to be imported
             foreach ($translations as $translationKey => $translation) {
                 /* @var \Gettext\Translation $translation */
@@ -150,8 +127,8 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
                 $translatableID = null;
                 $currentRow = null;
                 $sameRow = null;
-                $searchQuery->execute(array(md5($isPlural ? ("$translationKey\005".$translation->getPlural()) : $translationKey)));
                 // Read the current translations and look for the current one and determine if we already have this new translation
+                $searchQuery->execute(array(md5($isPlural ? ("$translationKey\005".$translation->getPlural()) : $translationKey)));
                 while (($row = $searchQuery->fetch()) !== false) {
                     if ($translatableID === null) {
                         $translatableID = (int) $row['translatableID'];
@@ -177,11 +154,13 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
                         // No current translation for this string: add this new one and mark it as the current one
                         $addCurrent = 1;
                         $addReviewed = $reviewed;
+                        $translatablesChanged[] = $translatableID;
                     } elseif ($reviewed || !$currentRow['tReviewed']) {
                         // There's already a current translation for this string, but we'll activate this new one
-                        $updateTranslationQuery->execute(array(null, $currentRow['tReviewed'], $currentRow['tID']));
+                        $unsetCurrentTranslationQuery->execute(array($currentRow['tReviewed'], $currentRow['tID']));
                         $addCurrent = 1;
                         $addReviewed = $reviewed;
+                        $translatablesChanged[] = $translatableID;
                     } else {
                         // Let keep the previously current translation as the current one, but let's add this new one
                         $addCurrent = null;
@@ -189,6 +168,7 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
                     }
                     // Add the new record to the queue
                     $insertParams[] = $addCurrent;
+                    $insertParams[] = ($addCurrent === 1) ? $now : null;
                     $insertParams[] = $addReviewed;
                     $insertParams[] = $translatableID;
                     $insertParams[] = $translation->getTranslation();
@@ -203,19 +183,21 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
                     }
                 } elseif ($currentRow === null) {
                     // This translation is already present, but there's no current translation: let's activate it
-                    $updateTranslationQuery->execute(array(1, ($reviewed || $sameRow['tReviewed']) ? 1 : 0, $sameRow['tID']));
+                    $setCurrentTranslationQuery->execute(array(($reviewed || $sameRow['tReviewed']) ? 1 : 0, $sameRow['tID']));
+                    $translatablesChanged[] = $translatableID;
                 } elseif ($sameRow['tCurrent']) {
                     // This translation is already present and it's the current one
                     if ($reviewed && !$sameRow['tReviewed']) {
                         // Let's mark the translation as reviewed
-                        $updateTranslationQuery->execute(array(1, 1, $sameRow['tID']));
+                        $setCurrentTranslationQuery->execute(array(1, $sameRow['tID']));
                     }
                 } else {
                     // This translation exists, but we have already another translation that's the current one
                     if ($reviewed || !$currentRow['tReviewed']) {
                         // Let's make the new translation the current one
-                        $updateTranslationQuery->execute(array(null, $currentRow['tReviewed'], $currentRow['tID']));
-                        $updateTranslationQuery->execute(array(1, $reviewed, $currentRow['tID']));
+                        $unsetCurrentTranslationQuery->execute(array($currentRow['tReviewed'], $currentRow['tID']));
+                        $setCurrentTranslationQuery->execute(array($reviewed, $sameRow['tID']));
+                        $translatablesChanged[] = $translatableID;
                     }
                 }
             }
@@ -233,7 +215,9 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
             }
             throw $x;
         }
-        $this->app->make('community_translation/stats')->resetForLocale($locale);
+        if (!empty($translatablesChanged)) {
+            $this->app->make('community_translation/stats')->resetForLocaleTranslatables($locale, $translatablesChanged);
+        }
     }
 
     /**

@@ -77,6 +77,15 @@ class Translation
     protected $tCurrent;
 
     /**
+     * Since when is this the current translation?
+     *
+     * @Column(type="datetime", nullable=true, options={"comment": "Since when is this the current translation?"})
+     *
+     * @var DateTime|null
+     */
+    protected $tCurrentSince;
+
+    /**
      * Is this translation reviewed?
      *
      * @Column(type="boolean", nullable=false, options={"comment": "Is this translation reviewed?"})
@@ -256,7 +265,23 @@ class Translation
      */
     public function setIsCurrent($value)
     {
-        $this->tCurrent = $value ? true : null;
+        if ($value) {
+            $this->tCurrent = true;
+            $this->tCurrentSince = new DateTime();
+        } else {
+            $this->tCurrent = null;
+            $this->tCurrentSince = null;
+        }
+    }
+
+    /**
+     * Since when is this the current translation?
+     *
+     * @return DateTime|null
+     */
+    public function isCurrentSince()
+    {
+        return $this->tCurrentSince;
     }
 
     /**
