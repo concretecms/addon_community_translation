@@ -144,7 +144,7 @@ class InitializeCommand extends Command
                 }
                 $resources[$slug] = $version;
             }
-            krsort($resources);
+            ksort($resources);
             $output->writeln("<info>done (".count($resources)." found).</info>");
 
             $localeRepo = $app->make('community_translation/locale');
