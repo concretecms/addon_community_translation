@@ -4,7 +4,7 @@ namespace Concrete\Package\CommunityTranslation\Src\Git;
 use Concrete\Core\Application\Application;
 use Concrete\Core\Package\Package;
 use Illuminate\Filesystem\Filesystem;
-use Concrete\Package\CommunityTranslation\Src\Exception;
+use Concrete\Package\CommunityTranslation\Src\UserException;
 
 class Fetcher implements \Concrete\Core\Application\ApplicationAwareInterface
 {
@@ -75,7 +75,7 @@ class Fetcher implements \Concrete\Core\Application\ApplicationAwareInterface
      *
      * @return string
      *
-     * @throws Exception
+     * @throws UserException
      */
     protected function getDirectory()
     {
@@ -89,7 +89,7 @@ class Fetcher implements \Concrete\Core\Application\ApplicationAwareInterface
                 $dir = $fh->getTemporaryDirectory();
                 $dir = is_string($dir) ? rtrim(str_replace(DIRECTORY_SEPARATOR, '/', $dir), '/') : '';
                 if ($dir === '') {
-                    throw new Exception(t('Unable to retrieve the temporary directory.'));
+                    throw new UserException(t('Unable to retrieve the temporary directory.'));
                 }
             }
             $fs = $this->getFilesystem();
@@ -97,13 +97,13 @@ class Fetcher implements \Concrete\Core\Application\ApplicationAwareInterface
             if (!@$fs->isDirectory($dir)) {
                 @$fs->makeDirectory($dir, DIRECTORY_PERMISSIONS_MODE_COMPUTED, true);
                 if (!@$fs->isDirectory($dir)) {
-                    throw new Exception(t('Unable to create a temporary directory.'));
+                    throw new UserException(t('Unable to create a temporary directory.'));
                 }
             }
             $file = $dir.'/index.html';
             if (!$fs->isFile($file)) {
                 if (@$fs->put($file, '') === false) {
-                    throw new Exception(t('Error initializing a temporary directory.'));
+                    throw new UserException(t('Error initializing a temporary directory.'));
                 }
             }
             $file = $dir.'/.htaccess';
@@ -114,7 +114,7 @@ Deny from all
 php_flag engine off
 EOT
                     ) === false) {
-                    throw new Exception(t('Error initializing a temporary directory.'));
+                    throw new UserException(t('Error initializing a temporary directory.'));
                 }
             }
             $handle = strtolower($this->repository->getURL());
@@ -158,7 +158,7 @@ EOT
     /**
      * Initializes the git repository (if the local directory exists it will be erased), checking out the first development branch (if defined) or the repository default one.
      *
-     * @throws Exception
+     * @throws UserException
      */
     public function initialize()
     {
@@ -167,12 +167,12 @@ EOT
         if (@$fs->isDirectory($directory)) {
             @$fs->cleanDirectory($directory);
             if (count($fs->files($directory)) > 0 || count($fs->directories($directory)) > 0) {
-                throw new Exception(t('Failed to empty directory %s', $directory));
+                throw new UserException(t('Failed to empty directory %s', $directory));
             }
         } else {
             @$fs->makeDirectory($directory, DIRECTORY_PERMISSIONS_MODE_COMPUTED);
             if (!@$fs->isDirectory($directory)) {
-                throw new Exception(t('Failed to create directory %s', $directory));
+                throw new UserException(t('Failed to create directory %s', $directory));
             }
         }
         try {
@@ -191,7 +191,7 @@ EOT
     /**
      * Initializes or update the git repository.
      *
-     * @throws Exception
+     * @throws UserException
      */
     public function update()
     {
@@ -209,7 +209,7 @@ EOT
      *
      * @param string $name
      *
-     * @throws Exception
+     * @throws UserException
      */
     public function switchToBranch($name)
     {
@@ -221,7 +221,7 @@ EOT
      *
      * @param string $tag
      *
-     * @throws Exception
+     * @throws UserException
      */
     public function switchToTag($tag)
     {
@@ -261,7 +261,7 @@ EOT
      *
      * @return string[]
      *
-     * @throws Exception
+     * @throws UserException
      */
     private function runGit($cmd, $setDirectories = true)
     {
@@ -269,13 +269,13 @@ EOT
         if (!isset($execAvailable)) {
             $safeMode = @ini_get('safe_mode');
             if (!empty($safeMode)) {
-                throw new Exception(t("Safe-mode can't be on"));
+                throw new UserException(t("Safe-mode can't be on"));
             }
             if (!function_exists('exec')) {
-                throw new Exception(t("exec() function is missing"));
+                throw new UserException(t("exec() function is missing"));
             }
             if (in_array('exec', array_map('trim', explode(',', strtolower(@ini_get('disable_functions')))))) {
-                throw new Exception(t("exec() function is disabled"));
+                throw new UserException(t("exec() function is disabled"));
             }
             $execAvailable = true;
         }
@@ -290,7 +290,7 @@ EOT
         $output = array();
         @exec($line, $output, $rc);
         if ($rc !== 0) {
-            throw new Exception(t('Command failed with return code %1$s: %2$s', $rc, implode("\n", $output)));
+            throw new UserException(t('Command failed with return code %1$s: %2$s', $rc, implode("\n", $output)));
         }
 
         return $output;

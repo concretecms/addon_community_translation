@@ -2,7 +2,7 @@
 namespace Concrete\Package\CommunityTranslation\Controller\SinglePage\Utilities;
 
 use Concrete\Core\Page\Controller\PageController;
-use Concrete\Package\CommunityTranslation\Src\Exception;
+use Concrete\Package\CommunityTranslation\Src\UserException;
 use Illuminate\Filesystem\Filesystem;
 
 class FillTranslations extends PageController
@@ -41,20 +41,20 @@ class FillTranslations extends PageController
         try {
             $valt = $this->app->make('helper/validation/token');
             if (!$valt->validate('comtra_fill_in')) {
-                throw new Exception($valt->getErrorMessage());
+                throw new UserException($valt->getErrorMessage());
             }
             $file = $this->request->files->get('file');
             if ($file === null) {
-                throw new Exception(t('Please specify the file to be analyzed'));
+                throw new UserException(t('Please specify the file to be analyzed'));
             }
             if (!$file->isValid()) {
-                throw new Exception($file->getErrorMessage());
+                throw new UserException($file->getErrorMessage());
             }
             $writePOT = (bool) $this->post('include-pot');
             $writePO = (bool) $this->post('include-po');
             $writeMO = (bool) $this->post('include-mo');
             if (!($writePOT || $writePO || $writeMO)) {
-                throw new Exception(t('You need to specify at least one kind of file to generate'));
+                throw new UserException(t('You need to specify at least one kind of file to generate'));
             }
             $locales = array();
             if ($writePO || $writeMO) {
@@ -76,19 +76,19 @@ class FillTranslations extends PageController
                 }
                 $locales = array_values($locales);
                 if (empty($locales)) {
-                    throw new Exception(t('Please specify the languages of the .po/.mo files to generate'));
+                    throw new UserException(t('Please specify the languages of the .po/.mo files to generate'));
                 }
             }
             $parsed = $this->app->make('community_translation/parser')->parseFile($file->getPathname());
             if ($parsed === null) {
-                throw new Exception(t('No translatable string found in the uploaded file'));
+                throw new UserException(t('No translatable string found in the uploaded file'));
             }
             $tmp = $this->app->make('community_translation/tempdir');
             $zipName = $tmp->getPath().'/out.zip';
             $zip = new \ZipArchive();
             try {
                 if ($zip->open($zipName, \ZipArchive::CREATE) !== true) {
-                    throw new Exception(t('Failed to create destination ZIP file'));
+                    throw new UserException(t('Failed to create destination ZIP file'));
                 }
                 $zip->addEmptyDir('languages');
                 if ($writePOT) {
@@ -135,7 +135,7 @@ class FillTranslations extends PageController
                 )
             )->send();
             exit;
-        } catch (Exception $x) {
+        } catch (UserException $x) {
             $message = $x->getMessage();
         } catch (\Exception $x) {
             $message = t('An unspecified error occurred');

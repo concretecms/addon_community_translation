@@ -2,7 +2,7 @@
 namespace Concrete\Package\CommunityTranslation\Src\Translation;
 
 use Concrete\Core\Application\Application;
-use Concrete\Package\CommunityTranslation\Src\Exception;
+use Concrete\Package\CommunityTranslation\Src\UserException;
 use Concrete\Package\CommunityTranslation\Src\Service\Access;
 
 class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
@@ -33,7 +33,7 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
      * @param \Concrete\Package\CommunityTranslation\Src\Locale\Locale|string $locale
      * @param bool|null $reviewed
      *
-     * @throws Exception
+     * @throws UserException
      */
     public function import(\Gettext\Translations $translations, $locale, $reviewed = null)
     {
@@ -41,15 +41,15 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
         if (!$locale instanceof \Concrete\Package\CommunityTranslation\Src\Locale\Locale) {
             $l = $this->app->make('community_translation/locale')->find($locale);
             if ($l === null) {
-                throw new Exception(t('Invalid locale identifier: %s', $locale));
+                throw new UserException(t('Invalid locale identifier: %s', $locale));
             }
             $locale = $l;
         }
         if ($locale->isSource()) {
-            throw new Exception(t("The locale '%s' is the source one.", $locale->getDisplayName()));
+            throw new UserException(t("The locale '%s' is the source one.", $locale->getDisplayName()));
         }
         if (!$locale->isApproved()) {
-            throw new Exception(t("The locale '%s' is not approved.", $locale->getDisplayName()));
+            throw new UserException(t("The locale '%s' is not approved.", $locale->getDisplayName()));
         }
         // Check $reviewed
         if (isset($reviewed)) {
@@ -57,7 +57,7 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
         } else {
             $access = $this->app->make('community_translation/access')->getLocaleAccess($locale);
             if ($access < Access::TRANSLATE) {
-                throw new Exception(t("No access for the locale '%s'.", $locale->getDisplayName()));
+                throw new UserException(t("No access for the locale '%s'.", $locale->getDisplayName()));
             }
             $reviewed = ($access >= Access::ADMIN) ? 1 : 0;
         }

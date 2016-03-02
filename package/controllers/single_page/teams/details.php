@@ -3,7 +3,7 @@ namespace Concrete\Package\CommunityTranslation\Controller\SinglePage\Teams;
 
 use Concrete\Core\Page\Controller\PageController;
 use Concrete\Package\CommunityTranslation\Src\Service\Access;
-use Concrete\Package\CommunityTranslation\Src\Exception;
+use Concrete\Package\CommunityTranslation\Src\UserException;
 
 class Details extends PageController
 {
@@ -43,21 +43,21 @@ class Details extends PageController
         try {
             $token = $this->app->make('helper/validation/token');
             if (!$token->validate('comtra_join'.$localeID)) {
-                throw new Exception($token->getErrorMessage());
+                throw new UserException($token->getErrorMessage());
             }
             $locale = $this->app->make('community_translation/locale')->find($localeID);
             if ($locale === null || !$locale->isApproved() || $locale->isSource()) {
-                throw new Exception(t("The locale identifier '%s' is not valid", $localeID));
+                throw new UserException(t("The locale identifier '%s' is not valid", $localeID));
             }
             $gotoLocale = $locale;
             $access = $this->app->make('community_translation/access')->getLocaleAccess($locale);
             if ($access !== Access::NONE) {
-                throw new Exception(t('Invalid user rights'));
+                throw new UserException(t('Invalid user rights'));
             }
             $this->app->make('community_translation/access')->setLocaleAccess($locale, Access::ASPRIRING);
             $this->flash('message', t('Your request to join the %s translation group has been submitted. Thank you!', $locale->getDisplayName()));
             $this->redirect('/teams/details', $locale->getID());
-        } catch (Exception $x) {
+        } catch (UserException $x) {
             $this->flash('error', $x->getMessage());
             if ($gotoLocale === null) {
                 $this->redirect('/teams');
@@ -73,11 +73,11 @@ class Details extends PageController
         try {
             $token = $this->app->make('helper/validation/token');
             if (!$token->validate('comtra_leave'.$localeID)) {
-                throw new Exception($token->getErrorMessage());
+                throw new UserException($token->getErrorMessage());
             }
             $locale = $this->app->make('community_translation/locale')->find($localeID);
             if ($locale === null || !$locale->isApproved() || $locale->isSource()) {
-                throw new Exception(t("The locale identifier '%s' is not valid", $localeID));
+                throw new UserException(t("The locale identifier '%s' is not valid", $localeID));
             }
             $gotoLocale = $locale;
             $access = $this->app->make('community_translation/access')->getLocaleAccess($locale);
@@ -90,12 +90,12 @@ class Details extends PageController
                     $message = t("You left the '%s' translation group.", $locale->getDisplayName());
                     break;
                 default:
-                    throw new Exception(t('Invalid user rights'));
+                    throw new UserException(t('Invalid user rights'));
             }
             $this->app->make('community_translation/access')->setLocaleAccess($locale, Access::NONE);
             $this->flash('message', $message);
             $this->redirect('/teams/details', $locale->getID());
-        } catch (Exception $x) {
+        } catch (UserException $x) {
             $this->flash('error', $x->getMessage());
             if ($gotoLocale === null) {
                 $this->redirect('/teams');
@@ -111,11 +111,11 @@ class Details extends PageController
         try {
             $token = $this->app->make('helper/validation/token');
             if (!$token->validate('comtra_answer'.$localeID.'#'.$userID.':'.$approve)) {
-                throw new Exception($token->getErrorMessage());
+                throw new UserException($token->getErrorMessage());
             }
             $locale = $this->app->make('community_translation/locale')->find($localeID);
             if ($locale === null || !$locale->isApproved() || $locale->isSource()) {
-                throw new Exception(t("The locale identifier '%s' is not valid", $localeID));
+                throw new UserException(t("The locale identifier '%s' is not valid", $localeID));
             }
             $gotoLocale = $locale;
             $access = $this->app->make('community_translation/access')->getLocaleAccess($locale);
@@ -124,7 +124,7 @@ class Details extends PageController
                 case Access::GLOBAL_ADMIN:
                     break;
                 default:
-                    throw new Exception(t('Invalid user rights'));
+                    throw new UserException(t('Invalid user rights'));
             }
             $user = \User::getByUserID($userID);
             if ($user) {
@@ -133,7 +133,7 @@ class Details extends PageController
                 }
             }
             if (!$user) {
-                throw new Exception(t('Invalid user'));
+                throw new UserException(t('Invalid user'));
             }
             if ($approve) {
                 $this->app->make('community_translation/access')->setLocaleAccess($locale, Access::TRANSLATE, $user);
@@ -151,7 +151,7 @@ class Details extends PageController
                 $this->flash('message', t('The request by %s has been refused', $user->getUserName()));
             }
             $this->redirect('/teams/details', $locale->getID());
-        } catch (Exception $x) {
+        } catch (UserException $x) {
             $this->flash('error', $x->getMessage());
             if ($gotoLocale === null) {
                 $this->redirect('/teams');
@@ -167,16 +167,16 @@ class Details extends PageController
         try {
             $token = $this->app->make('helper/validation/token');
             if (!$token->validate('change_access'.$localeID.'#'.$userID.':'.$newAccess)) {
-                throw new Exception($token->getErrorMessage());
+                throw new UserException($token->getErrorMessage());
             }
             $locale = $this->app->make('community_translation/locale')->find($localeID);
             if ($locale === null || !$locale->isApproved() || $locale->isSource()) {
-                throw new Exception(t("The locale identifier '%s' is not valid", $localeID));
+                throw new UserException(t("The locale identifier '%s' is not valid", $localeID));
             }
             $gotoLocale = $locale;
             $user = \User::getByUserID($userID);
             if (!$user) {
-                throw new Exception(t('Invalid user'));
+                throw new UserException(t('Invalid user'));
             }
             $myAccess = $this->app->make('community_translation/access')->getLocaleAccess($locale);
             $oldAccess = $this->app->make('community_translation/access')->getLocaleAccess($locale, $user);
@@ -188,12 +188,12 @@ class Details extends PageController
                 || $newAccess < Access::NONE || $newAccess > Access::ADMIN
                 || $newAccess === $oldAccess
             ) {
-                throw new Exception(t('Invalid user rights'));
+                throw new UserException(t('Invalid user rights'));
             }
             $this->app->make('community_translation/access')->setLocaleAccess($locale, $newAccess, $user);
             $this->flash('message', t('The role of %s has been updated', $user->getUserName()));
             $this->redirect('/teams/details', $locale->getID());
-        } catch (Exception $x) {
+        } catch (UserException $x) {
             $this->flash('error', $x->getMessage());
             if ($gotoLocale === null) {
                 $this->redirect('/teams');

@@ -5,7 +5,7 @@ use Concrete\Core\Application\Application;
 use Concrete\Core\Application\ApplicationAwareInterface;
 use ZipArchive;
 use Illuminate\Filesystem\Filesystem;
-use Concrete\Package\CommunityTranslation\Src\Exception;
+use Concrete\Package\CommunityTranslation\Src\UserException;
 
 class Parser implements ApplicationAwareInterface
 {
@@ -70,7 +70,7 @@ class Parser implements ApplicationAwareInterface
      * @param string $relDirectory
      * @param int $searchGettextFiles One or more of the Parser::GETTEXT_... constants
      *
-     * @throws Exception
+     * @throws UserException
      *
      * @return Parsed|null
      */
@@ -84,7 +84,7 @@ class Parser implements ApplicationAwareInterface
         } elseif ($fs->isDirectory($path)) {
             $result = $this->parseDirectory($path, $relDirectory, $searchGettextFiles);
         } else {
-            throw new Exception(t('Unable to find the file/directory %s', $path));
+            throw new UserException(t('Unable to find the file/directory %s', $path));
         }
 
         return $result;
@@ -97,7 +97,7 @@ class Parser implements ApplicationAwareInterface
      * @param string $relDirectory
      * @param int $searchGettextFiles One or more of the Parser::GETTEXT_... constants
      *
-     * @throws Exception
+     * @throws UserException
      *
      * @return Parsed|null
      */
@@ -108,7 +108,7 @@ class Parser implements ApplicationAwareInterface
             $zip = $path;
         } else {
             if (!$fs->isFile($path)) {
-                throw new Exception(t('Unable to find the file %s', $path));
+                throw new UserException(t('Unable to find the file %s', $path));
             }
             $zip = null;
             try {
@@ -146,7 +146,7 @@ class Parser implements ApplicationAwareInterface
      * @param string $relDirectory
      * @param int $searchGettextFiles One or more of the Parser::GETTEXT_... constants
      *
-     * @throws Exception
+     * @throws UserException
      *
      * @return Parsed|null
      */
@@ -156,7 +156,7 @@ class Parser implements ApplicationAwareInterface
         $workDir = $tmp->getPath();
         if (@$zip->extractTo($workDir) !== true) {
             unset($tmp);
-            throw new Exception(t('Failed to extract the archive contents'));
+            throw new UserException(t('Failed to extract the archive contents'));
         }
         $fs = $this->getFilesystem();
         $dirs = array_filter($fs->directories($workDir), function ($dn) {
@@ -187,7 +187,7 @@ class Parser implements ApplicationAwareInterface
      * @param string $relDirectory
      * @param int $searchGettextFiles One or more of the Parser::GETTEXT_... constants
      *
-     * @throws Exception
+     * @throws UserException
      *
      * @return Parsed|null
      */
@@ -195,7 +195,7 @@ class Parser implements ApplicationAwareInterface
     {
         $fs = $this->getFilesystem();
         if (!$fs->isDirectory($path)) {
-            throw new Exception(t('Unable to find the directory %s', $path));
+            throw new UserException(t('Unable to find the directory %s', $path));
         }
         $result = null;
         $pot = new \Gettext\Translations();
@@ -254,7 +254,7 @@ class Parser implements ApplicationAwareInterface
      * @param string $path
      * @param int $kinds One or more of self::GETTEXT_POT, self::GETTEXT_PO, self::GETTEXT_MO
      *
-     * @throws Exception
+     * @throws UserException
      *
      * @return Parsed|null
      */
@@ -262,7 +262,7 @@ class Parser implements ApplicationAwareInterface
     {
         $fs = $this->getFilesystem();
         if (!$fs->isFile($path)) {
-            throw new Exception(t('Unable to find the file %s', $path));
+            throw new UserException(t('Unable to find the file %s', $path));
         }
         $translations = null;
         if ($kinds & (self::GETTEXT_POT | self::GETTEXT_PO)) {
@@ -319,7 +319,7 @@ class Parser implements ApplicationAwareInterface
      *
      * @param string $path
      *
-     * @throws Exception
+     * @throws UserException
      *
      * @return Parsed|null
      */
@@ -327,13 +327,13 @@ class Parser implements ApplicationAwareInterface
     {
         $fs = $this->getFilesystem();
         if (!$fs->isFile($path)) {
-            throw new Exception(t('Unable to find the file %s', $path));
+            throw new UserException(t('Unable to find the file %s', $path));
         }
         $tmp = $this->app->make('community_translation/tempdir');
         $workDir = $tmp->getPath();
         if (!@$fs->copy($path, $workDir.'/'.basename($path))) {
             unset($tmp);
-            throw new Exception(t('Failed to copy a temporary file'));
+            throw new UserException(t('Failed to copy a temporary file'));
         }
         $result = $this->parseDirectory($workDir, $relDirectory, '');
         unset($tmp);

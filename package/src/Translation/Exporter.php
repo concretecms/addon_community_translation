@@ -4,7 +4,7 @@ namespace Concrete\Package\CommunityTranslation\Src\Translation;
 use Concrete\Core\Application\Application;
 use Concrete\Package\CommunityTranslation\Src\Locale\Locale;
 use Concrete\Package\CommunityTranslation\Src\Package\Package;
-use Concrete\Package\CommunityTranslation\Src\Exception;
+use Concrete\Package\CommunityTranslation\Src\UserException;
 
 class Exporter implements \Concrete\Core\Application\ApplicationAwareInterface
 {
@@ -112,7 +112,7 @@ class Exporter implements \Concrete\Core\Application\ApplicationAwareInterface
             $package = null;
         }
         if ($package === null) {
-            throw new Exception(t('Invalid translated package specified'));
+            throw new UserException(t('Invalid translated package specified'));
         }
         $cn = $this->app->make('community_translation/em')->getConnection();
         /* @var \Concrete\Core\Database\Connection\Connection $cn */

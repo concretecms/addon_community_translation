@@ -3,7 +3,7 @@ namespace Concrete\Package\CommunityTranslation\Controller\SinglePage\Teams;
 
 use Concrete\Core\Page\Controller\PageController;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Concrete\Package\CommunityTranslation\Src\Exception;
+use Concrete\Package\CommunityTranslation\Src\UserException;
 use Concrete\Package\CommunityTranslation\Src\Locale\Locale;
 
 class Create extends PageController
@@ -81,19 +81,19 @@ class Create extends PageController
         try {
             $token = $this->app->make('helper/validation/token');
             if (!$token->validate('comtra_create_locale')) {
-                throw new Exception($token->getErrorMessage());
+                throw new UserException($token->getErrorMessage());
             }
             if ($language === '') {
-                throw new Exception(t('Please specify the language that you want to create'));
+                throw new UserException(t('Please specify the language that you want to create'));
             }
             $localeID = $language;
             if ($noCountry) {
                 if ($whyNoCountry === '' && !$iAmGlobalAdmin) {
-                    throw new Exception(t('Please explain why this language should not be associated to a Country'));
+                    throw new UserException(t('Please explain why this language should not be associated to a Country'));
                 }
             } else {
                 if ($country === '') {
-                    throw new Exception(t('Please specify the Country associated to the language that you want to create'));
+                    throw new UserException(t('Please specify the Country associated to the language that you want to create'));
                 }
                 $localeID .= '_'.$country;
             }
@@ -101,9 +101,9 @@ class Create extends PageController
             $already = $this->app->make('community_translation/locale')->find($locale->getID());
             if ($already !== null) {
                 if ($already->isApproved()) {
-                    throw new Exception(t("The language team for '%s' already exists", $already->getDisplayName()));
+                    throw new UserException(t("The language team for '%s' already exists", $already->getDisplayName()));
                 } else {
-                    throw new Exception(t("The language team for '%s' has already been requested", $already->getDisplayName()));
+                    throw new UserException(t("The language team for '%s' has already been requested", $already->getDisplayName()));
                 }
             }
             $locale->setRequestedBy($me->getUserID());
@@ -120,7 +120,7 @@ class Create extends PageController
                 }
             }
             $this->redirect('/teams', $approve ? 'created' : 'requested', $locale->getID());
-        } catch (Exception $x) {
+        } catch (UserException $x) {
             $this->set('language', $language);
             $this->set('country', $country);
             $this->set('approve', $approve);

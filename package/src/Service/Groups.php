@@ -4,7 +4,7 @@ namespace Concrete\Package\CommunityTranslation\Src\Service;
 use Concrete\Core\Application\Application;
 use Concrete\Package\CommunityTranslation\Src\Locale\Locale;
 use Group;
-use Concrete\Package\CommunityTranslation\Src\Exception;
+use Concrete\Package\CommunityTranslation\Src\UserException;
 
 class Groups implements \Concrete\Core\Application\ApplicationAwareInterface
 {
@@ -83,9 +83,9 @@ class Groups implements \Concrete\Core\Application\ApplicationAwareInterface
             $result = Group::add($name, '', $parent, $pkg);
             if (!$result) {
                 if ($parent) {
-                    throw new Exception(t("Failed to create a user group with name '%1\$s' as a child of '%2\$s'", $name, $parent->getGroupName()));
+                    throw new UserException(t("Failed to create a user group with name '%1\$s' as a child of '%2\$s'", $name, $parent->getGroupName()));
                 } else {
-                    throw new Exception(t("Failed to create a user group with name '%s'", $name));
+                    throw new UserException(t("Failed to create a user group with name '%s'", $name));
                 }
             }
         }
@@ -105,7 +105,7 @@ class Groups implements \Concrete\Core\Application\ApplicationAwareInterface
         if (!$locale instanceof Locale) {
             $l = $this->app->make('community_translation/locale')->find($locale);
             if ($l === null) {
-                throw new Exception(t("The locale identifier '%s' is not valid", $locale));
+                throw new UserException(t("The locale identifier '%s' is not valid", $locale));
             }
             $locale = $l;
         }

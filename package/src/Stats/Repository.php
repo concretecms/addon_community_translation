@@ -6,7 +6,7 @@ use Concrete\Package\CommunityTranslation\Src\Locale\Locale;
 use Concrete\Package\CommunityTranslation\Src\Translatable\Translatable;
 use Concrete\Core\Application\Application;
 use Concrete\Core\Application\ApplicationAwareInterface;
-use Concrete\Package\CommunityTranslation\Src\Exception;
+use Concrete\Package\CommunityTranslation\Src\UserException;
 use Doctrine\ORM\EntityRepository;
 
 class Repository extends EntityRepository implements ApplicationAwareInterface
@@ -45,7 +45,7 @@ class Repository extends EntityRepository implements ApplicationAwareInterface
                     'pVersion' => $obj['version'],
                 ));
                 if ($p === null) {
-                    throw new Exception(t('Invalid translated package specified'));
+                    throw new UserException(t('Invalid translated package specified'));
                 }
                 $result[] = $p;
             } elseif (isset($obj[0]) && is_string($obj[1]) && isset($obj[1]) && is_string($obj[1])) {
@@ -54,7 +54,7 @@ class Repository extends EntityRepository implements ApplicationAwareInterface
                     'pVersion' => $obj[1],
                 ));
                 if ($p === null) {
-                    throw new Exception(t('Invalid translated package specified'));
+                    throw new UserException(t('Invalid translated package specified'));
                 }
                 $result[] = $p;
             } else {
@@ -64,7 +64,7 @@ class Repository extends EntityRepository implements ApplicationAwareInterface
             }
         }
         if (empty($result)) {
-            throw new Exception(t('Invalid translated package specified'));
+            throw new UserException(t('Invalid translated package specified'));
         }
 
         return $result;
@@ -83,7 +83,7 @@ class Repository extends EntityRepository implements ApplicationAwareInterface
         } elseif (is_string($obj)) {
             $l = $this->app->make('community_translation/locale')->find($obj);
             if ($l === null) {
-                throw new Exception(t('Invalid locale specified'));
+                throw new UserException(t('Invalid locale specified'));
             }
             $result[] = $l;
         } elseif (is_array($obj)) {
@@ -92,7 +92,7 @@ class Repository extends EntityRepository implements ApplicationAwareInterface
             }
         }
         if (empty($result)) {
-            throw new Exception(t('Invalid locale specified'));
+            throw new UserException(t('Invalid locale specified'));
         }
 
         return $result;
@@ -193,13 +193,13 @@ class Repository extends EntityRepository implements ApplicationAwareInterface
                     } elseif (is_int($translatable)) {
                         $translatableIDs[] = $translatable;
                     } else {
-                        throw new Exception(t('Invalid translatable string specified'));
+                        throw new UserException(t('Invalid translatable string specified'));
                     }
                 }
             }
         }
         if (empty($translatableIDs)) {
-            throw new Exception(t('Invalid translatable string specified'));
+            throw new UserException(t('Invalid translatable string specified'));
         }
         $this->getEntityManager()->getConnection()->executeQuery(
             '

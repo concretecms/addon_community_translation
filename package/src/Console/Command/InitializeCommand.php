@@ -6,7 +6,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Question\Question;
-use Exception;
 use Zend\Http\Client;
 use Concrete\Package\CommunityTranslation\Src\Git\Repository;
 use Concrete\Package\CommunityTranslation\Src\Locale\Locale;
@@ -96,11 +95,11 @@ class InitializeCommand extends Command
             $client->setMethod('GET');
             $response = $client->send();
             if ($response->getStatusCode() < 200 || $response->getStatusCode() >= 300) {
-                throw new Exception($response->getReasonPhrase());
+                throw new \Exception($response->getReasonPhrase());
             }
             $txLocales = @json_decode($response->getBody(), true);
             if (!is_array($txLocales)) {
-                throw new Exception('Failed to decode response');
+                throw new \Exception('Failed to decode response');
             }
             $localeIDs = array('en_US');
             foreach ($txLocales as $txLocale) {
@@ -126,11 +125,11 @@ class InitializeCommand extends Command
             $client->setMethod('GET');
             $response = $client->send();
             if ($response->getStatusCode() < 200 || $response->getStatusCode() >= 300) {
-                throw new Exception($response->getReasonPhrase());
+                throw new \Exception($response->getReasonPhrase());
             }
             $txResources = @json_decode($response->getBody(), true);
             if (!is_array($txResources)) {
-                throw new Exception('Failed to decode response');
+                throw new \Exception('Failed to decode response');
             }
             $resources = array();
             foreach ($txResources as $txResource) {
@@ -140,7 +139,7 @@ class InitializeCommand extends Command
                 } elseif (preg_match('/^core-(\d+)$/', $slug, $m)) {
                     $version = implode('.', str_split($m[1], 1));
                 } else {
-                    throw new Exception(sprintf('Failed to decode resource slug %s', $slug));
+                    throw new \Exception(sprintf('Failed to decode resource slug %s', $slug));
                 }
                 $resources[$slug] = $version;
             }
@@ -174,17 +173,17 @@ class InitializeCommand extends Command
                         $client->setMethod('GET');
                         $response = $client->send();
                         if ($response->getStatusCode() < 200 || $response->getStatusCode() >= 300) {
-                            throw new Exception($response->getReasonPhrase());
+                            throw new \Exception($response->getReasonPhrase());
                         }
                         $data = @json_decode($response->getBody(), true);
                         if (!is_array($data) || !isset($data['mimetype']) || $data['mimetype'] !== 'text/x-po' || !isset($data['content']) || !is_string($data['content']) || $data['content'] === '') {
-                            throw new Exception('Failed to decode response');
+                            throw new \Exception('Failed to decode response');
                         }
                         $output->writeln('<info>done.</info>');
                         $output->write(sprintf('   > parsing translations... '));
                         $translations = \Gettext\Translations::fromPoString($data['content']);
                         if (count($translations) < 100) {
-                            throw new Exception('Too few translations downloaded');
+                            throw new \Exception('Too few translations downloaded');
                         }
                         $output->writeln('<info>done ('.count($translations).' strings).</info>');
                         /* @var \Gettext\Translations $translations */
@@ -201,7 +200,7 @@ class InitializeCommand extends Command
                     }
                 }
             }
-        } catch (Exception $x) {
+        } catch (\Exception $x) {
             $output->writeln('<error>'.$x->getMessage().'</error>');
             $rc = 1;
         }

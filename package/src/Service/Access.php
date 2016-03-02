@@ -4,7 +4,7 @@ namespace Concrete\Package\CommunityTranslation\Src\Service;
 use Concrete\Core\Application\Application;
 use Concrete\Core\User\User;
 use Concrete\Package\CommunityTranslation\Src\Locale\Locale;
-use Concrete\Package\CommunityTranslation\Src\Exception;
+use Concrete\Package\CommunityTranslation\Src\UserException;
 
 class Access implements \Concrete\Core\Application\ApplicationAwareInterface
 {
@@ -139,12 +139,12 @@ class Access implements \Concrete\Core\Application\ApplicationAwareInterface
     {
         $user = $this->getUser($user);
         if ($user === null) {
-            throw new Exception(t('Invalid user'));
+            throw new UserException(t('Invalid user'));
         }
         if (!$locale instanceof Locale) {
             $l = $this->app->make('community_translation/locale')->find($locale);
             if ($l === null) {
-                throw new Exception(t("The locale identifier '%s' is not valid", $locale));
+                throw new UserException(t("The locale identifier '%s' is not valid", $locale));
             }
             $locale = $locale;
         }
@@ -159,7 +159,7 @@ class Access implements \Concrete\Core\Application\ApplicationAwareInterface
         }
         $oldAccess = $this->getLocaleAccess($locale, $user);
         if ($oldAccess === self::GLOBAL_ADMIN && $access !== self::NONE) {
-            throw new Exception(t('User is a global locale administrator'));
+            throw new UserException(t('User is a global locale administrator'));
         }
         $groups = $this->app->make('community_translation/groups');
         switch ($access) {
@@ -176,7 +176,7 @@ class Access implements \Concrete\Core\Application\ApplicationAwareInterface
                 $newGroup = null;
                 break;
             default:
-                throw new Exception(t('Invalid access level specified'));
+                throw new UserException(t('Invalid access level specified'));
         }
         if ($newGroup !== null) {
             $user->enterGroup($newGroup);
@@ -215,7 +215,7 @@ class Access implements \Concrete\Core\Application\ApplicationAwareInterface
     {
         $user = $this->getUser($user);
         if ($user === null) {
-            throw new Exception(t('Invalid user'));
+            throw new UserException(t('Invalid user'));
         }
         if ($user->getUserID() === USER_SUPER_ID) {
             return;

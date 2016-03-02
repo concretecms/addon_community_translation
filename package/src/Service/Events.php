@@ -40,7 +40,7 @@ class Events implements \Symfony\Component\EventDispatcher\EventSubscriberInterf
                     $this->app->make('community_translation/notify')->newAspirantTranslator($user, $locale);
                 }
             }
-        } catch (Exception $x) {
+        } catch (\Exception $x) {
         }
     }
 }

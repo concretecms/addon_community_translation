@@ -2,7 +2,7 @@
 namespace Concrete\Package\CommunityTranslation\Controller\SinglePage;
 
 use Concrete\Core\Page\Controller\PageController;
-use Concrete\Package\CommunityTranslation\Src\Exception;
+use Concrete\Package\CommunityTranslation\Src\UserException;
 use Concrete\Package\CommunityTranslation\Src\Service\Access;
 
 class Teams extends PageController
@@ -62,20 +62,20 @@ class Teams extends PageController
         try {
             $token = $this->app->make('helper/validation/token');
             if (!$token->validate('comtra_cancel_request'.$localeID)) {
-                throw new Exception($token->getErrorMessage());
+                throw new UserException($token->getErrorMessage());
             }
             $locale = $this->app->make('community_translation/locale')->find($localeID);
             if ($locale === null || !$locale->isApproved() || $locale->isSource()) {
-                throw new Exception(t("The locale identifier '%s' is not valid", $localeID));
+                throw new UserException(t("The locale identifier '%s' is not valid", $localeID));
             }
             $access = $this->app->make('community_translation/access')->getLocaleAccess($locale);
             if ($access !== Access::ASPRIRING) {
-                throw new Exception(t('Invalid user rights'));
+                throw new UserException(t('Invalid user rights'));
             }
             $this->app->make('community_translation/access')->setLocaleAccess($locale, Access::NONE);
             $this->flash('message', t('Your request to join the %s translation group has been canceled. Thank you!', $locale->getDisplayName()));
             $this->redirect('/teams');
-        } catch (Exception $x) {
+        } catch (UserException $x) {
             $this->flash('error', $x->getMessage());
             $this->redirect('/teams');
         }
@@ -86,11 +86,11 @@ class Teams extends PageController
         try {
             $token = $this->app->make('helper/validation/token');
             if (!$token->validate('comtra_leave'.$localeID)) {
-                throw new Exception($token->getErrorMessage());
+                throw new UserException($token->getErrorMessage());
             }
             $locale = $this->app->make('community_translation/locale')->find($localeID);
             if ($locale === null || !$locale->isApproved() || $locale->isSource()) {
-                throw new Exception(t("The locale identifier '%s' is not valid", $localeID));
+                throw new UserException(t("The locale identifier '%s' is not valid", $localeID));
             }
             $access = $this->app->make('community_translation/access')->getLocaleAccess($locale);
             switch ($access) {
@@ -102,12 +102,12 @@ class Teams extends PageController
                     $message = t("You left the '%s' translation group.", $locale->getDisplayName());
                     break;
                 default:
-                    throw new Exception(t('Invalid user rights'));
+                    throw new UserException(t('Invalid user rights'));
             }
             $this->app->make('community_translation/access')->setLocaleAccess($locale, Access::NONE);
             $this->flash('message', $message);
             $this->redirect('/teams');
-        } catch (Exception $x) {
+        } catch (UserException $x) {
             $this->flash('error', $x->getMessage());
             $this->redirect('/teams');
         }
@@ -118,18 +118,18 @@ class Teams extends PageController
         try {
             $token = $this->app->make('helper/validation/token');
             if (!$token->validate('comtra_approve_locale'.$localeID)) {
-                throw new Exception($token->getErrorMessage());
+                throw new UserException($token->getErrorMessage());
             }
             $locale = $this->app->make('community_translation/locale')->find($localeID);
             if ($locale === null || $locale->isApproved() || $locale->isSource()) {
-                throw new Exception(t("The locale identifier '%s' is not valid", $localeID));
+                throw new UserException(t("The locale identifier '%s' is not valid", $localeID));
             }
             $access = $this->app->make('community_translation/access')->getLocaleAccess($locale);
             switch ($access) {
                 case Access::GLOBAL_ADMIN:
                     break;
                 default:
-                    throw new Exception(t('Invalid user rights'));
+                    throw new UserException(t('Invalid user rights'));
             }
             $locale->setIsApproved(true);
             $em = $this->app->make('community_translation/em');
@@ -150,7 +150,7 @@ class Teams extends PageController
             } catch (\Exception $foo) {
             }
             $this->redirect('/teams', 'approved', $locale->getID());
-        } catch (Exception $x) {
+        } catch (UserException $x) {
             $this->flash('error', $x->getMessage());
             $this->redirect('/teams');
         }
@@ -161,11 +161,11 @@ class Teams extends PageController
         try {
             $token = $this->app->make('helper/validation/token');
             if (!$token->validate('comtra_cancel_locale'.$localeID)) {
-                throw new Exception($token->getErrorMessage());
+                throw new UserException($token->getErrorMessage());
             }
             $locale = $this->app->make('community_translation/locale')->find($localeID);
             if ($locale === null || $locale->isApproved() || $locale->isSource()) {
-                throw new Exception(t("The locale identifier '%s' is not valid", $localeID));
+                throw new UserException(t("The locale identifier '%s' is not valid", $localeID));
             }
             $access = $this->app->make('community_translation/access')->getLocaleAccess($locale);
             switch ($access) {
@@ -174,7 +174,7 @@ class Teams extends PageController
                  default:
                      $me = new \User();
                      if (!$me->isRegistered() || $me->getUserID() != $locale->getRequestedBy()) {
-                         throw new Exception(t('Invalid user rights'));
+                         throw new UserException(t('Invalid user rights'));
                      }
                      break;
              }
@@ -183,7 +183,7 @@ class Teams extends PageController
             $em->flush();
             $this->flash('message', t("The request to create the '%s' translation group has been canceled", $locale->getDisplayName()));
             $this->redirect('/teams');
-        } catch (Exception $x) {
+        } catch (UserException $x) {
             $this->flash('error', $x->getMessage());
             $this->redirect('/teams');
         }

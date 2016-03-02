@@ -2,7 +2,7 @@
 namespace Concrete\Package\CommunityTranslation\Src\Locale;
 
 use DateTime;
-use Concrete\Package\CommunityTranslation\Src\Exception;
+use Concrete\Package\CommunityTranslation\Src\UserException;
 use Doctrine\Common\Collections\ArrayCollection;
 
 /**
@@ -300,7 +300,7 @@ class Locale
     {
         $language = \Gettext\Languages\Language::getById($id);
         if ($language === null) {
-            throw new Exception(t('Unknown language identifier: %s', $id));
+            throw new UserException(t('Unknown language identifier: %s', $id));
         }
         $pluralForms = array();
         foreach ($language->categories as $category) {

@@ -2,7 +2,7 @@
 namespace Concrete\Package\CommunityTranslation\Src\Service;
 
 use Illuminate\Filesystem\Filesystem;
-use Concrete\Package\CommunityTranslation\Src\Exception;
+use Concrete\Package\CommunityTranslation\Src\UserException;
 
 class VolatileDirectory
 {
@@ -29,16 +29,16 @@ class VolatileDirectory
             }
         }
         if ($parentDirectory === '') {
-            throw new Exception(t('Unable to retrieve the temporary directory.'));
+            throw new UserException(t('Unable to retrieve the temporary directory.'));
         }
         if (!$this->filesystem->isWritable($parentDirectory)) {
-            throw new Exception(t('The temporary directory is not writable.'));
+            throw new UserException(t('The temporary directory is not writable.'));
         }
         $path = @tempnam($parentDirectory, 'VD');
         @$this->filesystem->delete(array($path));
         @$this->filesystem->makeDirectory($path);
         if (!$this->filesystem->isDirectory($path)) {
-            throw new Exception(t('Unable to create a temporary directory.'));
+            throw new UserException(t('Unable to create a temporary directory.'));
         }
         $this->path = $path;
     }

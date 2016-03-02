@@ -2,7 +2,7 @@
 namespace Concrete\Package\CommunityTranslation\Src\Translatable;
 
 use Concrete\Core\Application\Application;
-use Concrete\Package\CommunityTranslation\Src\Exception;
+use Concrete\Package\CommunityTranslation\Src\UserException;
 use Concrete\Package\CommunityTranslation\Src\Package\Package;
 
 class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
@@ -75,7 +75,7 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
      * @param string $package
      * @param string $version
      *
-     * @throws Exception
+     * @throws UserException
      *
      * @return bool
      */
