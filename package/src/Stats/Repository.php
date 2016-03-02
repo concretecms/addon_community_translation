@@ -278,6 +278,6 @@ class Repository extends EntityRepository implements ApplicationAwareInterface
         }
         $em->flush();
 
-        return $result;
+        return array_values($result);
     }
 }
