@@ -210,7 +210,7 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
 
         if ($updated) {
             try {
-                $this->app->make('cache/expensive')->getItem('community_translation')->clear();
+                $this->app->make('community_translation/stats')->resetForPackage($package);
             } catch (\Exception $foo) {
             }
         }

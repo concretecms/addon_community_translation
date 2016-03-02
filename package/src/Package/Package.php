@@ -7,7 +7,10 @@ use Doctrine\Common\Collections\ArrayCollection;
 /**
  * Represents an package for which we have translatable strings.
  *
- * @Entity
+ * @Entity(
+ *     repositoryClass="Concrete\Package\CommunityTranslation\Src\Package\Repository",
+ * )
+ *
  * @Table(
  *     name="TranslatedPackage",
  *     uniqueConstraints={@UniqueConstraint(name="TranslatedPackageHandleVersion", columns={"pHandle", "pVersion"})},
@@ -71,6 +74,13 @@ class Package
      */
     protected $places;
 
+    /**
+     * Stats associated to this string.
+     *
+     * @OneToMany(targetEntity="Concrete\Package\CommunityTranslation\Src\Stats\Stats", mappedBy="sPackage")
+     */
+    protected $stats;
+
     // Constructor
 
     public function __construct()
@@ -78,6 +88,7 @@ class Package
         $this->pCreatedOn = new DateTime();
         $this->pUpdatedOn = new DateTime();
         $this->places = new ArrayCollection();
+        $this->stats = new ArrayCollection();
     }
 
     // Getters & setters
@@ -157,5 +168,13 @@ class Package
         $package->pVersion = trim((string) $version);
 
         return $package;
+    }
+
+    /**
+     * @return string
+     */
+    public function __toString()
+    {
+        return $this->pHandle.'@'.$this->pVersion;
     }
 }

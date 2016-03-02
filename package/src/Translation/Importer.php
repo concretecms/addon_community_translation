@@ -233,7 +233,7 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
             }
             throw $x;
         }
-        $this->app->make('cache/expensive')->getItem('community_translation/'.$locale->getID())->clear();
+        $this->app->make('community_translation/stats')->resetForLocale($locale);
     }
 
     /**

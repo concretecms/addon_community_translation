@@ -16,16 +16,15 @@ class FillTranslations extends PageController
         });
         $translatedLocales = array();
         $untranslatedLocales = array();
-        $stats = $this->app->make('community_translation/stats');
-        $coreVersion = $stats->getLatestPackageVersion('');
+        $coreVersion = $this->app->make('community_translation/package')->getLatestVersion('');
         if ($coreVersion !== null) {
-            $threshold = \Package::getByHandle('community_translation')->getFileConfig()->get('options.translatedThreshold', 90);
-            $progress = $stats->getProgressStats(array('', $coreVersion), $locales);
-            foreach ($locales as $locale) {
-                if (isset($progress[$locale->getID()]) && $progress[$locale->getID()]['shownPercentage'] >= $threshold) {
-                    $translatedLocales[] = $locale;
+            $threshold = (int) \Package::getByHandle('community_translation')->getFileConfig()->get('options.translatedThreshold', 90);
+            $statsList = $this->app->make('community_translation/stats')->get(array('', $coreVersion), $locales);
+            foreach ($statsList as $stats) {
+                if ($stats->getPercentage() >= $threshold) {
+                    $translatedLocales[] = $stats->getLocale();
                 } else {
-                    $untranslatedLocales[] = $locale;
+                    $untranslatedLocales[] = $stats->getLocale();
                 }
             }
         }

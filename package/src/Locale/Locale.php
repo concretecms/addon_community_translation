@@ -94,11 +94,19 @@ class Locale
      */
     protected $translations;
 
+    /**
+     * Stats associated to this locale.
+     *
+     * @OneToMany(targetEntity="Concrete\Package\CommunityTranslation\Src\Stats\Stats", mappedBy="sLocale")
+     */
+    protected $stats;
+
     // Constructor
 
     public function __construct()
     {
         $this->translations = new ArrayCollection();
+        $this->stats = new ArrayCollection();
     }
 
     // Getters & setters
@@ -310,5 +318,13 @@ class Locale
         $locale->setRequestedOn(new DateTime());
 
         return $locale;
+    }
+
+    /**
+     * @return string
+     */
+    public function __toString()
+    {
+        return $this->lID;
     }
 }

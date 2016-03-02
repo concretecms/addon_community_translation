@@ -21,12 +21,13 @@ class ServiceProvider extends Provider
 
         // Repositories
         foreach (array(
-            'community_translation/git' => '\Concrete\Package\CommunityTranslation\Src\Git\Repository',
-            'community_translation/package' => '\Concrete\Package\CommunityTranslation\Src\Package\Package',
-            'community_translation/translatable' => '\Concrete\Package\CommunityTranslation\Src\Translatable\Translatable',
-            'community_translation/translatable/place' => '\Concrete\Package\CommunityTranslation\Src\Translatable\Place\Place',
-            'community_translation/translation' => '\Concrete\Package\CommunityTranslation\Src\Translation\Translation',
-            'community_translation/locale' => '\Concrete\Package\CommunityTranslation\Src\Locale\Locale',
+            'community_translation/git' => 'Concrete\Package\CommunityTranslation\Src\Git\Repository',
+            'community_translation/package' => 'Concrete\Package\CommunityTranslation\Src\Package\Package',
+            'community_translation/translatable' => 'Concrete\Package\CommunityTranslation\Src\Translatable\Translatable',
+            'community_translation/translatable/place' => 'Concrete\Package\CommunityTranslation\Src\Translatable\Place\Place',
+            'community_translation/translation' => 'Concrete\Package\CommunityTranslation\Src\Translation\Translation',
+            'community_translation/locale' => 'Concrete\Package\CommunityTranslation\Src\Locale\Locale',
+            'community_translation/stats' => 'Concrete\Package\CommunityTranslation\Src\Stats\Stats',
         ) as $abstract => $fqn) {
             $this->app->singleton(
                 $abstract,
@@ -49,7 +50,6 @@ class ServiceProvider extends Provider
             'community_translation/notify' => array('Concrete\Package\CommunityTranslation\Src\Service\Notify', true),
             'community_translation/tempdir' => array('Concrete\Package\CommunityTranslation\Src\Service\VolatileDirectory', false),
             'community_translation/parser' => array('Concrete\Package\CommunityTranslation\Src\Service\Parser\Parser', true),
-            'community_translation/stats' => array('Concrete\Package\CommunityTranslation\Src\Service\Stats', true),
         ) as $abstract => $info) {
             // $info[0]: concrete
             // $info[1]: shared (aka singleton)
