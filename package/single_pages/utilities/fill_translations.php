@@ -9,7 +9,7 @@ id(new Area('Opening'))->display($c);
 ?>
 <fieldset>
 	<legend><?php echo t('Fill-in already translated strings')?></legend>
-	<p><?php echo t("Here you can upload ZIP file containing a package, or a .po/.pot file."); ?></p>
+	<p><?php echo t("Here you can upload a ZIP file containing a package, or a .pot/.po/.mo file."); ?></p>
 	<p><?php echo t("You'll get back a ZIP file containing all the translatable strings found (.pot file) and the translated strings we already know for the languages that you specify (as source .po files or as compiled .mo files)."); ?></p>
 	<form method="POST" action="<?php echo $this->action('fill_in'); ?>" enctype="multipart/form-data" target="comtra_process">
 		<?php $token->output('comtra_fill_in'); ?>
