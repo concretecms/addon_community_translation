@@ -48,6 +48,21 @@ class Controller extends Package
                 'cName' => t('Community Translation'),
             ));
         }
+        $sp = Page::getByPath('/dashboard/system/community_translation/git_repositories');
+        if (!is_object($sp) || $sp->getError() === COLLECTION_NOT_FOUND) {
+            $sp = SinglePage::add('/dashboard/system/community_translation/git_repositories', $pkg);
+            $sp->update(array(
+                'cName' => t('Strings from Git Repositories'),
+            ));
+        }
+        $sp = Page::getByPath('/dashboard/system/community_translation/git_repositories/details');
+        if (!is_object($sp) || $sp->getError() === COLLECTION_NOT_FOUND) {
+            $sp = SinglePage::add('/dashboard/system/community_translation/git_repositories/details', $pkg);
+            $sp->update(array(
+                'cName' => t('Git Repository details'),
+            ));
+            $sp->setAttribute('exclude_nav', 1);
+        }
         $sp = Page::getByPath('/dashboard/system/community_translation/options');
         if (!is_object($sp) || $sp->getError() === COLLECTION_NOT_FOUND) {
             $sp = SinglePage::add('/dashboard/system/community_translation/options', $pkg);

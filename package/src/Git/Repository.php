@@ -210,6 +210,37 @@ class Repository
 
         return $result;
     }
+
+    /**
+     * Get a visual representation of the tags filter.
+     *
+     * @return string
+     */
+    public function getTagsFilterDisplayName()
+    {
+        $expanded = $this->getTagsFilterExpanded();
+        if ($expanded === null) {
+            $result = tc('Versions', 'all');
+        } elseif (implode('', $expanded) === '<0') {
+            $result = tc('Versions', 'none');
+        } else {
+            switch ($expanded['operator']) {
+                case '<=':
+                    $op = '≤';
+                    break;
+                case '>=':
+                    $op = '≥';
+                    break;
+                default:
+                    $op = $expanded['operator'];
+                    break;
+            }
+            $result = "$op {$expanded['version']}";
+        }
+
+        return $result;
+    }
+
     /**
      * Set the repository tags filter.
      *
@@ -237,6 +268,6 @@ class Repository
      */
     public function setWebRoot($value)
     {
-        $this->grWebRoot = (string) $value;
+        $this->grWebRoot = trim(str_replace(DIRECTORY_SEPARATOR, '/', trim((string) $value)), '/');
     }
 }
