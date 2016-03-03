@@ -1,0 +1,38 @@
+form#comtra_search {
+	margin-bottom: 20px;
+}
+select#comtra_locales {
+    width: 100%;
+    height: 33px;
+    visibility: hidden;
+}
+#s2id_comtra_locales a {
+    color: inherit!important;
+}
+table.comtra_list {
+    width: 100%;
+    border-collapse: collapse;
+}
+table.comtra_list th, table.comtra_list td {
+    margin: 0;
+    padding: 4px;
+    border: solid 1px #ddd;
+}
+table.comtra_list thead th {
+    text-align:center;
+}
+table.comtra_list tbody .progress {
+    margin: 0;
+}
+table.comtra_list td.comtra_link {
+    cursor: pointer;
+}
+table.comtra_list .progress-bar-minwidth1 {
+    min-width: 15px;
+}
+table.comtra_list .progress-bar-minwidth2 {
+    min-width: 15px;
+}
+table.comtra_list tbody th {
+	white-space: nowrap;
+}

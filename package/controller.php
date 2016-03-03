@@ -78,6 +78,13 @@ class Controller extends Package
             ));
             $sp->setAttribute('exclude_nav', 1);
         }
+        $sp = Page::getByPath('/translate');
+        if (!is_object($sp) || $sp->getError() === COLLECTION_NOT_FOUND) {
+            $sp = SinglePage::add('/translate', $pkg);
+            $sp->update(array(
+                'cName' => t('Translate'),
+            ));
+        }
         $sp = Page::getByPath('/utilities/fill_translations');
         if (!is_object($sp) || $sp->getError() === COLLECTION_NOT_FOUND) {
             $sp = SinglePage::add('/utilities/fill_translations', $pkg);
