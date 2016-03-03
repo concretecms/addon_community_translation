@@ -18,9 +18,11 @@ if (isset($user) && $user) {
         $name = $user->getUserName();
     }
 }
-if ($id) {
+if (!$id) {
+    echo '<i>'.t('removed user').'</i>';
+} elseif ($id == USER_SUPER_ID) {
+    echo '<i>'.t('system').'</i>';
+} else {
     // Do some fancy stuff - just print the user name for now
     echo h($name);
-} else {
-    echo '?';
 }
