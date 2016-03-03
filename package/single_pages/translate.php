@@ -25,7 +25,7 @@ switch ($section) {
 <?php
 if (isset($packages)) {
     ?><h3><?php echo h('Core versions'); ?></h3><?php
-    View::element('translate/package_stats', array('locales' => $checkedLocales, 'packages' => $packages, 'stats' => $stats), 'community_translation');
+    View::element('translate/package_stats', array('locales' => $checkedLocales, 'packages' => $packages, 'stats' => $stats, 'translatedThreshold' => $translatedThreshold), 'community_translation');
 }
     break;
 
@@ -76,7 +76,7 @@ if (isset($foundPackages)) {
     }
 } elseif (isset($packages)) {
     ?><h3><?php echo h(t('Versions of %s', $packages[0]->getHandle())); ?></h3><?php
-    View::element('translate/package_stats', array('locales' => $checkedLocales, 'packages' => $packages, 'stats' => $stats), 'community_translation');
+    View::element('translate/package_stats', array('locales' => $checkedLocales, 'packages' => $packages, 'stats' => $stats, 'translatedThreshold' => $translatedThreshold), 'community_translation');
 }
         break;
 }

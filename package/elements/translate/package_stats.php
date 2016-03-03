@@ -8,6 +8,7 @@ use Concrete\Package\CommunityTranslation\Src\Package\Package;
 /* @var Locale[] $locales */
 /* @var Package[] $packages */
 /* @var Stats[] $stats */
+/* @var int $translatedThreshold */
 
 ?>
 <table class="comtra_list">
@@ -24,7 +25,7 @@ use Concrete\Package\CommunityTranslation\Src\Package\Package;
 			<th><?php echo h($package->getVersionDisplayName()); ?></th>
 			<?php
 			foreach ($locales as $locale) {
-			    ?><td class="comtra_link" data-link="<?php echo URL::to('/translate/details', ($package->getHandle() === '') ? '_' : $package->getHandle(), $package->getVersion(), $locale->getID()); ?>"><?php
+			    ?><td class="comtra_link" data-link="<?php echo URL::to('/translate/details', 'pkg_'.$package->getHandle(), $package->getVersion(), $locale->getID()); ?>"><?php
 				    foreach ($stats as $s) {
 				        if ($s->getPackage() === $package && $s->getLocale() === $locale) {
 				            $perc = $s->getPercentage();
