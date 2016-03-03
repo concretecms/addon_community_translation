@@ -8,7 +8,9 @@ use Doctrine\Common\Collections\ArrayCollection;
 /**
  * Represents an locale.
  *
- * @Entity
+ * @Entity(
+ *     repositoryClass="Concrete\Package\CommunityTranslation\Src\Locale\Repository",
+ * )
  * @Table(name="Locales", options={"comment": "Defined locales for the Community Translation package"})
  */
 class Locale

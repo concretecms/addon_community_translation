@@ -41,7 +41,7 @@ class Translate extends PageController
 
     protected function deliverLocales()
     {
-        $locales = $this->app->make('community_translation/locale')->findBy(array('lIsSource' => false, 'lIsApproved' => true));
+        $locales = $this->app->make('community_translation/locale')->getApprovedLocales();
         usort($locales, function ($a, $b) {
             return strcasecmp($a->getDisplayName(), $b->getDisplayName());
         });
