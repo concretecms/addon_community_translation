@@ -27,7 +27,7 @@ class Translate extends PageController
                 $repo = $this->app->make('community_translation/locale');
                 foreach ($rx as $id) {
                     if ($id && is_string($id)) {
-                        $locale = $repo->find($id);
+                        $locale = $repo->findApproved($id);
                         if ($locale !== null) {
                             $result[] = $locale;
                         }

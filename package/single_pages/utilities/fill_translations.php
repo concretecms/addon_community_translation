@@ -20,7 +20,7 @@ id(new Area('Opening'))->display($c);
 		<div class="form-group">
 			<label class="control-label"><?php echo t('File to be generated'); ?></label>
 			<br />
-			<label style="font-weight: normal"><input type="checkbox" name="include-pot" value="1" checked="checked" /> <?php echo t('Include list of found translatable strings (.pot file)'); ?></label>
+			<label style="font-weight: normal"><input type="checkbox" name="include-pot" value="1" /> <?php echo t('Include list of found translatable strings (.pot file)'); ?></label>
 			<br />
 			<label style="font-weight: normal"><input type="checkbox" name="include-po" value="1" checked="checked" /> <?php echo t('Include source translations (.po files)'); ?></label>
 			<br />
