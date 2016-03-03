@@ -51,7 +51,7 @@ class Repository extends EntityRepository implements ApplicationAwareInterface
     {
         $locales = $this->findBy(array('lIsSource' => false, 'lIsApproved' => true));
         usort($locales, function (Locale $a, Locale $b) {
-            return strcasecmp($a->getDisplayName(), $a->getDisplayName());
+            return strcasecmp($a->getDisplayName(), $b->getDisplayName());
         });
 
         return $locales;
