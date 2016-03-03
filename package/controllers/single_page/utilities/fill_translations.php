@@ -11,9 +11,6 @@ class FillTranslations extends PageController
     {
         $this->set('token', $this->app->make('helper/validation/token'));
         $locales = $this->app->make('community_translation/locale')->getApprovedLocales();
-        usort($locales, function ($a, $b) {
-            return strcasecmp($a->getDisplayName(), $b->getDisplayName());
-        });
         $translatedLocales = array();
         $untranslatedLocales = array();
         $coreVersion = $this->app->make('community_translation/package')->getLatestVersion('');

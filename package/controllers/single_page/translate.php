@@ -42,9 +42,6 @@ class Translate extends PageController
     protected function deliverLocales()
     {
         $locales = $this->app->make('community_translation/locale')->getApprovedLocales();
-        usort($locales, function ($a, $b) {
-            return strcasecmp($a->getDisplayName(), $b->getDisplayName());
-        });
         $officialLocales = array();
         $coreVersion = $this->app->make('community_translation/package')->getLatestVersion('');
         if ($coreVersion !== null) {
