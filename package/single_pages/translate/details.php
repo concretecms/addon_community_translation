@@ -46,6 +46,7 @@ defined('C5_EXECUTE') or die('Access Denied.');
 	<div class="panel-body">
 		<a href="#" onclick="alert('@todo');return false" class="btn btn-default"><?php echo t('Translate online'); ?></a>
 		<a href="#" onclick="alert('@todo');return false" class="btn btn-default"><?php echo t('Download .po file for offline translation'); ?></a>
+		<a href="#" onclick="alert('@todo');return false" class="btn btn-default"><?php echo t('Download .mo file to use it'); ?></a>
 		<a href="#" onclick="alert('@todo');return false" class="btn btn-default"><?php echo t('Upload translated file'); ?></a>
 	</div>
 </div>
@@ -62,17 +63,22 @@ defined('C5_EXECUTE') or die('Access Denied.');
 			</tr>
 		</thead>
 		<tbody><?php foreach ($stats as $s) { ?>
+			<?php $current = $s->getLocale() === $locale; ?>
 			<tr>
-				<th>
-					<?php if ($s->getLocale() !== $locale) { ?>
+				<td>
+					<?php if ($s->getLocale() === $locale) { ?>
+						<b>
+					<?php } else { ?>
 						<a href="<?php echo $this->action('', 'pkg_'.$package->getHandle(), $package->getVersion(), $s->getLocale()->getID()); ?>">
 					<?php } ?>
 					<?php echo h($s->getLocale()->getDisplayName()); ?>
 					<?php if ($s->getLocale() !== $locale) { ?>
 						</a>
+					<?php } else { ?>
+						</b>
 					<?php } ?>
-				</th>
-				<td><?php View::element('progress', array('perc' => $s->getPercentage(), 'translatedThreshold' => $translatedThreshold), 'community_translation'); ?></td>
+				</td>
+				<td title="<?php echo sprintf('%.02f%%', $s->getPercentage(false)); ?>"><?php View::element('progress', array('perc' => $s->getPercentage(), 'translatedThreshold' => $translatedThreshold), 'community_translation'); ?></td>
 				<td><?php echo $s->getTranslated(); ?></td>
 				<td><?php echo $s->getUntranslated(); ?></td>
 				<td><?php echo $dh->formatPrettyDateTime($s->getLastUpdated(), true, true); ?></td>
