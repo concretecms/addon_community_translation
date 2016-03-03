@@ -88,7 +88,6 @@ class Exporter implements \Concrete\Core\Application\ApplicationAwareInterface
      * Get the the translations for a specific package, version and locale.
      *
      * @param Package|array $packageOrHandleVersion The package for which you want the translations (a Package instance of an array with handle and version)
-     * @param unknown $version The package version ('dev-...' for core development branches)
      * @param Locale $locale The locale that you want.
      * @param bool $excludeUntranslatedStrings Set to true to filter out untranslated strings.
      *
