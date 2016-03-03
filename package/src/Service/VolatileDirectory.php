@@ -3,9 +3,28 @@ namespace Concrete\Package\CommunityTranslation\Src\Service;
 
 use Illuminate\Filesystem\Filesystem;
 use Concrete\Package\CommunityTranslation\Src\UserException;
+use Concrete\Core\Application\ApplicationAwareInterface;
+use Concrete\Core\Application\Application;
 
-class VolatileDirectory
+class VolatileDirectory implements ApplicationAwareInterface
 {
+    /**
+     * The application object.
+     *
+     * @var Application
+     */
+    protected $app;
+
+    /**
+     * Set the application object.
+     *
+     * @param Application $application
+     */
+    public function setApplication(Application $app)
+    {
+        $this->app = $app;
+    }
+
     /**
      * @var Filesystem
      */
