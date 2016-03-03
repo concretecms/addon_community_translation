@@ -12,7 +12,7 @@ use Doctrine\Common\Collections\ArrayCollection;
  * )
  *
  * @Table(
- *     name="TranslatedPackage",
+ *     name="TranslatedPackages",
  *     uniqueConstraints={@UniqueConstraint(name="TranslatedPackageHandleVersion", columns={"pHandle", "pVersion"})},
  *     options={"comment": "List of all package and core versions with translations"}
  * )
