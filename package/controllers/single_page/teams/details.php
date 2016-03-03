@@ -21,8 +21,8 @@ class Details extends PageController
     }
     public function view($localeID = '')
     {
-        $locale = $localeID ? $this->app->make('community_translation/locale')->find($localeID) : null;
-        if ($locale === null || $locale->isSource() || !$locale->isApproved()) {
+        $locale = $this->app->make('community_translation/locale')->findApproved($localeID);
+        if ($locale === null) {
             $this->redirect('/teams');
         }
         $this->app->make('helper/seo')->addTitleSegment($locale->getDisplayName());
@@ -45,8 +45,8 @@ class Details extends PageController
             if (!$token->validate('comtra_join'.$localeID)) {
                 throw new UserException($token->getErrorMessage());
             }
-            $locale = $this->app->make('community_translation/locale')->find($localeID);
-            if ($locale === null || !$locale->isApproved() || $locale->isSource()) {
+            $locale = $this->app->make('community_translation/locale')->findApproved($localeID);
+            if ($locale === null) {
                 throw new UserException(t("The locale identifier '%s' is not valid", $localeID));
             }
             $gotoLocale = $locale;
@@ -75,8 +75,8 @@ class Details extends PageController
             if (!$token->validate('comtra_leave'.$localeID)) {
                 throw new UserException($token->getErrorMessage());
             }
-            $locale = $this->app->make('community_translation/locale')->find($localeID);
-            if ($locale === null || !$locale->isApproved() || $locale->isSource()) {
+            $locale = $this->app->make('community_translation/locale')->findApproved($localeID);
+            if ($locale === null) {
                 throw new UserException(t("The locale identifier '%s' is not valid", $localeID));
             }
             $gotoLocale = $locale;
@@ -113,8 +113,8 @@ class Details extends PageController
             if (!$token->validate('comtra_answer'.$localeID.'#'.$userID.':'.$approve)) {
                 throw new UserException($token->getErrorMessage());
             }
-            $locale = $this->app->make('community_translation/locale')->find($localeID);
-            if ($locale === null || !$locale->isApproved() || $locale->isSource()) {
+            $locale = $this->app->make('community_translation/locale')->findApproved($localeID);
+            if ($locale === null) {
                 throw new UserException(t("The locale identifier '%s' is not valid", $localeID));
             }
             $gotoLocale = $locale;
@@ -169,8 +169,8 @@ class Details extends PageController
             if (!$token->validate('change_access'.$localeID.'#'.$userID.':'.$newAccess)) {
                 throw new UserException($token->getErrorMessage());
             }
-            $locale = $this->app->make('community_translation/locale')->find($localeID);
-            if ($locale === null || !$locale->isApproved() || $locale->isSource()) {
+            $locale = $this->app->make('community_translation/locale')->findApproved($localeID);
+            if ($locale === null) {
                 throw new UserException(t("The locale identifier '%s' is not valid", $localeID));
             }
             $gotoLocale = $locale;

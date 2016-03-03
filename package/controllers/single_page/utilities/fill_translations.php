@@ -66,8 +66,8 @@ class FillTranslations extends PageController
                 }
                 $repo = $this->app->make('community_translation/locale');
                 foreach ($localeIDs as $localeID) {
-                    $locale = $repo->find($localeID);
-                    if ($locale !== null && !isset($locales[$locale->getID()]) && !$locale->isSource() && $locale->isApproved()) {
+                    $locale = $repo->findApproved($localeID);
+                    if ($locale !== null && !isset($locales[$locale->getID()])) {
                         $locales[$locale->getID()] = $locale;
                     }
                 }

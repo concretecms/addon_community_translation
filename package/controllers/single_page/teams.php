@@ -64,8 +64,8 @@ class Teams extends PageController
             if (!$token->validate('comtra_cancel_request'.$localeID)) {
                 throw new UserException($token->getErrorMessage());
             }
-            $locale = $this->app->make('community_translation/locale')->find($localeID);
-            if ($locale === null || !$locale->isApproved() || $locale->isSource()) {
+            $locale = $this->app->make('community_translation/locale')->findApproved($localeID);
+            if ($locale === null) {
                 throw new UserException(t("The locale identifier '%s' is not valid", $localeID));
             }
             $access = $this->app->make('community_translation/access')->getLocaleAccess($locale);
@@ -88,8 +88,8 @@ class Teams extends PageController
             if (!$token->validate('comtra_leave'.$localeID)) {
                 throw new UserException($token->getErrorMessage());
             }
-            $locale = $this->app->make('community_translation/locale')->find($localeID);
-            if ($locale === null || !$locale->isApproved() || $locale->isSource()) {
+            $locale = $this->app->make('community_translation/locale')->findApproved($localeID);
+            if ($locale === null) {
                 throw new UserException(t("The locale identifier '%s' is not valid", $localeID));
             }
             $access = $this->app->make('community_translation/access')->getLocaleAccess($locale);

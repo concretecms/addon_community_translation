@@ -25,12 +25,27 @@ class Repository extends EntityRepository implements ApplicationAwareInterface
     }
 
     /**
-     * Get some stats about one or more packages and one or more locales.
+     * Search an approved locale given its ID (excluding the source one - en_US).
      *
-     * @param Package|Packages[]|array|array[array] $packages
-     * @param Locale|Locale[]|string|string[] $locales
+     * @return Locale|null
+     */
+    public function findApproved($localeID)
+    {
+        $result = null;
+        if (is_string($localeID) && $localeID !== '') {
+            $l = $this->find($localeID);
+            if ($l !== null && $l->isApproved() && !$l->isSource()) {
+                $result = $l;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Get the list of the approved locales (excluding the source one - en_US).
      *
-     * @return Stats[]
+     * @return Locale[]
      */
     public function getApprovedLocales()
     {

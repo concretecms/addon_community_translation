@@ -81,7 +81,7 @@ class Repository extends EntityRepository implements ApplicationAwareInterface
         if ($obj instanceof Locale) {
             $result[] = $obj;
         } elseif (is_string($obj)) {
-            $l = $this->app->make('community_translation/locale')->find($obj);
+            $l = $this->app->make('community_translation/locale')->findApproved($obj);
             if ($l === null) {
                 throw new UserException(t('Invalid locale specified'));
             }
