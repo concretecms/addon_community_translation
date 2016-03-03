@@ -145,6 +145,14 @@ class Controller extends Package
                 'cName' => t('Translate'),
             ));
         }
+        $sp = Page::getByPath('/translate/details');
+        if (!is_object($sp) || $sp->getError() === COLLECTION_NOT_FOUND) {
+            $sp = SinglePage::add('/translate/details', $pkg);
+            $sp->update(array(
+                'cName' => t('Package details'),
+            ));
+            $sp->setAttribute('exclude_nav', 1);
+        }
         $sp = Page::getByPath('/utilities/fill_translations');
         if (!is_object($sp) || $sp->getError() === COLLECTION_NOT_FOUND) {
             $sp = SinglePage::add('/utilities/fill_translations', $pkg);

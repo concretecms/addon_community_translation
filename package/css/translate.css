@@ -21,18 +21,19 @@ table.comtra_list th, table.comtra_list td {
 table.comtra_list thead th {
     text-align:center;
 }
-table.comtra_list tbody .progress {
-    margin: 0;
-}
 table.comtra_list td.comtra_link {
     cursor: pointer;
 }
-table.comtra_list .progress-bar-minwidth1 {
-    min-width: 15px;
-}
-table.comtra_list .progress-bar-minwidth2 {
-    min-width: 15px;
-}
 table.comtra_list tbody th {
 	white-space: nowrap;
+}
+
+.progress-bar-minwidth1 {
+    min-width: 15px;
+}
+.progress-bar-minwidth2 {
+    min-width: 15px;
+}
+.progress {
+    margin: 0;
 }
