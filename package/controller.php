@@ -1,6 +1,7 @@
 <?php
 namespace Concrete\Package\CommunityTranslation;
 
+use Concrete\Core\Application\Application;
 use Concrete\Core\Package\Package;
 use Core;
 use Page;
@@ -24,11 +25,55 @@ class Controller extends Package
         return t('Translate concrete5 core and packages');
     }
 
+    private function registerServiceProvider(Application $app)
+    {
+        $provider = new Src\ServiceProvider($app);
+        $provider->register();
+    }
+
     public function install()
     {
         $pkg = parent::install();
         $config = $this->getFileConfig();
         $config->get('options.translatedThreshold', 90);
+
+        $app = \Core::make('app');
+        $this->registerServiceProvider($app);
+
+        $em = $app->make('community_translation/em');
+        /* @var \Doctrine\ORM\EntityManager $em */
+
+        $gitRepo = $app->make('community_translation/git');
+        /* @var \Doctrine\ORM\EntityRepository $gitRepo */
+        if ($gitRepo->findOneBy(array('grURL' => 'https://github.com/concrete5/concrete5-legacy.git')) === null) {
+            $git = new Src\Git\Repository();
+            $git->setName('concrete5 Legacy');
+            $git->setPackage('');
+            $git->setURL('https://github.com/concrete5/concrete5-legacy.git');
+            $git->setDevBranches(array(
+                'master' => Src\Package\Package::DEV_PREFIX.'5.6',
+            ));
+            $git->setTagsFilter('< 5.7');
+            $git->setWebRoot('web');
+            $em->persist($git);
+            $em->flush();
+        }
+        if ($gitRepo->findOneBy(array('grURL' => 'https://github.com/concrete5/concrete5.git')) === null) {
+            $git = new Src\Git\Repository();
+            $git->setName('concrete5');
+            $git->setPackage('');
+            $git->setURL('https://github.com/concrete5/concrete5.git');
+            $git->setDevBranches(array(
+                'develop' => Src\Package\Package::DEV_PREFIX.'5.7',
+            ));
+            $git->setTagsFilter('>= 5.7');
+            $git->setWebRoot('web');
+            $em->persist($git);
+            $em->flush();
+        }
+
+        \Concrete\Core\Job\Job::installByPackage('parse_git_repositories', $pkg);
+
         self::installReal($pkg, '');
     }
 
@@ -113,8 +158,7 @@ class Controller extends Package
     {
         $app = Core::make('app');
 
-        $provider = new Src\ServiceProvider($app);
-        $provider->register();
+        $this->registerServiceProvider($app);
         $director = $app->make('director')->addSubscriber($app->make('community_translation/events'));
         if ($app->isRunThroughCommandLineInterface()) {
             $console = $app->make('console');

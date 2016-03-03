@@ -7,7 +7,6 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Question\Question;
 use Zend\Http\Client;
-use Concrete\Package\CommunityTranslation\Src\Git\Repository;
 use Concrete\Package\CommunityTranslation\Src\Locale\Locale;
 use Concrete\Package\CommunityTranslation\Src\Package\Package;
 
@@ -56,39 +55,14 @@ class InitializeCommand extends Command
             $em = $app->make('community_translation/em');
             /* @var \Doctrine\ORM\EntityManager $em */
 
-            $gitRepo = $app->make('community_translation/git');
-            /* @var \Doctrine\ORM\EntityRepository $gitRepo */
-            if ($gitRepo->findOneBy(array('grURL' => 'https://github.com/concrete5/concrete5-legacy.git')) === null) {
-                $git = new Repository();
-                $git->setName('concrete5 Core pre 5.7');
-                $git->setPackage('');
-                $git->setURL('https://github.com/concrete5/concrete5-legacy.git');
-                $git->setDevBranches(array(
-                    'master' => Package::DEV_PREFIX.'5.6',
-                ));
-                $git->setTagsFilter('< 5.7');
-                $git->setWebRoot('web');
-                $em->persist($git);
-                $em->flush();
-                $output->write(sprintf('Importing strings from %s (development and tagged versions)... ', $git->getName()));
-                $app->make('community_translation/git/importer')->import($git);
-                $output->writeln("<info>done</info>");
-            }
-            if ($gitRepo->findOneBy(array('grURL' => 'https://github.com/concrete5/concrete5.git')) === null) {
-                $git = new Repository();
-                $git->setName('concrete5 Core from 5.7');
-                $git->setPackage('');
-                $git->setURL('https://github.com/concrete5/concrete5.git');
-                $git->setDevBranches(array(
-                    'develop' => Package::DEV_PREFIX.'5.7',
-                ));
-                $git->setTagsFilter('>= 5.7');
-                $git->setWebRoot('web');
-                $em->persist($git);
-                $em->flush();
-                $output->write(sprintf('Importing strings from %s (development and tagged versions)... ', $git->getName()));
-                $app->make('community_translation/git/importer')->import($git);
-                $output->writeln("<info>done</info>");
+            $importer = $app->make('community_translation/git/importer');
+            $importer->setLogger(function ($line) use ($output) {
+                $output->writeln(" - $line");
+            });
+            foreach ($app->make('community_translation/git')->findAll() as $git) {
+                $output->writeln(sprintf('Importing strings from %s (development and tagged versions)... ', $git->getName()));
+                $importer->import($git);
+                $output->writeln(" - <info>done</info>");
             }
 
             $output->write('Retrieve list of locales... ');
