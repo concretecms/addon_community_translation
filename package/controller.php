@@ -11,7 +11,7 @@ class Controller extends Package
 {
     protected $pkgHandle = 'community_translation';
 
-    protected $appVersionRequired = '5.7.5.6';
+    protected $appVersionRequired = '5.7.5.7a1';
 
     protected $pkgVersion = '0.0.1';
 
