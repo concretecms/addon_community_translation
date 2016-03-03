@@ -9,6 +9,7 @@ use Symfony\Component\Console\Question\Question;
 use Zend\Http\Client;
 use Concrete\Package\CommunityTranslation\Src\Git\Repository;
 use Concrete\Package\CommunityTranslation\Src\Locale\Locale;
+use Concrete\Package\CommunityTranslation\Src\Package\Package;
 
 class InitializeCommand extends Command
 {
@@ -63,7 +64,7 @@ class InitializeCommand extends Command
                 $git->setPackage('');
                 $git->setURL('https://github.com/concrete5/concrete5-legacy.git');
                 $git->setDevBranches(array(
-                    'master' => 'dev-5.6',
+                    'master' => Package::DEV_PREFIX.'5.6',
                 ));
                 $git->setTagsFilter('< 5.7');
                 $git->setWebRoot('web');
@@ -79,7 +80,7 @@ class InitializeCommand extends Command
                 $git->setPackage('');
                 $git->setURL('https://github.com/concrete5/concrete5.git');
                 $git->setDevBranches(array(
-                    'develop' => 'dev-5.7',
+                    'develop' => Package::DEV_PREFIX.'5.7',
                 ));
                 $git->setTagsFilter('>= 5.7');
                 $git->setWebRoot('web');
@@ -135,7 +136,7 @@ class InitializeCommand extends Command
             foreach ($txResources as $txResource) {
                 $slug = $txResource['slug'];
                 if (preg_match('/^core-dev-(\d+)$/', $slug, $m)) {
-                    $version = 'dev-'.implode('.', str_split($m[1], 1));
+                    $version = Package::DEV_PREFIX.implode('.', str_split($m[1], 1));
                 } elseif (preg_match('/^core-(\d+)$/', $slug, $m)) {
                     $version = implode('.', str_split($m[1], 1));
                 } else {

@@ -40,7 +40,7 @@ class Repository extends EntityRepository implements ApplicationAwareInterface
         $result = null;
         foreach ($this->findBy(array('pHandle' => $handle)) as $package) {
             $v = $package->getVersion();
-            if (strpos($v, 'dev-') !== 0) {
+            if (strpos($v, Package::DEV_PREFIX) !== 0) {
                 if ($result === null) {
                     $result = $v;
                 } elseif (version_compare($v, $result) > 0) {

@@ -49,9 +49,9 @@ class Repository
     protected $grURL;
 
     /**
-     * Development branches (keys are the branch name, values are the version - they should start with dev-).
+     * Development branches (keys are the branch name, values are the version - they should start with Package::DEV_PREFIX).
      *
-     * @Column(type="array", nullable=false, options={"comment": "Development branches (keys are the branch name, values are the version - they should start with dev-)"})
+     * @Column(type="array", nullable=false, options={"comment": "Development branches (keys are the branch name, values are the version - they should start with Package::DEV_PREFIX)"})
      *
      * @var array
      */
@@ -155,7 +155,7 @@ class Repository
     }
 
     /**
-     * Get the development branches (keys are the branch name, values are the version - they should start with dev-).
+     * Get the development branches (keys are the branch name, values are the version - they should start with Package::DEV_PREFIX).
      *
      * @return array
      */
@@ -165,7 +165,7 @@ class Repository
     }
 
     /**
-     * Set the development branches (keys are the branch name, values are the version - they should start with dev-).
+     * Set the development branches (keys are the branch name, values are the version - they should start with Package::DEV_PREFIX).
      *
      * @param array $value
      */

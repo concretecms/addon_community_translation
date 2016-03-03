@@ -19,6 +19,15 @@ use Doctrine\Common\Collections\ArrayCollection;
  */
 class Package
 {
+    // Constants
+
+    /*
+     * Prefix for development versions.
+     *
+     * @var string
+     */
+    const DEV_PREFIX = 'dev-';
+
     // Properties
 
     /**
@@ -41,9 +50,9 @@ class Package
     protected $pHandle;
 
     /**
-     * Package version (dev- for development branches).
+     * Package version (starting with Package::DEV_PREFIX for development branches).
      *
-     * @Column(type="string", length=64, nullable=false, options={"comment": "Package version (dev- for development branches)"})
+     * @Column(type="string", length=64, nullable=false, options={"comment": "Package version (starting with Package::DEV_PREFIX for development branches)"})
      *
      * @var string
      */
@@ -114,13 +123,37 @@ class Package
     }
 
     /**
-     * Get the package version (dev- for development branches).
+     * Get the package version (starting with Package::DEV_PREFIX for development branches).
      *
      * @return string
      */
     public function getVersion()
     {
         return $this->pVersion;
+    }
+
+    /**
+     * Get the package version display name
+     *
+     * @return string
+     */
+    public function getVersionDisplayName()
+    {
+        if ($this->isDevVersion()) {
+            return t(/*i18n: %s is a version*/'%s development series', substr($this->pVersion, strlen(static::DEV_PREFIX)));
+        } else {
+            return $this->pVersion;
+        }
+    }
+
+    /**
+     * Is this a development version?
+     *
+     * @return bool
+     */
+    public function isDevVersion()
+    {
+        return (strpos($this->pVersion, static::DEV_PREFIX) === 0) ? true : false;
     }
 
     /**
