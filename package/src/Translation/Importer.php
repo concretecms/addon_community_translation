@@ -31,11 +31,11 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
      *
      * @param \Gettext\Translations $translations
      * @param \Concrete\Package\CommunityTranslation\Src\Locale\Locale|string $locale
-     * @param bool|null $reviewed
+     * @param bool|null $maySetAsReviewed
      *
      * @throws UserException
      */
-    public function import(\Gettext\Translations $translations, $locale, $reviewed = null)
+    public function import(\Gettext\Translations $translations, $locale, $maySetAsReviewed = null)
     {
         // Check locale
         if (!$locale instanceof \Concrete\Package\CommunityTranslation\Src\Locale\Locale) {
@@ -52,14 +52,14 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
             throw new UserException(t("The locale '%s' is not approved.", $locale->getDisplayName()));
         }
         // Check $reviewed
-        if (isset($reviewed)) {
-            $reviewed = $reviewed ? 1 : 0;
+        if (isset($maySetAsReviewed)) {
+            $maySetAsReviewed = (bool) $maySetAsReviewed;
         } else {
             $access = $this->app->make('community_translation/access')->getLocaleAccess($locale);
             if ($access < Access::TRANSLATE) {
                 throw new UserException(t("No access for the locale '%s'.", $locale->getDisplayName()));
             }
-            $reviewed = ($access >= Access::ADMIN) ? 1 : 0;
+            $maySetAsReviewed = ($access >= Access::ADMIN) ? true : false;
         }
         // Some vars
         $me = new \User();
@@ -148,6 +148,11 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
                     // No translatable string for this translation
                     continue;
                 }
+                if ($maySetAsReviewed === true) {
+                    $reviewed = in_array('fuzzy', $translation->getFlags(), true) ? 1 : 0;
+                } else {
+                    $reviewed = 0;
+                }
                 if ($sameRow === null) {
                     // This translation is not already present - Let's add it
                     if ($currentRow === null) {
@@ -155,7 +160,7 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
                         $addCurrent = 1;
                         $addReviewed = $reviewed;
                         $translatablesChanged[] = $translatableID;
-                    } elseif ($reviewed || !$currentRow['tReviewed']) {
+                    } elseif ($reviewed === 1 || $currentRow['tReviewed'] === '0') {
                         // There's already a current translation for this string, but we'll activate this new one
                         $unsetCurrentTranslationQuery->execute(array($currentRow['tReviewed'], $currentRow['tID']));
                         $addCurrent = 1;
@@ -183,17 +188,17 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
                     }
                 } elseif ($currentRow === null) {
                     // This translation is already present, but there's no current translation: let's activate it
-                    $setCurrentTranslationQuery->execute(array(($reviewed || $sameRow['tReviewed']) ? 1 : 0, $sameRow['tID']));
+                    $setCurrentTranslationQuery->execute(array(($reviewed === 1 || $sameRow['tReviewed'] === '1') ? 1 : 0, $sameRow['tID']));
                     $translatablesChanged[] = $translatableID;
                 } elseif ($sameRow['tCurrent']) {
                     // This translation is already present and it's the current one
-                    if ($reviewed && !$sameRow['tReviewed']) {
+                    if ($reviewed === 1 && $sameRow['tReviewed'] === '0') {
                         // Let's mark the translation as reviewed
                         $setCurrentTranslationQuery->execute(array(1, $sameRow['tID']));
                     }
                 } else {
                     // This translation exists, but we have already another translation that's the current one
-                    if ($reviewed || !$currentRow['tReviewed']) {
+                    if ($reviewed === 1 || $currentRow['tReviewed'] === '0') {
                         // Let's make the new translation the current one
                         $unsetCurrentTranslationQuery->execute(array($currentRow['tReviewed'], $currentRow['tID']));
                         $setCurrentTranslationQuery->execute(array($reviewed, $sameRow['tID']));
