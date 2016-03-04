@@ -35,7 +35,8 @@ class Controller extends Package
     {
         $pkg = parent::install();
         $config = $this->getFileConfig();
-        $config->get('options.translatedThreshold', 90);
+        $config->save('options.translatedThreshold', 90);
+        $config->save('options.downloadAccess', 'members');
 
         $app = \Core::make('app');
         $this->registerServiceProvider($app);

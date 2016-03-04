@@ -86,10 +86,29 @@ class Access implements \Concrete\Core\Application\ApplicationAwareInterface
     }
 
     /**
+     * Parse the $locale parameter of the functions.
+     *
+     * @param mixed $locale
+     *
+     * @return Locale|null
+     */
+    protected function getLocale($locale)
+    {
+        $result = null;
+        if ($locale instanceof Locale) {
+            $result = $locale;
+        } elseif (is_string($locale) && $locale !== '') {
+            $result = $this->app->make('community_translation/locale')->find($locale);
+        }
+
+        return $result;
+    }
+
+    /**
      * Get the access level to a specific locale.
      *
      * @param Locale|string $locale
-     * @param User|int $user
+     * @param User|int|'current' $user
      *
      * @return int One of the Access constants
      */
@@ -104,9 +123,7 @@ class Access implements \Concrete\Core\Application\ApplicationAwareInterface
             if ($user->getUserID() == USER_SUPER_ID) {
                 $result = self::GLOBAL_ADMIN;
             } else {
-                if (!$locale instanceof Locale) {
-                    $locale = $this->app->make('community_translation/locale')->find($locale);
-                }
+                $locale = $this->getLocale($locale);
                 if ($locale !== null) {
                     $groups = $this->app->make('community_translation/groups');
                     /* @var \Concrete\Package\CommunityTranslation\Src\Service\Groups */
@@ -131,7 +148,7 @@ class Access implements \Concrete\Core\Application\ApplicationAwareInterface
      *
      * @param Locale|string $locale
      * @param int $access One of the Access constants
-     * @param User|int $user
+     * @param User|int|'current' $user
      *
      * @return int One of the Access constants
      */
@@ -141,13 +158,11 @@ class Access implements \Concrete\Core\Application\ApplicationAwareInterface
         if ($user === null) {
             throw new UserException(t('Invalid user'));
         }
-        if (!$locale instanceof Locale) {
-            $l = $this->app->make('community_translation/locale')->find($locale);
-            if ($l === null) {
-                throw new UserException(t("The locale identifier '%s' is not valid", $locale));
-            }
-            $locale = $locale;
+        $l = $this->getLocale($locale);
+        if ($l === null) {
+            throw new UserException(t("The locale identifier '%s' is not valid", $locale));
         }
+        $locale = $l;
         if ($user->getUserID() === USER_SUPER_ID) {
             return;
         }
@@ -206,10 +221,10 @@ class Access implements \Concrete\Core\Application\ApplicationAwareInterface
     }
 
     /**
-     * Set or unset global administr.
+     * Set or unset global administration access.
      *
-     * @param unknown $enable
-     * @param string $user
+     * @param bool $enable
+     * @param User|int|'current' $user
      */
     public function setGlobalAccess($enable, $user = 'current')
     {
@@ -233,5 +248,52 @@ class Access implements \Concrete\Core\Application\ApplicationAwareInterface
                 $user->exitGroup($group);
             }
         }
+    }
+
+    /**
+     * Check if someone can download translations of a locale.
+     * If the user has access, an empty string will be returned, otherwise the reason why she/he can't download the translations.
+     *
+     * @param Locale|string $locale
+     * @param User|int|'current' $user
+     *
+     * @return string
+     */
+    public function getDownloadAccess($locale, $user = 'current')
+    {
+        switch (\Package::getByHandle('community_translation')->getFileConfig()->get('options.downloadAccess')) {
+            case 'anyone':
+                $result = '';
+                break;
+            case 'members':
+                if ($this->getLocaleAccess($locale, $user) > self::NOT_LOGGED_IN) {
+                    $result = '';
+                } else {
+                    $l = $this->getLocale($locale);
+                    if ($l === null) {
+                        $result = t("The locale identifier '%s' is not valid", $locale);
+                    } else {
+                        $result = t('Only registered users can download translations');
+                    }
+                }
+                break;
+            case 'translators':
+                if ($this->getLocaleAccess($locale, $user) >= self::TRANSLATE) {
+                    $result = '';
+                } else {
+                    $l = $this->getLocale($locale);
+                    if ($l === null) {
+                        $result = t("The locale identifier '%s' is not valid", $locale);
+                    } else {
+                        $result = t('Only members of the %s transation team can download its translations', $l->getDisplayName());
+                    }
+                }
+                break;
+            default:
+                $result = 'Missing configuration option: options.downloadAccess';
+                break;
+        }
+
+        return $result;
     }
 }

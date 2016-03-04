@@ -1,6 +1,8 @@
 <?php
 defined('C5_EXECUTE') or die('Access Denied.');
 
+use Concrete\Package\CommunityTranslation\Src\Service\Access;
+
 /* @var Concrete\Core\Page\View\PageView $this */
 /* @var Concrete\Core\Validation\CSRF\Token $token */
 
@@ -44,10 +46,26 @@ defined('C5_EXECUTE') or die('Access Denied.');
 <div class="panel panel-primary">
 	<div class="panel-heading"><?php echo h($locale->getDisplayName()); ?></div>
 	<div class="panel-body">
-		<a href="#" onclick="alert('@todo');return false" class="btn btn-default"><?php echo t('Translate online'); ?></a>
-		<a href="#" onclick="alert('@todo');return false" class="btn btn-default"><?php echo t('Download .po file for offline translation'); ?></a>
-		<a href="#" onclick="alert('@todo');return false" class="btn btn-default"><?php echo t('Download .mo file to use it'); ?></a>
-		<a href="#" onclick="alert('@todo');return false" class="btn btn-default"><?php echo t('Upload translated file'); ?></a>
+		<div id="comtra-panel-main">
+    		<a href="#" class="btn btn-default comtra-translate" id="comtra-translate-online"><?php echo t('Translate online'); ?></a>
+    		<a href="#" class="btn btn-default comtra-download" data-format="po"><?php echo t('Download .po file for offline translation'); ?></a>
+    		<a href="#" class="btn btn-default comtra-download" data-format="mo"><?php echo t('Download .mo file to use it'); ?></a>
+    		<a href="#" class="btn btn-default comtra-translate" id="comtra-translate-upload"><?php echo t('Upload translated file'); ?></a>
+		</div>
+		<?php if ($translationsAccess >= Access::TRANSLATE) { ?>
+			<form id="comtra-translate-upload-form" style="display: none" method="POST" enctype="multipart/form-data" action="<?php echo $this->action('upload', $package->getID(), $locale->getID()); ?>">
+				<?php $token->output('comtra-upload-'.$package->getID().'@'.$locale->getID()); ?>
+				<div class="row">
+					<div class="col-md-8">
+						<input type="file" name="translations-file" class="btn btn-default" required="required" />
+					</div>
+					<div class="col-md-4" style="text-align: right">
+						<a id="comtra-translate-upload-cancel" class="btn btn-default" href="#"><?php echo t('Cancel'); ?></a>
+						<input type="submit" class="btn btn-primary" value="<?php echo t('Submit'); ?>" />
+					</div>
+				</div>
+			</form>
+		<?php } ?>
 	</div>
 </div>
 <fieldset>
@@ -86,3 +104,72 @@ defined('C5_EXECUTE') or die('Access Denied.');
 		<?php } ?></tbody>
 	</table>
 </fieldset>
+
+<?php if ($cannotDownloadTranslationsBecause === '') { ?>
+	<form id="comtra-download-form" class="hide" method="POST" action="<?php echo $this->action('download', $package->getID(), $locale->getID()); ?>" target="comtra-download-frame">
+		<?php $token->output('comtra-download-'.$package->getID().'@'.$locale->getID()); ?>
+		<input type="hidden" name="format" value=""/> 
+	</form>
+	<iframe class="hide" id="comtra-download-frame" name="comtra-download-frame"></iframe>
+<?php } ?>
+
+<script>$(document).ready(function() {
+
+$('.comtra-download').on('click', function(e) {
+    <?php if ($cannotDownloadTranslationsBecause !== '') { ?>
+		window.alert(<?php echo json_encode($cannotDownloadTranslationsBecause); ?>);
+    <?php } else { ?>
+    	$('#comtra-download-form')
+    		.find('input[name="format"]').val($(this).data('format')).end()
+    		.submit()
+    	;
+    <?php } ?>
+	e.preventDefault();
+	return false;
+});
+
+function showPanel(id, oldID, out) {
+	var duration = 100;
+	$(oldID).hide(
+		'slide',
+		{direction: out ? 'up' : 'down'},
+		duration,
+		function() {
+			$(id).show(
+				'slide',
+				{direction: out ? 'down' : 'up'},
+				duration
+			);
+		}
+	);
+}
+<?php if ($translationsAccess >= Access::TRANSLATE) { ?>
+	$('#comtra-translate-online').on('click', function(e) {
+		alert('@todo');
+		e.preventDefault();
+		return false;
+	});
+	$('#comtra-translate-upload').on('click', function(e) {
+		showPanel('#comtra-translate-upload-form', '#comtra-panel-main', true);
+		e.preventDefault();
+		return false;
+	});
+	$('#comtra-translate-upload-cancel').on('click', function(e) {
+		showPanel('#comtra-panel-main', '#comtra-translate-upload-form', false);
+		e.preventDefault();
+		return false;
+	});
+	
+<?php } else { ?>
+	$('.comtra-translate').on('click', function(e) {
+		window.alert(<?php echo json_encode(
+		    ($translationsAccess <= Access::NOT_LOGGED_IN) ?
+		    t('You must log in and you have to be a member of the %s translation team in order to help us translating it', $locale->getDisplayName()) :
+		    t('You must be a member of the %s translation team in order to help us translating it', $locale->getDisplayName())
+		); ?>);
+		e.preventDefault();
+		return false;
+	});
+<?php } ?>
+
+});</script>

@@ -10,6 +10,17 @@ class Options extends DashboardPageController
     {
         $config = \Package::getByHandle('community_translation')->getFileConfig();
         $this->set('translatedThreshold', $config->get('options.translatedThreshold', 90));
+        $downloadAccess = $config->get('options.downloadAccess');
+        switch ($downloadAccess) {
+            case 'anyone':
+            case 'members':
+            case 'translators':
+                break;
+            default:
+                $downloadAccess = 'members';
+                break;
+        }
+        $this->set('downloadAccess', $downloadAccess);
         $this->set('tempDir', $config->get('options.tempDir'));
         $this->set('notificationsSenderAddress', $config->get('options.notificationsSenderAddress'));
         $this->set('notificationsSenderName', $config->get('options.notificationsSenderName'));
@@ -34,6 +45,16 @@ class Options extends DashboardPageController
         if ($translatedThreshold === null) {
             $this->error->add(t('Please specify the translation thresold used to consider a language as translated'));
         }
+        $downloadAccess = $this->post('downloadAccess');
+        switch ($downloadAccess) {
+            case 'anyone':
+            case 'members':
+            case 'translators':
+                break;
+            default:
+                $this->error->add(t('Please specify who can download translations'));
+                break;
+        }
         $tempDir = $this->post('tempDir', '');
         if (!is_string($tempDir)) {
             $tempDir = '';
@@ -51,6 +72,7 @@ class Options extends DashboardPageController
         if (!$this->error->has()) {
             $config = \Package::getByHandle('community_translation')->getFileConfig();
             $config->save('options.translatedThreshold', $translatedThreshold);
+            $config->save('options.downloadAccess', $downloadAccess);
             $config->save('options.tempDir', $tempDir);
             $config->save('options.notificationsSenderAddress', (string) $this->post('notificationsSenderAddress'));
             $config->save('options.notificationsSenderName', (string) $this->post('notificationsSenderName'));
