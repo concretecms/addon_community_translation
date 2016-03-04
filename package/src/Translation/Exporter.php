@@ -125,6 +125,7 @@ class Exporter implements \Concrete\Core\Application\ApplicationAwareInterface
                     tPlural,
                     tpLocations,
                     tpComments,
+                    tReviewed,
                     tText0,
                     tText1,
                     tText2,
@@ -153,6 +154,9 @@ class Exporter implements \Concrete\Core\Application\ApplicationAwareInterface
         $numPlurals = $locale->getPluralCount();
         while (($row = $rs->fetch()) !== false) {
             $translation = new \Gettext\Translation($row['tContext'], $row['tText'], $row['tPlural']);
+            if ($row['tReviewed'] === '0') {
+                $translation->addFlag('fuzzy');
+            }
             foreach (unserialize($row['tpLocations']) as $location) {
                 $translation->addReference($location);
             }
