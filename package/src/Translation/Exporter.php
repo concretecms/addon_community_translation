@@ -114,9 +114,11 @@ class Exporter implements \Concrete\Core\Application\ApplicationAwareInterface
             throw new UserException(t('Invalid translated package specified'));
         }
         $cn = $this->app->make('community_translation/em')->getConnection();
+        $queryPackageID = (int) $package->getID();
+        $queryLocaleID = $cn->quote($locale->getID());
         /* @var \Concrete\Core\Database\Connection\Connection $cn */
         $rs = $cn->executeQuery(
-            '
+            "
                 select
                     tContext,
                     tText,
@@ -132,21 +134,16 @@ class Exporter implements \Concrete\Core\Application\ApplicationAwareInterface
                 from
                     Translatables
                     inner join TranslatablePlaces on Translatables.tID = TranslatablePlaces.tpTranslatable
-                    '.(
+                    ".(
                         $excludeUntranslatedStrings ?
-                        'inner join' :
-                        'left join'
-                    ).' Translations on Translatables.tID = Translations.tTranslatable
+                        "inner join" :
+                        "left join"
+                    )." Translations on Translatables.tID = Translations.tTranslatable and 1 = Translations.tCurrent and $queryLocaleID = Translations.tLocale
                 where
-                    TranslatablePlaces.tpPackage = '.((int) $package->getID()).'
-                    and '.(
-                        $excludeUntranslatedStrings ?
-                        ('Translations.tLocale = '.$cn->quote($locale->getID())) :
-                        ('Translations.tLocale = '.$cn->quote($locale->getID()).' or Translations.tLocale is null')
-                    ).'
+                    TranslatablePlaces.tpPackage = $queryPackageID
                 order by
                     TranslatablePlaces.tpSort
-            ',
+            ",
             array(
 
             )
