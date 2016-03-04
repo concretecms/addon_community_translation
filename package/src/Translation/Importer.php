@@ -31,11 +31,18 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
      *
      * @param \Gettext\Translations $translations
      * @param \Concrete\Package\CommunityTranslation\Src\Locale\Locale|string $locale
-     * @param bool|null $maySetAsReviewed
+     * @param array $options {
+     *
+     *     @var bool|null $maySetAsReviewed
+     *     @var bool $checkLocale
+     *     @var bool $checkPlural
+     * }
      *
      * @throws UserException
+     *
+     * @return ImportResult
      */
-    public function import(\Gettext\Translations $translations, $locale, $maySetAsReviewed = null)
+    public function import(\Gettext\Translations $translations, $locale, $options = array())
     {
         // Check locale
         if (!$locale instanceof \Concrete\Package\CommunityTranslation\Src\Locale\Locale) {
@@ -52,14 +59,40 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
             throw new UserException(t("The locale '%s' is not approved.", $locale->getDisplayName()));
         }
         // Check $reviewed
-        if (isset($maySetAsReviewed)) {
-            $maySetAsReviewed = (bool) $maySetAsReviewed;
+        if (isset($options['maySetAsReviewed'])) {
+            $maySetAsReviewed = $options['maySetAsReviewed'] ? true : false;
         } else {
             $access = $this->app->make('community_translation/access')->getLocaleAccess($locale);
             if ($access < Access::TRANSLATE) {
                 throw new UserException(t("No access for the locale '%s'.", $locale->getDisplayName()));
             }
             $maySetAsReviewed = ($access >= Access::ADMIN) ? true : false;
+        }
+        if (isset($options['checkLocale']) && $options['checkLocale']) {
+            if (@strcasecmp(strtolower(str_replace('-', '_', $translations->getLanguage())), strtolower($locale->getID())) !== 0) {
+                $name = \Punic\Language::getName($translations->getLanguage());
+                if ($name) {
+                    throw new UserException(t('The specified file contains translations for %1$s and not for %2$s', $name, $locale->getDisplayName()));
+                } else {
+                    throw new UserException(t('It was not possible to determine the language of the uploaded file.'));
+                }
+            }
+        }
+        if (isset($options['checkPlural']) && $options['checkPlural']) {
+            $pluralForms = $translations->getPluralForms();
+            $pluralCount = isset($pluralForms) ? $pluralForms[0] : null;
+            if ($pluralCount === null || $pluralCount !== $locale->getPluralCount()) {
+                foreach ($translations as $translation) {
+                    /* @var \Gettext\Translation $translation */
+                    if ($translation->hasPlural() && $translation->hasTranslation()) {
+                        if ($pluralCount === null) {
+                            throw new UserException(t('For the language %1$s there should be %2$d plural forms, but in your file this is not specified', $locale->getDisplayName(), $locale->getPluralCount()));
+                        } else {
+                            throw new UserException(t('For the language %1$s there should be %2$d plural forms, but in your file there are %3$d', $locale->getDisplayName(), $locale->getPluralCount(), $pluralCount));
+                        }
+                    }
+                }
+            }
         }
         // Some vars
         $me = new \User();
@@ -71,6 +104,7 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
         $now = id(new \DateTime())->format($connection->getDatabasePlatform()->getDateTimeFormatString());
         $connection->beginTransaction();
         $translatablesChanged = array();
+        $result = new ImportResult();
         try {
             // Prepare some queries
             $searchQuery = $connection->prepare('
@@ -110,17 +144,19 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
                 'UPDATE Translations SET tCurrent = 1, tCurrentSince = '.$nowExpression.', tReviewed = ? WHERE tID = ? LIMIT 1'
             )->getWrappedStatement();
             /* @var \Doctrine\DBAL\Driver\Statement $setCurrentTranslationQuery */
-            
+
             // Check every strings to be imported
             foreach ($translations as $translationKey => $translation) {
                 /* @var \Gettext\Translation $translation */
                 if (!$translation->hasTranslation()) {
                     // This $translation instance is not translated
+                    ++$result->emptyTranslations;
                     continue;
                 }
                 $isPlural = $translation->hasPlural();
                 if ($isPlural && $pluralCount > 1 && !$translation->hasPluralTranslation()) {
                     // This plural form of the $translation instance is not translated
+                    ++$result->emptyTranslations;
                     continue;
                 }
                 // Let's look for this translation
@@ -136,7 +172,7 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
                     if (!isset($row['tID'])) {
                         break;
                     }
-                    if ($currentRow === null && $row['tCurrent']) {
+                    if ($currentRow === null && $row['tCurrent'] === '1') {
                         $currentRow = $row;
                     }
                     if ($sameRow === null && $this->rowSameAsTranslation($row, $translation, $isPlural, $pluralCount)) {
@@ -146,10 +182,11 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
                 $searchQuery->closeCursor();
                 if ($translatableID === null) {
                     // No translatable string for this translation
+                    ++$result->unknownStrings;
                     continue;
                 }
                 if ($maySetAsReviewed === true) {
-                    $reviewed = in_array('fuzzy', $translation->getFlags(), true) ? 1 : 0;
+                    $reviewed = in_array('fuzzy', $translation->getFlags(), true) ? 0 : 1;
                 } else {
                     $reviewed = 0;
                 }
@@ -160,16 +197,19 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
                         $addCurrent = 1;
                         $addReviewed = $reviewed;
                         $translatablesChanged[] = $translatableID;
+                        ++$result->addedActivated;
                     } elseif ($reviewed === 1 || $currentRow['tReviewed'] === '0') {
                         // There's already a current translation for this string, but we'll activate this new one
                         $unsetCurrentTranslationQuery->execute(array($currentRow['tReviewed'], $currentRow['tID']));
                         $addCurrent = 1;
                         $addReviewed = $reviewed;
                         $translatablesChanged[] = $translatableID;
+                        ++$result->addedActivated;
                     } else {
                         // Let keep the previously current translation as the current one, but let's add this new one
                         $addCurrent = null;
                         $addReviewed = 0;
+                        ++$result->addedNeedReview;
                     }
                     // Add the new record to the queue
                     $insertParams[] = $addCurrent;
@@ -187,14 +227,18 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
                         $insertCount = 0;
                     }
                 } elseif ($currentRow === null) {
-                    // This translation is already present, but there's no current translation: let's activate it
+                    // This translation is already present, but there's no current translation: let's activate it (this case should never occur, but who cares;) )
                     $setCurrentTranslationQuery->execute(array(($reviewed === 1 || $sameRow['tReviewed'] === '1') ? 1 : 0, $sameRow['tID']));
                     $translatablesChanged[] = $translatableID;
-                } elseif ($sameRow['tCurrent']) {
+                    ++$result->addedActivated;
+                } elseif ($sameRow['tCurrent'] === '1') {
                     // This translation is already present and it's the current one
                     if ($reviewed === 1 && $sameRow['tReviewed'] === '0') {
                         // Let's mark the translation as reviewed
                         $setCurrentTranslationQuery->execute(array(1, $sameRow['tID']));
+                        ++$result->existingActiveReviewed;
+                    } else {
+                        ++$result->existingActiveUntouched;
                     }
                 } else {
                     // This translation exists, but we have already another translation that's the current one
@@ -203,6 +247,9 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
                         $unsetCurrentTranslationQuery->execute(array($currentRow['tReviewed'], $currentRow['tID']));
                         $setCurrentTranslationQuery->execute(array($reviewed, $sameRow['tID']));
                         $translatablesChanged[] = $translatableID;
+                        ++$result->existingActivated;
+                    } else {
+                        ++$result->existingInactiveUntouched;
                     }
                 }
             }
@@ -223,6 +270,8 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
         if (!empty($translatablesChanged)) {
             $this->app->make('community_translation/stats')->resetForLocaleTranslatables($locale, $translatablesChanged);
         }
+
+        return $result;
     }
 
     /**

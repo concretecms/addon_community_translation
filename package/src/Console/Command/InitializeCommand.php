@@ -170,7 +170,7 @@ class InitializeCommand extends Command
                             $output->writeln('<info>done.</info>');
                         }
                         $output->write('   > saving... ');
-                        $translationsImporter->import($translations, $locale, true);
+                        $translationsImporter->import($translations, $locale, array('maySetAsReviewed' => true));
                         $output->writeln('<info>done.</info>');
                     }
                 }
