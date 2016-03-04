@@ -4,6 +4,7 @@ namespace Concrete\Package\CommunityTranslation\Src\Service;
 use Concrete\Core\Application\Application;
 use Concrete\Core\User\User;
 use Concrete\Package\CommunityTranslation\Src\Locale\Locale;
+use Concrete\Package\CommunityTranslation\Src\Package\Package;
 
 class Notify implements \Concrete\Core\Application\ApplicationAwareInterface
 {
@@ -181,6 +182,7 @@ class Notify implements \Concrete\Core\Application\ApplicationAwareInterface
             )
         );
     }
+
     public function userDenied(Locale $locale, User $user)
     {
         $operator = new \User();
@@ -195,6 +197,24 @@ class Notify implements \Concrete\Core\Application\ApplicationAwareInterface
                 'applicant' => $user->getUserName(),
                 'operator' => $operator ? $operator->getUserName() : '?',
                 'teamUrl' => h($this->app->make('url/manager')->resolve(array('/teams/details/', $locale->getID()))),
+            )
+        );
+    }
+
+    public function translationsNeedReview(Package $package, Locale $locale, $numTranslations)
+    {
+        $translator = new \User();
+        if (!$translator->isRegistered()) {
+            $translator = null;
+        }
+        $this->send(
+            'translations_need_review',
+            array_merge($this->getGlobalAdministrators(), $this->getLocaleAdministrators($locale)),
+            array(
+                'localeName' => $locale->getName(),
+                'translatorName' => ($translator === null) ? '?' : $translator->getUserName(),
+                'numTranslations' => $numTranslations,
+                'pageUrl' => h($this->app->make('url/manager')->resolve(array('/translate/package/pkg_'.$package->getHandle(), $package->getVersion(), $locale->getID()))),
             )
         );
     }

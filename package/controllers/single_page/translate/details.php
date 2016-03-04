@@ -193,6 +193,12 @@ EOT
                     $message .= $description.': '.$num."<br />";
                 }
             }
+            if ($result->addedNeedReview > 0) {
+                try {
+                    $this->app->make('community_translation/notify')->translationsNeedReview($package, $locale, $result->addedNeedReview);
+                } catch (\Exception $x) {
+                }
+            }
             $this->flash('message', $message);
             $this->redirect('/translate/details/', '', 'pkg_'.$package->getHandle(), $package->getVersion(), $locale->getID());
         } catch (UserException $x) {
