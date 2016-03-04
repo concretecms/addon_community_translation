@@ -50,6 +50,10 @@ class Controller extends Package
                 $connection->executeQuery('ALTER TABLE GlossaryEntries ADD FULLTEXT INDEX IXGlossaryEntriesTermFulltext (geTerm);');
             } catch (\Exception $foo) {
             }
+            try {
+                $connection->executeQuery('ALTER TABLE Translatables ADD FULLTEXT INDEX IXTranslatablesTextFulltext (tText);');
+            } catch (\Exception $foo) {
+            }
         } catch (\Exception $foo) {
         }
 

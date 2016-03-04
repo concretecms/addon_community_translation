@@ -62,8 +62,8 @@ class InitializeCommand extends Command
         });
 
         foreach ($repositories as $repository) {
-            $output->writeln(sprintf('Importing strings from %s (development and tagged versions)... ', $git->getName()));
-            $importer->import($git);
+            $output->writeln(sprintf('Importing strings from %s (development and tagged versions)... ', $repository->getName()));
+            $importer->import($repository);
             $output->writeln(" - <info>done</info>");
         }
     }
