@@ -42,10 +42,18 @@ class Controller extends Package
         $this->registerServiceProvider($app);
 
         $em = $app->make('community_translation/em');
-        /* @var \Doctrine\ORM\EntityManager $em */
+
+        // Add fulltext indexes manually, since with Doctrine ORM < 2.5 it's not possible with annotations
+        try {
+            $connection = $em->getConnection();
+            try {
+                $connection->executeQuery('ALTER TABLE GlossaryEntries ADD FULLTEXT INDEX IXGlossaryEntriesTermFulltext (geTerm);');
+            } catch (\Exception $foo) {
+            }
+        } catch (\Exception $foo) {
+        }
 
         $gitRepo = $app->make('community_translation/git');
-        /* @var \Doctrine\ORM\EntityRepository $gitRepo */
         if ($gitRepo->findOneBy(array('grURL' => 'https://github.com/concrete5/concrete5-legacy.git')) === null) {
             $git = new Src\Git\Repository();
             $git->setName('concrete5 Legacy');
