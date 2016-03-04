@@ -103,12 +103,20 @@ class Locale
      */
     protected $stats;
 
+    /**
+     * Localized Glossary Entries associated to this locale.
+     *
+     * @OneToMany(targetEntity="Concrete\Package\CommunityTranslation\Src\Glossary\Entry\Localized", mappedBy="gleLocale")
+     */
+    protected $glossaryEntries;
+
     // Constructor
 
     public function __construct()
     {
         $this->translations = new ArrayCollection();
         $this->stats = new ArrayCollection();
+        $this->glossaryEntries = new ArrayCollection();
     }
 
     // Getters & setters
