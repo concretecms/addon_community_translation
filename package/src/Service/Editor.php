@@ -108,7 +108,6 @@ class Editor implements \Concrete\Core\Application\ApplicationAwareInterface
                 'texts' => array_reverse($texts),
             );
         }
-        $rs->closeCursor();
 
         return $result;
     }
@@ -123,17 +122,19 @@ class Editor implements \Concrete\Core\Application\ApplicationAwareInterface
     {
         $repo = $this->app->make('community_translation/translatable/comment');
         if ($parentComment === null) {
-            $comments = $repo->findBy(
-                array(
-                    'tcTranslatable' => $translatable,
-                    'tcParentComment' => null,
-                    '$or' => array(
-                        array('tcLocale' => $locale),
-                        array('tcLocale' => null),
-                    ),
-                ),
-                array('tcPostedOn' => 'ASC')
-            );
+            $qb = $repo->createQueryBuilder('c');
+            $qb
+                ->where('c.tcTranslatable = :translatable')
+                ->andWhere('c.tcParentComment is null')
+                ->andWhere($qb->expr()->orX(
+                    'c.tcLocale = :locale',
+                    'c.tcLocale is null'
+                ))
+                ->orderBy('c.tcPostedOn', 'ASC')
+                ->setParameter('translatable', $translatable)
+                ->setParameter('locale', $locale)
+                ;
+            $comments = $qb->getQuery()->getResult();
         } else {
             $comments = $repo->findBy(
                 array('tcParentComment' => $parentComment),
@@ -147,7 +148,7 @@ class Editor implements \Concrete\Core\Application\ApplicationAwareInterface
                 'date' => $comment->getPostedOn(),
                 'by' => $comment->getPostedBy(),
                 'text' => $comment->getText(),
-                'childComments' => $this->getComments($locale, $translatable, $comment),
+                'comments' => $this->getComments($locale, $translatable, $comment),
             );
         }
 
@@ -177,7 +178,7 @@ class Editor implements \Concrete\Core\Application\ApplicationAwareInterface
                     inner join Translatables on Translations.tTranslatable = Translatables.tID and 1 = Translations.tCurrent and :locale = Translations.tLocale
                 where
                     Translatables.tID <> :currentTranslatableID
-                    and length(Translatables.tText) between :minLength and :axLength
+                    and length(Translatables.tText) between :minLength and :maxLength
                 having
                     relevance > 0
                 order by
