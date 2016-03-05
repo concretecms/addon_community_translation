@@ -9,6 +9,13 @@ use Concrete\Package\CommunityTranslation\Src\Translatable\Comment\Comment;
 class Editor implements \Concrete\Core\Application\ApplicationAwareInterface
 {
     /**
+     * Maximum number of translation suggestions.
+     *
+     * @var int
+     */
+    const MAX_SUGGESTIONS = 15;
+
+    /**
      * Maximum number of glossary terms to show in the editor.
      *
      * @var int
@@ -47,6 +54,7 @@ class Editor implements \Concrete\Core\Application\ApplicationAwareInterface
         $result['translations'] = $this->getTranslations($locale, $translatable);
         if ($initial) {
             $result['comments'] = $this->getComments($locale, $translatable);
+            $result['suggestions'] = $this->getSuggestions($locale, $translatable);
             $result['glossary'] = $this->getGlossaryTerms($locale, $translatable);
         }
 
@@ -142,6 +150,57 @@ class Editor implements \Concrete\Core\Application\ApplicationAwareInterface
                 'childComments' => $this->getComments($locale, $translatable, $comment),
             );
         }
+
+        return $result;
+    }
+
+    /**
+     * Search for similar translations.
+     *
+     * @param Locale $locale
+     * @param Translatable $translatable
+     *
+     * @return array
+     */
+    public function getSuggestions(Locale $locale, Translatable $translatable)
+    {
+        $result = array();
+        $connection = $this->app->make('community_translation/em')->getConnection();
+        $rs = $connection->executeQuery(
+            '
+                select
+                    Translatables.tText,
+                    Translations.tText0,
+                    match(Translatables.tText) against (:search in natural language mode) as relevance
+                from
+                    Translations
+                    inner join Translatables on Translations.tTranslatable = Translatables.tID and 1 = Translations.tCurrent and :locale = Translations.tLocale
+                where
+                    Translatables.tID <> :currentTranslatableID
+                    and length(Translatables.tText) between :minLength and :axLength
+                having
+                    relevance > 0
+                order by
+                    relevance desc,
+                    tText asc
+                limit
+                    0, '.((int) self::MAX_SUGGESTIONS).'
+            ',
+            array(
+                'search' => $translatable->getText(),
+                'locale' => $locale->getID(),
+                'currentTranslatableID' => $translatable->getID(),
+                'minLength' => (int) floor(strlen($translatable->getText()) * 0.75),
+                'maxLength' => (int) ceil(strlen($translatable->getText()) * 1.33),
+            )
+        );
+        while ($row = $rs->fetch()) {
+            $result[] = array(
+                'source' => $row['tText'],
+                'translation' => $row['tText0'],
+            );
+        }
+        $rs->closeCursor();
 
         return $result;
     }
