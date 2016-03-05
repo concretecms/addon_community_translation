@@ -43,20 +43,6 @@ class Controller extends Package
 
         $em = $app->make('community_translation/em');
 
-        // Add fulltext indexes manually, since with Doctrine ORM < 2.5 it's not possible with annotations
-        try {
-            $connection = $em->getConnection();
-            try {
-                $connection->executeQuery('ALTER TABLE GlossaryEntries ADD FULLTEXT INDEX IXGlossaryEntriesTermFulltext (geTerm);');
-            } catch (\Exception $foo) {
-            }
-            try {
-                $connection->executeQuery('ALTER TABLE Translatables ADD FULLTEXT INDEX IXTranslatablesTextFulltext (tText);');
-            } catch (\Exception $foo) {
-            }
-        } catch (\Exception $foo) {
-        }
-
         $gitRepo = $app->make('community_translation/git');
         if ($gitRepo->findOneBy(array('grURL' => 'https://github.com/concrete5/concrete5-legacy.git')) === null) {
             $git = new Src\Git\Repository();
@@ -99,6 +85,20 @@ class Controller extends Package
 
     private static function installReal(Controller $pkg, $fromVersion)
     {
+        // Add fulltext indexes manually, since with Doctrine ORM < 2.5 it's not possible with annotations
+        try {
+            $connection = \Core::make('community_translation/em')->getConnection();
+            try {
+                $connection->executeQuery('ALTER TABLE GlossaryEntries ADD FULLTEXT INDEX IXGlossaryEntriesTermFulltext (geTerm);');
+            } catch (\Exception $foo) {
+            }
+            try {
+                $connection->executeQuery('ALTER TABLE Translatables ADD FULLTEXT INDEX IXTranslatablesTextFulltext (tText);');
+            } catch (\Exception $foo) {
+            }
+        } catch (\Exception $foo) {
+        }
+
         $sp = Page::getByPath('/dashboard/system/community_translation');
         if (!is_object($sp) || $sp->getError() === COLLECTION_NOT_FOUND) {
             $sp = SinglePage::add('/dashboard/system/community_translation', $pkg);
