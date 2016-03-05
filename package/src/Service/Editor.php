@@ -4,6 +4,7 @@ namespace Concrete\Package\CommunityTranslation\Src\Service;
 use Concrete\Core\Application\Application;
 use Concrete\Package\CommunityTranslation\Src\Locale\Locale;
 use Concrete\Package\CommunityTranslation\Src\Translatable\Translatable;
+use Concrete\Package\CommunityTranslation\Src\Translatable\Comment\Comment;
 
 class Editor implements \Concrete\Core\Application\ApplicationAwareInterface
 {
@@ -43,8 +44,103 @@ class Editor implements \Concrete\Core\Application\ApplicationAwareInterface
     public function getTranslatableData(Locale $locale, Translatable $translatable, $initial)
     {
         $result = array();
+        $result['translations'] = $this->getTranslations($locale, $translatable);
         if ($initial) {
+            $result['comments'] = $this->getComments($locale, $translatable);
             $result['glossary'] = $this->getGlossaryTerms($locale, $translatable);
+        }
+
+        return $result;
+    }
+
+    /**
+     * Search all the translations associated to a translatable string.
+     *
+     * @param Locale $locale
+     * @param Translatable $translatable
+     *
+     * @return array
+     */
+    public function getTranslations(Locale $locale, Translatable $translatable)
+    {
+        $numPlurals = $locale->getPluralCount();
+
+        $result = array();
+        $translations = $this->app->make('community_translation/translation')->findBy(array('tTranslatable' => $translatable, 'tLocale' => $locale), array('tCreatedOn' => 'DESC'));
+        foreach ($translations as $translation) {
+            $texts = array();
+            switch ($numPlurals) {
+                case 6:
+                    $texts[] = $translation->getText5();
+                    /* @noinspection PhpMissingBreakStatementInspection */
+                case 5:
+                    $texts[] = $translation->getText4();
+                    /* @noinspection PhpMissingBreakStatementInspection */
+                case 4:
+                    $texts[] = $translation->getText3();
+                    /* @noinspection PhpMissingBreakStatementInspection */
+                case 3:
+                    $texts[] = $translation->getText2();
+                    /* @noinspection PhpMissingBreakStatementInspection */
+                case 2:
+                    $texts[] = $translation->getText1();
+                    /* @noinspection PhpMissingBreakStatementInspection */
+                case 1:
+                default:
+                    $texts[] = $translation->getText0();
+                    break;
+            }
+            $item = array(
+                'id' => $translation->getID(),
+                'created' => $translation->getCreatedOn(),
+                'createdBy' => $translation->getCreatedBy(),
+                'current' => $translation->isCurrent(),
+                'currentSince' => $translation->isCurrentSince(),
+                'reviewed' => $translation->isReviewed(),
+                'texts' => array_reverse($texts),
+            );
+        }
+        $rs->closeCursor();
+
+        return $result;
+    }
+
+    /**
+     * Get the comments associated to a translatable strings.
+     *
+     * @param Locale $locale
+     * @param Translatable $translatable
+     */
+    public function getComments(Locale $locale, Translatable $translatable, Comment $parentComment = null)
+    {
+        $repo = $this->app->make('community_translation/translatable/comment');
+        if ($parentComment === null) {
+            $comments = $repo->findBy(
+                array(
+                    'tcTranslatable' => $translatable,
+                    'tcParentComment' => null,
+                    '$or' => array(
+                        array('tcLocale' => $locale),
+                        array('tcLocale' => null),
+                    ),
+                ),
+                array('tcPostedOn' => 'ASC')
+            );
+        } else {
+            $comments = $repo->findBy(
+                array('tcParentComment' => $parentComment),
+                array('tcPostedOn' => 'ASC')
+            );
+        }
+        $result = array();
+        foreach ($comments as $comment) {
+            $result[] = array(
+                'id' => $comment->getID(),
+                'date' => $comment->getPostedOn(),
+                'by' => $comment->getPostedBy(),
+                'text' => $comment->getText(),
+                'childComments' => $this->getComments($locale, $translatable, $comment),
+            );
         }
 
         return $result;

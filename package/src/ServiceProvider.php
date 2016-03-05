@@ -25,6 +25,7 @@ class ServiceProvider extends Provider
             'community_translation/package' => 'Concrete\Package\CommunityTranslation\Src\Package\Package',
             'community_translation/translatable' => 'Concrete\Package\CommunityTranslation\Src\Translatable\Translatable',
             'community_translation/translatable/place' => 'Concrete\Package\CommunityTranslation\Src\Translatable\Place\Place',
+            'community_translation/translatable/comment' => 'Concrete\Package\CommunityTranslation\Src\Translatable\Comment\Comment',
             'community_translation/translation' => 'Concrete\Package\CommunityTranslation\Src\Translation\Translation',
             'community_translation/locale' => 'Concrete\Package\CommunityTranslation\Src\Locale\Locale',
             'community_translation/stats' => 'Concrete\Package\CommunityTranslation\Src\Stats\Stats',

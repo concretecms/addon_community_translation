@@ -76,12 +76,20 @@ class Translatable
      */
     protected $translations;
 
+    /**
+     * Comments about this translatable string.
+     *
+     * @OneToMany(targetEntity="Concrete\Package\CommunityTranslation\Src\Translatable\Comment\Comment", mappedBy="tcTranslatable")
+     */
+    protected $comments;
+    
     // Constructor
 
     public function __construct()
     {
         $this->places = new ArrayCollection();
         $this->translations = new ArrayCollection();
+        $this->comments = new ArrayCollection();
     }
 
     // Getters & setters

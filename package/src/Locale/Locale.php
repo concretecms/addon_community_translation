@@ -110,6 +110,13 @@ class Locale
      */
     protected $glossaryEntries;
 
+    /**
+     * Localized comments about translations.
+     *
+     * @OneToMany(targetEntity="Concrete\Package\CommunityTranslation\Src\Translatable\Comment\Comment", mappedBy="tcLocale")
+     */
+    protected $comments;
+
     // Constructor
 
     public function __construct()
@@ -117,6 +124,7 @@ class Locale
         $this->translations = new ArrayCollection();
         $this->stats = new ArrayCollection();
         $this->glossaryEntries = new ArrayCollection();
+        $this->comments = new ArrayCollection();
     }
 
     // Getters & setters
