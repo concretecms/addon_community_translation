@@ -56,6 +56,10 @@ class ParseGitRepositories extends AbstractJob
             $importer->import($repository);
         } catch (\Exception $x) {
             $result .= t('ERROR: %s', $x->getMessage())."\n";
+            try {
+                \Core::make('community_translation/notify')->errorFetchingGitRepository($repository, $x);                
+            } catch (\Exception $foo) {
+            }
         }
 
         return $result;

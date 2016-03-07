@@ -218,4 +218,17 @@ class Notify implements \Concrete\Core\Application\ApplicationAwareInterface
             )
         );
     }
+
+    public function errorFetchingGitRepository(\Concrete\Package\CommunityTranslation\Src\Git\Repository $gitRepository, \Exception $error)
+    {
+        $this->send(
+            'error_fetching_gitrepository',
+            array_merge($this->getGlobalAdministrators()),
+            array(
+                'repositoryName' => $gitRepository->getName(),
+                'errorMessage' => nl2br(h($error->getMessage())),
+                'stackTrace' => nl2br(h($error->getTraceAsString())),
+            )
+        );
+    }
 }
