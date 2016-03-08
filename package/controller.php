@@ -3,6 +3,7 @@ namespace Concrete\Package\CommunityTranslation;
 
 use Concrete\Core\Application\Application;
 use Concrete\Core\Package\Package;
+use Concrete\Core\Page\Theme\Theme;
 use Core;
 use Page;
 use SinglePage;
@@ -85,6 +86,10 @@ class Controller extends Package
 
     private static function installReal(Controller $pkg, $fromVersion)
     {
+        $theme = Theme::getByHandle('community_translation');
+        if ($theme === null) {
+            $theme = Theme::add('community_translation', $pkg);
+        }
         // Add fulltext indexes manually, since with Doctrine ORM < 2.5 it's not possible with annotations
         try {
             $connection = \Core::make('community_translation/em')->getConnection();
@@ -166,6 +171,14 @@ class Controller extends Package
             ));
             $sp->setAttribute('exclude_nav', 1);
         }
+        $sp = Page::getByPath('/translate/online');
+        if (!is_object($sp) || $sp->getError() === COLLECTION_NOT_FOUND) {
+            $sp = SinglePage::add('/translate/online', $pkg);
+            $sp->update(array(
+                'cName' => t('Online Translation'),
+            ));
+            $sp->setAttribute('exclude_nav', 1);
+        }
         $sp = Page::getByPath('/utilities/fill_translations');
         if (!is_object($sp) || $sp->getError() === COLLECTION_NOT_FOUND) {
             $sp = SinglePage::add('/utilities/fill_translations', $pkg);
@@ -179,6 +192,9 @@ class Controller extends Package
     {
         $app = Core::make('app');
 
+        \Route::setThemesByRoutes(array(
+            '/translate/online' => array('community_translation', 'full_page.php'),
+        ));
         $this->registerServiceProvider($app);
         $director = $app->make('director')->addSubscriber($app->make('community_translation/events'));
         if ($app->isRunThroughCommandLineInterface()) {

@@ -63,7 +63,7 @@ class Entry
      *
      * @var string
      */
-    const TERMTYPE_verb = 'verb';
+    const TERMTYPE_VERB = 'verb';
 
     // Properties
 
@@ -212,25 +212,59 @@ class Entry
     }
 
     /**
-     * Get all the allowed type names.
+     * Get all the allowed type names, short names and descriptions.
      *
      * @return array
      */
-    public static function getTypeNames()
+    public static function getTypesInfo()
     {
         static $result;
         if (!isset($result)) {
             $result = array(
-                self::TERMTYPE_ADJECTIVE => tc('TermType', 'adjective'),
-                self::TERMTYPE_ADVERB => tc('TermType', 'adverb'),
-                self::TERMTYPE_CONJUNCTION => tc('TermType', 'conjunction'),
-                self::TERMTYPE_INTERJECTION => tc('TermType', 'interjection'),
-                self::TERMTYPE_NOUN => tc('TermType', 'noun'),
-                self::TERMTYPE_PREPOSITION => tc('TermType', 'preposition'),
-                self::TERMTYPE_PRONOUN => tc('TermType', 'pronoun'),
-                self::TERMTYPE_verb => tc('TermType', 'verb'),
+                self::TERMTYPE_ADJECTIVE => array(
+                    'name' => tc('TermType', 'adjective'),
+                    'short' => tc('TermType_short', 'adj.'),
+                    'description' => t('A word that describes a noun or pronoun (examples: big, happy, obvious).'),
+                ),
+                self::TERMTYPE_ADVERB => array(
+                    'name' => tc('TermType', 'adverb'),
+                    'short' => tc('TermType_short', 'adv.'),
+                    'description' => t('A word that describes or gives more information about a verb, adjective or other adverb (examples: carefully, quickly, very).'),
+                ),
+                self::TERMTYPE_CONJUNCTION => array(
+                    'name' => tc('TermType', 'conjunction'),
+                    'short' => tc('TermType_short', 'conj.'),
+                    'description' => t('A word that ​connects words, ​phrases, and ​clauses in a ​sentence (examples: and, but, while, ​although).'),
+                ),
+                self::TERMTYPE_INTERJECTION => array(
+                    'name' => tc('TermType', 'interjection'),
+                    'short' => tc('TermType_short', 'interj.'),
+                    'description' => t('A word that is used to show a ​short ​sudden ​expression of ​emotion (examples: Bye!, Cheers!, Goodbye!, Hi!, Hooray!).'),
+                ),
+                self::TERMTYPE_NOUN => array(
+                    'name' => tc('TermType', 'noun'),
+                    'short' => tc('TermType_short', 'n.'),
+                    'description' => t('A word that refers to a ​person, ​place, thing, ​event, ​substance, or ​quality (examples: Andrew, house, pencil, table).'),
+                ),
+                self::TERMTYPE_PREPOSITION => array(
+                    'name' => tc('TermType', 'preposition'),
+                    'short' => tc('TermType_short', 'prep.'),
+                    'description' => t('A word that is used before a ​noun, a ​noun phrase, or a ​pronoun, ​connecting it to another word (examples: at, for, in, on, under).'),
+                ),
+                self::TERMTYPE_PRONOUN => array(
+                    'name' => tc('TermType', 'pronoun'),
+                    'short' => tc('TermType_short', 'pron.'),
+                    'description' => t('A word that is used ​instead of a ​noun or a ​noun phrase (examples: I, me, mine, myself).'),
+                ),
+                self::TERMTYPE_VERB => array(
+                    'name' => tc('TermType', 'verb'),
+                    'short' => tc('TermType_short', 'v.'),
+                    'description' => t('A word or phrase that ​describes an ​action, ​condition, or ​experience (examples: listen, read, write).'),
+                ),
             );
-            natcasesort($result);
+            uasort($result, function(array $a, array $b) {
+                return strcasecmp($a['name'], $b['name']);
+            });
         }
 
         return $result;
@@ -245,7 +279,7 @@ class Entry
     {
         static $valid;
         if (!isset($valid)) {
-            $valid = array_keys(self::getTypeNames());
+            $valid = array_keys(self::getTypesInfo());
         }
 
         return ($type === '') || in_array($type, $valid, true);

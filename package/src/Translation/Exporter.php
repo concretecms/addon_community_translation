@@ -85,7 +85,52 @@ class Exporter implements \Concrete\Core\Application\ApplicationAwareInterface
     }
 
     /**
-     * Get the the translations for a specific package, version and locale.
+     * Get recordset of the translations for a specific package, version and locale.
+     * @param Package $package
+     * @param Locale $locale
+     *
+     * @return \Concrete\Core\Database\Driver\PDOStatement
+     */
+    public function getPackageSelectQuery(Package $package, Locale $locale, $excludeUntranslatedStrings = false)
+    {
+        $cn = $this->app->make('community_translation/em')->getConnection();
+        /* @var \Concrete\Core\Database\Connection\Connection $cn */
+        $queryPackageID = (int) $package->getID();
+        $queryLocaleID = $cn->quote($locale->getID());
+        return $cn->executeQuery(
+            "
+                select
+                    Translatables.tID,
+                    tContext,
+                    tText,
+                    tPlural,
+                    tpLocations,
+                    tpComments,
+                    tReviewed,
+                    tText0,
+                    tText1,
+                    tText2,
+                    tText3,
+                    tText4,
+                    tText5
+                from
+                    Translatables
+                    inner join TranslatablePlaces on Translatables.tID = TranslatablePlaces.tpTranslatable
+                    ".(
+                        $excludeUntranslatedStrings ?
+                        "inner join" :
+                        "left join"
+                    )." Translations on Translatables.tID = Translations.tTranslatable and 1 = Translations.tCurrent and $queryLocaleID = Translations.tLocale
+            where
+            TranslatablePlaces.tpPackage = $queryPackageID
+            order by
+            TranslatablePlaces.tpSort
+            "
+        );
+    }
+
+    /**
+     * Get the translations for a specific package, version and locale.
      *
      * @param Package|array $packageOrHandleVersion The package for which you want the translations (a Package instance of an array with handle and version)
      * @param Locale $locale The locale that you want.
@@ -113,42 +158,7 @@ class Exporter implements \Concrete\Core\Application\ApplicationAwareInterface
         if ($package === null) {
             throw new UserException(t('Invalid translated package specified'));
         }
-        $cn = $this->app->make('community_translation/em')->getConnection();
-        $queryPackageID = (int) $package->getID();
-        $queryLocaleID = $cn->quote($locale->getID());
-        /* @var \Concrete\Core\Database\Connection\Connection $cn */
-        $rs = $cn->executeQuery(
-            "
-                select
-                    tContext,
-                    tText,
-                    tPlural,
-                    tpLocations,
-                    tpComments,
-                    tReviewed,
-                    tText0,
-                    tText1,
-                    tText2,
-                    tText3,
-                    tText4,
-                    tText5
-                from
-                    Translatables
-                    inner join TranslatablePlaces on Translatables.tID = TranslatablePlaces.tpTranslatable
-                    ".(
-                        $excludeUntranslatedStrings ?
-                        "inner join" :
-                        "left join"
-                    )." Translations on Translatables.tID = Translations.tTranslatable and 1 = Translations.tCurrent and $queryLocaleID = Translations.tLocale
-                where
-                    TranslatablePlaces.tpPackage = $queryPackageID
-                order by
-                    TranslatablePlaces.tpSort
-            ",
-            array(
-
-            )
-        );
+        $rs = $this->getPackageSelectQuery($package, $locale, $excludeUntranslatedStrings);
         $translations = new \Gettext\Translations();
         $translations->setLanguage($locale->getID());
         $numPlurals = $locale->getPluralCount();
@@ -188,6 +198,7 @@ class Exporter implements \Concrete\Core\Application\ApplicationAwareInterface
             }
             $translations->append($translation);
         }
+        $rs->closeCursor();
 
         return $translations;
     }

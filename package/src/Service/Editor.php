@@ -4,6 +4,7 @@ namespace Concrete\Package\CommunityTranslation\Src\Service;
 use Concrete\Core\Application\Application;
 use Concrete\Package\CommunityTranslation\Src\Locale\Locale;
 use Concrete\Package\CommunityTranslation\Src\Translatable\Translatable;
+use Concrete\Package\CommunityTranslation\Src\Package\Package;
 use Concrete\Package\CommunityTranslation\Src\Translatable\Comment\Comment;
 
 class Editor implements \Concrete\Core\Application\ApplicationAwareInterface
@@ -40,19 +41,89 @@ class Editor implements \Concrete\Core\Application\ApplicationAwareInterface
     }
 
     /**
+     * Returns the initial translations for the online editor.
+     *
+     * @param Package $package
+     * @param Locale $locale
+     *
+     * @return array
+     */
+    public function getInitialTranslations(Package $package, Locale $locale)
+    {
+        $result = array();
+        $rs = $this->app->make('community_translation/translation/exporter')->getPackageSelectQuery($package, $locale, false);
+        $numPlurals = $locale->getPluralCount();
+        while (($row = $rs->fetch()) !== false) {
+            $item = array(
+                'id' => (int) $row['tID'],
+                'original' => $row['tText'],
+            );
+            if ($row['tContext'] !== '') {
+                $item['context'] = $row['tContext'];
+            }
+            $isPlural = $row['tPlural'] !== '';
+            if ($isPlural) {
+                $item['originalPlural'] = $row['tPlural'];
+            }
+            if ($row['tText0'] !== null) {
+                $translations = array();
+                switch ($isPlural ? $numPlurals : 1) {
+                    case 6:
+                        $translations[] = $row['tText5'];
+                        /* @noinspection PhpMissingBreakStatementInspection */
+                    case 5:
+                        $translations[] = $row['tText4'];
+                        /* @noinspection PhpMissingBreakStatementInspection */
+                    case 4:
+                        $translations[] = $row['tText3'];
+                        /* @noinspection PhpMissingBreakStatementInspection */
+                    case 3:
+                        $translations[] = $row['tText2'];
+                        /* @noinspection PhpMissingBreakStatementInspection */
+                    case 2:
+                        $translations[] = $row['tText1'];
+                        /* @noinspection PhpMissingBreakStatementInspection */
+                    case 1:
+                        $translations[] = $row['tText0'];
+                        break;
+                }
+                $item['translations'] = array_reverse($translations);
+            }
+            $result[] = $item;
+        }
+        $rs->closeCursor();
+
+        return $result;
+    }
+
+    /**
      * Returns the data to be used in the editor when editing a string.
      *
      * @param Locale $locale The current editor locale.
      * @param Translatable $translatable The source string that's being translated.
+     * @param Package $package The package where this string is used.
      * @param bool $initial Set to true when a string is first loaded, false after it has been saved.
      *
      * @return array
      */
-    public function getTranslatableData(Locale $locale, Translatable $translatable, $initial)
+    public function getTranslatableData(Locale $locale, Translatable $translatable, Package $package = null, $initial = false)
     {
-        $result = array();
-        $result['translations'] = $this->getTranslations($locale, $translatable);
+        $result = array(
+            'id' => $translatable->getID(),
+            'translations' => $this->getTranslations($locale, $translatable),
+        );
         if ($initial) {
+            $place = ($package === null) ? null : $this->app->make('community_translation/translatable/place')->findOneBy(array('tpPackage' => $package, 'tpTranslatable' => $translatable));
+            if ($place !== null) {
+                $extractedComments = $place->getComments();
+                $references = $this->expandReferences($place->getLocations(), $package);
+            } else {
+                $extractedComments = array();
+                $references = array();
+            }
+            $result['extractedComments'] = $extractedComments;
+            $result['references'] = $references;
+            $result['extractedComments'] = ($place === null) ? array() : $place->getComments();
             $result['comments'] = $this->getComments($locale, $translatable);
             $result['suggestions'] = $this->getSuggestions($locale, $translatable);
             $result['glossary'] = $this->getGlossaryTerms($locale, $translatable);
@@ -73,40 +144,47 @@ class Editor implements \Concrete\Core\Application\ApplicationAwareInterface
     {
         $numPlurals = $locale->getPluralCount();
 
-        $result = array();
+        $result = array(
+            'current' => null,
+            'others' => array(),
+        );
         $translations = $this->app->make('community_translation/translation')->findBy(array('tTranslatable' => $translatable, 'tLocale' => $locale), array('tCreatedOn' => 'DESC'));
         foreach ($translations as $translation) {
-            $texts = array();
-            switch ($numPlurals) {
+            $translations = array();
+            switch (($translatable->getPlural() === '') ? 1 : $numPlurals) {
                 case 6:
-                    $texts[] = $translation->getText5();
+                    $translations[] = $translation->getText5();
                     /* @noinspection PhpMissingBreakStatementInspection */
                 case 5:
-                    $texts[] = $translation->getText4();
+                    $translations[] = $translation->getText4();
                     /* @noinspection PhpMissingBreakStatementInspection */
                 case 4:
-                    $texts[] = $translation->getText3();
+                    $translations[] = $translation->getText3();
                     /* @noinspection PhpMissingBreakStatementInspection */
                 case 3:
-                    $texts[] = $translation->getText2();
+                    $translations[] = $translation->getText2();
                     /* @noinspection PhpMissingBreakStatementInspection */
                 case 2:
-                    $texts[] = $translation->getText1();
+                    $translations[] = $translation->getText1();
                     /* @noinspection PhpMissingBreakStatementInspection */
                 case 1:
                 default:
-                    $texts[] = $translation->getText0();
+                    $translations[] = $translation->getText0();
                     break;
             }
             $item = array(
                 'id' => $translation->getID(),
                 'created' => $translation->getCreatedOn(),
                 'createdBy' => $translation->getCreatedBy(),
-                'current' => $translation->isCurrent(),
-                'currentSince' => $translation->isCurrentSince(),
                 'reviewed' => $translation->isReviewed(),
-                'texts' => array_reverse($texts),
+                'translations' => array_reverse($translations),
             );
+            if ($translation->isCurrent()) {
+                $item['currentSince'] = $translation->isCurrentSince();
+                $result['current'] = $item;
+            } else {
+                $result['others'][] = $item;
+            }
         }
 
         return $result;
@@ -249,16 +327,78 @@ class Editor implements \Concrete\Core\Application\ApplicationAwareInterface
                 'id' => (int) $row['geID'],
                 'term' => $row['geTerm'],
                 'type' => $row['geType'],
-                'globalComments' => $row['geComments'],
+                'termComments' => $row['geComments'],
             );
             if ($row['gleTranslation'] !== null) {
                 $item['translation'] = $row['gleTranslation'];
-                $item['localeComments'] = $row['gleComments'];
+                $item['translationComments'] = $row['gleComments'];
             }
             $result[] = $item;
         }
         $rs->closeCursor();
 
         return $result;
+    }
+
+    /**
+     * Expand translatable string references by adding a link to the online repository where they are defined.
+     *
+     * @param string[] $references
+     * @param Package $package
+     *
+     * @return string[]
+     */
+    public function expandReferences(array $references, Package $package)
+    {
+        if (empty($references)) {
+            return $references;
+        }
+        $repositories = $this->app->make('community_translation/git')->findBy(array('grPackage' => $package->getHandle()));
+        $applicableRepository = null;
+        $gitSubDir = '';
+        if (strpos($package->getVersion(), Package::DEV_PREFIX) === 0) {
+            foreach ($repositories as $repository) {
+                foreach ($repository->getDevBranches() as $devBranch => $packageVersion) {
+                    if ($package->getVersion() === $packageVersion) {
+                        $gitSubDir = 'blob/'.$devBranch.'/';
+                        $applicableRepository = $repository;
+                        break;
+                    }
+                }
+                if ($applicableRepository !== null) {
+                    break;
+                }
+            }
+        } else {
+            foreach ($repositories as $repository) {
+                $vx = $repository->getTagsFilterExpanded();
+                if ($vx !== null && version_compare($package->getVersion(), $vx['version'], $vx['operator'])) {
+                    $gitSubDir = 'blob/'.$package->getVersion().'/';
+                    $applicableRepository = $repository;
+                    break;
+                }
+            }
+        }
+        if ($applicableRepository === null) {
+            return $references;
+        }
+        if (!preg_match('/^(https?:\/\/github.com\/[^?]+)\.git($|\?)/i', $applicableRepository->getURL(), $matches)) {
+            return $references;
+        }
+        $baseURL = $matches[1].'/'.$gitSubDir;
+        if ($applicableRepository->getWebRoot() !== '') {
+            $baseURL .= $applicableRepository->getWebRoot().'/';
+        }
+        foreach ($references as $index => $reference) {
+            if (!preg_match('/^\w*:\/\//', $reference)) {
+                $url = $baseURL.ltrim($reference, '/');
+                if (preg_match('/^(.+):(\d+)$/', $url, $m)) {
+                    $url = $m[1].'#L'.$m[2];
+                }
+                $references[$index] = array($url, $reference);
+            }
+        }
+
+        return $references;
     }
 }

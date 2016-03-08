@@ -144,11 +144,7 @@ function showPanel(id, oldID, out) {
 	);
 }
 <?php if ($translationsAccess >= Access::TRANSLATE) { ?>
-	$('#comtra-translate-online').on('click', function(e) {
-		alert('@todo');
-		e.preventDefault();
-		return false;
-	});
+	$('#comtra-translate-online').attr('href', <?php echo json_encode((string) URL::to('/translate/online', $package->getID(), $locale->getID())); ?>);
 	$('#comtra-translate-upload').on('click', function(e) {
 		showPanel('#comtra-translate-upload-form', '#comtra-panel-main', true);
 		e.preventDefault();

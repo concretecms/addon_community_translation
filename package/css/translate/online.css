@@ -1,0 +1,56 @@
+#comtra_extra>.tab-content {
+	overflow: auto;
+	padding: 8px;
+}
+#comtra_extra .nav-tabs>li>a>.active-badge {
+	background-color: #428bca;
+}
+#comtra_translator .ccm-translator-col-original .panel-heading span {
+	float: left;
+	width: 50%;
+	height: 20px;
+	overflow: hidden;
+}
+#comtra_translator .ccm-translator-col-original ul {
+	overflow: scroll;
+	overflow-x: hidden;
+}
+#comtra_translator .ccm-translator-col-original li {
+	transition: all 0.2s linear;
+	cursor: pointer;
+}
+#comtra_translator .ccm-translator-col-original li:hover {
+	background-color: #dedede;
+}
+#comtra_translator .ccm-translator-col-original li span {
+	float: left;
+	width: 50%;
+	height: 20px;
+	overflow: hidden;
+}
+#comtra_translator .ccm-translator-col-translations > .panel {
+	visibility: hidden;
+}
+
+#comtra_extra {
+	visibility: hidden;
+}
+
+
+#comtra_translation-references .list-group-item {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;    
+}
+
+#comtra_translation-suggestions .comtra_some .list-group-item .label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
+    display: inline-block;
+}
+
+#comtra_translation-glossary dt .label {
+	margin-left: 5px;
+}

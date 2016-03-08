@@ -118,7 +118,7 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
                     Translatables.tHash = ?
             ')->getWrappedStatement();
             /* @var \Doctrine\DBAL\Driver\Statement $searchQuery */
-            $insertQueryFields = 'tCreatedOn, tCreatedBy, tLocale, tCurrent, tCurrentSince, tReviewed, tTranslatable, tText0, tText1, tText2, tText3, tText4, tText5';
+            $insertQueryFields = 'tCreatedOn, tCreatedBy, tLocale, tCurrent, tCurrentSince, tReviewed, tNeedReview, tTranslatable, tText0, tText1, tText2, tText3, tText4, tText5';
             $insertQueryChunk = ' ('.implode(', ', array(
                 $nowExpression,
                 $userID,
@@ -126,6 +126,7 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
                 '?', // tCurrent
                 '?', // tCurrentSince
                 '?', // tReviewed
+                '?', // tNeedReview
                 '?', // tTranslatable
                 '?, ?, ?, ?, ?, ?', // tText0... tText5
             )).'),';
@@ -137,11 +138,11 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
             $insertParams = array();
             $insertCount = 0;
             $unsetCurrentTranslationQuery = $connection->prepare(
-                'UPDATE Translations SET tCurrent = NULL, tCurrentSince = NULL, tReviewed = ? WHERE tID = ? LIMIT 1'
+                'UPDATE Translations SET tCurrent = NULL, tCurrentSince = NULL, tReviewed = ?, tNeedReview = ? WHERE tID = ? LIMIT 1'
             )->getWrappedStatement();
             /* @var \Doctrine\DBAL\Driver\Statement $unsetCurrentTranslationQuery */
             $setCurrentTranslationQuery = $connection->prepare(
-                'UPDATE Translations SET tCurrent = 1, tCurrentSince = '.$nowExpression.', tReviewed = ? WHERE tID = ? LIMIT 1'
+                'UPDATE Translations SET tCurrent = 1, tCurrentSince = '.$nowExpression.', tReviewed = ?, tNeedReview = ? WHERE tID = ? LIMIT 1'
             )->getWrappedStatement();
             /* @var \Doctrine\DBAL\Driver\Statement $setCurrentTranslationQuery */
 
@@ -196,12 +197,14 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
                         // No current translation for this string: add this new one and mark it as the current one
                         $addCurrent = 1;
                         $addReviewed = $reviewed;
+                        $addNeedReview = 0;
                         $translatablesChanged[] = $translatableID;
                         ++$result->addedActivated;
                     } elseif ($reviewed === 1 || $currentRow['tReviewed'] === '0') {
                         // There's already a current translation for this string, but we'll activate this new one
-                        $unsetCurrentTranslationQuery->execute(array($currentRow['tReviewed'], $currentRow['tID']));
+                        $unsetCurrentTranslationQuery->execute(array($currentRow['tReviewed'], ($reviewed === 1) ? 0 : $currentRow['tNeedReview'], $currentRow['tID']));
                         $addCurrent = 1;
+                        $addNeedReview = 0;
                         $addReviewed = $reviewed;
                         $translatablesChanged[] = $translatableID;
                         ++$result->addedActivated;
@@ -209,12 +212,14 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
                         // Let keep the previously current translation as the current one, but let's add this new one
                         $addCurrent = null;
                         $addReviewed = 0;
+                        $addNeedReview = 1;
                         ++$result->addedNeedReview;
                     }
                     // Add the new record to the queue
                     $insertParams[] = $addCurrent;
                     $insertParams[] = ($addCurrent === 1) ? $now : null;
                     $insertParams[] = $addReviewed;
+                    $insertParams[] = $addNeedReview;
                     $insertParams[] = $translatableID;
                     $insertParams[] = $translation->getTranslation();
                     for ($p = 1; $p <= 5; ++$p) {
@@ -227,15 +232,15 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
                         $insertCount = 0;
                     }
                 } elseif ($currentRow === null) {
-                    // This translation is already present, but there's no current translation: let's activate it (this case should never occur, but who cares;) )
-                    $setCurrentTranslationQuery->execute(array(($reviewed === 1 || $sameRow['tReviewed'] === '1') ? 1 : 0, $sameRow['tID']));
+                    // This translation is already present, but there's no current translation: let's activate it
+                    $setCurrentTranslationQuery->execute(array(($reviewed === 1 || $sameRow['tReviewed'] === '1') ? 1 : 0, ($reviewed === 1) ? 0 : $sameRow['tNeedReview'], $sameRow['tID']));
                     $translatablesChanged[] = $translatableID;
                     ++$result->addedActivated;
                 } elseif ($sameRow['tCurrent'] === '1') {
                     // This translation is already present and it's the current one
                     if ($reviewed === 1 && $sameRow['tReviewed'] === '0') {
                         // Let's mark the translation as reviewed
-                        $setCurrentTranslationQuery->execute(array(1, $sameRow['tID']));
+                        $setCurrentTranslationQuery->execute(array(1, 0, $sameRow['tID']));
                         ++$result->existingActiveReviewed;
                     } else {
                         ++$result->existingActiveUntouched;
@@ -244,8 +249,8 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
                     // This translation exists, but we have already another translation that's the current one
                     if ($reviewed === 1 || $currentRow['tReviewed'] === '0') {
                         // Let's make the new translation the current one
-                        $unsetCurrentTranslationQuery->execute(array($currentRow['tReviewed'], $currentRow['tID']));
-                        $setCurrentTranslationQuery->execute(array($reviewed, $sameRow['tID']));
+                        $unsetCurrentTranslationQuery->execute(array($currentRow['tReviewed'], ($reviewed === 1) ? 0 : $currentRow['tNeedReview'], $currentRow['tID']));
+                        $setCurrentTranslationQuery->execute(array($reviewed, ($reviewed === 1) ? 0 : 1, $sameRow['tID']));
                         $translatablesChanged[] = $translatableID;
                         ++$result->existingActivated;
                     } else {

@@ -95,6 +95,15 @@ class Translation
     protected $tReviewed;
 
     /**
+     * Does this translation need review?
+     *
+     * @Column(type="boolean", nullable=false, options={"comment": "Does this translation need review?"})
+     *
+     * @var bool
+     */
+    protected $tNeedReview;
+
+    /**
      * Translation (singular / plural 0).
      *
      * @Column(type="text", nullable=false, options={"comment": "Translation (singular / plural 0)"})
@@ -302,6 +311,26 @@ class Translation
     public function setIsReviewed($value)
     {
         $this->tReviewed = (bool) $value;
+    }
+
+    /**
+     * Does this translation need review?
+     *
+     * @return bool
+     */
+    public function needReview()
+    {
+        return $this->tNeedReview;
+    }
+    
+    /**
+     * Does this translation need review?
+     *
+     * @param bool $value
+     */
+    public function setNeedReview($value)
+    {
+        $this->tNeedReview = (bool) $value;
     }
 
     /**
