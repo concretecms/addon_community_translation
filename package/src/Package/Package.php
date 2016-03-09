@@ -80,6 +80,8 @@ class Package
      * Places associated to this string.
      *
      * @OneToMany(targetEntity="Concrete\Package\CommunityTranslation\Src\Translatable\Place\Place", mappedBy="tpPackage")
+     *
+     * @var ArrayCollection
      */
     protected $places;
 
@@ -87,6 +89,8 @@ class Package
      * Stats associated to this string.
      *
      * @OneToMany(targetEntity="Concrete\Package\CommunityTranslation\Src\Stats\Stats", mappedBy="sPackage")
+     *
+     * @var ArrayCollection
      */
     protected $stats;
 

@@ -66,6 +66,8 @@ class Translatable
      * Places associated to this translatable string.
      *
      * @OneToMany(targetEntity="Concrete\Package\CommunityTranslation\Src\Translatable\Place\Place", mappedBy="tpTranslatable")
+     *
+     * @var ArrayCollection
      */
     protected $places;
 
@@ -73,6 +75,8 @@ class Translatable
      * Translations associated to this translatable string.
      *
      * @OneToMany(targetEntity="Concrete\Package\CommunityTranslation\Src\Translation\Translation", mappedBy="tTranslatable")
+     *
+     * @var ArrayCollection
      */
     protected $translations;
 
@@ -80,6 +84,8 @@ class Translatable
      * Comments about this translatable string.
      *
      * @OneToMany(targetEntity="Concrete\Package\CommunityTranslation\Src\Translatable\Comment\Comment", mappedBy="tcTranslatable")
+     *
+     * @var ArrayCollection
      */
     protected $comments;
     

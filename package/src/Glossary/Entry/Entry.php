@@ -108,6 +108,8 @@ class Entry
      * Translations of this entry.
      *
      * @OneToMany(targetEntity="Concrete\Package\CommunityTranslation\Src\Glossary\Entry\Localized", mappedBy="gleEntry")
+     *
+     * @var ArrayCollection
      */
     protected $translations;
 

@@ -93,6 +93,8 @@ class Locale
      * Translations associated to this locale.
      *
      * @OneToMany(targetEntity="Concrete\Package\CommunityTranslation\Src\Translation\Translation", mappedBy="tLocale")
+     *
+     * @var ArrayCollection
      */
     protected $translations;
 
@@ -100,6 +102,8 @@ class Locale
      * Stats associated to this locale.
      *
      * @OneToMany(targetEntity="Concrete\Package\CommunityTranslation\Src\Stats\Stats", mappedBy="sLocale")
+     *
+     * @var ArrayCollection
      */
     protected $stats;
 
@@ -107,6 +111,8 @@ class Locale
      * Localized Glossary Entries associated to this locale.
      *
      * @OneToMany(targetEntity="Concrete\Package\CommunityTranslation\Src\Glossary\Entry\Localized", mappedBy="gleLocale")
+     *
+     * @var ArrayCollection
      */
     protected $glossaryEntries;
 
@@ -114,6 +120,8 @@ class Locale
      * Localized comments about translations.
      *
      * @OneToMany(targetEntity="Concrete\Package\CommunityTranslation\Src\Translatable\Comment\Comment", mappedBy="tcLocale")
+     *
+     * @var ArrayCollection
      */
     protected $comments;
 
