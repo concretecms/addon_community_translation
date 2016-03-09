@@ -130,7 +130,9 @@ var Comments = (function() {
 			$headerRight.append($('<a href="#"><i class="fa fa-pencil-square-o"></i></a>')
 				.attr('title', i18n.Edit)
 				.on('click', function(e) {
-					startEdit(me);
+					if (!translator.busy) {
+						startEdit(me);
+					}
 					e.preventDefault();
 					return false;
 				})
@@ -139,7 +141,9 @@ var Comments = (function() {
 		$headerRight.append($('<a href="#" style="margin-left: 10px"><i class="fa fa-reply"></i></a>')
 			.attr('title', i18n.Reply)
 			.on('click', function(e) {
-				addNew(me);
+				if (!translator.busy) {
+					addNew(me);
+				}
 				e.preventDefault();
 				return false;
 			})
@@ -382,7 +386,9 @@ var Suggestions = (function() {
 					.append($('<br />'))
 					.append($('<span />').text(this.translation))
 					.on('click', function(e) {
-						setTranslatorText(textToSet, true).focus();
+						if (!translator.busy) {
+							setTranslatorText(textToSet, true).focus();
+						}
 						e.preventDefault();
 						return false;
 					})
@@ -428,7 +434,9 @@ var Glossary = (function() {
 				var me = this;
 				this.$dt.prepend($('<a href="#"><i class="fa fa-pencil-square-o"></i></a>')
 					.on('click', function(e) {
-						startEdit(me);
+						if (!translator.busy) {
+							startEdit(me);
+						}
 						e.preventDefault();
 						return false;
 					})
@@ -441,7 +449,9 @@ var Glossary = (function() {
 				this.$dd.append($('<a href="#" />')
 					.text(textToAdd)
 					.on('click', function(e) {
-						setTranslatorText(textToAdd, false).focus();
+						if (!translator.busy) {
+							setTranslatorText(textToAdd, false).focus();
+						}
 						e.preventDefault();
 						return false;
 					})
@@ -588,6 +598,10 @@ function initializeUI()
 }
 function loadFullTranslation(foo, translation, cb)
 {
+	if (!translation) {
+		cb(true);
+		return;
+	}
 	var success = true;
 	$.ajax({
 		cache: false,
@@ -690,7 +704,9 @@ window.comtraOnlineEditorInitialize = function(options) {
 		})
 	;
 	$('#comtra_translation-comments-add').on('click', function(e) {
-		Comments.addNew();
+		if (!translator.busy) {
+			Comments.addNew();
+		}
 		e.preventDefault();
 		return false;
 	});
@@ -716,7 +732,9 @@ window.comtraOnlineEditorInitialize = function(options) {
 			})
 		;
 		$('#comtra_translation-glossary-add').on('click', function(e) {
-			Glossary.addNew();
+			if (!translator.busy) {
+				Glossary.addNew();
+			}
 			e.preventDefault();
 			return false;
 		});
