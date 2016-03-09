@@ -5,6 +5,9 @@ use Concrete\Package\CommunityTranslation\Src\Service\Access;
 /* @var Concrete\Core\Validation\CSRF\Token $token */
 /* @var Concrete\Core\Localization\Service\Date $dh */
 
+$uh = Core::make('community_translation/user');
+/* @var Concrete\Package\CommunityTranslation\Src\Service\User $uh */
+
 defined('C5_EXECUTE') or die('Access Denied.');
 
 id(new Area('Opening'))->display($c);
@@ -66,7 +69,7 @@ if (!empty($requested)) {
                         ?><tr data-locale-id="<?php echo h($l['id']); ?>">
                             <td>
                                 <b><?php echo h($l['name']); ?></b><br />
-                                <?php echo tc('Language', 'Requested by:'); ?> <?php View::element('username', array('user' => $l['requestedBy']), 'community_translation'); ?><br />
+                                <?php echo tc('Language', 'Requested by:'); ?> <?php echo $uh->format($l['requestedBy']); ?><br />
                                 <?php echo tc('Language', 'Requested on:'); ?> <?php echo $dh->formatPrettyDateTime($l['requestedOn'], true, true); ?>
                             </td>
                             <td><?php

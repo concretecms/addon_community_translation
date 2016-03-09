@@ -12,6 +12,9 @@ use Concrete\Package\CommunityTranslation\Src\Service\Access;
 /* @var array $translators */
 /* @var array $aspiring */
 
+$uh = Core::make('community_translation/user');
+/* @var Concrete\Package\CommunityTranslation\Src\Service\User $uh */
+
 id(new Area('Opening'))->display($c);
 
 ?><h1><?php echo t('%s Translation Team', $locale->getDisplayName()); ?></h1><?php
@@ -25,7 +28,7 @@ if (!empty($globalAdmins)) {
     	    if ($i > 0) {
     	        echo ', ';
     	    }
-    	    View::element('username', array('user' => $u['ui']), 'community_translation');
+    	    echo $uh->format($u['ui']);
     	}
     ?>
     </div>
@@ -54,7 +57,7 @@ if (!empty($globalAdmins)) {
     							</form>
     						</div>
 						<?php } ?>
-						<?php View::element('username', array('user' => $u['ui']), 'community_translation'); ?>
+						<?php echo $uh->format($u['ui']); ?>
 						<div class="text-muted"><?php echo t('Coordinator since: %s', $dh->formatPrettyDateTime($u['since'], true)); ?></div>
 					</li>
 				<?php } ?>
@@ -84,7 +87,7 @@ if (!empty($globalAdmins)) {
     							</form>
     						</div>
 						<?php } ?>
-						<?php View::element('username', array('user' => $u['ui']), 'community_translation'); ?>
+						<?php echo $uh->format($u['ui']); ?>
 						<div class="text-muted"><?php echo t('Translator since: %s', $dh->formatPrettyDateTime($u['since'], true)); ?></div>
 					</li>
 				<?php } ?>
@@ -112,7 +115,7 @@ if (!empty($globalAdmins)) {
 								</form>
 							</div>
 						<?php } ?>
-						<?php View::element('username', array('user' => $u['ui']), 'community_translation'); ?>
+						<?php echo $uh->format($u['ui']); ?>
 						<div class="text-muted"><?php echo t('Request date: %s', $dh->formatPrettyDateTime($u['since'], true)); ?></div>
 					</li>
 				<?php } ?>
