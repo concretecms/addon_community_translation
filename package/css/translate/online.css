@@ -51,6 +51,20 @@
     display: inline-block;
 }
 
+#comtra_editcomment {
+	resize: vertical;
+	height: 100px;
+}
+#comtra_editcomment_render {
+	height: 100px;
+	resize: vertical;
+    padding: 6px 12px;
+	overflow: auto;
+	border: 1px solid #ccc;
+    border-radius: 4px;
+    -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,0.075);
+    box-shadow: inset 0 1px 1px rgba(0,0,0,0.075);
+}
 #comtra_translation-glossary dt .label {
     margin-left: 5px;
 }

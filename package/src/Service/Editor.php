@@ -220,13 +220,19 @@ class Editor implements \Concrete\Core\Application\ApplicationAwareInterface
             );
         }
         $result = array();
+        $uh = $this->app->make('community_translation/user');
+        $dh = $this->app->make('helper/date');
+        $me = new \User();
+        $myID = $me->isRegistered() ? (int) $me->getUserID() : null;
         foreach ($comments as $comment) {
             $result[] = array(
                 'id' => $comment->getID(),
-                'date' => $comment->getPostedOn(),
-                'by' => $comment->getPostedBy(),
+                'date' => $dh->formatPrettyDateTime($comment->getPostedOn(), true, true),
+                'mine' => $myID && $myID === $comment->getPostedBy(),
+                'byHtml' => $uh->format($comment->getPostedBy()),
                 'text' => $comment->getText(),
                 'comments' => $this->getComments($locale, $translatable, $comment),
+                'isGlobal' => $comment->getLocale() === null,
             );
         }
 

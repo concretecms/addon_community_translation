@@ -2,7 +2,7 @@
 
 (function($, window, undefined) {
 'use strict';
-var translator, $extra, canApprove, packageID, actions, tokens, i18n, canEditGlossary;
+var translator, $extra, canApprove, packageID, actions, tokens, i18n, canEditGlossary, currentTranslatableID = null;
 
 function setBadgeCount(id, n) {
 	var $badge = $('#'+id);
@@ -50,7 +50,29 @@ function textToHtml(text) {
 	}
 	return result;
 }
-	
+var markdownToHtml = (function() {
+	var md = null, $div = null, last = null;
+	return function(text) {
+		if (last !== null && last.text === text) {
+			return last.result;
+		}
+		if (md === null) {
+			md = window.markdownit({
+				breaks: true,
+				linkify: true,
+				typographer: true
+			});
+		}
+		if ($div === null) {
+			$div = $('<div />');
+		}
+		$div.html(md.render(text));
+		$div.find('a').attr('target', '_blank');
+		last = {text: text, result: $div.html()};
+		return last.result;
+	};
+})();
+
 function getAjaxError(args) {
 	var xhr = args[0] /*, textStatus = args[1]*/, errorThrown = args[2];
 	if (xhr && xhr.responseJSON && xhr.responseJSON.error) {
@@ -78,8 +100,86 @@ var OtherTranslations = (function() {
 })();
 
 var Comments = (function() {
-	var $parent, extractedCount, online;
-	function updateCount()
+	var $parent, extractedCount, editingParentComment, editingComment, ajaxing = false;
+
+	function OnlineComment(data, parent) {
+		var me = this;
+		this.data = data;
+		this.parent = parent || null;
+		if (this.parent !== null) {
+			this.parent.childAdded();
+		}
+		this.numChild = 0;
+		var $container = (this.parent === null) ? $('#comtra_translation-comments-online') : this.parent.$childContainer;
+		$container.append(this.$elem = $('<div class="list-group-item" />'));
+		var $headerRight;
+		this.$elem
+			.append($('<div class="comtra_comment-header clearfix" />')
+				.append($('<div class="pull-left" />')
+					.html(this.data.byHtml)
+					.prepend(' ' + i18n.by + ' ')
+					.prepend(this.$date = $('<span />'))
+				)
+				.append($headerRight = $('<div class="pull-right" />'))
+			)
+			.append(this.$comment = $('<div class="comtra_comment-body clearfix" />'))
+		;
+		if (this.data.mine) {
+			$headerRight.append($('<a href="#"><i class="fa fa-pencil-square-o"></i></a>')
+				.attr('title', i18n.Edit)
+				.on('click', function(e) {
+					startEdit(me);
+					e.preventDefault();
+					return false;
+				})
+			);
+		}
+		$headerRight.append($('<a href="#" style="margin-left: 10px"><i class="fa fa-reply"></i></a>')
+			.attr('title', i18n.Reply)
+			.on('click', function(e) {
+				addNew(me);
+				e.preventDefault();
+				return false;
+			})
+		);
+
+		this.$elem.append(this.$childContainer = $('<div class="clearfix" style="display: none" />'));
+		this.level = this.parent ? (this.parent.level) + 1 : 0;
+		this.updated();
+		OnlineComment.count++;
+		if (data.comments) {
+			var me = this;
+			$.each(data.comments, function() {
+				new OnlineComment(this, me);
+			});
+		}
+	}
+	OnlineComment.prototype = {
+		childAdded: function() {
+			this.numChild++;
+			if (this.numChild === 1) {
+				this.$childContainer.show('fast');
+			}
+		},
+		childRemoved: function() {
+			this.numChild--;
+			if (this.numChild === 0) {
+				this.$childContainer.hide('fast');
+			}
+		},
+		dispose: function() {
+			this.$elem.remove();
+			if (this.parent !== null) {
+				this.parent.childRemoved();
+			}
+			OnlineComment.count--;
+		},
+		updated: function() {
+			this.$date.text(this.data.date);
+			this.$comment.html(markdownToHtml(this.data.text));
+		}
+	};
+	function updateStatus()
 	{
 		var f = function(arr) {
 			var r = arr.length;
@@ -88,27 +188,147 @@ var Comments = (function() {
 			});
 			return r;
 		};
-		var tot = extractedCount + f(online);
+		var tot = extractedCount + OnlineComment.count;
 		setBadgeCount('comtra_translation-comments-count', tot);
+		$parent.find('.comtra_none')[(tot === 0) ? 'show' : 'hide']();
+		$('#comtra_translation-comments-online')[(OnlineComment.count > 0) ? 'show' : 'hide']();
 		return tot;
+	}
+	function addNew(parentEntry) {
+		if (ajaxing) {
+			return;
+		}
+		startEdit(null, parentEntry);
+	}
+	function startEdit(comment, parentComment) {
+		if (ajaxing) {
+			return;
+		}
+		editingComment = comment || null;
+		editingParentComment = (editingComment === null) ? (parentComment || null) : editingComment.parent;
+		var data = (editingComment === null) ? null : editingComment.data;
+		var $dlg = $('#comtra_translation-comments-dialog');
+		$('#comtra_editcomment-visibility')[editingParentComment ? 'hide' : 'show']();
+		if (editingParentComment === null) {
+			$('input[name="comtra_editcomment-visibility"]').prop('checked', false);
+			if (editingComment) {
+				$('input[name="comtra_editcomment-visibility"][value="' + (editingComment.data.isGlobal ? 'global' : 'locale') + '"]').prop('checked', true);
+			}
+		}
+		$('#comtra_editcomment').val(data ? data.text : '').trigger('change');
+		$dlg.find('.btn-danger')[editingComment === null ? 'hide' : 'show']();
+		$dlg.modal('show');
+	}
+	function deleteEditing() {
+		if (ajaxing) {
+			return;
+		}
+		$.ajax({
+			cache: false,
+			data: {ccm_token: tokens.deleteComment, id: editingComment.data.id},
+			dataType: 'json',
+			method: 'POST',
+			url: actions.deleteComment
+		})
+		.done(function() {
+			editingComment.dispose();
+			updateStatus();
+			ajaxing = false;
+			$('#comtra_translation-comments-dialog').modal('hide');
+		})
+		.fail(function(xhr, textStatus, errorThrown) {
+			window.alert(getAjaxError(arguments));
+			ajaxing = false;
+		});
+	}
+	function doneEdit() {
+		if (ajaxing) {
+			return;
+		}
+		var send = {};
+		if (editingComment === null) {
+			send.id = 'new';
+			if (editingParentComment === null) {
+				send.parent = 'root';
+				send.translatable = currentTranslatableID;
+			} else {
+				send.parent = editingParentComment.data.id;
+			}
+		} else {
+			send.id = editingComment.data.id;
+		}
+		if (editingParentComment === null) {
+			send.visibility = $('input[name="comtra_editcomment-visibility"]:checked').val();
+			if (!send.visibility) {
+				$('input[name="comtra_editcomment-visibility"]:first').focus();
+				return;
+			}
+		}
+		send.text = $.trim($('#comtra_editcomment').val());
+		if (send.text === '') {
+			$('#comtra_editcomment').val('').trigger('change').focus();
+			return;
+		}
+		try {
+			markdownToHtml(send.text);
+		} catch (e) {
+			window.alert(e.message || e.toString());
+			return;
+		}
+		ajaxing = true;
+		$.ajax({
+			cache: false,
+			data: $.extend({ccm_token: tokens.saveComment}, send),
+			dataType: 'json',
+			method: 'POST',
+			url: actions.saveComment
+		})
+		.done(function(data) {
+			if (editingComment === null) {
+				new OnlineComment(data, editingParentComment);
+			} else {
+				editingComment.data = data;
+				editingComment.updated();
+			}
+			ajaxing = false;
+			updateStatus();
+			$('#comtra_translation-comments-dialog').modal('hide');
+		})
+		.fail(function(xhr, textStatus, errorThrown) {
+			window.alert(getAjaxError(arguments));
+			ajaxing = false;
+		});
 	}
 	return {
 		initialize: function(extra) {
+			var $l;
 			$parent = $('#comtra_translation-comments');
 			var extracted = extra.extractedComments;
 			extractedCount = extracted.length;
-			online = extra.comments;
-			updateCount();
-			var $l = $('#comtra_translation-comments-extracted');
-			if (extracted.length === 0) {
+			$l = $('#comtra_translation-comments-extracted');
+			$l.children().not(':first').remove();
+			if (extractedCount === 0) {
 				$l.hide();
 			} else {
-				$l.children().not(':first').remove();
 				$.each(extracted, function(foo, c) {
 					$l.append($('<div class="list-group-item" />').text(c));
 				});
 				$l.show();
 			}
+			$l = $('#comtra_translation-comments-online');
+			$l.children(':first')[(extractedCount > 0) ? 'show' : 'hide']();
+			$l.children().not(':first').remove();
+			OnlineComment.count = 0;
+			$.each(extra.comments, function() {
+				new OnlineComment(this);
+			});
+			updateStatus();
+		},
+		addNew: addNew,
+		deleteEditing: deleteEditing,
+		doneEdit: doneEdit,
+		canCloseModal: function() {
+			return !ajaxing;
 		}
 	};
 })();
@@ -406,9 +626,11 @@ function loadFullTranslation(foo, translation, cb)
 function showFullTranslation(foo)
 {
 	if (!translator.currentTranslationView) {
+		currentTranslatableID = null;
 		$extra.css('visibility', 'hidden');
 		return;
 	}
+	currentTranslatableID = translator.currentTranslationView.translation.id;
 	var extra = translator.currentTranslationView.translation._extra;
 	OtherTranslations.initialize(extra);
 	Comments.initialize(extra);
@@ -443,6 +665,34 @@ window.comtraOnlineEditorInitialize = function(options) {
 		onUILaunched: initializeUI,
 		onBeforeActivatingTranslation: loadFullTranslation,
 		onCurrentTranslationChanged: showFullTranslation
+	});
+	$('#comtra_editcomment').on('change keydown keyup keypress', function() {
+		$('#comtra_editcomment_render').html(markdownToHtml($.trim(this.value)));
+	});
+	$('#comtra_translation-comments-dialog')
+		.modal({
+			show: false
+		})
+		.find('.btn-primary').on('click', function() {
+			Comments.doneEdit();
+		}).end()
+		.find('.btn-danger').on('click', function() {
+			if (window.confirm(i18n.Are_you_sure)) {
+				Comments.deleteEditing();
+			}
+		}).end()
+		.on('hide.bs.modal', function(e) {
+			if (!Comments.canCloseModal()) {
+				e.preventDefault();
+				e.stopImmediatePropagation();
+				return false;
+			}
+		})
+	;
+	$('#comtra_translation-comments-add').on('click', function(e) {
+		Comments.addNew();
+		e.preventDefault();
+		return false;
 	});
 	if (canEditGlossary) {
 		$('#comtra_translation-glossary-dialog')

@@ -38,6 +38,7 @@ class Online extends PageController
         $hh = $this->app->make('helper/html');
         $this->addHeaderItem($hh->css('translate/online.css', 'community_translation'));
         $this->addFooterItem($hh->javascript('bootstrap.min.js', 'community_translation'));
+        $this->addFooterItem($hh->javascript('markdown-it.min.js', 'community_translation'));
         $this->addFooterItem($hh->javascript('translate/online.js', 'community_translation'));
         $this->requireAsset('javascript', 'jquery');
         $this->requireAsset('core/translator');
@@ -88,6 +89,148 @@ class Online extends PageController
 
             return JsonResponse::create(
                 $this->app->make('community_translation/editor')->getTranslatableData($locale, $translatable, $package, true)
+            );
+        } catch (UserException $x) {
+            return JsonResponse::create(
+                array(
+                    'error' => $x->getMessage(),
+                ),
+                400
+            );
+        }
+    }
+
+    public function save_comment($localeID)
+    {
+        try {
+            $valt = $this->app->make('helper/validation/token');
+            if (!$valt->validate('comtra-save-comment'.$localeID)) {
+                throw new UserException($valt->getErrorMessage());
+            }
+            $locale = $localeID ? $this->app->make('community_translation/locale')->findApproved($localeID) : null;
+            if ($locale === null) {
+                throw new UserException(t('Invalid language identifier received'));
+            }
+            $access = $this->app->make('community_translation/access')->getLocaleAccess($locale);
+            if ($access <= Access::NOT_LOGGED_IN) {
+                $error = t('You need to log-in in order to translate');
+            } elseif ($access < Access::TRANSLATE) {
+                throw new UserException(t("You don't belong to the %s translation group", $locale->getDisplayName()));
+            }
+            $id = $this->post('id');
+            if ($id === 'new') {
+                $parentID = $this->post('parent');
+                if ($parentID === 'root') {
+                    $parent = null;
+                    $translatableID = $this->post('translatable');
+                    $translatable = $translatableID ? $this->app->make('community_translation/translatable')->find($translatableID): null;
+                    if ($translatable === null) {
+                        throw new UserException(t("Unable to find the specified translatable string."));
+                    }
+                } else {
+                    $parent = $parentID ? $this->app->make('community_translation/translatable/comment')->find($parentID) : null;
+                    if ($parent === null) {
+                        throw new UserException(t("Unable to find the specified parent comment."));
+                    }
+                    $translatable = $parent->getTranslatable();
+                }
+                if ($parent === null) {
+                    switch ($this->post('visibility')) {
+                        case 'locale':
+                            $commentLocale = $locale;
+                            break;
+                        case 'global':
+                            $commentLocale = null;
+                            break;
+                        default:
+                            throw new UserException(t("Please specify the comment visibility."));
+                    }
+                } else {
+                    $commentLocale = null;
+                }
+                $comment = \Concrete\Package\CommunityTranslation\Src\Translatable\Comment\Comment::create($translatable, $commentLocale, $parent);
+            } else {
+                $comment = $id ? $this->app->make('community_translation/translatable/comment')->find($id) : null;
+                if ($comment === null) {
+                    throw new UserException(t("Unable to find the specified comment."));
+                }
+                $me = new \User();
+                $myID = $me->isRegistered() ? (int) $me->getUserID() : null;
+                if ($myID === null || $myID !== $comment->getPostedBy() ) {
+                    throw new UserException(t("Access denied to this comment."));
+                }
+                if ($comment->getParentComment() === null) {
+                    switch ($this->post('visibility')) {
+                        case 'locale':
+                            $commentLocale = $locale;
+                            break;
+                        case 'global':
+                            $commentLocale = null;
+                            break;
+                        default:
+                            throw new UserException(t("Please specify the comment visibility."));
+                    }
+                    $comment->setLocale($commentLocale);
+                }
+            }
+            $comment->setText($this->post('text'));
+            if ($comment->getText() === '') {
+                throw new UserException(t("Please specify the comment text."));
+            }
+            $em = $this->app->make('community_translation/em');
+            $em->persist($comment);
+            $em->flush();
+            return JsonResponse::create(
+                array(
+                    'id' => $comment->getID(),
+                    'date' => $this->app->make('helper/date')->formatPrettyDateTime($comment->getPostedOn(), true, true),
+                    'mine' => true,
+                    'byHtml' => $this->app->make('community_translation/user')->format($comment->getPostedBy()),
+                    'text' => $comment->getText(),
+                    'isGlobal' => $comment->getLocale() === null,
+                )
+            );
+        } catch (UserException $x) {
+            return JsonResponse::create(
+                array(
+                    'error' => $x->getMessage(),
+                ),
+                400
+            );
+        }
+    }
+
+    public function delete_comment($localeID)
+    {
+        try {
+            $valt = $this->app->make('helper/validation/token');
+            if (!$valt->validate('comtra-delete-comment'.$localeID)) {
+                throw new UserException($valt->getErrorMessage());
+            }
+            $locale = $localeID ? $this->app->make('community_translation/locale')->findApproved($localeID) : null;
+            if ($locale === null) {
+                throw new UserException(t('Invalid language identifier received'));
+            }
+            $access = $this->app->make('community_translation/access')->getLocaleAccess($locale);
+            if ($access <= Access::NOT_LOGGED_IN) {
+                $error = t('You need to log-in in order to translate');
+            } elseif ($access < Access::TRANSLATE) {
+                throw new UserException(t("You don't belong to the %s translation group", $locale->getDisplayName()));
+            }
+            $id = $this->post('id');
+            $comment = $id ? $this->app->make('community_translation/translatable/comment')->find($id) : null;
+            if ($comment === null) {
+                throw new UserException(t("Unable to find the specified comment."));
+            }
+            /* @var \Concrete\Package\CommunityTranslation\Src\Translatable\Comment\Comment $comment */
+            if (count($comment->getChildComments()) > 0) {
+                throw new UserException(t("This comment has some replies, so it can't be deleted."));
+            }
+            $em = $this->app->make('community_translation/em');
+            $em->remove($comment);
+            $em->flush();
+            return JsonResponse::create(
+                true
             );
         } catch (UserException $x) {
             return JsonResponse::create(
@@ -211,7 +354,6 @@ class Online extends PageController
             if ($term === null) {
                 throw new UserException(t("Unable to find the specified gossary entry."));
             }
-            /* @var \Concrete\Package\CommunityTranslation\Src\Glossary\Entry\Entry $term */
             $otherLocaleNames = array();
             foreach ($term->getTranslations() as $translation) {
                 if ($translation->getLocale() !== $locale) {
