@@ -323,17 +323,14 @@ class Editor implements \Concrete\Core\Application\ApplicationAwareInterface
             )
         );
         while ($row = $rs->fetch()) {
-            $item = array(
+            $result[] = array(
                 'id' => (int) $row['geID'],
                 'term' => $row['geTerm'],
                 'type' => $row['geType'],
                 'termComments' => $row['geComments'],
+                'translation' => ($row['gleTranslation'] === null) ? '' : $row['gleTranslation'],
+                'translationComments' => ($row['gleComments'] === null) ? '' : $row['gleComments'],
             );
-            if ($row['gleTranslation'] !== null) {
-                $item['translation'] = $row['gleTranslation'];
-                $item['translationComments'] = $row['gleComments'];
-            }
-            $result[] = $item;
         }
         $rs->closeCursor();
 

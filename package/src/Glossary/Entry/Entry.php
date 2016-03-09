@@ -121,6 +121,16 @@ class Entry
     // Getters and setters
 
     /**
+     * Get the glossary entry ID.
+     *
+     * @return int|null
+     */
+    public function getID()
+    {
+        return $this->geID;
+    }
+
+    /**
      * Get the term.
      *
      * @return string
@@ -137,7 +147,7 @@ class Entry
      */
     public function setTerm($value)
     {
-        $this->geTerm = (string) $value;
+        $this->geTerm = trim((string) $value);
     }
 
     /**
@@ -157,7 +167,7 @@ class Entry
      */
     public function setType($value)
     {
-        $this->geType = (string) $value;
+        $this->geType = trim((string) $value);
     }
 
     /**
@@ -177,7 +187,7 @@ class Entry
      */
     public function setComments($value)
     {
-        $this->geComments = (string) $value;
+        $this->geComments = trim((string) $value);
     }
 
     /**
@@ -188,6 +198,20 @@ class Entry
     public function getTranslations()
     {
         return $this->translations->toArray();
+    }
+
+    // Constructors
+
+    /**
+     * Create a new (insaved) instance.
+     *
+     * @return self
+     */
+    public static function create()
+    {
+        $result = new self();
+
+        return $result;
     }
 
     // Helper methods
@@ -222,42 +246,42 @@ class Entry
         if (!isset($result)) {
             $result = array(
                 self::TERMTYPE_ADJECTIVE => array(
-                    'name' => tc('TermType', 'adjective'),
+                    'name' => tc('TermType', 'Adjective'),
                     'short' => tc('TermType_short', 'adj.'),
                     'description' => t('A word that describes a noun or pronoun (examples: big, happy, obvious).'),
                 ),
                 self::TERMTYPE_ADVERB => array(
-                    'name' => tc('TermType', 'adverb'),
+                    'name' => tc('TermType', 'Adverb'),
                     'short' => tc('TermType_short', 'adv.'),
                     'description' => t('A word that describes or gives more information about a verb, adjective or other adverb (examples: carefully, quickly, very).'),
                 ),
                 self::TERMTYPE_CONJUNCTION => array(
-                    'name' => tc('TermType', 'conjunction'),
+                    'name' => tc('TermType', 'Conjunction'),
                     'short' => tc('TermType_short', 'conj.'),
                     'description' => t('A word that ​connects words, ​phrases, and ​clauses in a ​sentence (examples: and, but, while, ​although).'),
                 ),
                 self::TERMTYPE_INTERJECTION => array(
-                    'name' => tc('TermType', 'interjection'),
+                    'name' => tc('TermType', 'Interjection'),
                     'short' => tc('TermType_short', 'interj.'),
                     'description' => t('A word that is used to show a ​short ​sudden ​expression of ​emotion (examples: Bye!, Cheers!, Goodbye!, Hi!, Hooray!).'),
                 ),
                 self::TERMTYPE_NOUN => array(
-                    'name' => tc('TermType', 'noun'),
+                    'name' => tc('TermType', 'Noun'),
                     'short' => tc('TermType_short', 'n.'),
                     'description' => t('A word that refers to a ​person, ​place, thing, ​event, ​substance, or ​quality (examples: Andrew, house, pencil, table).'),
                 ),
                 self::TERMTYPE_PREPOSITION => array(
-                    'name' => tc('TermType', 'preposition'),
+                    'name' => tc('TermType', 'Preposition'),
                     'short' => tc('TermType_short', 'prep.'),
                     'description' => t('A word that is used before a ​noun, a ​noun phrase, or a ​pronoun, ​connecting it to another word (examples: at, for, in, on, under).'),
                 ),
                 self::TERMTYPE_PRONOUN => array(
-                    'name' => tc('TermType', 'pronoun'),
+                    'name' => tc('TermType', 'Pronoun'),
                     'short' => tc('TermType_short', 'pron.'),
                     'description' => t('A word that is used ​instead of a ​noun or a ​noun phrase (examples: I, me, mine, myself).'),
                 ),
                 self::TERMTYPE_VERB => array(
-                    'name' => tc('TermType', 'verb'),
+                    'name' => tc('TermType', 'Verb'),
                     'short' => tc('TermType_short', 'v.'),
                     'description' => t('A word or phrase that ​describes an ​action, ​condition, or ​experience (examples: listen, read, write).'),
                 ),

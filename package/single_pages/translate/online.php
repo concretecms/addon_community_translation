@@ -50,12 +50,78 @@ defined('C5_EXECUTE') or die('Access Denied.');
 			<dl class="comtra_some dl-horizontal"></dl>
     		<?php if($canEditGlossary) { ?>
     			<div style="text-align: right">
-    				<a href="#" class="btn btn-default"><?php echo t('New term'); ?></a>
+    				<a href="#" class="btn btn-default" id="comtra_translation-glossary-add"><?php echo t('New term'); ?></a>
     			</div>
     		<?php } ?>
 		</div>
     </div>
 </div>
+<?php if ($canEditGlossary) { ?>
+	<div id="comtra_translation-glossary-dialog" class="modal" tabindex="-1">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+					<h4 class="modal-title"><?php echo t('Glossary Term'); ?></h4>
+				</div>
+				<div class="modal-body">
+					<form class="form-horizontal" onsubmit="return false">
+						<fieldset>
+							<legend><?php echo t('Info shared with all languages'); ?></legend>
+    						<div class="form-group">
+    							<label for="comtra_gloentry_term" class="col-sm-2 control-label"><?php echo t('Term'); ?></label>
+    							<div class="col-sm-10">
+    								<div class="input-group">
+    									<input type="text" class="form-control" id="comtra_gloentry_term" maxlength="255" />
+    									<span class="input-group-addon" id="basic-addon2">*</span>
+    								</div>
+    							</div>
+    						</div>
+    						<div class="form-group">
+    							<label for="comtra_gloentry_type" class="col-sm-2 control-label"><?php echo t('Type'); ?></label>
+    							<div class="col-sm-10">
+    								<select class="form-control" id="comtra_gloentry_type">
+    									<option value=""><?php echo tc('Type', 'none'); ?></option>
+    									<?php foreach (GlossaryEntry::getTypesInfo() as $typeHandle => $typeInfo) { ?>
+    										<option value="<?php echo h($typeHandle); ?>"><?php echo h($typeInfo['name']); ?></option>
+    									<?php } ?>
+    								</select>
+    							</div>
+    						</div>
+    						<div class="form-group">
+    							<label for="comtra_gloentry_termComments" class="col-sm-2 control-label"><?php echo t('Comments'); ?></label>
+    							<div class="col-sm-10">
+    								<textarea class="form-control" id="comtra_gloentry_termComments" style="resize: vertical"></textarea>
+    							</div>
+    						</div>
+    					</fieldset>
+    					<fieldset>
+    						<legend><?php echo t('Info only for %s', $locale->getDisplayName()); ?></legend>
+    						<div class="form-group">
+    							<label for="comtra_gloentry_translation" class="col-sm-2 control-label"><?php echo t('Translation'); ?></label>
+    							<div class="col-sm-10">
+									<input type="text" class="form-control" id="comtra_gloentry_translation" />
+    							</div>
+    						</div>
+    						<div class="form-group">
+    							<label for="comtra_gloentry_translationComments" class="col-sm-2 control-label"><?php echo t('Comments'); ?></label>
+    							<div class="col-sm-10">
+    								<textarea class="form-control" id="comtra_gloentry_translationComments" style="resize: vertical"></textarea>
+    							</div>
+    						</div>
+    					</fieldset>
+					</form>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal"><?php echo t('Close'); ?></button>
+					<button type="button" class="btn btn-danger" id="comtra_translation-glossary-delete"><?php echo t('Delete'); ?></button>
+					<button type="button" class="btn btn-primary"><?php echo t('Save'); ?></button>
+				</div>
+			</div>
+		</div>
+	</div>
+<?php } ?>
+
 <script>$(document).ready(function() {
 
 window.ccmTranslator.configureFrontend({
@@ -67,14 +133,25 @@ comtraOnlineEditorInitialize({
 	canApprove: <?php echo $canApprove ? 'true' : 'false'; ?>,
 	plurals: <?php echo json_encode($pluralCases); ?>,
 	translations: <?php echo json_encode($translations); ?>,
+	canEditGlossary: <?php echo $canEditGlossary ? 'true' : 'false'; ?>,
 	actions: {
+		<?php if ($canEditGlossary) { ?>
+			saveGlossaryTerm: <?php echo json_encode((string) $this->action('save_glossary_term', $locale->getID())); ?>,
+			deleteGlossaryTerm: <?php echo json_encode((string) $this->action('delete_glossary_term', $locale->getID())); ?>,
+		<?php } ?>
 		loadTranslation: <?php echo json_encode((string) $this->action('load_translation', $locale->getID())); ?>
 	},
 	tokens: {
+		<?php if ($canEditGlossary) { ?>
+			saveGlossaryTerm: <?php echo json_encode($token->generate('comtra-save-glossary-term'.$locale->getID())); ?>,
+			deleteGlossaryTerm: <?php echo json_encode($token->generate('comtra-delete-glossary-term'.$locale->getID())); ?>,
+		<?php } ?>
 		loadTranslation: <?php echo json_encode($token->generate('comtra-load-translation'.$locale->getID())); ?>
 	},
 	i18n: {
-		glossaryTypes: <?php echo json_encode(GlossaryEntry::getTypesInfo()); ?>
+		glossaryTypes: <?php echo json_encode(GlossaryEntry::getTypesInfo()); ?>,
+		no_translation_available: <?php echo json_encode(t('no translation available')); ?>,
+		Are_you_sure: <?php echo json_encode(t('Are you sure?')); ?>
 	}
 });
 

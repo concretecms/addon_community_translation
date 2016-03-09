@@ -30,6 +30,7 @@ class ServiceProvider extends Provider
             'community_translation/locale' => 'Concrete\Package\CommunityTranslation\Src\Locale\Locale',
             'community_translation/stats' => 'Concrete\Package\CommunityTranslation\Src\Stats\Stats',
             'community_translation/glossary/entry' => 'Concrete\Package\CommunityTranslation\Src\Glossary\Entry\Entry',
+            'community_translation/glossary/entry/localized' => 'Concrete\Package\CommunityTranslation\Src\Glossary\Entry\Localized',
         ) as $abstract => $fqn) {
             $this->app->singleton(
                 $abstract,

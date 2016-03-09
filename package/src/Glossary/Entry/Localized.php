@@ -76,16 +76,6 @@ class Localized
     }
 
     /**
-     * Get the associated locale.
-     *
-     * @return Locale
-     */
-    public function setLocale()
-    {
-        return $this->gleLocale;
-    }
-
-    /**
      * Get the term translation.
      *
      * @return string
@@ -102,7 +92,7 @@ class Localized
      */
     public function setTranslation($value)
     {
-        $this->gleTranslation = (string) $value;
+        $this->gleTranslation = trim((string) $value);
     }
 
     /**
@@ -122,7 +112,7 @@ class Localized
      */
     public function setComments($value)
     {
-        $this->gleComments = (string) $value;
+        $this->gleComments = trim((string) $value);
     }
 
     // Helper functions

@@ -52,5 +52,12 @@
 }
 
 #comtra_translation-glossary dt .label {
-	margin-left: 5px;
+    margin-left: 5px;
+}
+#comtra_translation-glossary dt a {
+	visibility: hidden;
+	margin-right: 3px;
+}
+#comtra_translation-glossary dt:hover a {
+	visibility: visible;
 }

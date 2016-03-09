@@ -2,7 +2,7 @@
 
 (function($, window, undefined) {
 'use strict';
-var $extra, canApprove, packageID, actions, tokens, i18n;
+var translator, $extra, canApprove, packageID, actions, tokens, i18n, canEditGlossary;
 
 function setBadgeCount(id, n) {
 	var $badge = $('#'+id);
@@ -13,7 +13,7 @@ function setBadgeCount(id, n) {
 		$badge.addClass('active-badge');
 	}
 }
-function setTranslatorText(translator, textToSet, full) {
+function setTranslatorText(textToSet, full) {
 	var $i = translator.currentTranslationView.getCurrentTextInput();
 	var currentValue = $i.val();
 	if (full) {
@@ -36,13 +36,34 @@ function setTranslatorText(translator, textToSet, full) {
 	$i.trigger('change');
 	return $i;
 }
-
+function textToHtml(text) {
+	text = text ? text.toString() : '';
+	var result = '';
+	if (text !== '') {
+		var $o = $('<div />');
+		$.each(text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n'), function(index, line) {
+			if (index > 0) {
+				result += '<br />';
+			}
+			result += $o.text(line).html();
+		});
+	}
+	return result;
+}
+	
+function getAjaxError(args) {
+	var xhr = args[0] /*, textStatus = args[1]*/, errorThrown = args[2];
+	if (xhr && xhr.responseJSON && xhr.responseJSON.error) {
+		return xhr.responseJSON.error.message || xhr.responseJSON.error;
+	} else {
+		return errorThrown;
+	}
+}
 
 var OtherTranslations = (function() {
-	var translator, $parent, others;
+	var $parent, others;
 	return {
-		initialize: function(currentTranslator, extra) {
-			translator = currentTranslator;
+		initialize: function(extra) {
 			$parent = $('#comtra_translation-others');
 			others = extra.otherTranslations;
 			setBadgeCount('comtra_translation-others-count', others.length);
@@ -57,12 +78,12 @@ var OtherTranslations = (function() {
 })();
 
 var Comments = (function() {
-	var translator, $parent, extracted, online;
+	var $parent, extracted, online;
 	function updateCount()
 	{
 		var f = function(arr) {
 			var r = arr.length;
-			$.each(arr, function(_, i) {
+			$.each(arr, function(foo, i) {
 				r += f(i.comments);
 			});
 			return r;
@@ -72,8 +93,7 @@ var Comments = (function() {
 		return tot;
 	}
 	return {
-		initialize: function(currentTranslator, extra) {
-			translator = currentTranslator;
+		initialize: function(extra) {
 			$parent = $('#comtra_translation-comments');
 			extracted = extra.extractedComments;
 			online = extra.comments;
@@ -83,7 +103,7 @@ var Comments = (function() {
 				$l.hide();
 			} else {
 				$l.children().not(':first').remove();
-				$.each(extracted, function(_, c) {
+				$.each(extracted, function(foo, c) {
 					$l.append($('<div class="list-group-item" />').text(c));
 				});
 				$l.show();
@@ -93,10 +113,9 @@ var Comments = (function() {
 })();
 
 var References = (function() {
-	var translator, $parent, references;
+	var $parent, references;
 	return {
-		initialize: function(currentTranslator, extra) {
-			translator = currentTranslator;
+		initialize: function(extra) {
 			$parent = $('#comtra_translation-references');
 			references = extra.references;
 			setBadgeCount('comtra_translation-references-count', references.length);
@@ -106,7 +125,7 @@ var References = (function() {
 				return;
 			}
 			var $some = $parent.find('.comtra_some').empty();
-			$.each(references, function(_, ref) {
+			$.each(references, function(foo, ref) {
 				if ($.isArray(ref)) {
 					$some.append($('<a class="list-group-item" target="_blank" />')
 						.attr('href', ref[0])
@@ -123,10 +142,9 @@ var References = (function() {
 })();
 
 var Suggestions = (function() {
-	var translator, $parent, suggestions;
+	var $parent, suggestions;
 	return {
-		initialize: function(currentTranslator, extra) {
-			translator = currentTranslator;
+		initialize: function(extra) {
 			$parent = $('#comtra_translation-suggestions');
 			suggestions = extra.suggestions;
 			setBadgeCount('comtra_translation-suggestions-count', suggestions.length);
@@ -144,7 +162,7 @@ var Suggestions = (function() {
 					.append($('<br />'))
 					.append($('<span />').text(this.translation))
 					.on('click', function(e) {
-						setTranslatorText(translator, textToSet, true).focus();
+						setTranslatorText(textToSet, true).focus();
 						e.preventDefault();
 						return false;
 					})
@@ -156,57 +174,198 @@ var Suggestions = (function() {
 })();
 
 var Glossary = (function() {
-	var translator, $parent, glossary;
-	return {
-		initialize: function(currentTranslator, extra) {
-			translator = currentTranslator;
-			$parent = $('#comtra_translation-glossary');
-			glossary = extra.glossary;
-			setBadgeCount('comtra_translation-glossary-count', glossary.length);
-			$parent.find('.comtra_none,.comtra_some').hide();
-			if (glossary.length === 0) {
-				$parent.find('.comtra_none').show();
-				return;
+	var $parent, editingEntry, ajaxing = false;
+	
+	function Entry(data) {
+		this.data = data;
+		$parent.find('.comtra_some')
+			.append(this.$dt = $('<dt />'))
+			.append(this.$dd = $('<dd />'))
+		;
+		this.updated();
+		Entry.count++;
+	}
+	Entry.prototype = {
+		dispose: function() {
+			this.$dd.remove();
+			this.$dt.remove();
+			Entry.count--;
+		},
+		updated: function() {
+			this.$dt.empty();
+			this.$dd.empty();
+			this.$dt.text(this.data.term);
+			if (this.data.type !== '') {
+				var $type;
+				this.$dt.append($type = $('<span class="label label-default" />'));
+				if (this.data.type in i18n.glossaryTypes) {
+					var T = i18n.glossaryTypes[this.data.type];
+					$type.text(T.short).attr('title', T.name + '\n' + T.description);
+				} else {
+					$type.text(this.data.type);
+				}
 			}
-			var $some = $parent.find('.comtra_some').empty();
-			$.each(glossary, function() {
-				var $dt, $dd;
-				$some
-					.append($dt = $('<dt />').text(this.term))
-					.append($dd = $('<dd />'))
-				;
-				if (this.type !== '') {
-					var $type;
-					$dt.append($type = $('<span class="label label-default" />'));
-					if (this.type in i18n.glossaryTypes) {
-						var T = i18n.glossaryTypes[this.type];
-						$type.text(T.short).attr('title', T.name + '\n' + T.description);
-					} else {
-						$type.text(this.type);
-					}
-				}
-				if (this.translation !== '') {
-					var textToAdd = this.translation;
-					$dd.append($('<a href="#" />')
-						.text(this.translation)
-						.on('click', function(e) {
-							setTranslatorText(translator, textToAdd, false).focus();
-							e.preventDefault();
-							return false;
-						})
-					);
-				}
+			if (canEditGlossary) {
+				var me = this;
+				this.$dt.prepend($('<a href="#"><i class="fa fa-pencil-square-o"></i></a>')
+					.on('click', function(e) {
+						startEdit(me);
+						e.preventDefault();
+						return false;
+					})
+				);
+			}
+			if (this.data.translation === '') {
+				this.$dd.append($('<i />').text(i18n.no_translation_available));
+			} else {
+				var textToAdd = this.data.translation;
+				this.$dd.append($('<a href="#" />')
+					.text(textToAdd)
+					.on('click', function(e) {
+						setTranslatorText(textToAdd, false).focus();
+						e.preventDefault();
+						return false;
+					})
+				);
+			}
+			this.$dt.removeAttr('title').removeAttr('data-original-title');
+			if (this.data.termComments !== '') {
+				this.$dt.attr('title', textToHtml(this.data.termComments));
+				this.$dt.tooltip({
+					placement: 'right',
+					html: true
+				}).tooltip('fixTitle');
+			}
+			this.$dd.removeAttr('title').removeAttr('data-original-title');
+			if (this.data.translationComments !== '') {
+				this.$dd.attr('title', textToHtml(this.data.translationComments));
+				this.$dd.tooltip({
+					placement: 'left',
+					html: true
+				}).tooltip('fixTitle');
+			}
+		}
+	};
+	function updateStatus() {
+		setBadgeCount('comtra_translation-glossary-count', Entry.count);
+		$parent.find('.comtra_none,.comtra_some').hide();
+		if (Entry.count === 0) {
+			$parent.find('.comtra_some').hide();
+			$parent.find('.comtra_none').show();
+		} else {
+			$parent.find('.comtra_none').hide();
+			$parent.find('.comtra_some').show();
+		}
+	}
+	function startEdit(term) {
+		if (ajaxing) {
+			return;
+		}
+		editingEntry = term || null;
+		var data = (editingEntry === null) ? null : editingEntry.data;
+		$('#comtra_gloentry_term').val(data ? data.term : '');
+		$('#comtra_gloentry_type').val(data ? data.type : '');
+		$('#comtra_gloentry_termComments').val(data ? data.termComments : '');
+		$('#comtra_gloentry_translation').val(data ? data.translation : '');
+		$('#comtra_gloentry_translationComments').val(data ? data.translationComments : '');
+		var $dlg = $('#comtra_translation-glossary-dialog');
+		$dlg.find('.btn-danger')[editingEntry === null ? 'hide' : 'show']();
+		$dlg.modal('show');
+	}
+	function addNew() {
+		if (ajaxing) {
+			return;
+		}
+		startEdit(null);
+	}
+	function deleteEditing() {
+		if (ajaxing) {
+			return;
+		}
+		$.ajax({
+			cache: false,
+			data: {ccm_token: tokens.deleteGlossaryTerm, id: editingEntry.data.id},
+			dataType: 'json',
+			method: 'POST',
+			url: actions.deleteGlossaryTerm
+		})
+		.done(function() {
+			editingEntry.dispose();
+			updateStatus();
+			ajaxing = false;
+			$('#comtra_translation-glossary-dialog').modal('hide');
+		})
+		.fail(function(xhr, textStatus, errorThrown) {
+			window.alert(getAjaxError(arguments));
+			ajaxing = false;
+		});
+	}
+	function doneEdit() {
+		if (ajaxing) {
+			return;
+		}
+		var send = {};
+		if (editingEntry === null) {
+			send.id = 'new';
+		} else {
+			send.id = editingEntry.data.id;
+		}
+		send.term = $.trim($('#comtra_gloentry_term').val());
+		if (send.term === '') {
+			$('#comtra_gloentry_term').val('').focus();
+			return;
+		}
+		send.type = $('#comtra_gloentry_type').val();
+		send.termComments = $.trim($('#comtra_gloentry_termComments').val());
+		send.translation = $.trim($('#comtra_gloentry_translation').val());
+		send.translationComments = $.trim($('#comtra_gloentry_translationComments').val());
+		ajaxing = true;
+		$.ajax({
+			cache: false,
+			data: $.extend({ccm_token: tokens.saveGlossaryTerm}, send),
+			dataType: 'json',
+			method: 'POST',
+			url: actions.saveGlossaryTerm
+		})
+		.done(function(data) {
+			if (editingEntry === null) {
+				new Entry(data);
+			} else {
+				editingEntry.data = data;
+				editingEntry.updated();
+			}
+			ajaxing = false;
+			$('#comtra_translation-glossary-dialog').modal('hide');
+		})
+		.fail(function(xhr, textStatus, errorThrown) {
+			window.alert(getAjaxError(arguments));
+			ajaxing = false;
+		});
+	}
+	return {
+		initialize: function(extra) {
+			$parent = $('#comtra_translation-glossary');
+			$parent.find('.comtra_some').empty();
+			Entry.count = 0;
+			$.each(extra.glossary, function() {
+				new Entry(this);
 			});
-			$some.show();
+			updateStatus();
+		},
+		addNew: addNew,
+		deleteEditing: deleteEditing,
+		doneEdit: doneEdit,
+		canCloseModal: function() {
+			return !ajaxing;
 		}
 	};
 })();
 
-function initializeUI(translator)
+function initializeUI()
 {
 	translator.UI.$container.find('.ccm-translator-col-translations').after($('#comtra_extra').tab());
 }
-function loadFullTranslation(translator, translation, cb)
+function loadFullTranslation(foo, translation, cb)
 {
 	var success = true;
 	$.ajax({
@@ -236,32 +395,26 @@ function loadFullTranslation(translator, translation, cb)
 	})
 	.fail(function(xhr, textStatus, errorThrown) {
 		success = false;
-		if (xhr && xhr.responseJSON && xhr.responseJSON.error) {
-			window.alert(xhr.responseJSON.error.message || xhr.responseJSON.error);
-		} else {
-			window.alert(errorThrown);
-		}
+		window.alert(getAjaxError(arguments));
 	})
 	.always(function() {
 		cb(success);
 	});
 }
-
-function showFullTranslation(translator)
+function showFullTranslation(foo)
 {
 	if (!translator.currentTranslationView) {
 		$extra.css('visibility', 'hidden');
 		return;
 	}
 	var extra = translator.currentTranslationView.translation._extra;
-	OtherTranslations.initialize(translator, extra);
-	Comments.initialize(translator, extra);
-	References.initialize(translator, extra);
-	Suggestions.initialize(translator, extra);
-	Glossary.initialize(translator, extra);
+	OtherTranslations.initialize(extra);
+	Comments.initialize(extra);
+	References.initialize(extra);
+	Suggestions.initialize(extra);
+	Glossary.initialize(extra);
 	$extra.css('visibility', 'visible');
 }
-
 function saveTranslation(translation, postData, cb)
 {
 	cb('@todo');
@@ -275,8 +428,9 @@ window.comtraOnlineEditorInitialize = function(options) {
 	actions = options.actions;
 	tokens = options.tokens;
 	i18n = options.i18n;
+	canEditGlossary = !!options.canEditGlossary;
 	$extra = $('#comtra_extra');
-	window.ccmTranslator.initialize({
+	translator = window.ccmTranslator.initialize({
 		container: '#comtra_translator',
 		height: height,
 		plurals: options.plurals,
@@ -288,6 +442,33 @@ window.comtraOnlineEditorInitialize = function(options) {
 		onBeforeActivatingTranslation: loadFullTranslation,
 		onCurrentTranslationChanged: showFullTranslation
 	});
+	if (canEditGlossary) {
+		$('#comtra_translation-glossary-dialog')
+			.modal({
+				show: false
+			})
+			.find('.btn-primary').on('click', function() {
+				Glossary.doneEdit();
+			}).end()
+			.find('.btn-danger').on('click', function() {
+				if (window.confirm(i18n.Are_you_sure)) {
+					Glossary.deleteEditing();
+				}
+			}).end()
+			.on('hide.bs.modal', function(e) {
+				if (!Glossary.canCloseModal()) {
+					e.preventDefault();
+					e.stopImmediatePropagation();
+					return false;
+				}
+			})
+		;
+		$('#comtra_translation-glossary-add').on('click', function(e) {
+			Glossary.addNew();
+			e.preventDefault();
+			return false;
+		});
+	}
 };
 
 })(jQuery, window);
