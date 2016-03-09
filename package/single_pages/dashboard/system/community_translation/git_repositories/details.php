@@ -58,7 +58,7 @@ if ($repository !== null) {
 
 	<div class="row">
 		<div class="form-group">
-			<div class="col-sm-3 control-label"><label class="launch-tooltip" data-html="true" title="<?php echo t('This is the path to the directory in the git folder that contains the translatable strings.<br />For concrete5 core it could be %s', '<code>web</code>'); ?>"><?php echo t('Root directory'); ?></label></div>
+			<div class="col-sm-3 control-label"><label class="launch-tooltip" data-html="true" title="<?php echo t('This is the path to the directory in the git repository that contains the translatable strings.<br />For concrete5 core it could be %s', '<code>web</code>'); ?>"><?php echo t('Root directory'); ?></label></div>
 			<div class="col-sm-7">
 				<?php echo $form->text('webroot', ($repository === null) ? '' : $repository->getWebRoot(), array('maxlength' => 255)); ?>
 			</div>
@@ -83,9 +83,9 @@ if ($repository !== null) {
 				        break;
 				}
 				?>
-				<label><?php echo $form->radio('parsetags', '1', $parsetags === 1)?> <?php echo t('none'); ?></label><br />
-				<label><?php echo $form->radio('parsetags', '2', $parsetags === 2)?> <?php echo t('all'); ?></label><br />
-				<label><?php echo $form->radio('parsetags', '3', $parsetags === 3)?> <?php echo t('filer'); ?></label>
+				<label><?php echo $form->radio('parsetags', '1', $parsetags === 1)?> <?php echo tc('Tags', 'none'); ?></label><br />
+				<label><?php echo $form->radio('parsetags', '2', $parsetags === 2)?> <?php echo tc('Tags', 'all'); ?></label><br />
+				<label><?php echo $form->radio('parsetags', '3', $parsetags === 3)?> <?php echo tc('Tags', 'filter'); ?></label>
     			<span id="comtra-parsetags-filter" style="display: none">
     				<?php echo $form->select('parsetagsOperator', array('&lt;' => '&lt;', '&lt;=' => '&le;', '=' => '=', '&gt;=' => '&ge;', '>' => '&gt;', ), h(($ptx === null) ? '>=' : $ptx['operator']), array('style' => 'width: 60px; display: inline')); ?>
     				<?php echo $form->text('parsetagsVersion', ($ptx === null) ? '1.0' : $ptx['version'], array('style' => 'width: 100px; display: inline')); ?>

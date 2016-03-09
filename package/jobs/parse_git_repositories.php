@@ -12,7 +12,7 @@ class ParseGitRepositories extends AbstractJob
 
     public function getJobDescription()
     {
-        return t('Fetch and all defined Git Repositories and extract translatable strings');
+        return t('Fetch all defined Git Repositories and extract translatable strings');
     }
 
     protected $startTime;

@@ -31,7 +31,7 @@ defined('C5_EXECUTE') or die('Access Denied.');
 				<td><a href="<?php echo h($repository->getURL()) ?>" target="_blank"><?php echo h($repository->getURL()) ?></a></td>
 				<td><?php
 				    if ($repository->getWebRoot() === '') {
-				        ?><i><?php echo t('none'); ?></i><?php
+				        ?><i><?php echo tc('Directory', 'none'); ?></i><?php
 				    } else {
 				        ?><code><?php echo h($repository->getWebRoot()); ?></code><?php
 				    }
@@ -40,7 +40,7 @@ defined('C5_EXECUTE') or die('Access Denied.');
 				<td><?php
 				    $db = $repository->getDevBranches();
 				    if (empty($db)) {
-				        ?><i><?php echo t('none'); ?></i><?php
+				        ?><i><?php echo tc('Branch', 'none'); ?></i><?php
 				    } else {
 				        foreach ($db as $branch => $version) {
 				            echo t('Branch %s &rarr; version %s', '<code>'.h($branch).'</code>', '<code>'.h($version).'</code>'), '<br />';

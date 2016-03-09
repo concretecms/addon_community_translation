@@ -73,7 +73,7 @@ class Teams extends PageController
                 throw new UserException(t('Invalid user rights'));
             }
             $this->app->make('community_translation/access')->setLocaleAccess($locale, Access::NONE);
-            $this->flash('message', t('Your request to join the %s translation group has been canceled. Thank you!', $locale->getDisplayName()));
+            $this->flash('message', t('Your request to join the %s translation group has been canceled.', $locale->getDisplayName()));
             $this->redirect('/teams');
         } catch (UserException $x) {
             $this->flash('error', $x->getMessage());
