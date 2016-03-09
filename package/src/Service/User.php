@@ -15,14 +15,14 @@ class User
      */
     public function format($user)
     {
-        $id = 0;
+        $id = null;
         $name = '';
         if (isset($user) && $user) {
             if (is_int($user) || (is_string($user) && is_numeric($user))) {
-                $user = \UserInfo::getByID($user);
+                $user = \User::getByUserID($user);
             }
             if ($user instanceof ConcreteUser && $user->getUserID() && $user->isRegistered()) {
-                $id = $user->getUserID();
+                $id = (int) $user->getUserID();
                 $name = $user->getUserName();
             } elseif ($user instanceof UserInfo && $user->getUserID()) {
                 $id = (int) $user->getUserID();
@@ -34,7 +34,7 @@ class User
         } elseif ($id == USER_SUPER_ID) {
             return '<i class="comtra-user comtra-user-system">'.t('system').'</i>';
         } else {
-            return '<span class="comtra-user comtra-user-system">'.h($name).'</span>';
+            return '<span class="comtra-user comtra-user-found">'.h($name).'</span>';
         }
     }
 }
