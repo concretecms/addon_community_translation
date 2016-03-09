@@ -6,7 +6,7 @@ echo $html->css($view->getStylesheet('full_page.less'));
 
 ?></head>
 <body>
-	<div class="<?=$c->getPageWrapperClass()?>"><?php echo $innerContent; ?></div>
+	<div class="<?php echo $c->getPageWrapperClass(); ?>"><?php echo $innerContent; ?></div>
 
 <?php
 

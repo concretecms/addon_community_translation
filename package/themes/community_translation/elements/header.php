@@ -1,6 +1,6 @@
 <?php defined('C5_EXECUTE') or die('Access Denied.'); ?>
 <!DOCTYPE html>
-<html lang="<?=Localization::activeLanguage()?>">
+<html lang="<?php echo Localization::activeLanguage(); ?>">
 <head>
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <?php View::element('header_required', array('pageTitle' => isset($pageTitle) ? $pageTitle : '', 'pageDescription' => isset($pageDescription) ? $pageDescription : '', 'pageMetaKeywords' => isset($pageMetaKeywords) ? $pageMetaKeywords : ''));?>
