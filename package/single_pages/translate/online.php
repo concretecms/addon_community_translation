@@ -42,15 +42,19 @@ defined('C5_EXECUTE') or die('Access Denied.');
 			<div class="comtra_some">@todo</div>
     	</div>
     	<div role="tabpanel" class="tab-pane" role="tabpanel" id="comtra_translation-suggestions">
-    		<div class="comtra_none"><?php echo t('No similar translations found for this string.')?></div>
+    		<div class="alert alert-info comtra_none">
+				<?php echo t('No similar translations found for this string.')?>
+			</div>
 			<div class="comtra_some list-group"><div class="list-group-item active"><?php echo t('Similar translations'); ?></div></div>
     	</div>
     	<div role="tabpanel" class="tab-pane" role="tabpanel" id="comtra_translation-glossary">
-    		<div class="comtra_none"><?php echo t('No glossary terms found for this string.')?></div>
+			<div class="alert alert-info comtra_none">
+				<?php echo t('No glossary terms found for this string.')?>
+			</div>
 			<dl class="comtra_some dl-horizontal"></dl>
     		<?php if($canEditGlossary) { ?>
     			<div style="text-align: right">
-    				<a href="#" class="btn btn-default" id="comtra_translation-glossary-add"><?php echo t('New term'); ?></a>
+    				<a href="#" class="btn btn-primary btn-sm" id="comtra_translation-glossary-add"><?php echo t('New term'); ?></a>
     			</div>
     		<?php } ?>
 		</div>

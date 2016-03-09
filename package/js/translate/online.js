@@ -78,7 +78,7 @@ var OtherTranslations = (function() {
 })();
 
 var Comments = (function() {
-	var $parent, extracted, online;
+	var $parent, extractedCount, online;
 	function updateCount()
 	{
 		var f = function(arr) {
@@ -88,14 +88,15 @@ var Comments = (function() {
 			});
 			return r;
 		};
-		var tot = extracted.length + f(online);
+		var tot = extractedCount + f(online);
 		setBadgeCount('comtra_translation-comments-count', tot);
 		return tot;
 	}
 	return {
 		initialize: function(extra) {
 			$parent = $('#comtra_translation-comments');
-			extracted = extra.extractedComments;
+			var extracted = extra.extractedComments;
+			extractedCount = extracted.length;
 			online = extra.comments;
 			updateCount();
 			var $l = $('#comtra_translation-comments-extracted');
@@ -335,6 +336,7 @@ var Glossary = (function() {
 				editingEntry.updated();
 			}
 			ajaxing = false;
+			updateStatus();
 			$('#comtra_translation-glossary-dialog').modal('hide');
 		})
 		.fail(function(xhr, textStatus, errorThrown) {
