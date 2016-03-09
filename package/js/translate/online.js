@@ -2,8 +2,12 @@
 
 (function($, window, undefined) {
 'use strict';
+
+// Some global vars
 var translator, $extra, canApprove, packageID, actions, tokens, i18n, canEditGlossary, currentTranslatableID = null;
 
+
+// Helper functions
 function setBadgeCount(id, n) {
 	var $badge = $('#'+id);
 	$badge.text(n.toString());
@@ -72,7 +76,6 @@ var markdownToHtml = (function() {
 		return last.result;
 	};
 })();
-
 function getAjaxError(args) {
 	var xhr = args[0] /*, textStatus = args[1]*/, errorThrown = args[2];
 	if (xhr && xhr.responseJSON && xhr.responseJSON.error) {
@@ -82,6 +85,7 @@ function getAjaxError(args) {
 	}
 }
 
+// Tabs handling
 var OtherTranslations = (function() {
 	var $parent, others;
 	return {
@@ -98,10 +102,8 @@ var OtherTranslations = (function() {
 		}
 	};
 })();
-
 var Comments = (function() {
 	var $parent, extractedCount, editingParentComment, editingComment, ajaxing = false;
-
 	function OnlineComment(data, parent) {
 		var me = this;
 		this.data = data;
@@ -142,7 +144,6 @@ var Comments = (function() {
 				return false;
 			})
 		);
-
 		this.$elem.append(this.$childContainer = $('<div class="clearfix" style="display: none" />'));
 		this.level = this.parent ? (this.parent.level) + 1 : 0;
 		this.updated();
@@ -332,7 +333,6 @@ var Comments = (function() {
 		}
 	};
 })();
-
 var References = (function() {
 	var $parent, references;
 	return {
@@ -361,7 +361,6 @@ var References = (function() {
 		}
 	};
 })();
-
 var Suggestions = (function() {
 	var $parent, suggestions;
 	return {
@@ -393,7 +392,6 @@ var Suggestions = (function() {
 		}
 	};
 })();
-
 var Glossary = (function() {
 	var $parent, editingEntry, ajaxing = false;
 	
@@ -583,6 +581,7 @@ var Glossary = (function() {
 	};
 })();
 
+// Translator customizations
 function initializeUI()
 {
 	translator.UI.$container.find('.ccm-translator-col-translations').after($('#comtra_extra').tab());
@@ -644,6 +643,7 @@ function saveTranslation(translation, postData, cb)
 	cb('@todo');
 }
 
+// Exported functions
 window.comtraOnlineEditorInitialize = function(options) {
 	var height = Math.max(200, $(window).height() - 340);
 	$('#comtra_extra>.tab-content').height((height - $('#comtra_extra>.nav-tabs').height()) + 'px');
