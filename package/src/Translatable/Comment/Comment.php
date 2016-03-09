@@ -62,6 +62,8 @@ class Comment
     /**
      * Child comments.
      *
+     * @OneToMany(targetEntity="Concrete\Package\CommunityTranslation\Src\Translatable\Comment\Comment", mappedBy="tcParentComment")
+     *
      * @var ArrayCollection
      */
     protected $childComments;
@@ -158,7 +160,7 @@ class Comment
      */
     public function setLocale(Locale $value = null)
     {
-        $this->tcLocale = $locale;
+        $this->tcLocale = $value;
     }
 
     /**
@@ -218,7 +220,7 @@ class Comment
      */
     public function setText($value)
     {
-        $this->tcText = (string) $value;
+        $this->tcText = trim((string) $value);
     }
 
 }
