@@ -17,7 +17,7 @@ defined('C5_EXECUTE') or die('Access Denied.');
 ?>
 <div class="container-fluid" id="comtra_translator">
 	<div class="page-header">
-		<h1>Translating <?php echo $package->getHandle() ?: 'concrete5 core', ' ', $package->getVersionDisplayName(); ?> in <?php echo $locale->getDisplayName(); ?></h1>
+		<h1><?php echo h(t('Translating %1$s in %2$s', $package->getDisplayName(), $locale->getDisplayName())); ?></h1>
 	</div>
 </div>
 <div id="comtra_extra" class="col-md-5">

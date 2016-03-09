@@ -75,7 +75,7 @@ if (isset($foundPackages)) {
 		<?php
     }
 } elseif (isset($packages)) {
-    ?><h3><?php echo h(t('Versions of %s', $packages[0]->getHandle())); ?></h3><?php
+    ?><h3><?php echo h(t('Versions of %s', $packages[0]->getDisplayName(true))); ?></h3><?php
     View::element('translate/package_stats', array('locales' => $checkedLocales, 'packages' => $packages, 'stats' => $stats, 'translatedThreshold' => $translatedThreshold), 'community_translation');
 }
         break;

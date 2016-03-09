@@ -16,7 +16,7 @@ use Concrete\Package\CommunityTranslation\Src\Service\Access;
 ?>
 <div class="row">
 	<div class="col-sm-7">
-		<h3><?php echo t('Details for %s', (($package->getHandle() === '') ? t('concrete5') : $package->getHandle()).' '.$package->getVersionDisplayName()) ?></h3>
+		<h3><?php echo h(t('Details for %s', $package->getDisplayName())); ?></h3>
 	</div>
 	<div class="col-sm-5">
 		<table class="table table-condensed">

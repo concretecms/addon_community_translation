@@ -133,6 +133,23 @@ class Package
     }
 
     /**
+     * Get the package display name.
+     *
+     * @param bool $omitVersion
+     *
+     * @return string
+     */
+    public function getDisplayName($omitVersion = false)
+    {
+        $result = ($this->pHandle === '') ? t('concrete5 core') : $this->pHandle;
+        if (!$omitVersion) {
+            $result .= ' '.$this->getVersionDisplayName();
+        }
+
+        return $result;
+    }
+
+    /**
      * Get the package version display name
      *
      * @return string
