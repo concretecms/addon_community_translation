@@ -4,7 +4,7 @@
 'use strict';
 
 // Some global vars
-var translator, $extra, canApprove, packageID, actions, tokens, i18n, canEditGlossary, currentTranslatableID = null;
+var translator, $extra, canApprove, packageID, actions, tokens, i18n, canEditGlossary, currentTranslatableID = null, pluralRuleByIndex;
 
 
 // Helper functions
@@ -87,18 +87,76 @@ function getAjaxError(args) {
 
 // Tabs handling
 var OtherTranslations = (function() {
-	var $parent, others;
+	var $parent;
+	function createA(translation) {
+		return $('<a href="#" />')
+			.html(textToHtml(translation))
+			.on('click', function(e) {
+				if (!translator.busy) {
+					setTranslatorText(translation, true).focus();
+				}
+				e.preventDefault();
+				return false;
+			})
+		;
+	}
+	function Other(data) {
+		this.data = data;
+		$parent.find('.comtra_some tbody').append(this.$row = $('<tr />'));
+		var $td;
+		this.$row
+			.append($('<td style="white-space: nowrap" />')
+				.html(this.data.createdOn + '<br />' + i18n.by + ' ' + this.data.createdBy)
+			)
+			.append($td = $('<td />'))
+		;
+		if (this.data.translations.length === 1) {
+			$td.append(createA(this.data.translations[0]));
+		} else {
+			$.each(this.data.translations, function(i, translation) {
+				$td.append($('<div />')
+					.append(createA(translation))
+					.prepend($('<br />'))
+					.prepend($('<span class="label label-default" />')
+						.text(i18n.pluralRuleNames[pluralRuleByIndex[i]])
+					)
+				);
+			});
+		}
+		this.$row.append($td = $('<td />'));
+		if (this.data.needReview && canApprove) {
+			$td
+				.append($('<button type="button" class="btn btn-success btn-xs" style="width: 100%" />')
+					.text(i18n.Approve)
+				)
+				.append($('<button type="button" class="btn btn-danger btn-xs" style="width: 100%; margin-top: 5px" />')
+					.text(i18n.Deny)
+				)
+			;
+		} else {
+			$td
+				.append($('<button type="button" class="btn btn-info btn-xs" style="width: 100%" />')
+					.text(i18n.Use_this)
+				)
+			;
+		}
+		Other.count++;
+	}
 	return {
 		initialize: function(extra) {
 			$parent = $('#comtra_translation-others');
-			others = extra.otherTranslations;
-			setBadgeCount('comtra_translation-others-count', others.length);
+			Other.count = 0;
 			$parent.find('.comtra_none,.comtra_some').hide();
-			if (others.length === 0) {
+			$parent.find('.comtra_some tbody').empty();
+			$.each(extra.otherTranslations, function() {
+				new Other(this);
+			});
+			setBadgeCount('comtra_translation-others-count', Other.count);
+			if (Other.count === 0) {
 				$parent.find('.comtra_none').show();
-				return;
+			} else {
+				$parent.find('.comtra_some').show();
 			}
-			$parent.find('.comtra_some').show();
 		}
 	};
 })();
@@ -153,7 +211,6 @@ var Comments = (function() {
 		this.updated();
 		OnlineComment.count++;
 		if (data.comments) {
-			var me = this;
 			$.each(data.comments, function() {
 				new OnlineComment(this, me);
 			});
@@ -338,11 +395,10 @@ var Comments = (function() {
 	};
 })();
 var References = (function() {
-	var $parent, references;
 	return {
 		initialize: function(extra) {
-			$parent = $('#comtra_translation-references');
-			references = extra.references;
+			var $parent = $('#comtra_translation-references');
+			var references = extra.references;
 			setBadgeCount('comtra_translation-references-count', references.length);
 			$parent.find('.comtra_none,.comtra_some').hide();
 			if (references.length === 0) {
@@ -366,11 +422,10 @@ var References = (function() {
 	};
 })();
 var Suggestions = (function() {
-	var $parent, suggestions;
 	return {
 		initialize: function(extra) {
-			$parent = $('#comtra_translation-suggestions');
-			suggestions = extra.suggestions;
+			var $parent = $('#comtra_translation-suggestions');
+			var suggestions = extra.suggestions;
 			setBadgeCount('comtra_translation-suggestions-count', suggestions.length);
 			$parent.find('.comtra_none,.comtra_some').hide();
 			if (suggestions.length === 0) {
@@ -605,7 +660,7 @@ function loadFullTranslation(foo, translation, cb)
 	var success = true;
 	$.ajax({
 		cache: false,
-		data: {ccm_token: tokens.loadTranslation, translatableID: translation.id, packageID: packageID},
+		data: {ccm_token: tokens.loadTranslation, translatableID: translation.id, packageID: (packageID === null) ? '' : packageID},
 		dataType: 'json',
 		method: 'POST',
 		url: actions.loadTranslation
@@ -663,6 +718,7 @@ window.comtraOnlineEditorInitialize = function(options) {
 	$('#comtra_extra>.tab-content').height((height - $('#comtra_extra>.nav-tabs').height()) + 'px');
 	packageID = options.packageID || null;
 	canApprove = !!options.canApprove;
+	pluralRuleByIndex = options.pluralRuleByIndex;
 	actions = options.actions;
 	tokens = options.tokens;
 	i18n = options.i18n;

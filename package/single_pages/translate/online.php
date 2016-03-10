@@ -38,7 +38,16 @@ defined('C5_EXECUTE') or die('Access Denied.');
 			<div class="alert alert-info comtra_none">
 				<?php echo t('No other translations found.')?>
 			</div>
-			<div class="comtra_some">@todo</div>
+			<table class="comtra_some table table-striped">
+				<thead>
+					<tr>
+						<th style="width: 1px"><?php echo t('Date'); ?></th>
+						<th><?php echo t('Translation'); ?></th>
+						<th style="width: 1px"><?php echo t('Action'); ?></th>
+					</tr>
+				</thead>
+				<tbody></tbody>
+			</table>
 		</div>
 		<div role="tabpanel" class="tab-pane" role="tabpanel" id="comtra_translation-comments">
 			<div class="alert alert-info comtra_none">
@@ -195,6 +204,7 @@ window.ccmTranslator.configureFrontend({
 comtraOnlineEditorInitialize({
 	packageID: <?php echo $package ? $package->getID() : 'null'; ?>,
 	canApprove: <?php echo $canApprove ? 'true' : 'false'; ?>,
+	pluralRuleByIndex: <?php echo json_encode(array_keys($pluralCases)); ?>,
 	plurals: <?php echo json_encode($pluralCases); ?>,
 	translations: <?php echo json_encode($translations); ?>,
 	canEditGlossary: <?php echo $canEditGlossary ? 'true' : 'false'; ?>,
@@ -222,7 +232,18 @@ comtraOnlineEditorInitialize({
 		Are_you_sure: <?php echo json_encode(t('Are you sure?')); ?>,
 		by: <?php echo json_encode(tc('Prefix of an author name', 'by')); ?>,
 		Reply: <?php echo json_encode(t('Reply')); ?>,
-		Edit: <?php echo json_encode(t('Edit')); ?>
+		Edit: <?php echo json_encode(t('Edit')); ?>,
+		Approve: <?php echo json_encode(t('Approve')); ?>,
+		Deny: <?php echo json_encode(t('Deny')); ?>,
+		Use_this: <?php echo json_encode(tc('Translation', 'Use this')); ?>,
+		pluralRuleNames: <?php echo json_encode(array(
+	        'zero' => tc('PluralCase', 'Zero'),
+	        'one' => tc('PluralCase', 'One'),
+	        'two' => tc('PluralCase', 'Two'),
+	        'few' => tc('PluralCase', 'Few'),
+	        'many' => tc('PluralCase', 'Many'),
+	        'other' => tc('PluralCase', 'Other'),
+		)); ?>
 	}
 });
 
