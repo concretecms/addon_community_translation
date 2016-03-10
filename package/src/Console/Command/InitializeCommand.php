@@ -220,7 +220,7 @@ class InitializeCommand extends Command
             throw new Exception('Not enough approved locales found: please import the transifex translations before running this operation.');
         }
 
-        $output->writeln('Please download the glossary file of all languages from https://www.transifex.com/_/glossary/ajax/download/project/concrete5/concrete5/');
+        $output->writeln('Please download the glossary file for all languages including the comments from https://www.transifex.com/_/glossary/ajax/download/project/concrete5/concrete5/');
         $question = new Question('Enter the local path to the downloaded csv file: ', '');
         for (;;) {
             $glossaryFile = trim((string) $this->getHelper('question')->ask($input, $output, $question));
