@@ -100,7 +100,7 @@ class InitializeCommand extends Command
             )
         );
         $client->setAuth($transifexUsername, $transifexPassword);
-
+        @set_time_limit(0);
         $output->write('Retrieve list of locales... ');
         $client->setUri('https://www.transifex.com/api/2/project/concrete5/languages/');
         $client->setMethod('GET');
@@ -240,6 +240,7 @@ class InitializeCommand extends Command
         }
         $repo = $app->make('community_translation/glossary/entry');
         $em = $app->make('community_translation/em');
+        @set_time_limit(0);
         try {
             $map = null;
             $numFields = 0;

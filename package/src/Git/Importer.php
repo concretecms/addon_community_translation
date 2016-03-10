@@ -56,6 +56,7 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
      */
     public function import(Repository $repository)
     {
+        @set_time_limit(3600);
         $importer = $this->app->make('community_translation/translatable/importer');
         /* @var \Concrete\Package\CommunityTranslation\Src\Translatable\Importer $importer */
         $fetcher = $this->app->make('community_translation/git/fetcher', array($repository));
