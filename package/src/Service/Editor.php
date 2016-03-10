@@ -149,40 +149,44 @@ class Editor implements \Concrete\Core\Application\ApplicationAwareInterface
             'others' => array(),
         );
         $translations = $this->app->make('community_translation/translation')->findBy(array('tTranslatable' => $translatable, 'tLocale' => $locale), array('tCreatedOn' => 'DESC'));
+        $dh = $this->app->make('helper/date');
+        $uh = $this->app->make('community_translation/user');
         foreach ($translations as $translation) {
-            $translations = array();
+            /* @var \Concrete\Package\CommunityTranslation\Src\Translation\Translation $translation */
+            $texts = array();
             switch (($translatable->getPlural() === '') ? 1 : $numPlurals) {
                 case 6:
-                    $translations[] = $translation->getText5();
+                    $texts[] = $translation->getText5();
                     /* @noinspection PhpMissingBreakStatementInspection */
                 case 5:
-                    $translations[] = $translation->getText4();
+                    $texts[] = $translation->getText4();
                     /* @noinspection PhpMissingBreakStatementInspection */
                 case 4:
-                    $translations[] = $translation->getText3();
+                    $texts[] = $translation->getText3();
                     /* @noinspection PhpMissingBreakStatementInspection */
                 case 3:
-                    $translations[] = $translation->getText2();
+                    $texts[] = $translation->getText2();
                     /* @noinspection PhpMissingBreakStatementInspection */
                 case 2:
-                    $translations[] = $translation->getText1();
+                    $texts[] = $translation->getText1();
                     /* @noinspection PhpMissingBreakStatementInspection */
                 case 1:
                 default:
-                    $translations[] = $translation->getText0();
+                    $texts[] = $translation->getText0();
                     break;
             }
             $item = array(
                 'id' => $translation->getID(),
-                'created' => $translation->getCreatedOn(),
-                'createdBy' => $translation->getCreatedBy(),
+                'createdOn' => $dh->formatPrettyDateTime($translation->getCreatedOn(), false, true),
+                'createdBy' => $uh->format($translation->getCreatedBy()),
                 'reviewed' => $translation->isReviewed(),
-                'translations' => array_reverse($translations),
+                'translations' => array_reverse($texts),
             );
             if ($translation->isCurrent()) {
-                $item['currentSince'] = $translation->isCurrentSince();
+                $item['currentSince'] = $dh->formatPrettyDateTime($translation->isCurrentSince(), false, true);
                 $result['current'] = $item;
             } else {
+                $item['needReview'] = $translation->needReview();
                 $result['others'][] = $item;
             }
         }
@@ -229,7 +233,7 @@ class Editor implements \Concrete\Core\Application\ApplicationAwareInterface
                 'id' => $comment->getID(),
                 'date' => $dh->formatPrettyDateTime($comment->getPostedOn(), true, true),
                 'mine' => $myID && $myID === $comment->getPostedBy(),
-                'byHtml' => $uh->format($comment->getPostedBy()),
+                'by' => $uh->format($comment->getPostedBy()),
                 'text' => $comment->getText(),
                 'comments' => $this->getComments($locale, $translatable, $comment),
                 'isGlobal' => $comment->getLocale() === null,
@@ -253,7 +257,7 @@ class Editor implements \Concrete\Core\Application\ApplicationAwareInterface
         $connection = $this->app->make('community_translation/em')->getConnection();
         $rs = $connection->executeQuery(
             '
-                select
+                select distinct
                     Translatables.tText,
                     Translations.tText0,
                     match(Translatables.tText) against (:search in natural language mode) as relevance

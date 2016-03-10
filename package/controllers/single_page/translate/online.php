@@ -185,7 +185,7 @@ class Online extends PageController
                     'id' => $comment->getID(),
                     'date' => $this->app->make('helper/date')->formatPrettyDateTime($comment->getPostedOn(), true, true),
                     'mine' => true,
-                    'byHtml' => $this->app->make('community_translation/user')->format($comment->getPostedBy()),
+                    'by' => $this->app->make('community_translation/user')->format($comment->getPostedBy()),
                     'text' => $comment->getText(),
                     'isGlobal' => $comment->getLocale() === null,
                 )

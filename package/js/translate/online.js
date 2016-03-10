@@ -118,7 +118,7 @@ var Comments = (function() {
 		this.$elem
 			.append($('<div class="comtra_comment-header clearfix" />')
 				.append($('<div class="pull-left" />')
-					.html(this.data.byHtml)
+					.html(this.data.by)
 					.prepend(' ' + i18n.by + ' ')
 					.prepend(this.$date = $('<span />'))
 				)
