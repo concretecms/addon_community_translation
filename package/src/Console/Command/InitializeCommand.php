@@ -92,6 +92,7 @@ class InitializeCommand extends Command
             '',
             array(
                 'adapter' => 'Zend\Http\Client\Adapter\Curl',
+                'timeout' => 60,
                 'curloptions' => array(
                     CURLOPT_SSL_VERIFYPEER => (bool) $app->make('config')->get('app.curl.verifyPeer'),
                 ),
