@@ -164,4 +164,14 @@ class Translatable
         $this->tPlural = (string) $plural;
         $this->tHash = md5($this->tPlural ? $this->tContext."\004".$this->tText."\005".$this->tPlural : $this->tContext."\004".$this->tText);
     }
+
+    /**
+     * Get all the places where this string is used.
+     *
+     * @return \Concrete\Package\CommunityTranslation\Src\Translatable\Place\Place[]
+     */
+    public function getPlaces()
+    {
+        return $this->places->toArray();
+    }
 }

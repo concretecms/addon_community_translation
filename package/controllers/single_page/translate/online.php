@@ -5,6 +5,7 @@ use Concrete\Core\Page\Controller\PageController;
 use Concrete\Package\CommunityTranslation\Src\UserException;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Concrete\Package\CommunityTranslation\Src\Service\Access;
+use Concrete\Package\CommunityTranslation\Src\Package\Package;
 
 class Online extends PageController
 {
@@ -237,7 +238,6 @@ class Online extends PageController
             if ($comment === null) {
                 throw new UserException(t("Unable to find the specified comment."));
             }
-            /* @var \Concrete\Package\CommunityTranslation\Src\Translatable\Comment\Comment $comment */
             if (count($comment->getChildComments()) > 0) {
                 throw new UserException(t("This comment has some replies, so it can't be deleted."));
             }
@@ -389,6 +389,71 @@ class Online extends PageController
 
             return JsonResponse::create(
                 true
+            );
+        } catch (UserException $x) {
+            return JsonResponse::create(
+                array(
+                    'error' => $x->getMessage(),
+                ),
+                400
+            );
+        }
+    }
+
+    public function load_all_places($localeID)
+    {
+        try {
+            $valt = $this->app->make('helper/validation/token');
+            if (!$valt->validate('comtra-load-all-places'.$localeID)) {
+                throw new UserException($valt->getErrorMessage());
+            }
+            $locale = $localeID ? $this->app->make('community_translation/locale')->findApproved($localeID) : null;
+            if ($locale === null) {
+                throw new UserException(t('Invalid language identifier received'));
+            }
+            $access = $this->app->make('community_translation/access')->getLocaleAccess($locale);
+            if ($access <= Access::NOT_LOGGED_IN) {
+                $error = t('You need to log-in in order to translate');
+            } elseif ($access < Access::TRANSLATE) {
+                throw new UserException(t("You don't belong to the %s translation group", $locale->getDisplayName()));
+            }
+            $id = $this->post('id');
+            $translatable = $id ? $this->app->make('community_translation/translatable')->find($id) : null;
+            if (translatable === null) {
+                throw new UserException(t("Unable to find the specified translatable string."));
+            }
+            $editorService = $this->app->make('community_translation/editor');
+            $result = array();
+            foreach ($translatable->getPlaces() as $place) {
+                $result[] = array(
+                    'packageObject' => $place->getPackage(),
+                    'package' => $place->getPackage()->getDisplayName(),
+                    'comments' => $place->getComments(),
+                    'references' => $editorService->expandReferences($place->getLocations(), $place->getPackage()),
+                );
+            }
+            usort($result, function (array $a, array $b) {
+                $packageA = $a['packageObject'];
+                $packageB = $b['packageObject'];
+                $cmp = strcasecmp($packageA->getDisplayName(true), $packageB->getDisplayName(true));
+                if ($cmp === 0) {
+                    $isDevA = strpos($packageA->getVersion(), Package::DEV_PREFIX) === 0;
+                    $isDevB = strpos($packageB->getVersion(), Package::DEV_PREFIX) === 0;
+                    if ($isDevA === $isDevB) {
+                        $cmp = version_compare($packageB->getVersion(), $packageA->getVersion());
+                    } else {
+                        $cmp = $isDevA ? -1 : 1;
+                    }
+                }
+
+                return $cmp;
+            });
+            foreach (array_keys($result) as $i) {
+                unset($result[$i]['packageObject']);
+            }
+
+            return JsonResponse::create(
+                $result
             );
         } catch (UserException $x) {
             return JsonResponse::create(

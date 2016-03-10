@@ -64,6 +64,9 @@ defined('C5_EXECUTE') or die('Access Denied.');
 				<?php echo t('No references found for this string.')?>
 			</div>
 			<div class="comtra_some"></div>
+			<div style="text-align: right; margin-top: 20px">
+				<a href="#" class="btn btn-primary btn-sm" id="comtra_translation-references-showallplaces"><?php echo t('Show all the places where this string is used'); ?></a>
+			</div>
 		</div>
 		<div role="tabpanel" class="tab-pane" role="tabpanel" id="comtra_translation-suggestions">
 			<div class="alert alert-info comtra_none">
@@ -124,6 +127,23 @@ defined('C5_EXECUTE') or die('Access Denied.');
 				<button type="button" class="btn btn-default" data-dismiss="modal"><?php echo t('Cancel'); ?></button>
 				<button type="button" class="btn btn-danger" id="comtra_translation-glossary-delete"><?php echo t('Delete'); ?></button>
 				<button type="button" class="btn btn-primary"><?php echo t('Save'); ?></button>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div id="comtra_allplaces-dialog" class="modal" tabindex="-1">
+	<div class="modal-dialog">
+		<div class="modal-content">
+			<div class="modal-header">
+				<button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+				<h4 class="modal-title"><?php echo t('String usage'); ?></h4>
+			</div>
+			<div class="modal-body">
+				<div class="list-group"></div>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-primary" data-dismiss="modal"><?php echo t('Close'); ?></button>
 			</div>
 		</div>
 	</div>
@@ -211,6 +231,7 @@ comtraOnlineEditorInitialize({
 	actions: {
 		saveComment: <?php echo json_encode((string) $this->action('save_comment', $locale->getID())); ?>,
 		deleteComment: <?php echo json_encode((string) $this->action('delete_comment', $locale->getID())); ?>,
+		loadAllPlaces: <?php echo json_encode((string) $this->action('load_all_places', $locale->getID())); ?>,
 		<?php if ($canEditGlossary) { ?>
 			saveGlossaryTerm: <?php echo json_encode((string) $this->action('save_glossary_term', $locale->getID())); ?>,
 			deleteGlossaryTerm: <?php echo json_encode((string) $this->action('delete_glossary_term', $locale->getID())); ?>,
@@ -220,6 +241,7 @@ comtraOnlineEditorInitialize({
 	tokens: {
 		saveComment: <?php echo json_encode($token->generate('comtra-save-comment'.$locale->getID())); ?>,
 		deleteComment: <?php echo json_encode($token->generate('comtra-delete-comment'.$locale->getID())); ?>,
+		loadAllPlaces: <?php echo json_encode($token->generate('comtra-load-all-places'.$locale->getID())); ?>,
 		<?php if ($canEditGlossary) { ?>
 			saveGlossaryTerm: <?php echo json_encode($token->generate('comtra-save-glossary-term'.$locale->getID())); ?>,
 			deleteGlossaryTerm: <?php echo json_encode($token->generate('comtra-delete-glossary-term'.$locale->getID())); ?>,
@@ -236,6 +258,9 @@ comtraOnlineEditorInitialize({
 		Approve: <?php echo json_encode(t('Approve')); ?>,
 		Deny: <?php echo json_encode(t('Deny')); ?>,
 		Use_this: <?php echo json_encode(tc('Translation', 'Use this')); ?>,
+		Comments: <?php echo json_encode(t('Comments')); ?>,
+		References: <?php echo json_encode(t('References')); ?>,
+		Unused_string: <?php echo json_encode(t('This string is not used in any package.')); ?>,
 		pluralRuleNames: <?php echo json_encode(array(
 	        'zero' => tc('PluralCase', 'Zero'),
 	        'one' => tc('PluralCase', 'One'),

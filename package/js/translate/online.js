@@ -4,7 +4,7 @@
 'use strict';
 
 // Some global vars
-var translator, $extra, canApprove, packageID, actions, tokens, i18n, canEditGlossary, currentTranslatableID = null, pluralRuleByIndex;
+var translator, $extra, canApprove, packageID, actions, tokens, i18n, canEditGlossary, currentTranslation = null, pluralRuleByIndex;
 
 
 // Helper functions
@@ -84,16 +84,76 @@ function getAjaxError(args) {
 		return errorThrown;
 	}
 }
+var showAllPlaces = (function() {
+	var ajaxing = false;
+	return function() {
+		if (ajaxing || translator.busy || currentTranslation === null) {
+			return;
+		}
+		ajaxing = true;
+		$.ajax({
+			cache: false,
+			data: {ccm_token: tokens.loadAllPlaces, id: currentTranslation.id},
+			dataType: 'json',
+			method: 'POST',
+			url: actions.loadAllPlaces
+		})
+		.done(function(data) {
+			ajaxing = false;
+			if (data.length === 0) {
+				window.alert(i18n.Unused_string);
+				return;
+			}
+			var $dlg = $('#comtra_allplaces-dialog');
+			var $list = $dlg.find('.list-group').empty();
+			$list.closest('.modal-body').css({overflow: 'auto', 'overflow-x': 'hidden', 'max-height': Math.max(50, $(window).height() - 200) + 'px'});
+			$.each(data, function() {
+				var $div;
+				$list.append($('<div class="list-group-item active" />').text(this['package']));
+				if (this.comments.length > 0) {
+					$list.append($div = $('<div class="list-group-item" />')
+						.append($('<span class="label label-info" />').text(i18n.Comments))
+					);
+					$.each (this.comments, function (i, c) {
+						$div.append($('<div />').text(c));
+					});
+				}
+				if (this.references.length > 0) {
+					$list.append($div = $('<div class="list-group-item" />')
+						.append($('<span class="label label-info" />').text(i18n.References))
+					);
+					$.each (this.references, function (_, ref) {
+						$div.append($('<br />'));
+						if ($.isArray(ref)) {
+							$div.append($('<a target="_blank" />')
+								.attr('href', ref[0])
+								.attr('title', ref[0])
+								.text(ref[1])
+							);
+						} else {
+							$div.append($('<span />').text(ref));
+						}
+					});
+				}
+			});
+			$dlg.modal('show');
+		})
+		.fail(function(xhr, textStatus, errorThrown) {
+			ajaxing = false;
+			window.alert(getAjaxError(arguments));
+		});
+	};
+})();
 
 // Tabs handling
 var OtherTranslations = (function() {
 	var $parent;
-	function createA(translation) {
+	function createA(translationText) {
 		return $('<a href="#" />')
-			.html(textToHtml(translation))
+			.html(textToHtml(translationText))
 			.on('click', function(e) {
 				if (!translator.busy) {
-					setTranslatorText(translation, true).focus();
+					setTranslatorText(translationText, true).focus();
 				}
 				e.preventDefault();
 				return false;
@@ -113,9 +173,9 @@ var OtherTranslations = (function() {
 		if (this.data.translations.length === 1) {
 			$td.append(createA(this.data.translations[0]));
 		} else {
-			$.each(this.data.translations, function(i, translation) {
+			$.each(this.data.translations, function(i, translationText) {
 				$td.append($('<div />')
-					.append(createA(translation))
+					.append(createA(translationText))
 					.prepend($('<br />'))
 					.prepend($('<span class="label label-default" />')
 						.text(i18n.pluralRuleNames[pluralRuleByIndex[i]])
@@ -312,7 +372,7 @@ var Comments = (function() {
 			send.id = 'new';
 			if (editingParentComment === null) {
 				send.parent = 'root';
-				send.translatable = currentTranslatableID;
+				send.translatable = currentTranslation.id;
 			} else {
 				send.parent = editingParentComment.data.id;
 			}
@@ -694,12 +754,13 @@ function loadFullTranslation(foo, translation, cb)
 function showFullTranslation(foo)
 {
 	if (!translator.currentTranslationView) {
-		currentTranslatableID = null;
+		currentTranslation = null;
 		$extra.css('visibility', 'hidden');
 		return;
 	}
-	currentTranslatableID = translator.currentTranslationView.translation.id;
-	var extra = translator.currentTranslationView.translation._extra;
+	currentTranslation = translator.currentTranslationView.translation;
+	var extra = currentTranslation._extra;
+	delete currentTranslation._extra;
 	OtherTranslations.initialize(extra);
 	Comments.initialize(extra);
 	References.initialize(extra);
@@ -766,6 +827,16 @@ window.comtraOnlineEditorInitialize = function(options) {
 		e.preventDefault();
 		return false;
 	});
+	$('#comtra_translation-references-showallplaces').on('click', function(e) {
+		showAllPlaces();
+		e.preventDefault();
+		return false;
+	});
+	$('#comtra_allplaces-dialog')
+		.modal({
+			show: false
+		})
+	;
 	if (canEditGlossary) {
 		$('#comtra_translation-glossary-dialog')
 			.modal({
