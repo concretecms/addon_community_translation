@@ -85,7 +85,90 @@ class Exporter implements \Concrete\Core\Application\ApplicationAwareInterface
     }
 
     /**
+     * Builds the base select query string to retrieve some translatable/translated strings.
+     *
+     * @param Locale $locale
+     * @param bool $withPlaces
+     * @param bool $excludeUntranslatedStrings
+     *
+     * @return string
+     */
+    protected function getBaseSelectString(Locale $locale, $withPlaces, $excludeUntranslatedStrings)
+    {
+        $cn = $this->app->make('community_translation/em')->getConnection();
+        $queryLocaleID = $cn->quote($locale->getID());
+
+        $result = '
+            select
+                Translatables.tID,
+                Translatables.tContext,
+                Translatables.tText,
+                Translatables.tPlural,
+        ';
+        if ($withPlaces) {
+            $result .= '
+                TranslatablePlaces.tpLocations,
+                TranslatablePlaces.tpComments,
+            ';
+        } else {
+            $result .= "
+                'a:0:{}' as tpLocations,
+                'a:0:{}' as tpComments,
+            ";
+        }
+        $result .= '
+                Translations.tReviewed,
+                Translations.tText0,
+                Translations.tText1,
+                Translations.tText2,
+                Translations.tText3,
+                Translations.tText4,
+                Translations.tText5
+            from
+                Translatables
+        ';
+        if ($withPlaces) {
+            $result .= '
+                inner join TranslatablePlaces on Translatables.tID = TranslatablePlaces.tpTranslatable
+            ';
+        }
+        $result .=
+            ($excludeUntranslatedStrings ? 'inner join' : 'left join')
+            . "
+                Translations on Translatables.tID = Translations.tTranslatable and 1 = Translations.tCurrent and $queryLocaleID = Translations.tLocale
+            "
+        ;
+
+        return $result;
+    }
+
+    /**
+     * Get the recordset of all the translations of a locale that needs to be reviewed.
+     *
+     * @param Locale $locale
+     *
+     * @return \Concrete\Core\Database\Driver\PDOStatement
+     */
+    public function getUnreviewedSelectQuery(Locale $locale)
+    {
+        $cn = $this->app->make('community_translation/em')->getConnection();
+        $queryLocaleID = $cn->quote($locale->getID());
+
+        return $cn->executeQuery(
+            $this->getBaseSelectString($locale, false, false) .
+            " inner join
+                (
+                    select distinct tTranslatable from Translations where tCurrent is null and tNeedReview = 1 and tLocale = $queryLocaleID
+                ) as tNR on Translatables.tID = tNR.tTranslatable
+            order by
+                Translatables.tText
+            "
+        );
+    }
+
+    /**
      * Get recordset of the translations for a specific package, version and locale.
+     *
      * @param Package $package
      * @param Locale $locale
      *
@@ -94,37 +177,15 @@ class Exporter implements \Concrete\Core\Application\ApplicationAwareInterface
     public function getPackageSelectQuery(Package $package, Locale $locale, $excludeUntranslatedStrings = false)
     {
         $cn = $this->app->make('community_translation/em')->getConnection();
-        /* @var \Concrete\Core\Database\Connection\Connection $cn */
         $queryPackageID = (int) $package->getID();
-        $queryLocaleID = $cn->quote($locale->getID());
+
         return $cn->executeQuery(
+            $this->getBaseSelectString($locale, true, $excludeUntranslatedStrings) .
             "
-                select
-                    Translatables.tID,
-                    tContext,
-                    tText,
-                    tPlural,
-                    tpLocations,
-                    tpComments,
-                    tReviewed,
-                    tText0,
-                    tText1,
-                    tText2,
-                    tText3,
-                    tText4,
-                    tText5
-                from
-                    Translatables
-                    inner join TranslatablePlaces on Translatables.tID = TranslatablePlaces.tpTranslatable
-                    ".(
-                        $excludeUntranslatedStrings ?
-                        "inner join" :
-                        "left join"
-                    )." Translations on Translatables.tID = Translations.tTranslatable and 1 = Translations.tCurrent and $queryLocaleID = Translations.tLocale
-            where
-            TranslatablePlaces.tpPackage = $queryPackageID
-            order by
-            TranslatablePlaces.tpSort
+                where
+                    TranslatablePlaces.tpPackage = $queryPackageID
+                order by
+                    TranslatablePlaces.tpSort
             "
         );
     }

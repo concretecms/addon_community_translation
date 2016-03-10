@@ -41,7 +41,21 @@ class Editor implements \Concrete\Core\Application\ApplicationAwareInterface
     }
 
     /**
-     * Returns the initial translations for the online editor.
+     * Returns the initial translations to be reviewed for the online editor, for a specific locale.
+     *
+     * @param Locale $locale
+     *
+     * @return array
+     */
+    public function getUnreviewedInitialTranslations(Locale $locale)
+    {
+        $rs = $this->app->make('community_translation/translation/exporter')->getUnreviewedSelectQuery($locale);
+
+        return $this->buildInitialTranslations($locale, $rs);
+    }
+
+    /**
+     * Returns the initial translations for the online editor, for a specific package.
      *
      * @param Package $package
      * @param Locale $locale
@@ -50,8 +64,21 @@ class Editor implements \Concrete\Core\Application\ApplicationAwareInterface
      */
     public function getInitialTranslations(Package $package, Locale $locale)
     {
-        $result = array();
         $rs = $this->app->make('community_translation/translation/exporter')->getPackageSelectQuery($package, $locale, false);
+
+        return $this->buildInitialTranslations($locale, $rs);
+    }
+
+    /**
+     * Builds the initial translations array.
+     *
+     * @param \Concrete\Core\Database\Driver\PDOStatement $rs
+     *
+     * @return array
+     */
+    protected function buildInitialTranslations(Locale $locale, \Concrete\Core\Database\Driver\PDOStatement $rs)
+    {
+        $result = array();
         $numPlurals = $locale->getPluralCount();
         while (($row = $rs->fetch()) !== false) {
             $item = array(

@@ -7,8 +7,8 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2016-03-09T20:57:30+01:00\n"
-"PO-Revision-Date: 2016-03-09T20:57:30+01:00\n"
+"POT-Creation-Date: 2016-03-10T11:28:06+01:00\n"
+"PO-Revision-Date: 2016-03-10T11:28:07+01:00\n"
 "Language: it_IT\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
 
@@ -294,96 +294,108 @@ msgid "Number of translations untouched"
 msgstr "Numero di traduzioni non modificate"
 
 #: packages/community_translation/controllers/single_page/translate/online.php:17
-#: packages/community_translation/controllers/single_page/translate/online.php:86
-msgid "Invalid translated package identifier received"
-msgstr "È stato ricevuto un identificativo di pacchetto non valido"
-
-#: packages/community_translation/controllers/single_page/translate/online.php:23
-#: packages/community_translation/controllers/single_page/translate/online.php:68
-#: packages/community_translation/controllers/single_page/translate/online.php:112
-#: packages/community_translation/controllers/single_page/translate/online.php:212
-#: packages/community_translation/controllers/single_page/translate/online.php:254
-#: packages/community_translation/controllers/single_page/translate/online.php:342
+#: packages/community_translation/controllers/single_page/translate/online.php:82
+#: packages/community_translation/controllers/single_page/translate/online.php:126
+#: packages/community_translation/controllers/single_page/translate/online.php:226
+#: packages/community_translation/controllers/single_page/translate/online.php:268
+#: packages/community_translation/controllers/single_page/translate/online.php:356
 msgid "Invalid language identifier received"
 msgstr "È stato ricevuto un identificativo di lingua non valido"
 
-#: packages/community_translation/controllers/single_page/translate/online.php:29
-#: packages/community_translation/controllers/single_page/translate/online.php:72
-#: packages/community_translation/controllers/single_page/translate/online.php:116
-#: packages/community_translation/controllers/single_page/translate/online.php:216
-#: packages/community_translation/controllers/single_page/translate/online.php:258
-#: packages/community_translation/controllers/single_page/translate/online.php:346
+#: packages/community_translation/controllers/single_page/translate/online.php:23
+#: packages/community_translation/controllers/single_page/translate/online.php:86
+#: packages/community_translation/controllers/single_page/translate/online.php:130
+#: packages/community_translation/controllers/single_page/translate/online.php:230
+#: packages/community_translation/controllers/single_page/translate/online.php:272
+#: packages/community_translation/controllers/single_page/translate/online.php:360
 msgid "You need to log-in in order to translate"
 msgstr "È necessario accedere per poter tradurre"
 
-#: packages/community_translation/controllers/single_page/translate/online.php:31
-#: packages/community_translation/controllers/single_page/translate/online.php:74
-#: packages/community_translation/controllers/single_page/translate/online.php:118
-#: packages/community_translation/controllers/single_page/translate/online.php:218
-#: packages/community_translation/controllers/single_page/translate/online.php:260
-#: packages/community_translation/controllers/single_page/translate/online.php:348
+#: packages/community_translation/controllers/single_page/translate/online.php:25
+#: packages/community_translation/controllers/single_page/translate/online.php:88
+#: packages/community_translation/controllers/single_page/translate/online.php:132
+#: packages/community_translation/controllers/single_page/translate/online.php:232
+#: packages/community_translation/controllers/single_page/translate/online.php:274
+#: packages/community_translation/controllers/single_page/translate/online.php:362
 #, php-format
 msgid "You don't belong to the %s translation group"
 msgstr "Non fai parte del gruppo di traduzione per %s"
 
-#: packages/community_translation/controllers/single_page/translate/online.php:79
+#: packages/community_translation/controllers/single_page/translate/online.php:34
+#: packages/community_translation/controllers/single_page/translate/online.php:100
+msgid "Invalid translated package identifier received"
+msgstr "È stato ricevuto un identificativo di pacchetto non valido"
+
+#. %s is a language name
+#: packages/community_translation/controllers/single_page/translate/online.php:66
+#, php-format
+msgid "Strings awaiting review in %s"
+msgstr "Stringhe in attesa di revisione per %s"
+
+#. %1$s is a package name, %2$s is a language name
+#: packages/community_translation/controllers/single_page/translate/online.php:69
+#, php-format
+msgid "Translating %1$s in %2$s"
+msgstr "Traduzione di %1$s in %2$s"
+
+#: packages/community_translation/controllers/single_page/translate/online.php:93
 msgid "Invalid translatable string identifier received"
 msgstr "È stato ricevuto un identificativo di stringa da tradurre non valido"
 
-#: packages/community_translation/controllers/single_page/translate/online.php:128
+#: packages/community_translation/controllers/single_page/translate/online.php:142
 msgid "Unable to find the specified translatable string."
 msgstr "Non è stato possibile trovare la stringa da tradurre specificata."
 
-#: packages/community_translation/controllers/single_page/translate/online.php:133
+#: packages/community_translation/controllers/single_page/translate/online.php:147
 msgid "Unable to find the specified parent comment."
 msgstr "Non è stato possibile trovare il commento padre specificato."
 
-#: packages/community_translation/controllers/single_page/translate/online.php:146
-#: packages/community_translation/controllers/single_page/translate/online.php:171
+#: packages/community_translation/controllers/single_page/translate/online.php:160
+#: packages/community_translation/controllers/single_page/translate/online.php:185
 msgid "Please specify the comment visibility."
 msgstr "Specificare la visibilità del commento."
 
-#: packages/community_translation/controllers/single_page/translate/online.php:155
-#: packages/community_translation/controllers/single_page/translate/online.php:223
+#: packages/community_translation/controllers/single_page/translate/online.php:169
+#: packages/community_translation/controllers/single_page/translate/online.php:237
 msgid "Unable to find the specified comment."
 msgstr "Non è stato possibile trovare il commento specificato."
 
-#: packages/community_translation/controllers/single_page/translate/online.php:160
+#: packages/community_translation/controllers/single_page/translate/online.php:174
 msgid "Access denied to this comment."
 msgstr "Accesso negato a questo commento."
 
-#: packages/community_translation/controllers/single_page/translate/online.php:178
+#: packages/community_translation/controllers/single_page/translate/online.php:192
 msgid "Please specify the comment text."
 msgstr "Specificare il testo del commento."
 
-#: packages/community_translation/controllers/single_page/translate/online.php:227
+#: packages/community_translation/controllers/single_page/translate/online.php:241
 msgid "This comment has some replies, so it can't be deleted."
 msgstr "Questo commento ha alcune risposte, quindi non può essere eliminato."
 
-#: packages/community_translation/controllers/single_page/translate/online.php:262
-#: packages/community_translation/controllers/single_page/translate/online.php:350
+#: packages/community_translation/controllers/single_page/translate/online.php:276
+#: packages/community_translation/controllers/single_page/translate/online.php:364
 msgid "Access denied."
 msgstr "Accesso negato."
 
-#: packages/community_translation/controllers/single_page/translate/online.php:270
-#: packages/community_translation/controllers/single_page/translate/online.php:355
+#: packages/community_translation/controllers/single_page/translate/online.php:284
+#: packages/community_translation/controllers/single_page/translate/online.php:369
 msgid "Unable to find the specified gossary entry."
 msgstr "Non è stato possibile trovare la voce di glossario specificata."
 
-#: packages/community_translation/controllers/single_page/translate/online.php:275
+#: packages/community_translation/controllers/single_page/translate/online.php:289
 msgid "Please specify the term."
 msgstr "Specificare il termine."
 
-#: packages/community_translation/controllers/single_page/translate/online.php:280
+#: packages/community_translation/controllers/single_page/translate/online.php:294
 #, php-format
 msgid "The term \"%1$s\" already exists for the type \"%2$s\""
 msgstr "Il termine “%1$s” esiste già per il tipo “%2$s”"
 
-#: packages/community_translation/controllers/single_page/translate/online.php:365
+#: packages/community_translation/controllers/single_page/translate/online.php:379
 msgid "It's not possible to delete this entry since it's translated in these languages too:"
 msgstr "Non è possibile eliminare questa voce poiché è tradotta anche in queste lingue:"
 
-#: packages/community_translation/controllers/single_page/translate/online.php:367
+#: packages/community_translation/controllers/single_page/translate/online.php:381
 #, php-format
 msgid "It's not possible to delete this entry since it's translated in %d other languages too."
 msgstr "Non è possibile eliminare questa voce poiché è tradotta anche in altre %d lingue."
@@ -586,16 +598,16 @@ msgstr "Rami di sviluppo"
 #: packages/community_translation/single_pages/dashboard/system/community_translation/git_repositories/details.php:106
 #: packages/community_translation/single_pages/dashboard/system/community_translation/options.php:80
 #: packages/community_translation/single_pages/translate/details.php:63
-#: packages/community_translation/single_pages/translate/online.php:110
-#: packages/community_translation/single_pages/translate/online.php:175
+#: packages/community_translation/single_pages/translate/online.php:115
+#: packages/community_translation/single_pages/translate/online.php:180
 #: packages/community_translation/single_pages/teams.php:85
 msgid "Cancel"
 msgstr "Annulla"
 
 #: packages/community_translation/single_pages/dashboard/system/community_translation/git_repositories/details.php:109
 #: packages/community_translation/single_pages/teams/details.php:163
-#: packages/community_translation/single_pages/translate/online.php:111
-#: packages/community_translation/single_pages/translate/online.php:176
+#: packages/community_translation/single_pages/translate/online.php:116
+#: packages/community_translation/single_pages/translate/online.php:181
 msgid "Delete"
 msgstr "Elimina"
 
@@ -612,7 +624,7 @@ msgid "Branch"
 msgstr "Ramo"
 
 #: packages/community_translation/single_pages/dashboard/system/community_translation/git_repositories/details.php:129
-#: packages/community_translation/single_pages/translate/online.php:217
+#: packages/community_translation/single_pages/translate/online.php:222
 #: packages/community_translation/single_pages/teams.php:127
 msgid "Are you sure?"
 msgstr "Procedere?"
@@ -727,8 +739,8 @@ msgid "Default sender name: %s"
 msgstr "Nome mittente predefinito: %s"
 
 #: packages/community_translation/single_pages/dashboard/system/community_translation/options.php:81
-#: packages/community_translation/single_pages/translate/online.php:112
-#: packages/community_translation/single_pages/translate/online.php:177
+#: packages/community_translation/single_pages/translate/online.php:117
+#: packages/community_translation/single_pages/translate/online.php:182
 msgid "Save"
 msgstr "Salva"
 
@@ -928,147 +940,141 @@ msgstr "È necessario accedere e far parte del gruppo di traduzione per %s per a
 msgid "You must be a member of the %s translation team in order to help us translating it"
 msgstr "È far parte del gruppo di traduzione per %s per aiutarci nella traduzione"
 
-#. %1$s is a package name, %2$s is a language name
-#: packages/community_translation/single_pages/translate/online.php:20
-#, php-format
-msgid "Translating %1$s in %2$s"
-msgstr "Traduzione di %1$s in %2$s"
-
-#: packages/community_translation/single_pages/translate/online.php:25
+#: packages/community_translation/single_pages/translate/online.php:30
 msgid "Other translations"
 msgstr "Altre traduzioni"
 
-#: packages/community_translation/single_pages/translate/online.php:26
-#: packages/community_translation/single_pages/translate/online.php:151
-#: packages/community_translation/single_pages/translate/online.php:166
+#: packages/community_translation/single_pages/translate/online.php:31
+#: packages/community_translation/single_pages/translate/online.php:156
+#: packages/community_translation/single_pages/translate/online.php:171
 msgid "Comments"
 msgstr "Commenti"
 
-#: packages/community_translation/single_pages/translate/online.php:27
+#: packages/community_translation/single_pages/translate/online.php:32
 msgid "References"
 msgstr "Riferimenti"
 
-#: packages/community_translation/single_pages/translate/online.php:28
+#: packages/community_translation/single_pages/translate/online.php:33
 msgid "Suggestions"
 msgstr "Suggerimenti"
 
-#: packages/community_translation/single_pages/translate/online.php:29
+#: packages/community_translation/single_pages/translate/online.php:34
 msgid "Glossary"
 msgstr "Glossario"
 
-#: packages/community_translation/single_pages/translate/online.php:34
+#: packages/community_translation/single_pages/translate/online.php:39
 msgid "No other translations found."
 msgstr "Nessun’altra traduzione trovata."
 
-#: packages/community_translation/single_pages/translate/online.php:40
+#: packages/community_translation/single_pages/translate/online.php:45
 msgid "No comments found for this string."
 msgstr "Nessun commento trovato su questa stringa."
 
-#: packages/community_translation/single_pages/translate/online.php:42
+#: packages/community_translation/single_pages/translate/online.php:47
 msgid "Extracted comments"
 msgstr "Commenti estratti"
 
-#: packages/community_translation/single_pages/translate/online.php:43
+#: packages/community_translation/single_pages/translate/online.php:48
 msgid "Translators comments"
 msgstr "Commenti dei traduttori"
 
-#: packages/community_translation/single_pages/translate/online.php:45
+#: packages/community_translation/single_pages/translate/online.php:50
 msgid "New comment"
 msgstr "Nuovo commento"
 
-#: packages/community_translation/single_pages/translate/online.php:50
+#: packages/community_translation/single_pages/translate/online.php:55
 msgid "No references found for this string."
 msgstr "Nessun riferimento trovato per questa stringa."
 
-#: packages/community_translation/single_pages/translate/online.php:56
+#: packages/community_translation/single_pages/translate/online.php:61
 msgid "No similar translations found for this string."
 msgstr "Nessuna traduzione simile trovata per questa stringa."
 
-#: packages/community_translation/single_pages/translate/online.php:58
+#: packages/community_translation/single_pages/translate/online.php:63
 msgid "Similar translations"
 msgstr "Traduzioni simili"
 
-#: packages/community_translation/single_pages/translate/online.php:62
+#: packages/community_translation/single_pages/translate/online.php:67
 msgid "No glossary terms found for this string."
 msgstr "Nessun termine del glossario trovato per questa stringa."
 
-#: packages/community_translation/single_pages/translate/online.php:67
+#: packages/community_translation/single_pages/translate/online.php:72
 msgid "New term"
 msgstr "Nuovo termine"
 
-#: packages/community_translation/single_pages/translate/online.php:79
+#: packages/community_translation/single_pages/translate/online.php:84
 msgid "Translation comment"
 msgstr "Commento del traduttore"
 
-#: packages/community_translation/single_pages/translate/online.php:84
+#: packages/community_translation/single_pages/translate/online.php:89
 msgid "Comment visibility"
 msgstr "Visibilità del commento"
 
-#: packages/community_translation/single_pages/translate/online.php:88
+#: packages/community_translation/single_pages/translate/online.php:93
 #, php-format
 msgid "This is a comment only for %s"
 msgstr "Questo è un commento solo per %s"
 
-#: packages/community_translation/single_pages/translate/online.php:94
+#: packages/community_translation/single_pages/translate/online.php:99
 msgid "This is a comment for all languages"
 msgstr "Questo è un commento solo per tutte le lingue"
 
-#: packages/community_translation/single_pages/translate/online.php:99
+#: packages/community_translation/single_pages/translate/online.php:104
 msgid "Markdown syntax"
 msgstr "Sintassi Markdown"
 
-#: packages/community_translation/single_pages/translate/online.php:100
+#: packages/community_translation/single_pages/translate/online.php:105
 msgid "Comment"
 msgstr "Comemnto"
 
-#: packages/community_translation/single_pages/translate/online.php:104
+#: packages/community_translation/single_pages/translate/online.php:109
 msgid "Preview"
 msgstr "Anteprima"
 
-#: packages/community_translation/single_pages/translate/online.php:124
+#: packages/community_translation/single_pages/translate/online.php:129
 msgid "Glossary Term"
 msgstr "Termine del glossario"
 
-#: packages/community_translation/single_pages/translate/online.php:129
+#: packages/community_translation/single_pages/translate/online.php:134
 msgid "Info shared with all languages"
 msgstr "Info condivisa con tutte le lingue"
 
-#: packages/community_translation/single_pages/translate/online.php:131
+#: packages/community_translation/single_pages/translate/online.php:136
 msgid "Term"
 msgstr "Termine"
 
-#: packages/community_translation/single_pages/translate/online.php:140
+#: packages/community_translation/single_pages/translate/online.php:145
 msgid "Type"
 msgstr "Tipo"
 
-#: packages/community_translation/single_pages/translate/online.php:143
+#: packages/community_translation/single_pages/translate/online.php:148
 msgctxt "Type"
 msgid "none"
 msgstr "nessuno"
 
-#: packages/community_translation/single_pages/translate/online.php:158
+#: packages/community_translation/single_pages/translate/online.php:163
 #, php-format
 msgid "Info only for %s"
 msgstr "Info solo per %s"
 
-#: packages/community_translation/single_pages/translate/online.php:160
+#: packages/community_translation/single_pages/translate/online.php:165
 msgid "Translation"
 msgstr "Traduzione"
 
-#: packages/community_translation/single_pages/translate/online.php:216
+#: packages/community_translation/single_pages/translate/online.php:221
 msgid "no translation available"
 msgstr "nessuna traduzione disponibile"
 
-#: packages/community_translation/single_pages/translate/online.php:218
+#: packages/community_translation/single_pages/translate/online.php:223
 msgctxt "Prefix of an author name"
 msgid "by"
 msgstr "di"
 
-#: packages/community_translation/single_pages/translate/online.php:219
+#: packages/community_translation/single_pages/translate/online.php:224
 msgid "Reply"
 msgstr "Rispondi"
 
-#: packages/community_translation/single_pages/translate/online.php:220
+#: packages/community_translation/single_pages/translate/online.php:225
 msgid "Edit"
 msgstr "Modifica"
 
@@ -1078,16 +1084,11 @@ msgstr "Completa le stringhe già tradotte"
 
 #: packages/community_translation/single_pages/utilities/fill_translations.php:12
 msgid "Here you can upload a ZIP file containing a package, or a .pot/.po/.mo file."
-msgstr ""
-"Qui è possibile caricare un file ZIP contenente un pacchetto, o un file "
-".pot/.po/.mo."
+msgstr "Qui è possibile caricare un file ZIP contenente un pacchetto, o un file .pot/.po/.mo."
 
 #: packages/community_translation/single_pages/utilities/fill_translations.php:13
 msgid "You'll get back a ZIP file containing all the translatable strings found (.pot file) and the translated strings we already know for the languages that you specify (as source .po files or as compiled .mo files)."
-msgstr ""
-"Riceverai un file ZIP contenente tutte le stringhe da tradurre trovate (file "
-".pot) e le stringhe di cui già abbiamo le traduzioni per le lingue che "
-"specifichi (come file sorgenti .po o come file compilati .mo)."
+msgstr "Riceverai un file ZIP contenente tutte le stringhe da tradurre trovate (file .pot) e le stringhe di cui già abbiamo le traduzioni per le lingue che specifichi (come file sorgenti .po o come file compilati .mo)."
 
 #: packages/community_translation/single_pages/utilities/fill_translations.php:17
 msgid "File to be processed"
@@ -1166,9 +1167,7 @@ msgstr "Si desidera un nuovo gruppo di traduzione?"
 #: packages/community_translation/single_pages/teams.php:102
 #, php-format
 msgid "If you'd like to help us translating concrete5 to a new language, you can ask us to <a href=\"%s\">create a new Translators Team</a>."
-msgstr ""
-"Per aiutarci a tradurre concrete5 in una nuova lingua, è possibile inoltrare "
-"la richiesta di <a href=\"%s\">creazione di un nuovo gruppo di traduzione</a>."
+msgstr "Per aiutarci a tradurre concrete5 in una nuova lingua, è possibile inoltrare la richiesta di <a href=\"%s\">creazione di un nuovo gruppo di traduzione</a>."
 
 #: packages/community_translation/single_pages/teams.php:106
 msgid "Login required"
@@ -1225,9 +1224,7 @@ msgstr "Non è stato possibile creare una cartella temporanea."
 #: packages/community_translation/src/Git/Fetcher.php:106
 #: packages/community_translation/src/Git/Fetcher.php:117
 msgid "Error initializing a temporary directory."
-msgstr ""
-"Si è verificato un errore durante l’inizializzazione di una cartella "
-"temporanea."
+msgstr "Si è verificato un errore durante l’inizializzazione di una cartella temporanea."
 
 #: packages/community_translation/src/Git/Fetcher.php:170
 #, php-format
@@ -1256,31 +1253,31 @@ msgstr "La funzione exec() è disabilitata"
 msgid "Command failed with return code %1$s: %2$s"
 msgstr "Comando fallito con codice di ritorno %1$s: %2$s"
 
-#: packages/community_translation/src/Git/Importer.php:65
+#: packages/community_translation/src/Git/Importer.php:66
 msgid "Initializing/fetching local repository clone"
 msgstr "Inizializzazione/scaricamento della copia locale del repository"
 
-#: packages/community_translation/src/Git/Importer.php:67
+#: packages/community_translation/src/Git/Importer.php:68
 msgid "Listing tags"
 msgstr "Elencazione dei tag"
 
-#: packages/community_translation/src/Git/Importer.php:77
+#: packages/community_translation/src/Git/Importer.php:78
 #, php-format
 msgid "Checking out tag '%s'"
 msgstr "Check-out del tag “%s”"
 
-#: packages/community_translation/src/Git/Importer.php:79
-#: packages/community_translation/src/Git/Importer.php:89
+#: packages/community_translation/src/Git/Importer.php:80
+#: packages/community_translation/src/Git/Importer.php:90
 #, php-format
 msgid "Extracting strings for version '%s'"
 msgstr "Estrazione stringhe per versione “%s”"
 
-#: packages/community_translation/src/Git/Importer.php:84
+#: packages/community_translation/src/Git/Importer.php:85
 #, php-format
 msgid "Tags skipped since already parsed: %s"
 msgstr "Tag saltati poiché già analizzati: %s"
 
-#: packages/community_translation/src/Git/Importer.php:87
+#: packages/community_translation/src/Git/Importer.php:88
 #, php-format
 msgid "Checking out development branch '%s'"
 msgstr "Check-out del ramo di sviluppo “%s”"
@@ -1307,8 +1304,7 @@ msgstr "agg."
 
 #: packages/community_translation/src/Glossary/Entry/Entry.php:253
 msgid "A word that describes a noun or pronoun (examples: big, happy, obvious)."
-msgstr ""
-"Una parola che descrive un nome o un pronome (esempi: grande, felice, ovvio)."
+msgstr "Una parola che descrive un nome o un pronome (esempi: grande, felice, ovvio)."
 
 #: packages/community_translation/src/Glossary/Entry/Entry.php:256
 msgctxt "TermType"
@@ -1322,10 +1318,7 @@ msgstr "avv."
 
 #: packages/community_translation/src/Glossary/Entry/Entry.php:258
 msgid "A word that describes or gives more information about a verb, adjective or other adverb (examples: carefully, quickly, very)."
-msgstr ""
-"Una parola che descrive o fornisce ulteriori informazioni su un verbo, un "
-"aggettivo o un altro avverbio (esempi: attentamente, velocemente, "
-"decisamente)."
+msgstr "Una parola che descrive o fornisce ulteriori informazioni su un verbo, un aggettivo o un altro avverbio (esempi: attentamente, velocemente, decisamente)."
 
 #: packages/community_translation/src/Glossary/Entry/Entry.php:261
 msgctxt "TermType"
@@ -1339,9 +1332,7 @@ msgstr "cong."
 
 #: packages/community_translation/src/Glossary/Entry/Entry.php:263
 msgid "A word that ​connects words, ​phrases, and ​clauses in a ​sentence (examples: and, but, while, ​although)."
-msgstr ""
-"Una parola che connette parole, frasi e proposizioni in una frase (esempi: e, "
-"ma, mentre, sebbene)."
+msgstr "Una parola che connette parole, frasi e proposizioni in una frase (esempi: e, ma, mentre, sebbene)."
 
 #: packages/community_translation/src/Glossary/Entry/Entry.php:266
 msgctxt "TermType"
@@ -1355,9 +1346,7 @@ msgstr "escl."
 
 #: packages/community_translation/src/Glossary/Entry/Entry.php:268
 msgid "A word that is used to show a ​short ​sudden ​expression of ​emotion (examples: Bye!, Cheers!, Goodbye!, Hi!, Hooray!)."
-msgstr ""
-"Una parola che viene usata per mostrare un’improvvisa breve espressione di "
-"emozione (esempi: Ciao!, Salute!, Arrivederci!, Evviva!)."
+msgstr "Una parola che viene usata per mostrare un’improvvisa breve espressione di emozione (esempi: Ciao!, Salute!, Arrivederci!, Evviva!)."
 
 #: packages/community_translation/src/Glossary/Entry/Entry.php:271
 msgctxt "TermType"
@@ -1371,9 +1360,7 @@ msgstr "n."
 
 #: packages/community_translation/src/Glossary/Entry/Entry.php:273
 msgid "A word that refers to a ​person, ​place, thing, ​event, ​substance, or ​quality (examples: Andrew, house, pencil, table)."
-msgstr ""
-"Una parola che si riferisce a una persona, un luogo, una cosa, un evento, un "
-"materiale o una qualità (esempi: Andrea, casa, matita, tavolo)."
+msgstr "Una parola che si riferisce a una persona, un luogo, una cosa, un evento, un materiale o una qualità (esempi: Andrea, casa, matita, tavolo)."
 
 #: packages/community_translation/src/Glossary/Entry/Entry.php:276
 msgctxt "TermType"
@@ -1387,10 +1374,7 @@ msgstr "prep."
 
 #: packages/community_translation/src/Glossary/Entry/Entry.php:278
 msgid "A word that is used before a ​noun, a ​noun phrase, or a ​pronoun, ​connecting it to another word (examples: at, for, in, on, under)."
-msgstr ""
-"Una parola che viene usata prima di un sostantivo, una frase nominale o un "
-"pronome, collegandolo a un'altra parola (esempi: a, da, in, con, sopra, "
-"sotto)."
+msgstr "Una parola che viene usata prima di un sostantivo, una frase nominale o un pronome, collegandolo a un'altra parola (esempi: a, da, in, con, sopra, sotto)."
 
 #: packages/community_translation/src/Glossary/Entry/Entry.php:281
 msgctxt "TermType"
@@ -1404,9 +1388,7 @@ msgstr "pron."
 
 #: packages/community_translation/src/Glossary/Entry/Entry.php:283
 msgid "A word that is used ​instead of a ​noun or a ​noun phrase (examples: I, me, mine, myself)."
-msgstr ""
-"Una parola che viene usata al posto di un nome o di un frase nominale "
-"(esempi: io, me, mio)."
+msgstr "Una parola che viene usata al posto di un nome o di un frase nominale (esempi: io, me, mio)."
 
 #: packages/community_translation/src/Glossary/Entry/Entry.php:286
 msgctxt "TermType"
@@ -1420,9 +1402,7 @@ msgstr "v."
 
 #: packages/community_translation/src/Glossary/Entry/Entry.php:288
 msgid "A word or phrase that ​describes an ​action, ​condition, or ​experience (examples: listen, read, write)."
-msgstr ""
-"Una parola o frase che descrive un’azione, condizione o esperienza (esempi: "
-"ascoltare, leggere, scrivere)."
+msgstr "Una parola o frase che descrive un’azione, condizione o esperienza (esempi: ascoltare, leggere, scrivere)."
 
 #: packages/community_translation/src/Locale/Locale.php:329
 #, php-format
@@ -1471,15 +1451,12 @@ msgstr "Il livello di accesso specificato non è valito"
 #: packages/community_translation/src/Service/Access.php:288
 #, php-format
 msgid "Only members of the %s transation team can download its translations"
-msgstr ""
-"Solo i membri del gruppo di traduzione per %s possono scaricarne le traduzioni"
+msgstr "Solo i membri del gruppo di traduzione per %s possono scaricarne le traduzioni"
 
 #: packages/community_translation/src/Service/Groups.php:86
 #, php-format
 msgid "Failed to create a user group with name '%1$s' as a child of '%2$s'"
-msgstr ""
-"Non è stato possibile creare un gruppo di utenti con nome “%1$s” come figlio "
-"di “%2$s”"
+msgstr "Non è stato possibile creare un gruppo di utenti con nome “%1$s” come figlio di “%2$s”"
 
 #: packages/community_translation/src/Service/Groups.php:88
 #, php-format
@@ -1501,7 +1478,7 @@ msgstr "La cartella temporanea non è scrivibile."
 #: packages/community_translation/src/Stats/Repository.php:48
 #: packages/community_translation/src/Stats/Repository.php:57
 #: packages/community_translation/src/Stats/Repository.php:67
-#: packages/community_translation/src/Translation/Exporter.php:159
+#: packages/community_translation/src/Translation/Exporter.php:218
 msgid "Invalid translated package specified"
 msgstr "Il pacchetto tradotto specificato non è valido"
 
@@ -1547,16 +1524,12 @@ msgstr "Non è stato possibile determinare la lingua del file caricato."
 #: packages/community_translation/src/Translation/Importer.php:89
 #, php-format
 msgid "For the language %1$s there should be %2$d plural forms, but in your file this is not specified"
-msgstr ""
-"Per la lingua “%1$s” ci dovrebbero essere %2$d forme plurali, ma nel tuo file "
-"questo non è specificato"
+msgstr "Per la lingua “%1$s” ci dovrebbero essere %2$d forme plurali, ma nel tuo file questo non è specificato"
 
 #: packages/community_translation/src/Translation/Importer.php:91
 #, php-format
 msgid "For the language %1$s there should be %2$d plural forms, but in your file there are %3$d"
-msgstr ""
-"Per la lingua “%1$s” ci dovrebbero essere %2$d forme plurali, ma nel tuo file "
-"ce ne sono %3$d"
+msgstr "Per la lingua “%1$s” ci dovrebbero essere %2$d forme plurali, ma nel tuo file ce ne sono %3$d"
 
 #: packages/community_translation/themes/community_translation/page_theme.php:17
 msgid "Community Translation theme."

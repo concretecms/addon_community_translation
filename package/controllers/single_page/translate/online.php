@@ -12,12 +12,6 @@ class Online extends PageController
     {
         $error = null;
         if ($error === null) {
-            $package = $packageID ? $this->app->make('community_translation/package')->find($packageID) : null;
-            if ($package === null) {
-                $error = t('Invalid translated package identifier received');
-            }
-        }
-        if ($error === null) {
             $locale = $localeID ? $this->app->make('community_translation/locale')->findApproved($localeID) : null;
             if ($locale === null) {
                 $error = t('Invalid language identifier received');
@@ -31,6 +25,16 @@ class Online extends PageController
                 $error = t("You don't belong to the %s translation group", $locale->getDisplayName());
             }
         }
+        if ($error === null) {
+            if ($access >= Access::ADMIN && $packageID === 'unreviewed') {
+                $package = 'unreviewed';
+            } else {
+                $package = $packageID ? $this->app->make('community_translation/package')->find($packageID) : null;
+                if ($package === null) {
+                    $error = t('Invalid translated package identifier received');
+                }
+            }
+        }
         if ($error !== null) {
             $this->flash('error', $error);
             $this->redirect('/translate');
@@ -42,7 +46,11 @@ class Online extends PageController
         $this->addFooterItem($hh->javascript('translate/online.js', 'community_translation'));
         $this->requireAsset('javascript', 'jquery');
         $this->requireAsset('core/translator');
-        $this->set('package', $package);
+        if ($package === 'unreviewed') {
+            $this->set('package', null);
+        } else {
+            $this->set('package', $package);
+        }
         $this->set('token', $this->app->make('helper/validation/token'));
         $this->set('canApprove', $access >= Access::ADMIN);
         $this->set('locale', $locale);
@@ -53,7 +61,13 @@ class Online extends PageController
             $pluralCases[$pluralFormKey] = $pluralFormExamples;
         }
         $this->set('pluralCases', $pluralCases);
-        $this->set('translations', $this->app->make('community_translation/editor')->getInitialTranslations($package, $locale));
+        if ($package === 'unreviewed') {
+            $this->set('translations', $this->app->make('community_translation/editor')->getUnreviewedInitialTranslations($locale));
+            $this->set('headerText', t(/*i18n: %s is a language name*/'Strings awaiting review in %s', $locale->getDisplayName()));
+        } else {
+            $this->set('translations', $this->app->make('community_translation/editor')->getInitialTranslations($package, $locale));
+            $this->set('headerText', t(/*i18n: %1$s is a package name, %2$s is a language name*/'Translating %1$s in %2$s', $package->getDisplayName(), $locale->getDisplayName()));
+        }
     }
 
     public function load_translation($localeID, $packageID = null)
@@ -123,7 +137,7 @@ class Online extends PageController
                 if ($parentID === 'root') {
                     $parent = null;
                     $translatableID = $this->post('translatable');
-                    $translatable = $translatableID ? $this->app->make('community_translation/translatable')->find($translatableID): null;
+                    $translatable = $translatableID ? $this->app->make('community_translation/translatable')->find($translatableID) : null;
                     if ($translatable === null) {
                         throw new UserException(t("Unable to find the specified translatable string."));
                     }
@@ -156,7 +170,7 @@ class Online extends PageController
                 }
                 $me = new \User();
                 $myID = $me->isRegistered() ? (int) $me->getUserID() : null;
-                if ($myID === null || $myID !== $comment->getPostedBy() ) {
+                if ($myID === null || $myID !== $comment->getPostedBy()) {
                     throw new UserException(t("Access denied to this comment."));
                 }
                 if ($comment->getParentComment() === null) {
@@ -180,6 +194,7 @@ class Online extends PageController
             $em = $this->app->make('community_translation/em');
             $em->persist($comment);
             $em->flush();
+
             return JsonResponse::create(
                 array(
                     'id' => $comment->getID(),
@@ -229,6 +244,7 @@ class Online extends PageController
             $em = $this->app->make('community_translation/em');
             $em->remove($comment);
             $em->flush();
+
             return JsonResponse::create(
                 true
             );

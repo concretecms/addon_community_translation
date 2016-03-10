@@ -18,7 +18,7 @@ defined('C5_EXECUTE') or die('Access Denied.');
 <nav class="navbar navbar-inverse">
 	<div class="container-fluid">
 		<div class="navbar-header">
-			<a class="navbar-brand" href="<?php echo URL::to('/translate'); ?>"><?php echo h(t(/*i18n: %1$s is a package name, %2$s is a language name*/'Translating %1$s in %2$s', $package->getDisplayName(), $locale->getDisplayName())); ?></a>
+			<a class="navbar-brand" href="<?php echo URL::to('/translate'); ?>"><?php echo h($headerText); ?></a>
 		</div>
 	</div>
 </nav>

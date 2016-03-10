@@ -214,7 +214,9 @@ class Notify implements \Concrete\Core\Application\ApplicationAwareInterface
                 'localeName' => $locale->getName(),
                 'translatorName' => ($translator === null) ? '?' : $translator->getUserName(),
                 'numTranslations' => $numTranslations,
-                'pageUrl' => h($this->app->make('url/manager')->resolve(array('/translate/package/pkg_'.$package->getHandle(), $package->getVersion(), $locale->getID()))),
+                'packageUrl' => h($this->app->make('url/manager')->resolve(array('/translate/online', $package->getID(), $locale->getID()))),
+                'packageName' => h($package->getDisplayName()),
+                'allUnreviewedUrl' => h($this->app->make('url/manager')->resolve(array('/translate/online', 'unreviewed', $locale->getID()))),
             )
         );
     }
