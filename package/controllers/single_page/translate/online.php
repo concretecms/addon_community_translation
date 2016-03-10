@@ -464,4 +464,135 @@ class Online extends PageController
             );
         }
     }
+
+    public function process_translation($localeID)
+    {
+        try {
+            $valt = $this->app->make('helper/validation/token');
+            if (!$valt->validate('comtra-process-translation'.$localeID)) {
+                throw new UserException($valt->getErrorMessage());
+            }
+            $locale = $localeID ? $this->app->make('community_translation/locale')->findApproved($localeID) : null;
+            if ($locale === null) {
+                throw new UserException(t('Invalid language identifier received'));
+            }
+            $access = $this->app->make('community_translation/access')->getLocaleAccess($locale);
+            if ($access <= Access::NOT_LOGGED_IN) {
+                $error = t('You need to log-in in order to translate');
+            } elseif ($access < Access::TRANSLATE) {
+                throw new UserException(t("You don't belong to the %s translation group", $locale->getDisplayName()));
+            }
+            $translatableID = $this->post('id');
+            $translatable = $translatableID ? $this->app->make('community_translation/translatable')->find($translatableID) : null;
+            if ($translatable === null) {
+                throw new UserException(t("Unable to find the specified translatable string."));
+            }
+            $operation = $this->post('operation');
+            if (!is_string($operation) || $operation === '') {
+                throw new UserException(t('Missing operation identifier'));
+            }
+            $currentTranslation = $this->app->make('community_translation/translation')->findOneBy(array('tLocale' => $locale, 'tTranslatable' => $translatable, 'tCurrent' => 1));
+            $processTranslationID = $this->post('translationID');
+            if ($processTranslationID === null) {
+                $processTranslation = null;
+            } else {
+                $processTranslation = $processTranslationID ? $this->app->make('community_translation/translation')->find($processTranslationID) : null;
+                if ($processTranslation === null) {
+                    throw new UserException(t("Unable to find the specified translation."));
+                }
+                if ($processTranslation->getTranslatable() !== $translatable) {
+                    throw new UserException(t("The specified translation is not for the correct string."));
+                }
+                if ($processTranslation->getLocale() !== $locale) {
+                    throw new UserException(t("The specified translation is not for the correct language."));
+                }
+            }
+            /* @var \Concrete\Package\CommunityTranslation\Src\Translation\Translation|null $currentTranslation */
+            /* @var \Concrete\Package\CommunityTranslation\Src\Translation\Translation|null $processTranslation */
+            $em = $this->app->make('community_translation/em');
+            /* @var \Doctrine\ORM\EntityManager $em */
+            $sendCurrent = true;
+            $sendOthers = true;
+            $message = null;
+            switch ($operation) {
+                case 'approve':
+                    if ($access < Access::ADMIN) {
+                        throw new UserException(t('Access denied'));
+                    }
+                    if ($currentTranslation !== null) {
+                        $currentTranslation->setNeedReview(false);
+                        $currentTranslation->setIsReviewed(false);
+                        $currentTranslation->setIsCurrent(false);
+                        $em->persist($currentTranslation);
+                    }
+                    $processTranslation->setNeedReview(false);
+                    $processTranslation->setIsReviewed(true);
+                    $processTranslation->setIsCurrent(true);
+                    $em->persist($currentTranslation);
+                    $em->flush();
+                    break;
+                case 'deny':
+                    if ($access < Access::ADMIN) {
+                        throw new UserException(t('Access denied'));
+                    }
+                    $sendCurrent = false;
+                    $processTranslation->setNeedReview(false);
+                    $processTranslation->setIsReviewed(false);
+                    $em->persist($processTranslation);
+                    $em->flush();
+                    break;
+                case 'reuse':
+                    if (
+                        $currentTranslation !== null
+                        &&
+                        $currentTranslation->isReviewed()
+                        &&
+                        $access < Access::ADMIN
+                    ) {
+                        $sendCurrent = false;
+                        $processTranslation->setNeedReview(true);
+                        $currentTranslation->setIsReviewed(false);
+                        $em->persist($processTranslation);
+                        $message = t('Since the current translation is approved, you have to wait that this new translation will be approved');
+                    } else {
+                        if ($currentTranslation !== null) {
+                            $currentTranslation->setNeedReview(false);
+                            $currentTranslation->setIsReviewed(false);
+                            $currentTranslation->setIsCurrent(false);
+                            $em->persist($currentTranslation);
+                        }
+                        $processTranslation->setNeedReview(false);
+                        $processTranslation->setIsReviewed($access >= Access::ADMIN);
+                        $processTranslation->setIsCurrent(true);
+                        $em->persist($processTranslation);
+                    }
+                    $em->flush();
+                    break;
+                case 'save-current':
+                    throw new UserException('@todo');
+                default:
+                    throw new UserException(t('Invalid operation identifier received: %s', $operation));
+            }
+            $result = $this->app->make('community_translation/editor')->getTranslations($locale, $translatable);
+            if (!$sendCurrent) {
+                unset($result['current']);
+            }
+            if (!$sendOthers) {
+                unset($result['others']);
+            }
+            if ($message !== null) {
+                $result['message'] = $message;
+            }
+            return JsonResponse::create(
+                $result
+            );
+        } catch (UserException $x) {
+            return JsonResponse::create(
+                array(
+                    'error' => $x->getMessage(),
+                ),
+                400
+            );
+        }
+    }
 }

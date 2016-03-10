@@ -232,6 +232,7 @@ comtraOnlineEditorInitialize({
 		saveComment: <?php echo json_encode((string) $this->action('save_comment', $locale->getID())); ?>,
 		deleteComment: <?php echo json_encode((string) $this->action('delete_comment', $locale->getID())); ?>,
 		loadAllPlaces: <?php echo json_encode((string) $this->action('load_all_places', $locale->getID())); ?>,
+		processTranslation: <?php echo json_encode((string) $this->action('process_translation', $locale->getID())); ?>,
 		<?php if ($canEditGlossary) { ?>
 			saveGlossaryTerm: <?php echo json_encode((string) $this->action('save_glossary_term', $locale->getID())); ?>,
 			deleteGlossaryTerm: <?php echo json_encode((string) $this->action('delete_glossary_term', $locale->getID())); ?>,
@@ -242,6 +243,7 @@ comtraOnlineEditorInitialize({
 		saveComment: <?php echo json_encode($token->generate('comtra-save-comment'.$locale->getID())); ?>,
 		deleteComment: <?php echo json_encode($token->generate('comtra-delete-comment'.$locale->getID())); ?>,
 		loadAllPlaces: <?php echo json_encode($token->generate('comtra-load-all-places'.$locale->getID())); ?>,
+		processTranslation: <?php echo json_encode($token->generate('comtra-process-translation'.$locale->getID())); ?>,
 		<?php if ($canEditGlossary) { ?>
 			saveGlossaryTerm: <?php echo json_encode($token->generate('comtra-save-glossary-term'.$locale->getID())); ?>,
 			deleteGlossaryTerm: <?php echo json_encode($token->generate('comtra-delete-glossary-term'.$locale->getID())); ?>,
@@ -261,6 +263,7 @@ comtraOnlineEditorInitialize({
 		Comments: <?php echo json_encode(t('Comments')); ?>,
 		References: <?php echo json_encode(t('References')); ?>,
 		Unused_string: <?php echo json_encode(t('This string is not used in any package.')); ?>,
+		Waiting_approval: <?php echo json_encode(t('Waiting approval')); ?>,
 		pluralRuleNames: <?php echo json_encode(array(
 	        'zero' => tc('PluralCase', 'Zero'),
 	        'one' => tc('PluralCase', 'One'),

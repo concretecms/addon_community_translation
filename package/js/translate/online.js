@@ -144,6 +144,47 @@ var showAllPlaces = (function() {
 		});
 	};
 })();
+function processTranslation(operation, send, cb) {
+	var wasBusy = translator.busy;
+	if (!wasBusy) {
+		translator.setBusy(true);
+	}
+	$.ajax({
+		cache: false,
+		data: $.extend(true, {ccm_token: tokens.processTranslation, id: currentTranslation.id, operation: operation}, send),
+		dataType: 'json',
+		method: 'POST',
+		url: actions.processTranslation
+	})
+	.done(function(data) {
+		if (!wasBusy) {
+			translator.setBusy(false);
+		}
+		if ('current' in data) {
+			alert('@todo The current shown in editor translation is not updated');
+		}
+		if ('others' in data) {
+			OtherTranslations.initialize(data.others);
+		}
+		if (cb) {
+			cb();
+		}
+		if ('message' in data) {
+			window.alert(data.message);
+		}
+	})
+	.fail(function(xhr, textStatus, errorThrown) {
+		if (!wasBusy) {
+			translator.setBusy(false);
+		}
+		var msg = getAjaxError(arguments);
+		if (cb) {
+			cb(msg);
+		} else {
+			window.alert(msg);
+		}
+	});
+}
 
 // Tabs handling
 var OtherTranslations = (function() {
@@ -161,19 +202,20 @@ var OtherTranslations = (function() {
 		;
 	}
 	function Other(data) {
-		this.data = data;
-		$parent.find('.comtra_some tbody').append(this.$row = $('<tr />'));
+		var me = this;
+		me.data = data;
+		$parent.find('.comtra_some tbody').append(me.$row = $('<tr />'));
 		var $td;
-		this.$row
+		me.$row
 			.append($('<td style="white-space: nowrap" />')
-				.html(this.data.createdOn + '<br />' + i18n.by + ' ' + this.data.createdBy)
+				.html(me.data.createdOn + '<br />' + i18n.by + ' ' + me.data.createdBy)
 			)
 			.append($td = $('<td />'))
 		;
-		if (this.data.translations.length === 1) {
-			$td.append(createA(this.data.translations[0]));
+		if (me.data.translations.length === 1) {
+			$td.append(createA(me.data.translations[0]));
 		} else {
-			$.each(this.data.translations, function(i, translationText) {
+			$.each(me.data.translations, function(i, translationText) {
 				$td.append($('<div />')
 					.append(createA(translationText))
 					.prepend($('<br />'))
@@ -183,32 +225,51 @@ var OtherTranslations = (function() {
 				);
 			});
 		}
-		this.$row.append($td = $('<td />'));
-		if (this.data.needReview && canApprove) {
-			$td
-				.append($('<button type="button" class="btn btn-success btn-xs" style="width: 100%" />')
-					.text(i18n.Approve)
-				)
-				.append($('<button type="button" class="btn btn-danger btn-xs" style="width: 100%; margin-top: 5px" />')
-					.text(i18n.Deny)
-				)
-			;
+		me.$row.append($td = $('<td />'));
+		if (me.data.needReview) {
+			if (canApprove) {
+				$td
+					.append($('<button type="button" class="btn btn-success btn-xs" style="width: 100%" />')
+						.text(i18n.Approve)
+						.on('click', function() {
+							if (!translator.busy) {
+								processTranslation('approve', {translationID: me.data.id});
+							}
+						})
+					)
+					.append($('<button type="button" class="btn btn-danger btn-xs" style="width: 100%; margin-top: 5px" />')
+						.text(i18n.Deny)
+						.on('click', function() {
+							if (!translator.busy) {
+								processTranslation('deny', {translationID: me.data.id});
+							}
+						})
+					)
+				;
+			} else {
+				$td.append($('<label class="label label-default" style="width: 100%; margin-top: 5px" />').text(i18n.Waiting_approval));
+			}
 		} else {
 			$td
 				.append($('<button type="button" class="btn btn-info btn-xs" style="width: 100%" />')
 					.text(i18n.Use_this)
+					.on('click', function() {
+						if (!translator.busy) {
+							processTranslation('reuse', {translationID: me.data.id});
+						}
+					})
 				)
 			;
 		}
 		Other.count++;
 	}
 	return {
-		initialize: function(extra) {
+		initialize: function(otherTranslations) {
 			$parent = $('#comtra_translation-others');
 			Other.count = 0;
 			$parent.find('.comtra_none,.comtra_some').hide();
 			$parent.find('.comtra_some tbody').empty();
-			$.each(extra.otherTranslations, function() {
+			$.each(otherTranslations, function() {
 				new Other(this);
 			});
 			setBadgeCount('comtra_translation-others-count', Other.count);
@@ -422,17 +483,16 @@ var Comments = (function() {
 		});
 	}
 	return {
-		initialize: function(extra) {
+		initialize: function(extractedComments, comments) {
 			var $l;
 			$parent = $('#comtra_translation-comments');
-			var extracted = extra.extractedComments;
-			extractedCount = extracted.length;
+			extractedCount = extractedComments.length;
 			$l = $('#comtra_translation-comments-extracted');
 			$l.children().not(':first').remove();
 			if (extractedCount === 0) {
 				$l.hide();
 			} else {
-				$.each(extracted, function(foo, c) {
+				$.each(extractedComments, function(foo, c) {
 					$l.append($('<div class="list-group-item" />').text(c));
 				});
 				$l.show();
@@ -441,7 +501,7 @@ var Comments = (function() {
 			$l.children(':first')[(extractedCount > 0) ? 'show' : 'hide']();
 			$l.children().not(':first').remove();
 			OnlineComment.count = 0;
-			$.each(extra.comments, function() {
+			$.each(comments, function() {
 				new OnlineComment(this);
 			});
 			updateStatus();
@@ -456,9 +516,8 @@ var Comments = (function() {
 })();
 var References = (function() {
 	return {
-		initialize: function(extra) {
+		initialize: function(references) {
 			var $parent = $('#comtra_translation-references');
-			var references = extra.references;
 			setBadgeCount('comtra_translation-references-count', references.length);
 			$parent.find('.comtra_none,.comtra_some').hide();
 			if (references.length === 0) {
@@ -483,9 +542,8 @@ var References = (function() {
 })();
 var Suggestions = (function() {
 	return {
-		initialize: function(extra) {
+		initialize: function(suggestions) {
 			var $parent = $('#comtra_translation-suggestions');
-			var suggestions = extra.suggestions;
 			setBadgeCount('comtra_translation-suggestions-count', suggestions.length);
 			$parent.find('.comtra_none,.comtra_some').hide();
 			if (suggestions.length === 0) {
@@ -688,11 +746,11 @@ var Glossary = (function() {
 		});
 	}
 	return {
-		initialize: function(extra) {
+		initialize: function(glossary) {
 			$parent = $('#comtra_translation-glossary');
 			$parent.find('.comtra_some').empty();
 			Entry.count = 0;
-			$.each(extra.glossary, function() {
+			$.each(glossary, function() {
 				new Entry(this);
 			});
 			updateStatus();
@@ -761,16 +819,20 @@ function showFullTranslation(foo)
 	currentTranslation = translator.currentTranslationView.translation;
 	var extra = currentTranslation._extra;
 	delete currentTranslation._extra;
-	OtherTranslations.initialize(extra);
-	Comments.initialize(extra);
-	References.initialize(extra);
-	Suggestions.initialize(extra);
-	Glossary.initialize(extra);
+	OtherTranslations.initialize(extra.otherTranslations);
+	Comments.initialize(extra.extractedComments, extra.comments);
+	References.initialize(extra.references);
+	Suggestions.initialize(extra.suggestions);
+	Glossary.initialize(extra.glossary);
 	$extra.css('visibility', 'visible');
 }
-function saveTranslation(translation, postData, cb)
+function saveCurrentTranslation(translation, postData, cb)
 {
-	cb('@todo');
+	if (translation !== currentTranslation) {
+		cb('Internal error #1');
+		return;
+	}
+	processTranslation('save-current', postData, cb);
 }
 
 // Exported functions
@@ -792,7 +854,7 @@ window.comtraOnlineEditorInitialize = function(options) {
 		translations: options.translations,
 		approvalSupport: true,
 		canModifyApproved: canApprove,
-		saveAction: saveTranslation,
+		saveAction: saveCurrentTranslation,
 		onUILaunched: initializeUI,
 		onBeforeActivatingTranslation: loadFullTranslation,
 		onCurrentTranslationChanged: showFullTranslation

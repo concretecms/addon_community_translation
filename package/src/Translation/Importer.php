@@ -138,7 +138,7 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
             $insertParams = array();
             $insertCount = 0;
             $unsetCurrentTranslationQuery = $connection->prepare(
-                'UPDATE Translations SET tCurrent = NULL, tCurrentSince = NULL, tReviewed = ?, tNeedReview = 0 WHERE tID = ? LIMIT 1'
+                'UPDATE Translations SET tCurrent = NULL, tCurrentSince = NULL, tReviewed = 0, tNeedReview = 0 WHERE tID = ? LIMIT 1'
             )->getWrappedStatement();
             /* @var \Doctrine\DBAL\Driver\Statement $unsetCurrentTranslationQuery */
             $setCurrentTranslationQuery = $connection->prepare(
@@ -202,7 +202,7 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
                         ++$result->addedActivated;
                     } elseif ($reviewed === 1 || $currentRow['tReviewed'] === '0') {
                         // There's already a current translation for this string, but we'll activate this new one
-                        $unsetCurrentTranslationQuery->execute(array($currentRow['tReviewed'], $currentRow['tID']));
+                        $unsetCurrentTranslationQuery->execute(array($currentRow['tID']));
                         $addCurrent = 1;
                         $addReviewed = $reviewed;
                         $addNeedReview = 0;
@@ -249,7 +249,7 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
                     // This translation exists, but we have already another translation that's the current one
                     if ($reviewed === 1 || $currentRow['tReviewed'] === '0') {
                         // Let's make the new translation the current one
-                        $unsetCurrentTranslationQuery->execute(array($currentRow['tReviewed'], $currentRow['tID']));
+                        $unsetCurrentTranslationQuery->execute(array($currentRow['tID']));
                         $setCurrentTranslationQuery->execute(array($reviewed, $sameRow['tID']));
                         $translatablesChanged[] = $translatableID;
                         ++$result->existingActivated;
