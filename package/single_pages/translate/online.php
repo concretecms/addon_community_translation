@@ -15,11 +15,16 @@ defined('C5_EXECUTE') or die('Access Denied.');
 /* @var array $translations */
 
 ?>
-<div class="container-fluid" id="comtra_translator">
-	<div class="page-header">
-		<h1><?php echo h(t(/*i18n: %1$s is a package name, %2$s is a language name*/'Translating %1$s in %2$s', $package->getDisplayName(), $locale->getDisplayName())); ?></h1>
+<nav class="navbar navbar-inverse">
+	<div class="container-fluid">
+		<div class="navbar-header">
+			<a class="navbar-brand" href="<?php echo URL::to('/translate'); ?>"><?php echo h(t(/*i18n: %1$s is a package name, %2$s is a language name*/'Translating %1$s in %2$s', $package->getDisplayName(), $locale->getDisplayName())); ?></a>
+		</div>
 	</div>
-</div>
+</nav>
+
+<div class="container-fluid" id="comtra_translator"></div>
+
 <div id="comtra_extra" class="col-md-5">
 	<ul class="nav nav-tabs">
 		<li class="active"><a href="#comtra_translation-others" role="tab" data-toggle="tab"><?php echo t('Other translations'); ?> <span class="badge" id="comtra_translation-others-count"></span></a></li>

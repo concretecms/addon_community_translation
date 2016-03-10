@@ -659,7 +659,7 @@ function saveTranslation(translation, postData, cb)
 
 // Exported functions
 window.comtraOnlineEditorInitialize = function(options) {
-	var height = Math.max(200, $(window).height() - 340);
+	var height = Math.max(200, $(window).height() - 280);
 	$('#comtra_extra>.tab-content').height((height - $('#comtra_extra>.nav-tabs').height()) + 'px');
 	packageID = options.packageID || null;
 	canApprove = !!options.canApprove;
