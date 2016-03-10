@@ -192,7 +192,7 @@ class Translation
      *
      * @return Locale
      */
-    public function gettLocale()
+    public function getLocale()
     {
         return $this->tLocale;
     }
