@@ -161,7 +161,12 @@ function processTranslation(operation, send, cb) {
 			translator.setBusy(false);
 		}
 		if ('current' in data) {
-			alert('@todo The current shown in editor translation is not updated');
+			patchCoreTranslation(currentTranslation, data.current);
+	      if (translator.currentTranslationView) {
+	      	translator.currentTranslationView.dispose();
+	      	translator.currentTranslationView = null;
+	      }
+	      translator.currentTranslationView = currentTranslation.isPlural ? new window.ccmTranslator.views.Plural(currentTranslation) :  new window.ccmTranslator.views.Singular(currentTranslation);
 		}
 		if ('others' in data) {
 			OtherTranslations.initialize(data.others);
@@ -184,6 +189,18 @@ function processTranslation(operation, send, cb) {
 			window.alert(msg);
 		}
 	});
+}
+function patchCoreTranslation(coreTranslation, packageTranslation) {
+	if (packageTranslation === null) {
+		delete coreTranslation.translations;
+		coreTranslation.isTranslated = false;
+		coreTranslation.isApproved = false;
+	} else {
+		coreTranslation.translations = packageTranslation.translations;
+		coreTranslation.isTranslated = true;
+		coreTranslation.isApproved = packageTranslation.reviewed;
+	}
+	coreTranslation.translationUpdated();
 }
 
 // Tabs handling
@@ -787,16 +804,7 @@ function loadFullTranslation(foo, translation, cb)
 		if (translation.id !== data.id) {
 			return;
 		}
-		if (data.translations.current === null) {
-			delete translation.translations;
-			translation.isTranslated = false;
-			translation.isApproved = false;
-		} else {
-			translation.translations = data.translations.current.translations;
-			translation.isTranslated = true;
-			translation.isApproved = data.translations.current.reviewed;
-		}
-		translation.translationUpdated();
+		patchCoreTranslation(translation, data.translations.current);
 		translation._extra = data;
 		translation._extra.otherTranslations = data.translations.others;
 		delete translation._extra.translations;
