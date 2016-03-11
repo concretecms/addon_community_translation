@@ -263,6 +263,15 @@ class Controller extends Package
                     array(),
                     array('GET'),
                 ),
+                '/api/package/process/' => array(
+                    '\Concrete\Package\CommunityTranslation\Src\Rest\Api::processPackage',
+                    null,
+                    array(),
+                    array(),
+                    '',
+                    array(),
+                    array('POST'),
+                ),
                 '/api/po/{packageHandle}/{packageVersion}/{localeID}' => array(
                     '\Concrete\Package\CommunityTranslation\Src\Rest\Api::getPackagePo',
                     null,

@@ -4,6 +4,7 @@ namespace Concrete\Package\CommunityTranslation\Src\Rest;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Concrete\Package\CommunityTranslation\Src\Locale\Locale;
+use Concrete\Package\CommunityTranslation\Src\UserException;
 
 class Api extends \Concrete\Core\Controller\AbstractController
 {
@@ -157,5 +158,29 @@ class Api extends \Concrete\Core\Controller\AbstractController
                 'Content-Length' => strlen($data),
             )
         );
+    }
+
+    public function processPackage()
+    {
+        try {
+            $file = $this->request->files->get('package');
+            if ($file === null) {
+                throw new UserException(t('Package file not received'));
+            }
+            if (!$file->isValid()) {
+                throw new UserException($file->getErrorMessage());
+            }
+            throw new UserException('@todo');
+        } catch (UserException $x) {
+            return JsonResponse::create(
+                array('error' => $x->getMessage()),
+                400
+            );
+        } catch (\Exception $x) {
+            return JsonResponse::create(
+                array('error' => 'Unspecified error'),
+                400
+            );
+        }
     }
 }
