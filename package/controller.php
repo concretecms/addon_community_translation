@@ -229,29 +229,57 @@ class Controller extends Package
             $app->make('Concrete\Core\Routing\Router')->registerMultiple(array(
                 '/api/locales/' => array(
                     '\Concrete\Package\CommunityTranslation\Src\Rest\Api::getApprovedLocales',
+                    null,
+                    array(),
+                    array(),
+                    '',
+                    array(),
+                    array('GET'),
                 ),
                 '/api/locales/{packageHandle}/{packageVersion}/{minimumLevel}/' => array(
                     '\Concrete\Package\CommunityTranslation\Src\Rest\Api::getLocalesForPackage',
                     null,
-                    array('packageHandle' => $handleRegex, 'minimumLevel' => '[0-9]{1,3}')
+                    array('packageHandle' => $handleRegex, 'minimumLevel' => '[0-9]{1,3}'),
+                    array(),
+                    '',
+                    array(),
+                    array('GET'),
                 ),
                 '/api/packages/' => array(
                     '\Concrete\Package\CommunityTranslation\Src\Rest\Api::getAvailablePackageHandles',
+                    null,
+                    array(),
+                    array(),
+                    '',
+                    array(),
+                    array('GET'),
                 ),
                 '/api/package/{packageHandle}/versions/' => array(
                     '\Concrete\Package\CommunityTranslation\Src\Rest\Api::getAvailablePackageVersions',
                     null,
-                    array('packageHandle' => $handleRegex)
+                    array('packageHandle' => $handleRegex),
+                    array(),
+                    '',
+                    array(),
+                    array('GET'),
                 ),
                 '/api/po/{packageHandle}/{packageVersion}/{localeID}' => array(
                     '\Concrete\Package\CommunityTranslation\Src\Rest\Api::getPackagePo',
                     null,
-                    array('packageHandle' => $handleRegex, 'localeID' => $localeRegex)
+                    array('packageHandle' => $handleRegex, 'localeID' => $localeRegex),
+                    array(),
+                    '',
+                    array(),
+                    array('GET'),
                 ),
                 '/api/mo/{packageHandle}/{packageVersion}/{localeID}' => array(
                     '\Concrete\Package\CommunityTranslation\Src\Rest\Api::getPackageMo',
                     null,
-                    array('packageHandle' => $handleRegex, 'localeID' => $localeRegex)
+                    array('packageHandle' => $handleRegex, 'localeID' => $localeRegex),
+                    array(),
+                    '',
+                    array(),
+                    array('GET'),
                 ),
             ));
         }
