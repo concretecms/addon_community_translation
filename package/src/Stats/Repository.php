@@ -4,6 +4,7 @@ namespace Concrete\Package\CommunityTranslation\Src\Stats;
 use Concrete\Package\CommunityTranslation\Src\Package\Package;
 use Concrete\Package\CommunityTranslation\Src\Locale\Locale;
 use Concrete\Package\CommunityTranslation\Src\Translatable\Translatable;
+use Concrete\Package\CommunityTranslation\Src\Translation\Translation;
 use Concrete\Core\Application\Application;
 use Concrete\Core\Application\ApplicationAwareInterface;
 use Concrete\Package\CommunityTranslation\Src\UserException;
@@ -176,6 +177,11 @@ class Repository extends EntityRepository implements ApplicationAwareInterface
             ->createQuery('delete from '.$this->getEntityName().' as s where s.sLocale = :locale')
                 ->setParameter('locale', $locale)
                 ->execute();
+    }
+
+    public function resetForTranslation(Translation $translation)
+    {
+        $this->resetForLocaleTranslatables($translation->getLocale(), $translation->getTranslatable());
     }
 
     public function resetForLocaleTranslatables(Locale $locale, $translatables)

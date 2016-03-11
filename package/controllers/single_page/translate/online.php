@@ -570,7 +570,7 @@ class Online extends PageController
         $translation->setIsCurrent(true);
         $em->persist($translation);
         $em->flush();
-        $this->app->make('community_translation/stats')->resetForLocaleTranslatables($locale, $translation->getTranslatable());
+        $this->app->make('community_translation/stats')->resetForTranslation($translation);
         $result = $this->app->make('community_translation/editor')->getTranslations($translation->getLocale(), $translation->getTranslatable());
 
         return JsonResponse::create($result);
@@ -645,7 +645,7 @@ class Online extends PageController
             $em->persist($translation);
         }
         $em->flush();
-        $this->app->make('community_translation/stats')->resetForLocaleTranslatables($locale, $translation->getTranslatable());
+        $this->app->make('community_translation/stats')->resetForTranslation($translation);
         $result = $this->app->make('community_translation/editor')->getTranslations($translation->getLocale(), $translation->getTranslatable());
         if ($sendCurrent === false) {
             unset($result['current']);
@@ -749,7 +749,7 @@ class Online extends PageController
             $translation->setIsCurrent(true);
             $em->persist($translation);
             $em->flush();
-            $this->app->make('community_translation/stats')->resetForLocaleTranslatables($locale, $translation->getTranslatable());
+            $this->app->make('community_translation/stats')->resetForTranslation($translation);
             $result = $this->app->make('community_translation/editor')->getTranslations($translation->getLocale(), $translation->getTranslatable());
         } else {
             // Let's keep the current translation, but let's mark the new one as to be reviewed
@@ -758,7 +758,7 @@ class Online extends PageController
             $translation->setIsCurrent(true);
             $em->persist($translation);
             $em->flush();
-            $this->app->make('community_translation/stats')->resetForLocaleTranslatables($locale, $translation->getTranslatable());
+            $this->app->make('community_translation/stats')->resetForTranslation($translation);
             $result = $this->app->make('community_translation/editor')->getTranslations($translation->getLocale(), $translation->getTranslatable());
             $result['message'] = t('Since the current translation is approved, you have to wait that this new translation will be approved');
         }
@@ -792,7 +792,7 @@ class Online extends PageController
             $currentTranslation->setIsCurrent(false);
             $em->persist($currentTranslation);
             $em->flush();
-            $this->app->make('community_translation/stats')->resetForLocaleTranslatables($locale, $translation->getTranslatable());
+            $this->app->make('community_translation/stats')->resetForTranslation($translation);
             $result = $this->app->make('community_translation/editor')->getTranslations($locale, $translatable);
         } else {
             $result = array();
