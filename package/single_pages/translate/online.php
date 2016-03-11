@@ -19,7 +19,22 @@ defined('C5_EXECUTE') or die('Access Denied.');
 	<div class="container-fluid">
 		<div class="navbar-header">
 			<a class="navbar-brand" href="<?php echo URL::to('/translate'); ?>"><?php echo h($headerText); ?></a>
+			<?php if ($canApprove && $package !== null) { ?>
+				<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+					<span class="sr-only"><?php echo t('Toggle navigation'); ?></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+				</button>
+			<?php } ?>
 		</div>
+		<?php if ($canApprove && $package !== null) { ?>
+    		<div id="navbar" class="collapse navbar-collapse">
+    			<ul class="nav navbar-nav">
+    				<li><a href="<?php echo URL::to('/translate/online', 'unreviewed', $locale->getID()); ?>"><?php echo t('View all strings to be reviewed'); ?></a></li>
+    			</ul>
+    		</div>
+    	<?php } ?>
 	</div>
 </nav>
 
@@ -99,19 +114,19 @@ defined('C5_EXECUTE') or die('Access Denied.');
 				<form onsubmit="return false">
 					<div class="form-group" id="comtra_editcomment-visibility">
 						<label><?php echo t('Comment visibility'); ?></label>
-    					<div class="radio">
-    						<label>
-    							<input type="radio" name="comtra_editcomment-visibility" value="locale" />
-    							<?php echo t('This is a comment only for %s', $locale->getDisplayName()); ?>
-    						</label>
-    					</div>
-    					<div class="radio">
-    						<label>
-    							<input type="radio" name="comtra_editcomment-visibility" value="global" />
-    							<?php echo t('This is a comment for all languages'); ?>
-    						</label>
-    					</div>
-    				</div>
+						<div class="radio">
+							<label>
+								<input type="radio" name="comtra_editcomment-visibility" value="locale" />
+								<?php echo t('This is a comment only for %s', $locale->getDisplayName()); ?>
+							</label>
+						</div>
+						<div class="radio">
+							<label>
+								<input type="radio" name="comtra_editcomment-visibility" value="global" />
+								<?php echo t('This is a comment for all languages'); ?>
+							</label>
+						</div>
+					</div>
 					<div class="form-group">
 						<div class="pull-right small"><a href="http://commonmark.org/help/" target="_blank"><?php echo t('Markdown syntax'); ?></a></div>
 						<label for="comtra_editcomment"><?php echo t('Comment'); ?></label>
@@ -265,12 +280,12 @@ comtraOnlineEditorInitialize({
 		Unused_string: <?php echo json_encode(t('This string is not used in any package.')); ?>,
 		Waiting_approval: <?php echo json_encode(t('Waiting approval')); ?>,
 		pluralRuleNames: <?php echo json_encode(array(
-	        'zero' => tc('PluralCase', 'Zero'),
-	        'one' => tc('PluralCase', 'One'),
-	        'two' => tc('PluralCase', 'Two'),
-	        'few' => tc('PluralCase', 'Few'),
-	        'many' => tc('PluralCase', 'Many'),
-	        'other' => tc('PluralCase', 'Other'),
+			'zero' => tc('PluralCase', 'Zero'),
+			'one' => tc('PluralCase', 'One'),
+			'two' => tc('PluralCase', 'Two'),
+			'few' => tc('PluralCase', 'Few'),
+			'many' => tc('PluralCase', 'Many'),
+			'other' => tc('PluralCase', 'Other'),
 		)); ?>
 	}
 });
