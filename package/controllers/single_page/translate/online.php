@@ -491,6 +491,14 @@ class Online extends PageController
             if ($translatable === null) {
                 throw new UserException(t("Unable to find the specified translatable string."));
             }
+            $package = null;
+            $packageID = $this->post('packageID');
+            if ($packageID) {
+                $package = $this->app->make('community_translation/package')->find($packageID);
+                if ($package === null) {
+                    $error = t('Invalid translated package identifier received');
+                }
+            }
             $operation = $this->post('operation');
             if (!is_string($operation) || $operation === '') {
                 throw new UserException(t('Missing operation identifier'));
@@ -516,10 +524,10 @@ class Online extends PageController
                 case 'deny':
                     return $this->denyTranslation($access, $processTranslation);
                 case 'reuse':
-                    return $this->reuseTranslation($access, $processTranslation);
+                    return $this->reuseTranslation($access, $processTranslation, $package);
                 case 'save-current':
                     if ($this->post('clear') !== '1') {
-                        return $this->setTranslationFromEditor($access, $locale, $translatable);
+                        return $this->setTranslationFromEditor($access, $locale, $translatable, $package);
                     } else {
                         return $this->unsetTranslationFromEditor($access, $locale, $translatable);
                     }
@@ -605,12 +613,13 @@ class Online extends PageController
     /**
      * @param int $access
      * @param Translation $translation
+     * @param Package $package
      *
      * @throws UserException
      *
      * @return JsonResponse
      */
-    protected function reuseTranslation($access, Translation $translation)
+    protected function reuseTranslation($access, Translation $translation, Package $package = null)
     {
         if ($translation->isCurrent()) {
             throw new UserException(t('The selected translation is already the current one'));
@@ -623,12 +632,14 @@ class Online extends PageController
         $em = $this->app->make('community_translation/em');
         $sendCurrent = true;
         $message = null;
+        $notify = false;
         if ($currentTranslation !== null && $currentTranslation->isReviewed() && $access < Access::ADMIN) {
             $sendCurrent = false;
             $translation->setNeedReview(true);
             $translation->setIsReviewed(false);
             $em->persist($translation);
             $message = t('Since the current translation is approved, you have to wait that this new translation will be approved');
+            $notify = true;
         } else {
             if ($currentTranslation !== null) {
                 $currentTranslation->setIsCurrent(false);
@@ -650,6 +661,13 @@ class Online extends PageController
             $result['message'] = $message;
         }
 
+        if ($notify === true) {
+            try {
+                $this->app->make('community_translation/notify')->translationsNeedReview($translation->getLocale(), 1, $package);
+            } catch (\Exception $x) {
+            }
+        }
+        
         return JsonResponse::create($result);
     }
 
@@ -657,12 +675,13 @@ class Online extends PageController
      * @param int $access
      * @param Locale $locale
      * @param Translatable $translatable
+     * @param Package $package
      *
      * @throws UserException
      *
      * @return JsonResponse
      */
-    protected function setTranslationFromEditor($access, Locale $locale, Translatable $translatable)
+    protected function setTranslationFromEditor($access, Locale $locale, Translatable $translatable, Package $package = null)
     {
         $translation = null;
         $strings = $this->post('translated');
@@ -718,6 +737,7 @@ class Online extends PageController
         }
         $em = $this->app->make('community_translation/em');
         $message = null;
+        $notify = false;
         if ($translation === $currentTranslation) {
             // No changes in the texts of the current translation.
             if ($access < Access::ADMIN || $translation->isReviewed() === $approved) {
@@ -749,12 +769,19 @@ class Online extends PageController
             // Let's keep the current translation, but let's mark the new one as to be reviewed
             $translation->setNeedReview(true);
             $translation->setIsReviewed(false);
-            $translation->setIsCurrent(true);
             $em->persist($translation);
             $em->flush();
             $this->app->make('community_translation/stats')->resetForTranslation($translation);
             $result = $this->app->make('community_translation/editor')->getTranslations($translation->getLocale(), $translation->getTranslatable());
             $result['message'] = t('Since the current translation is approved, you have to wait that this new translation will be approved');
+            $notify = true;
+        }
+
+        if ($notify === true) {
+            try {
+                $this->app->make('community_translation/notify')->translationsNeedReview($translation->getLocale(), 1, $package);
+            } catch (\Exception $x) {
+            }
         }
 
         return JsonResponse::create($result);

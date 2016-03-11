@@ -195,7 +195,7 @@ EOT
             }
             if ($result->addedNeedReview > 0) {
                 try {
-                    $this->app->make('community_translation/notify')->translationsNeedReview($package, $locale, $result->addedNeedReview);
+                    $this->app->make('community_translation/notify')->translationsNeedReview($locale, $result->addedNeedReview, $package);
                 } catch (\Exception $x) {
                 }
             }

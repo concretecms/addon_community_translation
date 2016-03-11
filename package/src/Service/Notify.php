@@ -201,23 +201,26 @@ class Notify implements \Concrete\Core\Application\ApplicationAwareInterface
         );
     }
 
-    public function translationsNeedReview(Package $package, Locale $locale, $numTranslations)
+    public function translationsNeedReview(Locale $locale, $numTranslations, Package $package = null)
     {
         $translator = new \User();
         if (!$translator->isRegistered()) {
             $translator = null;
         }
+        $params = array(
+            'localeName' => $locale->getName(),
+            'translatorName' => ($translator === null) ? '?' : $translator->getUserName(),
+            'numTranslations' => $numTranslations,
+            'allUnreviewedUrl' => h($this->app->make('url/manager')->resolve(array('/translate/online', 'unreviewed', $locale->getID()))),
+        );
+        if ($package !== null) {
+            $params['packageUrl'] = h($this->app->make('url/manager')->resolve(array('/translate/online', $package->getID(), $locale->getID())));
+            $params['packageName'] = h($package->getDisplayName());
+        }
         $this->send(
             'translations_need_review',
             array_merge($this->getGlobalAdministrators(), $this->getLocaleAdministrators($locale)),
-            array(
-                'localeName' => $locale->getName(),
-                'translatorName' => ($translator === null) ? '?' : $translator->getUserName(),
-                'numTranslations' => $numTranslations,
-                'packageUrl' => h($this->app->make('url/manager')->resolve(array('/translate/online', $package->getID(), $locale->getID()))),
-                'packageName' => h($package->getDisplayName()),
-                'allUnreviewedUrl' => h($this->app->make('url/manager')->resolve(array('/translate/online', 'unreviewed', $locale->getID()))),
-            )
+            $params
         );
     }
 

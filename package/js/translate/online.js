@@ -151,7 +151,7 @@ function processTranslation(operation, send, cb) {
 	}
 	$.ajax({
 		cache: false,
-		data: $.extend(true, {ccm_token: tokens.processTranslation, id: currentTranslation.id, operation: operation}, send),
+		data: $.extend(true, {ccm_token: tokens.processTranslation, packageID: (packageID === null) ? '' : packageID, id: currentTranslation.id, operation: operation}, send),
 		dataType: 'json',
 		method: 'POST',
 		url: actions.processTranslation
