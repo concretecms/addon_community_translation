@@ -224,6 +224,36 @@ class Controller extends Package
                     ),
                 ),
             ));
+            $handleRegex = '([A-Za-z0-9]([A-Za-z0-9\_]*[A-Za-z0-9])?)?';
+            $localeRegex = '[a-zA-Z]{2,3}([_\-][a-zA-Z0-9]{2,3})?';
+            $app->make('Concrete\Core\Routing\Router')->registerMultiple(array(
+                '/api/locales/' => array(
+                    '\Concrete\Package\CommunityTranslation\Src\Rest\Api::getApprovedLocales',
+                ),
+                '/api/locales/{packageHandle}/{packageVersion}/{minimumLevel}/' => array(
+                    '\Concrete\Package\CommunityTranslation\Src\Rest\Api::getLocalesForPackage',
+                    null,
+                    array('packageHandle' => $handleRegex, 'minimumLevel' => '[0-9]{1,3}')
+                ),
+                '/api/packages/' => array(
+                    '\Concrete\Package\CommunityTranslation\Src\Rest\Api::getAvailablePackageHandles',
+                ),
+                '/api/package/{packageHandle}/versions/' => array(
+                    '\Concrete\Package\CommunityTranslation\Src\Rest\Api::getAvailablePackageVersions',
+                    null,
+                    array('packageHandle' => $handleRegex)
+                ),
+                '/api/po/{packageHandle}/{packageVersion}/{localeID}' => array(
+                    '\Concrete\Package\CommunityTranslation\Src\Rest\Api::getPackagePo',
+                    null,
+                    array('packageHandle' => $handleRegex, 'localeID' => $localeRegex)
+                ),
+                '/api/mo/{packageHandle}/{packageVersion}/{localeID}' => array(
+                    '\Concrete\Package\CommunityTranslation\Src\Rest\Api::getPackageMo',
+                    null,
+                    array('packageHandle' => $handleRegex, 'localeID' => $localeRegex)
+                ),
+            ));
         }
     }
 }
