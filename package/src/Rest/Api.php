@@ -66,7 +66,8 @@ class Api extends \Concrete\Core\Controller\AbstractController
                 foreach ($stats as $stat) {
                     if ($stat->getLocale() === $locale) {
                         if ($stat->getPercentage() >= $minimumLevel) {
-                            $item['progress'] = $stat->getPercentage(false);
+                            $item['total'] = $stat->getTotal();
+                            $item['translated'] = $stat->getTranslated();
                             $item['progressShown'] = $stat->getPercentage(true);
                             $dt = $stat->getLastUpdated();
                             if ($dt === null) {
