@@ -519,6 +519,9 @@ class Online extends PageController
                     if ($access < Access::ADMIN) {
                         throw new UserException(t('Access denied'));
                     }
+                    if ($processTranslation->isCurrent()) {
+                        throw new UserException(t('The selected translation is already the current one'));
+                    }
                     if ($currentTranslation !== null) {
                         $currentTranslation->setNeedReview(false);
                         $currentTranslation->setIsReviewed(false);
@@ -535,6 +538,9 @@ class Online extends PageController
                     if ($access < Access::ADMIN) {
                         throw new UserException(t('Access denied'));
                     }
+                    if ($processTranslation->isCurrent()) {
+                        throw new UserException(t('The selected translation is already the current one'));
+                    }
                     $sendCurrent = false;
                     $processTranslation->setNeedReview(false);
                     $processTranslation->setIsReviewed(false);
@@ -542,6 +548,9 @@ class Online extends PageController
                     $em->flush();
                     break;
                 case 'reuse':
+                    if ($processTranslation->isCurrent()) {
+                        throw new UserException(t('The selected translation is already the current one'));
+                    }
                     if (
                         $currentTranslation !== null
                         &&
