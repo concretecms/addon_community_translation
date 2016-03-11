@@ -162,10 +162,21 @@ class Translation
     /**
      * @return self
      */
-    public static function createNew()
+    public static function create(Locale $locale, Translatable $translatable)
     {
         $new = new self();
+        $new->tLocale = $locale;
+        $new->tTranslatable = $translatable;
         $new->tCreatedOn = new DateTime();
+        $new->tCreatedBy = null;
+        $user = new \User();
+        if ($user->isRegistered()) {
+            $new->tCreatedBy = (int) $user->getUserID();
+        }
+        $new->tCurrent = null;
+        $new->tCurrentSince = null;
+        $new->tReviewed = false;
+        $new->tNeedReview = false;
         $new->tText1 = '';
         $new->tText2 = '';
         $new->tText3 = '';
@@ -198,16 +209,6 @@ class Translation
     }
 
     /**
-     * Set the associated Locale.
-     *
-     * @param Locale $value
-     */
-    public function setLocale(Locale $value)
-    {
-        $this->tLocale = $value;
-    }
-
-    /**
      * Get the associated Translatable.
      *
      * @return Translatable
@@ -215,16 +216,6 @@ class Translation
     public function getTranslatable()
     {
         return $this->tTranslatable;
-    }
-
-    /**
-     * Set the associated Translatable.
-     *
-     * @param Translatable $value
-     */
-    public function setTranslatable(Translatable $value)
-    {
-        $this->tTranslatable = $value;
     }
 
     /**
