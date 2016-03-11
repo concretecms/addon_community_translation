@@ -271,6 +271,8 @@ class Translation
         } else {
             $this->tCurrent = null;
             $this->tCurrentSince = null;
+            $this->tReviewed = false;
+            $this->tNeedReview = false;
         }
     }
 

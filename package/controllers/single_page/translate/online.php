@@ -559,8 +559,6 @@ class Online extends PageController
             'tCurrent' => true,
         ));
         if ($currentTranslation !== null) {
-            $currentTranslation->setNeedReview(false);
-            $currentTranslation->setIsReviewed(false);
             $currentTranslation->setIsCurrent(false);
             $em->persist($currentTranslation);
             $em->flush();
@@ -628,13 +626,11 @@ class Online extends PageController
         if ($currentTranslation !== null && $currentTranslation->isReviewed() && $access < Access::ADMIN) {
             $sendCurrent = false;
             $translation->setNeedReview(true);
-            $currentTranslation->setIsReviewed(false);
+            $translation->setIsReviewed(false);
             $em->persist($translation);
             $message = t('Since the current translation is approved, you have to wait that this new translation will be approved');
         } else {
             if ($currentTranslation !== null) {
-                $currentTranslation->setNeedReview(false);
-                $currentTranslation->setIsReviewed(false);
                 $currentTranslation->setIsCurrent(false);
                 $em->persist($currentTranslation);
                 $em->flush();
@@ -738,8 +734,6 @@ class Online extends PageController
         } elseif ($currentTranslation === null || !$currentTranslation->isReviewed() || $access >= Access::ADMIN) {
             // Let's make the new translation the current one
             if ($currentTranslation !== null) {
-                $currentTranslation->setNeedReview(false);
-                $currentTranslation->setIsReviewed(false);
                 $currentTranslation->setIsCurrent(false);
                 $em->persist($currentTranslation);
                 $em->flush();
@@ -787,8 +781,6 @@ class Online extends PageController
             if ($currentTranslation->isReviewed() && $access < Access::ADMIN) {
                 throw new UserException(t("The current translation is marked as reviewed, so you can't remove it."));
             }
-            $currentTranslation->setNeedReview(false);
-            $currentTranslation->setIsReviewed(false);
             $currentTranslation->setIsCurrent(false);
             $em->persist($currentTranslation);
             $em->flush();
