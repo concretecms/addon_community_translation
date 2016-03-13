@@ -186,6 +186,57 @@ class Controller extends Package
                 'cName' => t('Fill translations'),
             ));
         }
+        $apiTokenAttributeKey = \Concrete\Core\Attribute\Key\UserKey::getByHandle('api_token');
+        if (!is_object($apiTokenAttributeKey)) {
+            $apiTokenAttributeType = \Concrete\Core\Attribute\Type::getByHandle('api_token');
+            if ($apiTokenAttributeType === null) {
+                $apiTokenAttributeType = \Concrete\Core\Attribute\Type::add('api_token', tc('AttributeTypeName', 'API Token'), $pkg);
+            }
+            $userAttributeCategory = \Concrete\Core\Attribute\Key\Category::getByHandle('collection');
+            if (isset($userAttributeCategory)) {
+                if (!$userAttributeCategory->allowAttributeSets()) {
+                    $userAttributeCategory->setAllowAttributeSets(\Concrete\Core\Attribute\Key\Category::ASET_ALLOW_SINGLE);
+                }
+                $userAttributeSet = \AttributeSet::getByHandle('community_translation', $userAttributeCategory->getAttributeKeyCategoryID());
+                if (!isset($userAttributeSet)) {
+                    $userAttributeSet = $userAttributeCategory->addSet('community_translation', tc('AttributeSetName', 'Community Translation'), $pkg);
+                }
+                if (isset($userAttributeSet)) {
+                    $apiTokenAttributeKey = \Concrete\Core\Attribute\Key\UserKey::add(
+                        $apiTokenAttributeType,
+                        array(
+                            // Handle
+                            'akHandle' => 'api_token',
+                            // Name
+                            'akName' => tc('AttributeKeyName', 'API Token'),
+                            // Available in Dashboard User Search?
+                            'akIsSearchable' => 1,
+                            // Content included in user keyword search
+                            'akIsSearchableIndexed' => 1,
+                            // Automatically created by a process?
+                            //'akIsAutoCreated' => ???
+                            // Can be edited through the frontend?
+                            'akIsEditable' => 1,
+                            // Displayed in public profile?
+                            'uakProfileDisplay' => 0,
+                            // Displayed on member list?
+                            'uakMemberListDisplay' => 0,
+                            // Editable in profile?
+                            'uakProfileEdit' => 1,
+                            // Editable and required in profile?
+                            'uakProfileEditRequired' => 0,
+                            // Show on registration form?
+                            'uakRegisterEdit' => 0,
+                            // Require on registration form?
+                            'uakRegisterEditRequired' => 0,
+                            // Activated?
+                            'uakIsActive' => 1,
+                        ),
+                        $pkg
+                    );
+                }
+            }
+        }
     }
 
     public function on_start()
