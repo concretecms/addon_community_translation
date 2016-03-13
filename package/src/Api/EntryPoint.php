@@ -1,13 +1,39 @@
 <?php
-namespace Concrete\Package\CommunityTranslation\Src\Rest;
+namespace Concrete\Package\CommunityTranslation\Src\Api;
 
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Concrete\Package\CommunityTranslation\Src\Locale\Locale;
 use Concrete\Package\CommunityTranslation\Src\UserException;
 
-class Api extends \Concrete\Core\Controller\AbstractController
+class EntryPoint extends \Concrete\Core\Controller\AbstractController
 {
+
+    /**
+     * @var UserControl|null
+     */
+    protected $userControl = null;
+
+    /**
+     * @param UserControl $userControl
+     */
+    public function setUserControl(UserControl $userControl)
+    {
+        $this->userControl = $userControl;
+    }
+
+    /**
+     * @return UserControl
+     */
+    public function getUserControl()
+    {
+        if ($this->userControl === null) {
+            $this->userControl = new UserControl();
+            $this->userControl->setRequest($this->request);
+        }
+        return $this->userControl;
+    }
+
     /**
      * @param Locale[]|Locale $locale
      */

@@ -279,7 +279,7 @@ class Controller extends Package
             $localeRegex = '[a-zA-Z]{2,3}([_\-][a-zA-Z0-9]{2,3})?';
             $app->make('Concrete\Core\Routing\Router')->registerMultiple(array(
                 '/api/locales/' => array(
-                    '\Concrete\Package\CommunityTranslation\Src\Rest\Api::getApprovedLocales',
+                    '\Concrete\Package\CommunityTranslation\Src\Api\EntryPoint::getApprovedLocales',
                     null,
                     array(),
                     array(),
@@ -288,7 +288,7 @@ class Controller extends Package
                     array('GET'),
                 ),
                 '/api/locales/{packageHandle}/{packageVersion}/{minimumLevel}/' => array(
-                    '\Concrete\Package\CommunityTranslation\Src\Rest\Api::getLocalesForPackage',
+                    '\Concrete\Package\CommunityTranslation\Src\Api\EntryPoint::getLocalesForPackage',
                     null,
                     array('packageHandle' => $handleRegex, 'minimumLevel' => '[0-9]{1,3}'),
                     array(),
@@ -297,7 +297,7 @@ class Controller extends Package
                     array('GET'),
                 ),
                 '/api/packages/' => array(
-                    '\Concrete\Package\CommunityTranslation\Src\Rest\Api::getAvailablePackageHandles',
+                    '\Concrete\Package\CommunityTranslation\Src\Api\EntryPoint::getAvailablePackageHandles',
                     null,
                     array(),
                     array(),
@@ -306,7 +306,7 @@ class Controller extends Package
                     array('GET'),
                 ),
                 '/api/package/{packageHandle}/versions/' => array(
-                    '\Concrete\Package\CommunityTranslation\Src\Rest\Api::getAvailablePackageVersions',
+                    '\Concrete\Package\CommunityTranslation\Src\Api\EntryPoint::getAvailablePackageVersions',
                     null,
                     array('packageHandle' => $handleRegex),
                     array(),
@@ -315,7 +315,7 @@ class Controller extends Package
                     array('GET'),
                 ),
                 '/api/package/process/' => array(
-                    '\Concrete\Package\CommunityTranslation\Src\Rest\Api::processPackage',
+                    '\Concrete\Package\CommunityTranslation\Src\Api\EntryPoint::processPackage',
                     null,
                     array(),
                     array(),
@@ -324,7 +324,7 @@ class Controller extends Package
                     array('POST'),
                 ),
                 '/api/po/{packageHandle}/{packageVersion}/{localeID}' => array(
-                    '\Concrete\Package\CommunityTranslation\Src\Rest\Api::getPackagePo',
+                    '\Concrete\Package\CommunityTranslation\Src\Api\EntryPoint::getPackagePo',
                     null,
                     array('packageHandle' => $handleRegex, 'localeID' => $localeRegex),
                     array(),
@@ -333,7 +333,7 @@ class Controller extends Package
                     array('GET'),
                 ),
                 '/api/mo/{packageHandle}/{packageVersion}/{localeID}' => array(
-                    '\Concrete\Package\CommunityTranslation\Src\Rest\Api::getPackageMo',
+                    '\Concrete\Package\CommunityTranslation\Src\Api\EntryPoint::getPackageMo',
                     null,
                     array('packageHandle' => $handleRegex, 'localeID' => $localeRegex),
                     array(),
