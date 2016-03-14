@@ -124,7 +124,6 @@ class UserControl implements ApplicationAwareInterface
     public function checkRequest($needGroupID)
     {
         $ip = $this->app->make('ip');
-        /* @var \Concrete\Core\Permission\IPService $ip */
         if ($ip->isBanned()) {
             throw AccessDeniedException::create($ip->getErrorMessage());
         }
@@ -144,7 +143,7 @@ class UserControl implements ApplicationAwareInterface
             if ($ok === false) {
                 $ip->logSignupRequest();
                 if ($ip->signupRequestThreshholdReached()) {
-                    $ip_service->createIPBan();
+                    $ip->createIPBan();
                 }
                 if ($this->getRequestApiToken() === '') {
                     $message = t('No access token received');
