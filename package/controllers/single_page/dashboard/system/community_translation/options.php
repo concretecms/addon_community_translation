@@ -24,6 +24,26 @@ class Options extends DashboardPageController
         $this->set('tempDir', $config->get('options.tempDir'));
         $this->set('notificationsSenderAddress', $config->get('options.notificationsSenderAddress'));
         $this->set('notificationsSenderName', $config->get('options.notificationsSenderName'));
+        foreach (array(
+            'options.api.access.stats' => 'apiAccess_stats',
+            'options.api.access.download' => 'apiAccess_download',
+            'options.api.access.import_packages' => 'apiAccess_import_packages',
+        ) as $key => $varName) {
+            $gID = $config->get($key);
+            $gID = @intval($gID);
+            if ($gID !== 0 && $gID != GUEST_GROUP_ID) {
+                $group = \Group::getByID($gID);
+                if ($group === null) {
+                    $gName = '<i>'.t('Removed group').'</i>';
+                } else {
+                    $gName = $group->getGroupDisplayName();
+                }
+            } else {
+                $gID = GUEST_GROUP_ID;
+                $gName = h(tc('GroupName', 'Guest'));
+            }
+            $this->set($varName, compact('gID', 'gName'));
+        }
     }
 
     public function submit()
@@ -69,6 +89,18 @@ class Options extends DashboardPageController
                 $this->error->add(t('The specified temporary directory is not writable'));
             }
         }
+        $apiAccess_stats = @intval($this->post('apiAccess_stats'));
+        if ($apiAccess_stats <= 0) {
+            $this->error->add(t('Please specify the user group to control the API access to statistical data'));
+        }
+        $apiAccess_download = @intval($this->post('apiAccess_download'));
+        if ($apiAccess_download <= 0) {
+            $this->error->add(t('Please specify the user group to control the API access to downloads'));
+        }
+        $apiAccess_import_packages = @intval($this->post('apiAccess_import_packages'));
+        if ($apiAccess_import_packages <= 0) {
+            $this->error->add(t('Please specify the user group to control the API access to import packages'));
+        }
         if (!$this->error->has()) {
             $config = \Package::getByHandle('community_translation')->getFileConfig();
             $config->save('options.translatedThreshold', $translatedThreshold);
@@ -76,6 +108,9 @@ class Options extends DashboardPageController
             $config->save('options.tempDir', $tempDir);
             $config->save('options.notificationsSenderAddress', (string) $this->post('notificationsSenderAddress'));
             $config->save('options.notificationsSenderName', (string) $this->post('notificationsSenderName'));
+            $config->save('options.api.access.stats', $apiAccess_stats);
+            $config->save('options.api.access.download', $apiAccess_download);
+            $config->save('options.api.access.import_packages', $apiAccess_import_packages);
             $this->flash('message', t('Comminity Translation options have been saved.'));
             $this->redirect('/dashboard/system/community_translation/options');
         }

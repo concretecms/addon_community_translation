@@ -1,9 +1,28 @@
 <?php
-
 namespace Concrete\Package\CommunityTranslation\Src\Api;
 
-class UserControl
+use Concrete\Core\Application\Application;
+use Concrete\Core\Application\ApplicationAwareInterface;
+
+class UserControl implements ApplicationAwareInterface
 {
+    /**
+     * The application object.
+     *
+     * @var Application
+     */
+    protected $app;
+
+    /**
+     * Set the application object.
+     *
+     * @param Application $application
+     */
+    public function setApplication(Application $app)
+    {
+        $this->app = $app;
+    }
+
     /**
      * @var \Concrete\Core\Http\Request|null
      */
@@ -95,5 +114,47 @@ class UserControl
         }
 
         return ($this->requestUser === false) ? null : $this->requestUser;
+    }
+
+    /**
+     * @param int|empty $needGroupID
+     *
+     * @throws AccessDeniedException
+     */
+    public function checkRequest($needGroupID)
+    {
+        $ip = $this->app->make('ip');
+        /* @var \Concrete\Core\Permission\IPService $ip */
+        if ($ip->isBanned()) {
+            throw AccessDeniedException::create($ip->getErrorMessage());
+        }
+        if ($needGroupID && $needGroupID != GUEST_GROUP_ID) {
+            $ok = false;
+            $user = $this->getRequestUser();
+            if ($user !== null) {
+                if ($needGroupID == REGISTERED_GROUP_ID) {
+                    $ok = true;
+                } else {
+                    $group = \Group::getByID($gID);
+                    if ($group === null || $user->inGroup($group)) {
+                        $ok = true;
+                    }
+                }
+            }
+            if ($ok === false) {
+                $ip->logSignupRequest();
+                if ($ip->signupRequestThreshholdReached()) {
+                    $ip_service->createIPBan();
+                }
+                if ($this->getRequestApiToken() === '') {
+                    $message = t('No access token received');
+                } elseif ($user === null) {
+                    $message = t('Invalid access token received');
+                } else {
+                    $message = t('Access denied for the user associated to the access token');
+                }
+                throw AccessDeniedException::create($message);
+            }
+        }
     }
 }

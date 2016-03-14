@@ -28,7 +28,7 @@ defined('C5_EXECUTE') or die('Access Denied.');
 			</div>
 		</div>
 		<div class="row">
-			<label for="downloadAccess" class="control-label col-sm-3"><?php echo t('Download access'); ?></label>
+			<label for="downloadAccess" class="control-label col-sm-3"><?php echo t('Download access via web'); ?></label>
 			<div class="col-sm-7">
 				<?php echo $form->select(
 				    'downloadAccess',
@@ -41,6 +41,36 @@ defined('C5_EXECUTE') or die('Access Denied.');
 				); ?>
 			</div>
 		</div>
+	</fieldset>
+
+	<fieldset>
+		<legend><?php echo t('API Access'); ?></legend>
+		<div id="pick-api-fields"></div>
+		<script type="text/template" data-template="pick-api-group">
+			<div class="row">
+				<div class="form-group">
+					<div class="col-sm-3 control-label">
+						<label for="<%=field.id%>"><%=field.description%></label>
+					</div>
+					<div class="col-sm-7">
+							<input type="hidden" name="<%=field.id%>" value="<%=value.id%>" />
+							<a class="form-control"
+								id="<%=field.id%>"
+								class="input-group-addon btn btn-default btn-xs"
+								data-button="pick-api-group"
+								dialog-width="640"
+								dialog-height="480"
+								dialog-modal="true"
+								href="<?php echo URL::to('/ccm/system/dialogs/group/search'); ?>"
+								dialog-title="<?php echo h(t('Select group')); ?>"
+								dialog-modal="true"
+								data-field="<%=field.id%>"
+							><%=value.description%></a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</script>
 	</fieldset>
 
 	<fieldset>
@@ -83,3 +113,52 @@ defined('C5_EXECUTE') or die('Access Denied.');
 	</div>
 
 </form>
+
+<script>$(document).ready(function() {
+
+var currentApiGroupID;
+var _pickApiGroup = _.template($('script[data-template=pick-api-group]').html());
+$('#pick-api-fields')
+	.append(_pickApiGroup(<?php echo json_encode(array(
+	    'field' => array(
+	       'id' => 'apiAccess_stats',
+	       'description' => t('Retrieve statistical data'),
+	    ),
+	    'value' => array(
+	       'id' => $apiAccess_stats['gID'],
+	       'description' => $apiAccess_stats['gName'],
+	    )
+	)); ?>))
+	.append(_pickApiGroup(<?php echo json_encode(array(
+	    'field' => array(
+	       'id' => 'apiAccess_download',
+	       'description' => t('Download translations'),
+	    ),
+	    'value' => array(
+	       'id' => $apiAccess_download['gID'],
+	       'description' => $apiAccess_download['gName'],
+	    )
+	)); ?>))
+	.append(_pickApiGroup(<?php echo json_encode(array(
+	    'field' => array(
+	       'id' => 'apiAccess_import_packages',
+	       'description' => t('Import translations from packages'),
+	    ),
+	    'value' => array(
+	       'id' => $apiAccess_import_packages['gID'],
+	       'description' => $apiAccess_import_packages['gName'],
+	    )
+	)); ?>))
+;
+ConcreteEvent.subscribe('SelectGroup', function (e, data) {
+	if (data && data.gID) {
+		$('input[name="' + currentApiGroupID + '"]').val(data.gID);
+		$('#' + currentApiGroupID).text(data.gName);
+		jQuery.fn.dialog.closeTop();
+	}
+});
+$('a[data-button=pick-api-group]').dialog().on('click', function() {
+	currentApiGroupID = $(this).data('field');
+});
+
+});</script>

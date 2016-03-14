@@ -39,6 +39,16 @@ class Controller extends Package
         $config->save('options.translatedThreshold', 90);
         $config->save('options.downloadAccess', 'members');
 
+        if (!$config->get('options.api.access.stats')) {
+            $config->save('options.api.access.stats', (int) GUEST_GROUP_ID);
+        }
+        if (!$config->get('options.api.access.download')) {
+            $config->save('options.api.access.download', (int) GUEST_GROUP_ID);
+        }
+        if (!$config->get('options.api.access.import_packages')) {
+            $config->save('options.api.access.import_packages', (int) ADMIN_GROUP_ID);
+        }
+
         $app = \Core::make('app');
         $this->registerServiceProvider($app);
 

@@ -8,7 +8,6 @@ use Concrete\Package\CommunityTranslation\Src\UserException;
 
 class EntryPoint extends \Concrete\Core\Controller\AbstractController
 {
-
     /**
      * @var UserControl|null
      */
@@ -28,9 +27,10 @@ class EntryPoint extends \Concrete\Core\Controller\AbstractController
     public function getUserControl()
     {
         if ($this->userControl === null) {
-            $this->userControl = new UserControl();
+            $this->userControl = $this->app->make('Concrete\Package\CommunityTranslation\Src\Api\UserControl');
             $this->userControl->setRequest($this->request);
         }
+
         return $this->userControl;
     }
 
@@ -62,15 +62,42 @@ class EntryPoint extends \Concrete\Core\Controller\AbstractController
         return $single ? $list[0] : $list;
     }
 
+    /**
+     * Check the access to a specific group of API functions.
+     *
+     * @param string $configKey 'stats', 'download', 'import_packages', ...
+     */
+    protected function checkAccess($configKey)
+    {
+        $config = \Package::getByHandle('community_translation')->getFileConfig();
+        $this->getUserControl()->checkRequest($config->get('options.api.access.'.$configKey));
+    }
+
+    /**
+     * @example http://www.example.com/api/locales/
+     */
     public function getApprovedLocales()
     {
+        try {
+            $this->checkAccess('stats');
+        } catch (AccessDeniedException $x) {
+            return JsonResponse::create(array('error' => $x->getMessage()), 401);
+        }
         $locales = $this->app->make('community_translation/locale')->getApprovedLocales();
 
         return JsonResponse::create($this->localesToArray($locales));
     }
 
+    /**
+     * @example http://www.example.com/api/locales//dev-5.7/90/
+     */
     public function getLocalesForPackage($packageHandle, $packageVersion, $minimumLevel)
     {
+        try {
+            $this->checkAccess('stats');
+        } catch (AccessDeniedException $x) {
+            return JsonResponse::create(array('error' => $x->getMessage()), 401);
+        }
         $package = $this->app->make('community_translation/package')->findOneBy(array(
             'pHandle' => (string) $packageHandle,
             'pVersion' => (string) $packageVersion,
@@ -117,16 +144,32 @@ class EntryPoint extends \Concrete\Core\Controller\AbstractController
         return JsonResponse::create($result);
     }
 
+    /**
+     * @example http://www.example.com/api/packages/
+     */
     public function getAvailablePackageHandles()
     {
+        try {
+            $this->checkAccess('stats');
+        } catch (AccessDeniedException $x) {
+            return JsonResponse::create(array('error' => $x->getMessage()), 401);
+        }
         $em = $this->app->make('community_translation/em');
         $handles = $em->getConnection()->executeQuery('select distinct pHandle from TranslatedPackages')->fetchAll(\PDO::FETCH_COLUMN);
 
         return JsonResponse::create($handles);
     }
 
+    /**
+     * @example http://www.example.com/api/package//versions/
+     */
     public function getAvailablePackageVersions($packageHandle)
     {
+        try {
+            $this->checkAccess('stats');
+        } catch (AccessDeniedException $x) {
+            return JsonResponse::create(array('error' => $x->getMessage()), 401);
+        }
         $em = $this->app->make('community_translation/em');
         $handles = $em->getConnection()->executeQuery('select distinct pVersion from TranslatedPackages where pHandle = ?', array((string) $packageHandle))->fetchAll(\PDO::FETCH_COLUMN);
         if (empty($handles)) {
@@ -139,13 +182,31 @@ class EntryPoint extends \Concrete\Core\Controller\AbstractController
         return JsonResponse::create($handles);
     }
 
+    /**
+     * @example http://www.example.com/api/po//dev-5.7/it_IT/
+     */
     public function getPackagePo($packageHandle, $packageVersion, $localeID)
     {
+        try {
+            $this->checkAccess('download');
+        } catch (AccessDeniedException $x) {
+            return Response::create($x->getMessage(), 401);
+        }
+
         return $this->getPackageTranslations($packageHandle, $packageVersion, $localeID, false);
     }
 
+    /**
+     * @example http://www.example.com/api/mo//dev-5.7/it_IT/
+     */
     public function getPackageMo($packageHandle, $packageVersion, $localeID)
     {
+        try {
+            $this->checkAccess('download');
+        } catch (AccessDeniedException $x) {
+            return Response::create($x->getMessage(), 401);
+        }
+
         return $this->getPackageTranslations($packageHandle, $packageVersion, $localeID, true);
     }
 
@@ -188,6 +249,11 @@ class EntryPoint extends \Concrete\Core\Controller\AbstractController
 
     public function processPackage()
     {
+        try {
+            $this->checkAccess('import_packages');
+        } catch (AccessDeniedException $x) {
+            return Response::create($x->getMessage(), 401);
+        }
         try {
             $file = $this->request->files->get('package');
             if ($file === null) {
