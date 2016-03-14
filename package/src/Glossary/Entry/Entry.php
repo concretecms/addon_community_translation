@@ -288,7 +288,7 @@ class Entry
                     'description' => t('A word or phrase that ​describes an ​action, ​condition, or ​experience (examples: listen, read, write).'),
                 ),
             );
-            uasort($result, function(array $a, array $b) {
+            uasort($result, function (array $a, array $b) {
                 return strcasecmp($a['name'], $b['name']);
             });
         }

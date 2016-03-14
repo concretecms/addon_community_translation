@@ -88,7 +88,7 @@ class Translatable
      * @var ArrayCollection
      */
     protected $comments;
-    
+
     // Constructor
 
     public function __construct()

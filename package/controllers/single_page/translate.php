@@ -9,7 +9,7 @@ use Concrete\Package\CommunityTranslation\Src\Package\Package;
 class Translate extends PageController
 {
     const MAX_LOCALES = 3;
-    
+
     public function view()
     {
         $this->redirect('/translate', 'core');
@@ -96,7 +96,7 @@ class Translate extends PageController
     public function core()
     {
         $hh = $this->app->make('helper/html');
-        $this->addHeaderItem($hh->css('translate.css', 'community_translation'));        
+        $this->addHeaderItem($hh->css('translate.css', 'community_translation'));
         $this->set('section', 'core');
         $this->requireAsset('select2');
         $token = $this->app->make('helper/validation/token');
@@ -150,8 +150,7 @@ class Translate extends PageController
                             $pickedPackage = $this->post('pickedpackage');
                             if (is_string($pickedPackage) && $pickedPackage !== '') {
                                 $packages = $repo->findBy(array('pHandle' => $pickedPackage));
-                            }
-                            else {
+                            } else {
                                 $packages = array();
                             }
                             if (!empty($packages)) {

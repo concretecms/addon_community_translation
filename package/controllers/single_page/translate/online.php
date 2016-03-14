@@ -1,5 +1,4 @@
 <?php
-
 namespace Concrete\Package\CommunityTranslation\Controller\SinglePage\Translate;
 
 use Concrete\Core\Page\Controller\PageController;
@@ -667,7 +666,7 @@ class Online extends PageController
             } catch (\Exception $x) {
             }
         }
-        
+
         return JsonResponse::create($result);
     }
 

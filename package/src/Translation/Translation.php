@@ -315,7 +315,7 @@ class Translation
     {
         return $this->tNeedReview;
     }
-    
+
     /**
      * Does this translation need review?
      *

@@ -154,7 +154,7 @@ class Package
     }
 
     /**
-     * Get the package version display name
+     * Get the package version display name.
      *
      * @return string
      */

@@ -222,5 +222,4 @@ class Comment
     {
         $this->tcText = trim((string) $value);
     }
-
 }
