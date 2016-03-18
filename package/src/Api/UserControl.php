@@ -3,6 +3,7 @@ namespace Concrete\Package\CommunityTranslation\Src\Api;
 
 use Concrete\Core\Application\Application;
 use Concrete\Core\Application\ApplicationAwareInterface;
+use Concrete\Package\CommunityTranslation\Src\UserException;
 
 class UserControl implements ApplicationAwareInterface
 {
@@ -134,8 +135,11 @@ class UserControl implements ApplicationAwareInterface
                 if ($needGroupID == REGISTERED_GROUP_ID) {
                     $ok = true;
                 } else {
-                    $group = \Group::getByID($gID);
-                    if ($group === null || $user->inGroup($group)) {
+                    $group = \Group::getByID($needGroupID);
+                    if ($group === null) {
+                        throw new UserException('Group with ID "'.$needGroupID.'" has not been found!');
+                    }
+                    if ($user->inGroup($group)) {
                         $ok = true;
                     }
                 }
