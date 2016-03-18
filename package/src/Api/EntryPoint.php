@@ -322,13 +322,57 @@ class EntryPoint extends \Concrete\Core\Controller\AbstractController
             if (!$archive->isValid()) {
                 throw new UserException(sprintf('Package archive not correctly received: %s', $file->getErrorMessage()));
             }
-            $unzipped = $this->app->make('community_translation/decompressed_package', array($file->getPathname()));
-            $unzipped->extract();
-            $parsed = $this->app->make('community_translation/parser')->parseDirectory(
-                $unzipped->getExtractedWorkDir(),
-                'packages/'.$packageHandle,
-                Parser::GETTEXT_MO | Parser::GETTEXT_PO
-            );
+            $localesToInclude = array();
+            $package = $this->app->make('community_translation/package')->find(array('pHandle' => $packageHandle, 'pVersion' => $packageVersion));
+            $updated = false;
+            if ($package === null) {
+                $allLocales = $this->app->make('community_translation/locale')->getApprovedLocales();
+                $threshold = (int) \Package::getByHandle('community_translation')->getFileConfig()->get('options.translatedThreshold', 90);
+                $statsList = $this->app->make('community_translation/stats')->get(array($packageHandle, $packageVersion), $allLocales);
+                $usedLocaleStats = array();
+                foreach ($statsList as $stats) {
+                    if ($stats->getLastUpdated() !== null && $stats->getPercentage() >= $threshold) {
+                        $usedLocaleStats[] = $stats;
+                    }
+                }
+                if (!empty($usedLocaleStats)) {
+                    $unzipped = $this->app->make('community_translation/decompressed_package', array($file->getPathname()));
+                    $unzipped->extract();
+                    $parsed = $this->app->make('community_translation/parser')->parseDirectory(
+                        $unzipped->getExtractedWorkDir(),
+                        'packages/'.$packageHandle,
+                        Parser::GETTEXT_MO | Parser::GETTEXT_PO
+                    );
+                    $exporter = $this->app->make('community_translation/translation/exporter');
+                    foreach ($usedLocaleStats as $stats) {
+                        $localTranslationsDate = max($stats->getLastUpdated(), $package->getUpdatedOn());
+                        $packageTranslationsDate = null;
+                        $packageTranslations = $parsed->getPo($locale);
+                        if ($packageTranslations !== null) {
+                            $dt = $packageTranslations->getHeader('PO-Revision-Date');
+                            if ($dt !== null) {
+                                try {
+                                    $packageTranslationsDate = new \DateTime($dt);
+                                } catch (\Exception $foo) {
+                                }
+                            }
+                        }
+                        if ($packageTranslationsDate !== null && $packageTranslationsDate >= $localTranslationsDate) {
+                            continue;
+                        }
+                        $localTranslations = $exporter->forPackage($package, $stats->getLocale());
+                        $dir = $unzipped->getExtractedWorkDir().'/languages/'.$stats->getLocale()->getID().'/LC_MESSAGES';
+                        if (!is_dir($dir)) {
+                            @mkdir($dir, 0777, true);
+                            if (!is_dir($dir)) {
+                                throw new UserException(sprintf('Failed to create directory: %s', $dir));
+                            }
+                        }
+                        $localTranslations->toMoFile($dir.'/messages.mo');
+                        $updated = true;
+                    }
+                }
+            }
             throw new UserException('@todo');
         } catch (UserException $x) {
             return JsonResponse::create(
