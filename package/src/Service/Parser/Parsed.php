@@ -49,9 +49,6 @@ class Parsed
                         foreach ($translation->getExtractedComments() as $comment) {
                             $newTranslation->addExtractedComment($comment);
                         }
-                        foreach ($translation->getReferences() as $reference) {
-                            $newTranslation->addReference($reference[0], $reference[1]);
-                        }
                     }
                 }
             }
@@ -93,7 +90,7 @@ class Parsed
 
     public function mergeWith(Parsed $other)
     {
-        $mergeMethod = Translations::MERGE_ADD | Translations::MERGE_COMMENTS | Translations::MERGE_REFERENCES | Translations::MERGE_PLURAL;
+        $mergeMethod = Translations::MERGE_ADD | Translations::MERGE_PLURAL;
         if ($other->pot !== null) {
             if ($this->pot === null) {
                 $this->pot = $other->pot;
