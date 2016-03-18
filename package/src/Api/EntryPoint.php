@@ -5,6 +5,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Concrete\Package\CommunityTranslation\Src\Locale\Locale;
 use Concrete\Package\CommunityTranslation\Src\UserException;
+use Concrete\Package\CommunityTranslation\Src\Service\Parser\Parser;
 
 class EntryPoint extends \Concrete\Core\Controller\AbstractController
 {
@@ -255,14 +256,34 @@ class EntryPoint extends \Concrete\Core\Controller\AbstractController
             return Response::create($x->getMessage(), 401);
         }
         try {
-            $file = $this->request->files->get('package');
-            if ($file === null) {
-                throw new UserException(t('Package file not received'));
+            $packageHandle = $this->post('handle');
+            $packageHandle = is_string($packageHandle) ? trim($packageHandle) : '';
+            if ($packageHandle === '') {
+                throw new UserException('Package handle not specified');
             }
-            if (!$file->isValid()) {
-                throw new UserException($file->getErrorMessage());
+            $packageVersion = $this->post('version');
+            $packageVersion = is_string($packageVersion) ? trim($packageVersion) : '';
+            if ($packageVersion === '') {
+                throw new UserException('Package version not specified');
             }
-            throw new UserException('@todo');
+            $archive = $this->request->files->get('archive');
+            if ($archive === null) {
+                throw new UserException('Package archive not received');
+            }
+            if (!$archive->isValid()) {
+                throw new UserException(sprintf('Package archive not correctly received: %s', $file->getErrorMessage()));
+            }
+            $parsed = $this->app->make('community_translation/parser')->parseZip($file->getPathname(), 'packages/'.$packageHandle, Parser::GETTEXT_NONE);
+            $pot = ($parsed === null) ? null : $parsed->getPot(false);
+            if ($pot === null || count($pot) === 0) {
+                throw new UserException('No translatable strings found');
+            }
+            $changed = $this->app->make('community_translation/translatable/importer')->importTranslations($pot, $packageHandle, $packageVersion);
+
+            return JsonResponse::create(
+                array('changed' => $changed),
+                200
+            );
         } catch (UserException $x) {
             return JsonResponse::create(
                 array('error' => $x->getMessage()),

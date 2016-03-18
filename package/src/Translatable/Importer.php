@@ -4,6 +4,7 @@ namespace Concrete\Package\CommunityTranslation\Src\Translatable;
 use Concrete\Core\Application\Application;
 use Concrete\Package\CommunityTranslation\Src\UserException;
 use Concrete\Package\CommunityTranslation\Src\Package\Package;
+use Concrete\Package\CommunityTranslation\Src\Service\Parser\Parser;
 
 class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
 {
@@ -69,17 +70,17 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
     }
 
     /**
-     * Parse a directory and extract the translatable strings.
+     * Parse a directory and extract the translatable strings, and import them into the database.
      * 
      * @param string $directory
-     * @param string $package
-     * @param string $version
+     * @param string $packageHandle
+     * @param string $packageVersion
      *
      * @throws UserException
      *
-     * @return bool
+     * @return bool Returns true if some translatable strings changed, false otherwise.
      */
-    public function importDirectory($directory, $packageHandle, $version)
+    public function importDirectory($directory, $packageHandle, $packageVersion)
     {
         $directoryToPotify = '';
         $potfile2root = '';
@@ -91,12 +92,29 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
             $directoryToPotify = '';
             $relDirectory = 'packages/'.$packageHandle;
         }
-        $parsed = $this->app->make('community_translation/parser')->parseDirectory($directory.$directoryToPotify, $relDirectory, 0);
+        $parsed = $this->app->make('community_translation/parser')->parseDirectory($directory.$directoryToPotify, $relDirectory, Parser::GETTEXT_NONE);
         $translations = $parsed ? $parsed->getPot() : null;
         if ($translations === null) {
             $translations = new \Gettext\Translations();
             $translations->setLanguage('en_US');
         }
+
+        return $this->importTranslations($translations, $packageHandle, $packageVersion);
+    }
+
+    /**
+     * Import a list of translatable strings into the database.
+     *
+     * @param \Gettext\Translations $translations
+     * @param string $packageHandle
+     * @param string $packageVersion
+     *
+     * @throws UserException
+     *
+     * @return bool Returns true if some translatable strings changed, false otherwise.
+     */
+    public function importTranslations(\Gettext\Translations $translations, $packageHandle, $packageVersion)
+    {
         $packageRepo = $this->app->make('community_translation/package');
         $updated = false;
         $em = $this->getEntityManager();
@@ -105,10 +123,10 @@ class Importer implements \Concrete\Core\Application\ApplicationAwareInterface
         try {
             $package = $packageRepo->findOneBy(array(
                 'pHandle' => $packageHandle,
-                'pVersion' => $version,
+                'pVersion' => $packageVersion,
             ));
             if ($package === null) {
-                $package = Package::create($packageHandle, $version);
+                $package = Package::create($packageHandle, $packageVersion);
                 $em->persist($package);
                 $em->flush();
                 $packageIsNew = true;
