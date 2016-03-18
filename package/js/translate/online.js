@@ -535,7 +535,6 @@ var References = (function() {
 	return {
 		initialize: function(references) {
 			var $parent = $('#comtra_translation-references');
-			setBadgeCount('comtra_translation-references-count', references.length);
 			$parent.find('.comtra_none,.comtra_some').hide();
 			if (references.length === 0) {
 				$parent.find('.comtra_none').show();
@@ -784,7 +783,17 @@ var Glossary = (function() {
 // Translator customizations
 function initializeUI()
 {
-	translator.UI.$container.find('.ccm-translator-col-translations').after($('#comtra_extra').tab());
+	var $translationsCol = translator.UI.$container.find('.ccm-translator-col-translations');
+	var $midCell = $('<div class="col-md-4" />');
+	var $midRow = $('<div class="row" />')
+	var $extraTabs = $('#comtra_extra-tabs').tab();
+	var $references = $('#comtra_extra-references');
+	
+	$translationsCol.before($midCell);
+	$midCell.append($midRow);
+	$midRow.append($translationsCol);
+	$midRow.append($references);
+	$midCell.after($extraTabs);
 }
 function loadFullTranslation(foo, translation, cb)
 {
@@ -854,7 +863,7 @@ window.comtraOnlineEditorInitialize = function(options) {
 	tokens = options.tokens;
 	i18n = options.i18n;
 	canEditGlossary = !!options.canEditGlossary;
-	$extra = $('#comtra_extra');
+	$extra = $('#comtra_extra-references, #comtra_extra-tabs');
 	translator = window.ccmTranslator.initialize({
 		container: '#comtra_translator',
 		height: height,

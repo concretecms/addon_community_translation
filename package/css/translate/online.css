@@ -1,8 +1,8 @@
-#comtra_extra>.tab-content {
+#comtra_extra-tabs>.tab-content {
 	overflow: auto;
 	padding: 8px;
 }
-#comtra_extra .nav-tabs>li>a>.active-badge {
+#comtra_extra-tabs .nav-tabs>li>a>.active-badge {
 	background-color: #428bca;
 }
 #comtra_translator .ccm-translator-col-original .panel-heading span {
@@ -32,7 +32,7 @@
 	visibility: hidden;
 }
 
-#comtra_extra {
+#comtra_extra-references, #comtra_extra-tabs {
 	visibility: hidden;
 }
 

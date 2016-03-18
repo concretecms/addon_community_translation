@@ -40,11 +40,25 @@ defined('C5_EXECUTE') or die('Access Denied.');
 
 <div class="container-fluid" id="comtra_translator"></div>
 
-<div id="comtra_extra" class="col-md-5">
+<div id="comtra_extra-references" class="col-md-12">
+	<div class="panel panel-primary">
+		<div class="panel-heading"><?php echo t('References'); ?></div>
+		<div class="panel-body" id="comtra_translation-references">
+			<div class="alert alert-info comtra_none">
+				<?php echo t('No references found for this string.')?>
+			</div>
+			<div class="comtra_some"></div>
+			<div style="text-align: right; margin-top: 20px">
+				<a href="#" class="btn btn-primary btn-sm" id="comtra_translation-references-showallplaces"><?php echo t('Show all the places where this string is used'); ?></a>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div id="comtra_extra-tabs" class="col-md-5">
 	<ul class="nav nav-tabs">
 		<li class="active"><a href="#comtra_translation-others" role="tab" data-toggle="tab"><?php echo t('Other translations'); ?> <span class="badge" id="comtra_translation-others-count"></span></a></li>
 		<li><a href="#comtra_translation-comments" role="tab" data-toggle="tab"><?php echo t('Comments'); ?> <span class="badge" id="comtra_translation-comments-count"></span></a></li>
-		<li><a href="#comtra_translation-references" role="tab" data-toggle="tab"><?php echo t('References'); ?> <span class="badge" id="comtra_translation-references-count"></span></a></li>
 		<li><a href="#comtra_translation-suggestions" role="tab" data-toggle="tab"><?php echo t('Suggestions'); ?> <span class="badge" id="comtra_translation-suggestions-count"></span></a></li>
 		<li><a href="#comtra_translation-glossary" role="tab" data-toggle="tab"><?php echo t('Glossary'); ?> <span class="badge" id="comtra_translation-glossary-count"></span></a></li>
 	</ul>
@@ -72,15 +86,6 @@ defined('C5_EXECUTE') or die('Access Denied.');
 			<div class="list-group" id="comtra_translation-comments-online"><div class="list-group-item active"><?php echo t('Translators comments'); ?></div></div>
 			<div style="text-align: right">
 				<a href="#" class="btn btn-primary btn-sm" id="comtra_translation-comments-add"><?php echo t('New comment'); ?></a>
-			</div>
-		</div>
-		<div role="tabpanel" class="tab-pane" role="tabpanel" id="comtra_translation-references">
-			<div class="alert alert-info comtra_none">
-				<?php echo t('No references found for this string.')?>
-			</div>
-			<div class="comtra_some"></div>
-			<div style="text-align: right; margin-top: 20px">
-				<a href="#" class="btn btn-primary btn-sm" id="comtra_translation-references-showallplaces"><?php echo t('Show all the places where this string is used'); ?></a>
 			</div>
 		</div>
 		<div role="tabpanel" class="tab-pane" role="tabpanel" id="comtra_translation-suggestions">
@@ -234,7 +239,7 @@ defined('C5_EXECUTE') or die('Access Denied.');
 
 window.ccmTranslator.configureFrontend({
 	colOriginal: 'col-md-3',
-	colTranslations: 'col-md-4'
+	colTranslations: 'col-md-12'
 });
 comtraOnlineEditorInitialize({
 	packageID: <?php echo $package ? $package->getID() : 'null'; ?>,
