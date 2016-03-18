@@ -248,7 +248,7 @@ class EntryPoint extends \Concrete\Core\Controller\AbstractController
         );
     }
 
-    public function processPackage()
+    public function importPackageTranslatable()
     {
         try {
             $this->checkAccess('import_packages');

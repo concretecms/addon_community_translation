@@ -324,8 +324,8 @@ class Controller extends Package
                     array(),
                     array('GET'),
                 ),
-                '/api/package/process/' => array(
-                    '\Concrete\Package\CommunityTranslation\Src\Api\EntryPoint::processPackage',
+                '/api/package/import/translatable/' => array(
+                    '\Concrete\Package\CommunityTranslation\Src\Api\EntryPoint::importPackageTranslatable',
                     null,
                     array(),
                     array(),
