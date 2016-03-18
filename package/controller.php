@@ -48,7 +48,9 @@ class Controller extends Package
         if (!$config->get('options.api.access.import_packages')) {
             $config->save('options.api.access.import_packages', (int) ADMIN_GROUP_ID);
         }
-
+        if (!$config->get('options.api.access.update_package_translations')) {
+            $config->save('options.api.access.update_package_translations', (int) REGISTERED_GROUP_ID);
+        }
         $app = \Core::make('app');
         $this->registerServiceProvider($app);
 
@@ -326,6 +328,15 @@ class Controller extends Package
                 ),
                 '/api/package/import/translatable/' => array(
                     '\Concrete\Package\CommunityTranslation\Src\Api\EntryPoint::importPackageTranslatable',
+                    null,
+                    array(),
+                    array(),
+                    '',
+                    array(),
+                    array('POST'),
+                ),
+                '/api/package/update/translations/' => array(
+                    '\Concrete\Package\CommunityTranslation\Src\Api\EntryPoint::updatePackageTranslations',
                     null,
                     array(),
                     array(),

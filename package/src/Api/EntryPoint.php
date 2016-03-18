@@ -296,4 +296,50 @@ class EntryPoint extends \Concrete\Core\Controller\AbstractController
             );
         }
     }
+
+    public function updatePackageTranslations()
+    {
+        try {
+            $this->checkAccess('update_package_translations');
+        } catch (AccessDeniedException $x) {
+            return Response::create($x->getMessage(), 401);
+        }
+        try {
+            $packageHandle = $this->post('handle');
+            $packageHandle = is_string($packageHandle) ? trim($packageHandle) : '';
+            if ($packageHandle === '') {
+                throw new UserException('Package handle not specified');
+            }
+            $packageVersion = $this->post('version');
+            $packageVersion = is_string($packageVersion) ? trim($packageVersion) : '';
+            if ($packageVersion === '') {
+                throw new UserException('Package version not specified');
+            }
+            $archive = $this->request->files->get('archive');
+            if ($archive === null) {
+                throw new UserException('Package archive not received');
+            }
+            if (!$archive->isValid()) {
+                throw new UserException(sprintf('Package archive not correctly received: %s', $file->getErrorMessage()));
+            }
+            $unzipped = $this->app->make('community_translation/decompressed_package', array($file->getPathname()));
+            $unzipped->extract();
+            $parsed = $this->app->make('community_translation/parser')->parseDirectory(
+                $unzipped->getExtractedWorkDir(),
+                'packages/'.$packageHandle,
+                Parser::GETTEXT_MO | Parser::GETTEXT_PO
+            );
+            throw new UserException('@todo');
+        } catch (UserException $x) {
+            return JsonResponse::create(
+                array('error' => $x->getMessage()),
+                400
+            );
+        } catch (\Exception $x) {
+            return JsonResponse::create(
+                array('error' => 'Unspecified error'),
+                400
+            );
+        }
+    }
 }

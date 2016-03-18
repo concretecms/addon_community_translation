@@ -3,7 +3,7 @@ namespace Concrete\Package\CommunityTranslation\Src\Service\Parser;
 
 use Concrete\Core\Application\Application;
 use Concrete\Core\Application\ApplicationAwareInterface;
-use ZipArchive;
+use Concrete\Package\CommunityTranslation\Src\Service\DecompressedPackage;
 use Illuminate\Filesystem\Filesystem;
 use Concrete\Package\CommunityTranslation\Src\UserException;
 
@@ -66,7 +66,7 @@ class Parser implements ApplicationAwareInterface
     /**
      * Extract translations from a directory, a source file, a gettext file or a zip archive.
      *
-     * @param string|ZipArchive $path
+     * @param string|DecompressedPackage $path
      * @param string $relDirectory
      * @param int $searchGettextFiles One or more of the Parser::GETTEXT_... constants
      *
@@ -77,8 +77,8 @@ class Parser implements ApplicationAwareInterface
     public function parse($path, $relDirectory = '', $searchGettextFiles = self::GETTEXT_ALL)
     {
         $fs = $this->getFilesystem();
-        if (is_object($path) && $path instanceof ZipArchive) {
-            $result = $this->parseZip($path, $relDirectory, $searchGettextFiles);
+        if (is_object($path) && ($path instanceof DecompressedPackage)) {
+            $result = $this->parseDirectory($path->getExtractedWorkDir(), $relDirectory, $searchGettextFiles);
         } elseif ($fs->isFile($path)) {
             $result = $this->parseFile($path, $relDirectory, $searchGettextFiles);
         } elseif ($fs->isDirectory($path)) {
@@ -93,7 +93,7 @@ class Parser implements ApplicationAwareInterface
     /**
      * Extract translations from a source file, a gettext file or a zip archive.
      *
-     * @param string|ZipArchive $path
+     * @param string $path
      * @param string $relDirectory
      * @param int $searchGettextFiles One or more of the Parser::GETTEXT_... constants
      *
@@ -104,28 +104,14 @@ class Parser implements ApplicationAwareInterface
     public function parseFile($path, $relDirectory = '', $searchGettextFiles = self::GETTEXT_ALL)
     {
         $fs = $this->getFilesystem();
-        if (is_object($path) && $path instanceof ZipArchive) {
-            $zip = $path;
-        } else {
-            if (!$fs->isFile($path)) {
-                throw new UserException(t('Unable to find the file %s', $path));
-            }
+        $zip = $this->app->make('community_translation/decompressed_package', array($path));
+        try {
+            $zip->extract();
+        } catch (UserException $foo) {
             $zip = null;
-            try {
-                $zip = new ZipArchive();
-                if ($zip->open($path, ZipArchive::CHECKCONS) !== true) {
-                    try {
-                        $zip->close();
-                    } catch (\Exception $foo) {
-                    }
-                    $zip = null;
-                }
-            } catch (\Exception $foo) {
-                $zip = null;
-            }
         }
         if ($zip !== null) {
-            $result = $this->parseZip($zip, $relDirectory, $searchGettextFiles);
+            $result = $this->parseDirectory($zip->getExtractedWorkDir(), $relDirectory, $searchGettextFiles);
         } else {
             $result = null;
             if ($searchGettextFiles !== self::GETTEXT_NONE) {
@@ -142,7 +128,7 @@ class Parser implements ApplicationAwareInterface
     /**
      * Extract translations from a zip archive.
      *
-     * @param ZipArchive $zip
+     * @param string $path
      * @param string $relDirectory
      * @param int $searchGettextFiles One or more of the Parser::GETTEXT_... constants
      *
@@ -150,32 +136,12 @@ class Parser implements ApplicationAwareInterface
      *
      * @return Parsed|null
      */
-    public function parseZip(ZipArchive $zip, $relDirectory = '', $searchGettextFiles = self::GETTEXT_ALL)
+    public function parseZip($path, $relDirectory = '', $searchGettextFiles = self::GETTEXT_ALL)
     {
-        $tmp = $this->app->make('community_translation/tempdir');
-        $workDir = $tmp->getPath();
-        if (@$zip->extractTo($workDir) !== true) {
-            unset($tmp);
-            throw new UserException(t('Failed to extract the archive contents'));
-        }
-        $fs = $this->getFilesystem();
-        $dirs = array_filter($fs->directories($workDir), function ($dn) {
-            return strpos(basename($dn), '.') !== 0;
-        });
-        if (count($dirs) === 1) {
-            $someFile = false;
-            foreach ($fs->files($workDir) as $fn) {
-                if (strpos(basename($fn), '.') !== 0) {
-                    $someFile = true;
-                    break;
-                }
-            }
-            if ($someFile === false) {
-                $workDir = $dirs[0];
-            }
-        }
-        $result = $this->parseDirectory($workDir, $relDirectory, $searchGettextFiles);
-        unset($tmp);
+        $zip = $this->app->make('community_translation/decompressed_package', array($path));
+        $zip->extract();
+        $result = $this->parseDirectory($zip->getExtractedWorkDir(), $relDirectory, $searchGettextFiles);
+        unset($zip);
 
         return $result;
     }

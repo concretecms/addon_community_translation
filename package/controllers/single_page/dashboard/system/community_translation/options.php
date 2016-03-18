@@ -28,6 +28,7 @@ class Options extends DashboardPageController
             'options.api.access.stats' => 'apiAccess_stats',
             'options.api.access.download' => 'apiAccess_download',
             'options.api.access.import_packages' => 'apiAccess_import_packages',
+            'options.api.access.update_package_translations' => 'apiAccess_update_package_translations',
         ) as $key => $varName) {
             $gID = $config->get($key);
             $gID = @intval($gID);
@@ -101,6 +102,10 @@ class Options extends DashboardPageController
         if ($apiAccess_import_packages <= 0) {
             $this->error->add(t('Please specify the user group to control the API access to import packages'));
         }
+        $apiAccess_update_package_translations = @intval($this->post('apiAccess_update_package_translations'));
+        if ($apiAccess_update_package_translations <= 0) {
+            $this->error->add(t('Please specify the user group to control the API access to update package translations'));
+        }
         if (!$this->error->has()) {
             $config = \Package::getByHandle('community_translation')->getFileConfig();
             $config->save('options.translatedThreshold', $translatedThreshold);
@@ -111,6 +116,7 @@ class Options extends DashboardPageController
             $config->save('options.api.access.stats', $apiAccess_stats);
             $config->save('options.api.access.download', $apiAccess_download);
             $config->save('options.api.access.import_packages', $apiAccess_import_packages);
+            $config->save('options.api.access.update_package_translations', $apiAccess_update_package_translations);
             $this->flash('message', t('Comminity Translation options have been saved.'));
             $this->redirect('/dashboard/system/community_translation/options');
         }

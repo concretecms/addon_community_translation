@@ -26,12 +26,27 @@ class VolatileDirectory implements ApplicationAwareInterface
     }
 
     /**
+     * The used Filesystem instance.
+     *
      * @var Filesystem
      */
     protected $filesystem;
 
+    /**
+     * The path of this volatile directory.
+     *
+     * @var string|null
+     */
     protected $path = null;
 
+    /**
+     * Initializes the instance.
+     *
+     * @param string|null $parentDirectory The parent directory that will contain this volatile directory (if not set we'll detect it).
+     * @param Filesystem $filesystem The Filesystem instance to use (we'll create a new instance if not set).
+     *
+     * @throws UserException
+     */
     public function __construct($parentDirectory = null, Filesystem $filesystem = null)
     {
         $this->filesystem = ($filesystem === null) ? new Filesystem() : $filesystem;
@@ -62,11 +77,29 @@ class VolatileDirectory implements ApplicationAwareInterface
         $this->path = $path;
     }
 
+    /**
+     * Get the used Filesystem instance.
+     *
+     * @return Filesystem
+     */
+    public function getFilesystem()
+    {
+        return $this->filesystem;
+    }
+
+    /**
+     * Get the path of this volatile directory.
+     *
+     * @return string
+     */
     public function getPath()
     {
         return $this->path;
     }
 
+    /**
+     * Clear and delete this volatile directory.
+     */
     public function __destruct()
     {
         if ($this->path !== null) {

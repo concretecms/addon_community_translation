@@ -149,6 +149,16 @@ $('#pick-api-fields')
 	       'description' => $apiAccess_import_packages['gName'],
 	    )
 	)); ?>))
+	.append(_pickApiGroup(<?php echo json_encode(array(
+	    'field' => array(
+	       'id' => 'apiAccess_update_package_translations',
+	       'description' => t('Update package translations'),
+	    ),
+	    'value' => array(
+	       'id' => $apiAccess_update_package_translations['gID'],
+	       'description' => $apiAccess_update_package_translations['gName'],
+	    )
+	)); ?>))
 ;
 ConcreteEvent.subscribe('SelectGroup', function (e, data) {
 	if (data && data.gID) {

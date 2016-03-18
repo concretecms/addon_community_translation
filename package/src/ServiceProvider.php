@@ -52,6 +52,7 @@ class ServiceProvider extends Provider
             'community_translation/events' => array('Concrete\Package\CommunityTranslation\Src\Service\Events', true),
             'community_translation/notify' => array('Concrete\Package\CommunityTranslation\Src\Service\Notify', true),
             'community_translation/tempdir' => array('Concrete\Package\CommunityTranslation\Src\Service\VolatileDirectory', false),
+            'community_translation/decompressed_package' => array('Concrete\Package\CommunityTranslation\Src\Service\DecompressedPackage', false),
             'community_translation/parser' => array('Concrete\Package\CommunityTranslation\Src\Service\Parser\Parser', true),
             'community_translation/editor' => array('Concrete\Package\CommunityTranslation\Src\Service\Editor', true),
             'community_translation/user' => array('Concrete\Package\CommunityTranslation\Src\Service\User', true),
