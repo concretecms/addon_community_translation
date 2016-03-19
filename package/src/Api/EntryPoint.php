@@ -65,7 +65,7 @@ class EntryPoint extends \Concrete\Core\Controller\AbstractController
             $code = 500;
         }
 
-        return Response::create($error, $code, array('Content-type: text/plain; charset=utf-8'));
+        return Response::create($error, $code, array('Content-Type' => 'text/plain; charset=UTF-8'));
     }
 
     /**
