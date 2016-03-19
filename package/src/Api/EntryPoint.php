@@ -6,6 +6,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Concrete\Package\CommunityTranslation\Src\Locale\Locale;
 use Concrete\Package\CommunityTranslation\Src\UserException;
 use Concrete\Package\CommunityTranslation\Src\Service\Parser\Parser;
+use Exception;
 
 class EntryPoint extends \Concrete\Core\Controller\AbstractController
 {
@@ -33,6 +34,38 @@ class EntryPoint extends \Concrete\Core\Controller\AbstractController
         }
 
         return $this->userControl;
+    }
+
+    /**
+     * Build an error response.
+     *
+     * @param string|Exception $error
+     * @param int $code
+     *
+     * @return Response
+     */
+    protected function buildErrorResponse($error, $code = null)
+    {
+        if (!is_int($code) || $code < 400) {
+            $code = null;
+        }
+        if (is_object($error)) {
+            if ($error instanceof AccessDeniedException) {
+                $error = $error->getMessage();
+                if ($code === null) {
+                    $code = 401;
+                }
+            } elseif ($error instanceof UserException) {
+                $error = $error->getMessage();
+            } elseif ($error instanceof Exception) {
+                $error = 'Unspecified error';
+            }
+        }
+        if ($code === null) {
+            $code = 500;
+        }
+
+        return Response::create($error, $code, array('Content-type: text/plain; charset=utf-8'));
     }
 
     /**
@@ -81,12 +114,12 @@ class EntryPoint extends \Concrete\Core\Controller\AbstractController
     {
         try {
             $this->checkAccess('stats');
-        } catch (AccessDeniedException $x) {
-            return JsonResponse::create(array('error' => $x->getMessage()), 401);
-        }
-        $locales = $this->app->make('community_translation/locale')->getApprovedLocales();
+            $locales = $this->app->make('community_translation/locale')->getApprovedLocales();
 
-        return JsonResponse::create($this->localesToArray($locales));
+            return JsonResponse::create($this->localesToArray($locales));
+        } catch (Exception $x) {
+            return $this->buildErrorResponse($x);
+        }
     }
 
     /**
@@ -96,53 +129,50 @@ class EntryPoint extends \Concrete\Core\Controller\AbstractController
     {
         try {
             $this->checkAccess('stats');
-        } catch (AccessDeniedException $x) {
-            return JsonResponse::create(array('error' => $x->getMessage()), 401);
-        }
-        $package = $this->app->make('community_translation/package')->findOneBy(array(
-            'pHandle' => (string) $packageHandle,
-            'pVersion' => (string) $packageVersion,
-        ));
-        if ($package === null) {
-            return JsonResponse::create(
-                array('error' => 'Unable to find the specified package'),
-                404
-            );
-        }
-        $minimumLevel = (int) $minimumLevel;
-        $result = array();
-        $allLocales = $this->app->make('community_translation/locale')->getApprovedLocales();
-        $stats = $this->app->make('community_translation/stats')->get($package, $allLocales);
-        $utc = new \DateTimeZone('UTC');
-        $result = $this->localesToArray(
-            $allLocales,
-            function (Locale $locale, array $item) use ($stats, $minimumLevel, $utc) {
-                $result = null;
-                foreach ($stats as $stat) {
-                    if ($stat->getLocale() === $locale) {
-                        if ($stat->getPercentage() >= $minimumLevel) {
-                            $item['total'] = $stat->getTotal();
-                            $item['translated'] = $stat->getTranslated();
-                            $item['progressShown'] = $stat->getPercentage(true);
-                            $dt = $stat->getLastUpdated();
-                            if ($dt === null) {
-                                $item['updated'] = null;
-                            } else {
-                                $dt = clone $dt;
-                                $dt->setTimezone($utc);
-                                $item['updated'] = $dt->format('c');
-                            }
-                            $result = $item;
-                        }
-                        break;
-                    }
-                }
-
-                return $result;
+            $package = $this->app->make('community_translation/package')->findOneBy(array(
+                'pHandle' => (string) $packageHandle,
+                'pVersion' => (string) $packageVersion,
+            ));
+            if ($package === null) {
+                return $this->buildErrorResponse('Unable to find the specified package', 404);
             }
-        );
+            $minimumLevel = (int) $minimumLevel;
+            $result = array();
+            $allLocales = $this->app->make('community_translation/locale')->getApprovedLocales();
+            $stats = $this->app->make('community_translation/stats')->get($package, $allLocales);
+            $utc = new \DateTimeZone('UTC');
+            $result = $this->localesToArray(
+                $allLocales,
+                function (Locale $locale, array $item) use ($stats, $minimumLevel, $utc) {
+                    $result = null;
+                    foreach ($stats as $stat) {
+                        if ($stat->getLocale() === $locale) {
+                            if ($stat->getPercentage() >= $minimumLevel) {
+                                $item['total'] = $stat->getTotal();
+                                $item['translated'] = $stat->getTranslated();
+                                $item['progressShown'] = $stat->getPercentage(true);
+                                $dt = $stat->getLastUpdated();
+                                if ($dt === null) {
+                                    $item['updated'] = null;
+                                } else {
+                                    $dt = clone $dt;
+                                    $dt->setTimezone($utc);
+                                    $item['updated'] = $dt->format('c');
+                                }
+                                $result = $item;
+                            }
+                            break;
+                        }
+                    }
 
-        return JsonResponse::create($result);
+                    return $result;
+                }
+            );
+
+            return JsonResponse::create($result);
+        } catch (Exception $x) {
+            return $this->buildErrorResponse($x);
+        }
     }
 
     /**
@@ -152,13 +182,13 @@ class EntryPoint extends \Concrete\Core\Controller\AbstractController
     {
         try {
             $this->checkAccess('stats');
-        } catch (AccessDeniedException $x) {
-            return JsonResponse::create(array('error' => $x->getMessage()), 401);
-        }
-        $em = $this->app->make('community_translation/em');
-        $handles = $em->getConnection()->executeQuery('select distinct pHandle from TranslatedPackages')->fetchAll(\PDO::FETCH_COLUMN);
+            $em = $this->app->make('community_translation/em');
+            $handles = $em->getConnection()->executeQuery('select distinct pHandle from TranslatedPackages')->fetchAll(\PDO::FETCH_COLUMN);
 
-        return JsonResponse::create($handles);
+            return JsonResponse::create($handles);
+        } catch (Exception $x) {
+            return $this->buildErrorResponse($x);
+        }
     }
 
     /**
@@ -168,19 +198,16 @@ class EntryPoint extends \Concrete\Core\Controller\AbstractController
     {
         try {
             $this->checkAccess('stats');
-        } catch (AccessDeniedException $x) {
-            return JsonResponse::create(array('error' => $x->getMessage()), 401);
-        }
-        $em = $this->app->make('community_translation/em');
-        $handles = $em->getConnection()->executeQuery('select distinct pVersion from TranslatedPackages where pHandle = ?', array((string) $packageHandle))->fetchAll(\PDO::FETCH_COLUMN);
-        if (empty($handles)) {
-            return JsonResponse::create(
-                array('error' => 'Unable to find the specified package'),
-                404
-            );
-        }
+            $em = $this->app->make('community_translation/em');
+            $handles = $em->getConnection()->executeQuery('select distinct pVersion from TranslatedPackages where pHandle = ?', array((string) $packageHandle))->fetchAll(\PDO::FETCH_COLUMN);
+            if (empty($handles)) {
+                return $this->buildErrorResponse('Unable to find the specified package', 404);
+            }
 
-        return JsonResponse::create($handles);
+            return JsonResponse::create($handles);
+        } catch (Exception $x) {
+            return $this->buildErrorResponse($x);
+        }
     }
 
     /**
@@ -190,11 +217,11 @@ class EntryPoint extends \Concrete\Core\Controller\AbstractController
     {
         try {
             $this->checkAccess('download');
-        } catch (AccessDeniedException $x) {
-            return Response::create($x->getMessage(), 401);
-        }
 
-        return $this->getPackageTranslations($packageHandle, $packageVersion, $localeID, false);
+            return $this->getPackageTranslations($packageHandle, $packageVersion, $localeID, false);
+        } catch (Exception $x) {
+            return $this->buildErrorResponse($x);
+        }
     }
 
     /**
@@ -204,28 +231,22 @@ class EntryPoint extends \Concrete\Core\Controller\AbstractController
     {
         try {
             $this->checkAccess('download');
-        } catch (AccessDeniedException $x) {
-            return Response::create($x->getMessage(), 401);
-        }
 
-        return $this->getPackageTranslations($packageHandle, $packageVersion, $localeID, true);
+            return $this->getPackageTranslations($packageHandle, $packageVersion, $localeID, true);
+        } catch (Exception $x) {
+            return $this->buildErrorResponse($x);
+        }
     }
 
     protected function getPackageTranslations($packageHandle, $packageVersion, $localeID, $compiled)
     {
         $package = $this->app->make('community_translation/package')->findOneBy(array('pHandle' => $packageHandle, 'pVersion' => $packageVersion));
         if ($package === null) {
-            return Response::create(
-                'Unable to find the specified package',
-                404
-            );
+            return $this->buildErrorResponse('Unable to find the specified package', 404);
         }
         $locale = $this->app->make('community_translation/locale')->findApproved($localeID);
         if ($locale === null) {
-            return Response::create(
-                'Unable to find the specified locale',
-                404
-            );
+            return $this->buildErrorResponse('Unable to find the specified locale', 404);
         }
         $translations = $this->app->make('community_translation/translation/exporter')->forPackage($package, $locale);
         if ($compiled) {
@@ -252,31 +273,27 @@ class EntryPoint extends \Concrete\Core\Controller\AbstractController
     {
         try {
             $this->checkAccess('import_packages');
-        } catch (AccessDeniedException $x) {
-            return Response::create($x->getMessage(), 401);
-        }
-        try {
             $packageHandle = $this->post('handle');
             $packageHandle = is_string($packageHandle) ? trim($packageHandle) : '';
             if ($packageHandle === '') {
-                throw new UserException('Package handle not specified');
+                return $this->buildErrorResponse('Package handle not specified', 400);
             }
             $packageVersion = $this->post('version');
             $packageVersion = is_string($packageVersion) ? trim($packageVersion) : '';
             if ($packageVersion === '') {
-                throw new UserException('Package version not specified');
+                return $this->buildErrorResponse('Package version not specified', 400);
             }
             $archive = $this->request->files->get('archive');
             if ($archive === null) {
-                throw new UserException('Package archive not received');
+                return $this->buildErrorResponse('Package archive not received', 400);
             }
             if (!$archive->isValid()) {
-                throw new UserException(sprintf('Package archive not correctly received: %s', $file->getErrorMessage()));
+                return $this->buildErrorResponse(sprintf('Package archive not correctly received: %s', $file->getErrorMessage()), 400);
             }
             $parsed = $this->app->make('community_translation/parser')->parseZip($file->getPathname(), 'packages/'.$packageHandle, Parser::GETTEXT_NONE);
             $pot = ($parsed === null) ? null : $parsed->getPot(false);
             if ($pot === null || count($pot) === 0) {
-                throw new UserException('No translatable strings found');
+                return $this->buildErrorResponse('No translatable strings found', 406);
             }
             $changed = $this->app->make('community_translation/translatable/importer')->importTranslations($pot, $packageHandle, $packageVersion);
 
@@ -284,16 +301,8 @@ class EntryPoint extends \Concrete\Core\Controller\AbstractController
                 array('changed' => $changed),
                 200
             );
-        } catch (UserException $x) {
-            return JsonResponse::create(
-                array('error' => $x->getMessage()),
-                400
-            );
-        } catch (\Exception $x) {
-            return JsonResponse::create(
-                array('error' => 'Unspecified error'),
-                400
-            );
+        } catch (Exception $x) {
+            return $this->buildErrorResponse($x);
         }
     }
 
@@ -301,26 +310,22 @@ class EntryPoint extends \Concrete\Core\Controller\AbstractController
     {
         try {
             $this->checkAccess('update_package_translations');
-        } catch (AccessDeniedException $x) {
-            return Response::create($x->getMessage(), 401);
-        }
-        try {
             $packageHandle = $this->post('handle');
             $packageHandle = is_string($packageHandle) ? trim($packageHandle) : '';
             if ($packageHandle === '') {
-                throw new UserException('Package handle not specified');
+                return $this->buildErrorResponse('Package handle not specified', 400);
             }
             $packageVersion = $this->post('version');
             $packageVersion = is_string($packageVersion) ? trim($packageVersion) : '';
             if ($packageVersion === '') {
-                throw new UserException('Package version not specified');
+                return $this->buildErrorResponse('Package version not specified', 400);
             }
             $archive = $this->request->files->get('archive');
             if ($archive === null) {
-                throw new UserException('Package archive not received');
+                return $this->buildErrorResponse('Package archive not received', 400);
             }
             if (!$archive->isValid()) {
-                throw new UserException(sprintf('Package archive not correctly received: %s', $file->getErrorMessage()));
+                return $this->buildErrorResponse(sprintf('Package archive not correctly received: %s', $file->getErrorMessage()), 400);
             }
             $localesToInclude = array();
             $package = $this->app->make('community_translation/package')->find(array('pHandle' => $packageHandle, 'pVersion' => $packageVersion));
@@ -365,7 +370,7 @@ class EntryPoint extends \Concrete\Core\Controller\AbstractController
                         if (!is_dir($dir)) {
                             @mkdir($dir, 0777, true);
                             if (!is_dir($dir)) {
-                                throw new UserException(sprintf('Failed to create directory: %s', $dir));
+                                return $this->buildErrorResponse(sprintf('Failed to create directory: %s', $dir));
                             }
                         }
                         $localTranslations->toMoFile($dir.'/messages.mo');
@@ -374,16 +379,8 @@ class EntryPoint extends \Concrete\Core\Controller\AbstractController
                 }
             }
             throw new UserException('@todo');
-        } catch (UserException $x) {
-            return JsonResponse::create(
-                array('error' => $x->getMessage()),
-                400
-            );
-        } catch (\Exception $x) {
-            return JsonResponse::create(
-                array('error' => 'Unspecified error'),
-                400
-            );
+        } catch (Exception $x) {
+            return $this->buildErrorResponse($x);
         }
     }
 }
