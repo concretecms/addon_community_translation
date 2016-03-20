@@ -186,7 +186,6 @@ class DecompressedPackage implements ApplicationAwareInterface
     public function repack()
     {
         $this->extract();
-        $path = $this->getVolatileDirectory()->getPath();
         $zip = new ZipArchive();
         if (@file_exists($this->packageArchive)) {
             @unlink($this->packageArchive);
@@ -221,7 +220,28 @@ class DecompressedPackage implements ApplicationAwareInterface
                     throw new UserException(t('Unknown error creating ZIP archive.'));
             }
         }
-        throw new UserException('@todo');
+        $path = str_replace('/', DIRECTORY_SEPARATOR, $this->getVolatileDirectory()->getPath());
+        $contents = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($path),
+            \RecursiveIteratorIterator::SELF_FIRST
+        );
+        foreach ($contents as $item) {
+            /* @var \SplFileInfo $item */	
+            switch ($item->getFilename()) {
+                case '.':
+                case '..':
+                    break;
+                default:
+                    $itemFullPath = $item->getRealPath();
+                    $itemRelPath = substr($itemFullPath, strlen($path) + 1);
+                    if ($item->isDir()) {
+                        $zip->addEmptyDir($itemRelPath);
+                    } else {
+                        $zip->addFile($itemFullPath, $itemRelPath);
+                    }
+                    break;
+            }
+        }
         $zip->close();
         unset($zip);
     }

@@ -383,6 +383,7 @@ class EntryPoint extends \Concrete\Core\Controller\AbstractController
             }
             if (!$updated) {
                 unset($unzipped);
+
                 return Response::create(
                     '',
                     304,
@@ -397,10 +398,17 @@ class EntryPoint extends \Concrete\Core\Controller\AbstractController
             if ($fileSize === false || $fileSize <= 0) {
                 throw new UserException('Failed to retrieve size of re-packed archive');
             }
-            return BinaryFileResponse::create(
+            $response = BinaryFileResponse::create(
                 $archive->getPathname(),
-                201
+                201,
+                array(
+                    'Content-Type' => 'application/zip',
+                    'Content-Length' => $fileSize,
+                )
             );
+            $response->prepare(\Request::getInstance());
+
+            return $response;
         } catch (Exception $x) {
             try {
                 if (isset($unzipped)) {
@@ -408,6 +416,7 @@ class EntryPoint extends \Concrete\Core\Controller\AbstractController
                 }
             } catch (\Exception $foo) {
             }
+
             return $this->buildErrorResponse($x);
         }
     }
