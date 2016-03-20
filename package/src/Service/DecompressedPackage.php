@@ -74,6 +74,7 @@ class DecompressedPackage implements ApplicationAwareInterface
      * Initializes the instance.
      *
      * @param string $packageArchive The full path of the archive file containing the package.
+     * @param VolatileDirectory $volatileDirectory An empty VolatileDirectory instance.
      */
     public function __construct($packageArchive, VolatileDirectory $volatileDirectory = null)
     {
@@ -96,7 +97,7 @@ class DecompressedPackage implements ApplicationAwareInterface
             throw new UserException(t('Archive not found: %s', $this->packageArchive));
         }
         $zip = new ZipArchive();
-        $zipErr = @$zip->open($path, ZipArchive::CHECKCONS);
+        $zipErr = @$zip->open($this->packageArchive, ZipArchive::CHECKCONS);
         if ($zipErr !== true) {
             try {
                 @$zip->close();
@@ -130,7 +131,7 @@ class DecompressedPackage implements ApplicationAwareInterface
                 throw new UserException(t('Failed to extract the archive contents'));
             }
             @$zip->close();
-            @$zip = null;
+            $zip = null;
             $fs = $this->getVolatileDirectory()->getFilesystem();
             $dirs = array_filter($fs->directories($workDir), function ($dn) {
                 return strpos(basename($dn), '.') !== 0;

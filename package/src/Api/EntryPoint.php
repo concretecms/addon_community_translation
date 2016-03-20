@@ -46,7 +46,7 @@ class EntryPoint extends \Concrete\Core\Controller\AbstractController
      */
     protected function buildErrorResponse($error, $code = null)
     {
-        if (!is_int($code) || $code < 400) {
+        if ($code !== null && (!is_int($code) || $code < 400)) {
             $code = null;
         }
         if (is_object($error)) {
@@ -290,7 +290,7 @@ class EntryPoint extends \Concrete\Core\Controller\AbstractController
             if (!$archive->isValid()) {
                 return $this->buildErrorResponse(sprintf('Package archive not correctly received: %s', $file->getErrorMessage()), 400);
             }
-            $parsed = $this->app->make('community_translation/parser')->parseZip($file->getPathname(), 'packages/'.$packageHandle, Parser::GETTEXT_NONE);
+            $parsed = $this->app->make('community_translation/parser')->parseZip($archive->getPathname(), 'packages/'.$packageHandle, Parser::GETTEXT_NONE);
             $pot = ($parsed === null) ? null : $parsed->getPot(false);
             if ($pot === null || count($pot) === 0) {
                 return $this->buildErrorResponse('No translatable strings found', 406);
