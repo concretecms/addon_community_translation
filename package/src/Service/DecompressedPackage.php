@@ -177,4 +177,52 @@ class DecompressedPackage implements ApplicationAwareInterface
 
         return $this->extractedWorkDir;
     }
+
+    /**
+     * Re-create the source archive with the contents of the extracted directory.
+     *
+     * @throws UserException
+     */
+    public function repack()
+    {
+        $this->extract();
+        $path = $this->getVolatileDirectory()->getPath();
+        $zip = new ZipArchive();
+        if (@file_exists($this->packageArchive)) {
+            @unlink($this->packageArchive);
+        }
+        $zipErr = @$zip->open($this->packageArchive, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+        if ($zipErr !== true) {
+            try {
+                @$zip->close();
+            } catch (\Exception $foo) {
+            }
+            $zip = null;
+            switch ($zipErr) {
+                case ZipArchive::ER_EXISTS:
+                    throw new UserException(t('File already exists.'));
+                case ZipArchive::ER_INCONS:
+                    throw new UserException(t('ZIP archive is inconsistent.'));
+                case ZipArchive::ER_INVAL:
+                    throw new UserException(t('Invalid argument creating ZIP archive.'));
+                case ZipArchive::ER_MEMORY:
+                    throw new UserException(t('Malloc failure opening ZIP archive.'));
+                case ZipArchive::ER_NOENT:
+                    throw new UserException(t('No such file creating ZIP archive.'));
+                case ZipArchive::ER_NOZIP:
+                    throw new UserException(t('Not a zip archive.'));
+                case ZipArchive::ER_OPEN:
+                    throw new UserException(t('Can\'t open ZIP archive file.'));
+                case ZipArchive::ER_READ:
+                    throw new UserException(t('Read error creating ZIP archive.'));
+                case ZipArchive::ER_SEEK:
+                    throw new UserException(t('Seek error creating ZIP archive.'));
+                default:
+                    throw new UserException(t('Unknown error creating ZIP archive.'));
+            }
+        }
+        throw new UserException('@todo');
+        $zip->close();
+        unset($zip);
+    }
 }

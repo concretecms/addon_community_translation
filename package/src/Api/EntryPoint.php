@@ -7,6 +7,7 @@ use Concrete\Package\CommunityTranslation\Src\Locale\Locale;
 use Concrete\Package\CommunityTranslation\Src\UserException;
 use Concrete\Package\CommunityTranslation\Src\Service\Parser\Parser;
 use Exception;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class EntryPoint extends \Concrete\Core\Controller\AbstractController
 {
@@ -380,8 +381,33 @@ class EntryPoint extends \Concrete\Core\Controller\AbstractController
                     $updated = true;
                 }
             }
-            throw new UserException('@todo');
+            if (!$updated) {
+                unset($unzipped);
+                return Response::create(
+                    '',
+                    304,
+                    array(
+                        'Content-Length' => '0',
+                    )
+                );
+            }
+            $unzipped->repack();
+            unset($unzipped);
+            $fileSize = @filesize($archive->getPathname());
+            if ($fileSize === false || $fileSize <= 0) {
+                throw new UserException('Failed to retrieve size of re-packed archive');
+            }
+            return BinaryFileResponse::create(
+                $archive->getPathname(),
+                201
+            );
         } catch (Exception $x) {
+            try {
+                if (isset($unzipped)) {
+                    unset($unzipped);
+                }
+            } catch (\Exception $foo) {
+            }
             return $this->buildErrorResponse($x);
         }
     }
