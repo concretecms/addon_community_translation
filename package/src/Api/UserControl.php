@@ -139,7 +139,7 @@ class UserControl implements ApplicationAwareInterface
                     if ($group === null) {
                         throw new UserException('Group with ID "'.$needGroupID.'" has not been found!');
                     }
-                    if ($user->inGroup($group)) {
+                    if ($user->getUserID() == USER_SUPER_ID || $user->inGroup($group)) {
                         $ok = true;
                     }
                 }
