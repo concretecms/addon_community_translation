@@ -7,6 +7,7 @@ use Concrete\Package\CommunityTranslation\Src\Locale\Locale;
 use Concrete\Package\CommunityTranslation\Src\UserException;
 use Concrete\Package\CommunityTranslation\Src\Service\Parser\Parser;
 use Exception;
+use DateTime;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class EntryPoint extends \Concrete\Core\Controller\AbstractController
@@ -361,8 +362,8 @@ class EntryPoint extends \Concrete\Core\Controller\AbstractController
                         $dt = $packageTranslations->getHeader('PO-Revision-Date');
                         if ($dt !== null) {
                             try {
-                                $packageTranslationsDate = new \DateTime($dt);
-                            } catch (\Exception $foo) {
+                                $packageTranslationsDate = new DateTime($dt);
+                            } catch (Exception $foo) {
                             }
                         }
                     }
@@ -414,9 +415,68 @@ class EntryPoint extends \Concrete\Core\Controller\AbstractController
                 if (isset($unzipped)) {
                     unset($unzipped);
                 }
-            } catch (\Exception $foo) {
+            } catch (Exception $foo) {
             }
 
+            return $this->buildErrorResponse($x);
+        }
+    }
+
+    public function recentPackagesUpdated()
+    {
+        try {
+            $this->checkAccess('stats');
+            $sinceStr = $this->request->get('since');
+            $sinceStr = is_string($sinceStr) ? trim($sinceStr) : '';
+            if ($sinceStr === '') {
+                throw new UserException("Missing 'since' parameter in query string");
+            }
+            $since = null;
+            $ts = preg_match('/^[0-9]{9,11}$/', $sinceStr) ? @intval($sinceStr, 10) : 0;
+            if ($ts > 0) {
+                $since = @DateTime::createFromFormat('U', $ts);
+                if ($since && ((int) $since->format('Y')) < 1990) {
+                    $since = null;
+                }
+            }
+            if ($since === null) {
+                $sample = new DateTime();
+                $sample->modify('-2 days');
+                throw new UserException("The 'since' parameter should be a reasonable Unix timestamp (example: ".$sample->format('U').")");
+            }
+            $em = $this->app->make('community_translation/em');
+            $rs = $em->getConnection()->executeQuery(
+                "
+                    select distinct
+                        TranslatedPackages.pHandle as handle,
+                        TranslatedPackages.pVersion as version
+                    from
+                        Translations
+                        inner join TranslatablePlaces on Translations.tTranslatable = TranslatablePlaces.tpTranslatable
+                        inner join TranslatedPackages on TranslatablePlaces.tpPackage = TranslatedPackages.pID
+                    where
+                        TranslatedPackages.pHandle != ''
+                        and
+                        (
+                            TranslatedPackages.pUpdatedOn >= :date
+                            or
+                            (
+                                Translations.tCurrent = 1
+                                and Translations.tCurrentSince >= :date
+                            )
+                        )
+                ",
+                array(
+                    'date' => $this->app->make('date')->toDB($since),
+                )
+            );
+            $result = $rs->fetchAll(\PDO::FETCH_ASSOC);
+            $rs->closeCursor();
+
+            return JsonResponse::create(
+                $result
+            );
+        } catch (Exception $x) {
             return $this->buildErrorResponse($x);
         }
     }

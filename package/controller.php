@@ -344,6 +344,15 @@ class Controller extends Package
                     array(),
                     array('POST'),
                 ),
+                '/api/package/updated/translations/' => array(
+                    '\Concrete\Package\CommunityTranslation\Src\Api\EntryPoint::recentPackagesUpdated',
+                    null,
+                    array(),
+                    array(),
+                    '',
+                    array(),
+                    array('GET'),
+                ),
                 '/api/po/{packageHandle}/{packageVersion}/{localeID}' => array(
                     '\Concrete\Package\CommunityTranslation\Src\Api\EntryPoint::getPackagePo',
                     null,
