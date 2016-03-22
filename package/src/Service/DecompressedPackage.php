@@ -1,7 +1,6 @@
 <?php
 namespace Concrete\Package\CommunityTranslation\Src\Service;
 
-use ZipArchive;
 use Concrete\Package\CommunityTranslation\Src\UserException;
 use Concrete\Core\Application\ApplicationAwareInterface;
 use Concrete\Core\Application\Application;
@@ -96,42 +95,13 @@ class DecompressedPackage implements ApplicationAwareInterface
         if (!is_file($this->packageArchive)) {
             throw new UserException(t('Archive not found: %s', $this->packageArchive));
         }
-        $zip = new ZipArchive();
-        $zipErr = @$zip->open($this->packageArchive, ZipArchive::CHECKCONS);
-        if ($zipErr !== true) {
-            try {
-                @$zip->close();
-            } catch (\Exception $foo) {
-            }
-            $zip = null;
-            switch ($zipErr) {
-                case ZipArchive::ER_INCONS:
-                    throw new UserException(t('ZIP archive is inconsistent.'));
-                case ZipArchive::ER_INVAL:
-                    throw new UserException(t('Invalid argument opening ZIP archive.'));
-                case ZipArchive::ER_MEMORY:
-                    throw new UserException(t('Malloc failure opening ZIP archive.'));
-                case ZipArchive::ER_NOENT:
-                    throw new UserException(t('No such file opening ZIP archive.'));
-                case ZipArchive::ER_NOZIP:
-                    throw new UserException(t('Not a zip archive.'));
-                case ZipArchive::ER_OPEN:
-                    throw new UserException(t('Can\'t open ZIP archive file.'));
-                case ZipArchive::ER_READ:
-                    throw new UserException(t('Read error opening ZIP archive.'));
-                case ZipArchive::ER_SEEK:
-                    throw new UserException(t('Seek error opening ZIP archive.'));
-                default:
-                    throw new UserException(t('Unknown error opening ZIP archive.'));
-            }
-        }
         try {
             $workDir = $this->getVolatileDirectory()->getPath();
-            if (@$zip->extractTo($workDir) !== true) {
-                throw new UserException(t('Failed to extract the archive contents'));
+            try {
+                $this->app->make('helper/zip')->unzip($this->packageArchive, $workDir);
+            } catch (\Exception $x) {
+                throw new UserException($x->getMessage());
             }
-            @$zip->close();
-            $zip = null;
             $fs = $this->getVolatileDirectory()->getFilesystem();
             $dirs = array_filter($fs->directories($workDir), function ($dn) {
                 return strpos(basename($dn), '.') !== 0;
@@ -149,13 +119,6 @@ class DecompressedPackage implements ApplicationAwareInterface
                 }
             }
         } catch (\Exception $x) {
-            if ($zip !== null) {
-                try {
-                    @$zip->close();
-                } catch (\Exception $foo) {
-                }
-                $zip = null;
-            }
             $this->volatileDirectory = null;
             throw $x;
         }
@@ -186,63 +149,10 @@ class DecompressedPackage implements ApplicationAwareInterface
     public function repack()
     {
         $this->extract();
-        $zip = new ZipArchive();
-        if (@file_exists($this->packageArchive)) {
-            @unlink($this->packageArchive);
+        try {
+            $this->app->make('helper/zip')->zip($this->getVolatileDirectory()->getPath(), $this->packageArchive, array('includeDotFiles' => true));
+        } catch (\Exception $x) {
+            throw new UserException($x->getMessage());
         }
-        $zipErr = @$zip->open($this->packageArchive, ZipArchive::CREATE | ZipArchive::OVERWRITE);
-        if ($zipErr !== true) {
-            try {
-                @$zip->close();
-            } catch (\Exception $foo) {
-            }
-            $zip = null;
-            switch ($zipErr) {
-                case ZipArchive::ER_EXISTS:
-                    throw new UserException(t('File already exists.'));
-                case ZipArchive::ER_INCONS:
-                    throw new UserException(t('ZIP archive is inconsistent.'));
-                case ZipArchive::ER_INVAL:
-                    throw new UserException(t('Invalid argument creating ZIP archive.'));
-                case ZipArchive::ER_MEMORY:
-                    throw new UserException(t('Malloc failure opening ZIP archive.'));
-                case ZipArchive::ER_NOENT:
-                    throw new UserException(t('No such file creating ZIP archive.'));
-                case ZipArchive::ER_NOZIP:
-                    throw new UserException(t('Not a zip archive.'));
-                case ZipArchive::ER_OPEN:
-                    throw new UserException(t('Can\'t open ZIP archive file.'));
-                case ZipArchive::ER_READ:
-                    throw new UserException(t('Read error creating ZIP archive.'));
-                case ZipArchive::ER_SEEK:
-                    throw new UserException(t('Seek error creating ZIP archive.'));
-                default:
-                    throw new UserException(t('Unknown error creating ZIP archive.'));
-            }
-        }
-        $path = str_replace('/', DIRECTORY_SEPARATOR, $this->getVolatileDirectory()->getPath());
-        $contents = new \RecursiveIteratorIterator(
-            new \RecursiveDirectoryIterator($path),
-            \RecursiveIteratorIterator::SELF_FIRST
-        );
-        foreach ($contents as $item) {
-            /* @var \SplFileInfo $item */	
-            switch ($item->getFilename()) {
-                case '.':
-                case '..':
-                    break;
-                default:
-                    $itemFullPath = $item->getRealPath();
-                    $itemRelPath = substr($itemFullPath, strlen($path) + 1);
-                    if ($item->isDir()) {
-                        $zip->addEmptyDir($itemRelPath);
-                    } else {
-                        $zip->addFile($itemFullPath, $itemRelPath);
-                    }
-                    break;
-            }
-        }
-        $zip->close();
-        unset($zip);
     }
 }
