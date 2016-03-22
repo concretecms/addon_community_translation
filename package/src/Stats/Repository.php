@@ -259,7 +259,7 @@ class Repository extends EntityRepository implements ApplicationAwareInterface
                     select
                         t.tLocale,
                         count(t.tTranslatable) as translated,
-                        max(tCreatedOn) as updated
+                        max(tCurrentSince) as updated
                     from
                         TranslatablePlaces as p
                         inner join Translations as t on p.tpTranslatable = t.tTranslatable and 1 = t.tCurrent
