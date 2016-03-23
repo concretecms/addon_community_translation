@@ -329,6 +329,8 @@ class EntryPoint extends \Concrete\Core\Controller\AbstractController
             if (!$archive->isValid()) {
                 return $this->buildErrorResponse(sprintf('Package archive not correctly received: %s', $archive->getErrorMessage()), 400);
             }
+            $keepOldTranslations = $this->post('keepOldTranslations');
+            $keepOldTranslations = empty($keepOldTranslations) ? false : true;
             $localesToInclude = array();
             $package = $this->app->make('community_translation/package')->findOneBy(array('pHandle' => $packageHandle, 'pVersion' => $packageVersion));
             if ($package === null) {
@@ -376,6 +378,25 @@ class EntryPoint extends \Concrete\Core\Controller\AbstractController
                         @mkdir($dir, 0777, true);
                         if (!is_dir($dir)) {
                             return $this->buildErrorResponse(sprintf('Failed to create directory: %s', $dir));
+                        }
+                    } elseif ($keepOldTranslations) {
+                        if (is_file($dir.'/messages.po')) {
+                            try {
+                                $existing = \Gettext\Translations::fromPoFile($dir.'/messages.po');
+                                if (count($existing) > 0) {
+                                    $localTranslations->mergeWith($existing, \Gettext\Translations::MERGE_ADD);
+                                }
+                            } catch (\Exception $foo) {
+                            }
+                        }
+                        if (is_file($dir.'/messages.mo')) {
+                            try {
+                                $existing = \Gettext\Translations::fromMoFile($dir.'/messages.mo');
+                                if (count($existing) > 0) {
+                                    $localTranslations->mergeWith($existing, \Gettext\Translations::MERGE_ADD);
+                                }
+                            } catch (\Exception $foo) {
+                            }
                         }
                     }
                     $localTranslations->toMoFile($dir.'/messages.mo');
