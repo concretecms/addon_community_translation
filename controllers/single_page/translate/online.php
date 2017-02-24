@@ -2,7 +2,7 @@
 namespace Concrete\Package\CommunityTranslation\Controller\SinglePage\Translate;
 
 use CommunityTranslation\Locale\Locale;
-use CommunityTranslation\Package\Package;
+use CommunityTranslation\Repository\Package\Version as PackageVersionRepository;
 use CommunityTranslation\Repository\Locale as LocaleRepository;
 use CommunityTranslation\Repository\Notification as NotificationRepository;
 use CommunityTranslation\Service\Access;
@@ -15,15 +15,11 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 
 class Online extends PageController
 {
-    public function view($packageID = '', $localeID = '')
+    const PACKAGEVERSION_UNREVIEWED = 'unreviewed';
+
+    public function view($packageVersionID = '', $localeID = '')
     {
         $error = null;
-        if ($error === null) {
-            $locale = $localeID ? $this->app->make(LocaleRepository::class)->findApproved($localeID) : null;
-            if ($locale === null) {
-                $error = t('Invalid language identifier received');
-            }
-        }
         if ($error === null) {
             $access = $this->app->make(Access::class)->getLocaleAccess($locale);
             if ($access <= Access::NOT_LOGGED_IN) {
@@ -33,18 +29,26 @@ class Online extends PageController
             }
         }
         if ($error === null) {
-            if ($access >= Access::ADMIN && $packageID === 'unreviewed') {
-                $package = 'unreviewed';
+            $locale = $localeID ? $this->app->make(LocaleRepository::class)->findApproved($localeID) : null;
+            if ($locale === null) {
+                $error = t('Invalid language identifier received');
+            }
+        }
+        if ($error === null) {
+            if ($access >= Access::ADMIN && $packageID === self::PACKAGEVERSION_UNREVIEWED) {
+                $packageVersion = 'unreviewed';
             } else {
-                $package = $packageID ? $this->app->make('community_translation/package')->find($packageID) : null;
-                if ($package === null) {
+                $packageVersion = $packageVersionID ? $this->app->make(PackageVersionRepository::class)->find($packageVersionID) : null;
+                if ($packageVersion === null) {
                     $error = t('Invalid translated package identifier received');
                 }
             }
         }
         if ($error !== null) {
-            $this->flash('error', $error);
-            $this->redirect('/translate');
+            return $this->app->make('helper/concrete/ui')->buildErrorResponse(
+                t('An unexpected error occurred.'),
+                h($error)
+            );
         }
         $hh = $this->app->make('helper/html');
         $this->addHeaderItem($hh->css('translate/online.css', 'community_translation'));
@@ -58,7 +62,7 @@ class Online extends PageController
         } else {
             $this->set('package', $package);
         }
-        $this->set('token', $this->app->make('helper/validation/token'));
+        $this->set('token', $this->app->make('token'));
         $this->set('canApprove', $access >= Access::ADMIN);
         $this->set('locale', $locale);
         $this->set('canEditGlossary', $access >= Access::ADMIN);

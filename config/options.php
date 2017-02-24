@@ -15,4 +15,5 @@ return [
     'tempDir' => null,
     'notificationsSenderAddress' => '',
     'notificationsSenderName' => '',
+    'translatorPath' => '/translate/online2',
 ];

@@ -26,6 +26,8 @@ class ServiceProvider extends Provider
             \CommunityTranslation\Translation\Importer::class,
             \CommunityTranslation\Service\Groups::class,
             \CommunityTranslation\Service\Access::class,
+            \CommunityTranslation\Service\Editor::class,
+            \CommunityTranslation\Translation\Exporter::class,
         ] as $className) {
             $app->singleton($className);
         }

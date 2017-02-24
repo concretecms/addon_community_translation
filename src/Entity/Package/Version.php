@@ -115,6 +115,16 @@ class Version
     }
 
     /**
+     * Get the package and package version display name.
+     *
+     * @return string
+     */
+    public function getDisplayName()
+    {
+        return sprintf('%s %s', $this->getPackage()->getDisplayName(), $this->getDisplayVersion());
+    }
+
+    /**
      * Get the package version display name.
      *
      * @return string

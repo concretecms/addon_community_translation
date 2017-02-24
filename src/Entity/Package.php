@@ -128,7 +128,7 @@ class Package
         if ($this->name !== '') {
             $result = $this->name;
         } else {
-            $result = uncamelcase($this->handle);
+            $result = camelcase($this->handle);
         }
 
         return $result;
