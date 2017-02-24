@@ -110,7 +110,7 @@ class Controller extends Package
     {
         $em = $this->app->make(EntityManager::class);
         /* @var EntityManager $em */
-        $repo = $ths->app->make(LocaleRepository::class);
+        $repo = $this->app->make(LocaleRepository::class);
         if ($repo->findOneBy(['isSource' => true]) === null) {
             $locale = LocaleEntity::create('en_US');
             $locale
