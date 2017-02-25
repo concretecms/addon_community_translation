@@ -1,5 +1,8 @@
 /* jshint unused:vars, undef:true, jquery:true, browser:true */
 
+function ccm_enableUserProfileMenu() {
+}
+
 (function($, window, undefined) {
 'use strict';
 

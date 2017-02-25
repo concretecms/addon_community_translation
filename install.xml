@@ -13,11 +13,6 @@
         </blocktypeset>
 	</blocktypesets>
 
-    <themes>
-        <theme package="community_translation" handle="community_translation" activated="0">
-        </theme>
-    </themes>
-
 	<attributetypes>
 		<attributetype package="community_translation" handle="api_token" name="API Token">
 			<categories>
@@ -88,11 +83,6 @@
         <page package="community_translation" name="Translate" description="" pagetype="" path="/translate" filename="/translate.php">
         </page>
         <page package="community_translation" name="Package details" description="" pagetype="" path="/translate/details" filename="/translate/details.php">
-            <attributes>
-                <attributekey handle="exclude_nav"><value>1</value></attributekey>
-            </attributes>
-        </page>
-        <page package="community_translation" name="Online Translation" description="" pagetype="" path="/translate/online" filename="/translate/online.php">
             <attributes>
                 <attributekey handle="exclude_nav"><value>1</value></attributekey>
             </attributes>

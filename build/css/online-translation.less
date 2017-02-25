@@ -1,0 +1,96 @@
+/* Import bootstrap 3 mixins and variables so we can use them */
+@import "bootstrap/bootstrap.less";
+
+#comtra_extra-tabs {
+	visibility: hidden;
+	>.tab-content {
+		overflow: auto;
+		padding: 8px;
+	}
+	.nav-tabs>li>a>.active-badge {
+		background-color: #428bca;
+	}
+}
+
+#comtra_translator {
+	.ccm-translator-col-original {
+		.panel-heading span {
+			float: left;
+			width: 50%;
+			height: 20px;
+			overflow: hidden;
+		}
+		ul {
+			overflow: scroll;
+			overflow-x: hidden;
+			li {
+				transition: all 0.2s linear;
+				cursor: pointer;
+				&:hover {
+					background-color: #dedede;
+				}
+				span {
+					float: left;
+					width: 50%;
+					height: 20px;
+					overflow: hidden;
+				}
+			}
+		}
+	}
+	.ccm-translator-col-translations {
+		> .panel {
+			visibility: hidden;
+		}
+	}
+}
+
+#comtra_extra-references {
+	visibility: hidden;
+	.list-group-item {
+    	white-space: nowrap;
+    	overflow: hidden;
+    	text-overflow: ellipsis;    
+	}
+}
+
+#comtra_translation-suggestions {
+	.comtra_some .list-group-item .label {
+	    overflow: hidden;
+	    text-overflow: ellipsis;
+	    white-space: nowrap;
+	    max-width: 100%;
+	    display: inline-block;
+	}
+}
+
+#comtra_editcomment {
+	resize: vertical;
+	height: 100px;
+}
+
+#comtra_editcomment_render {
+	height: 100px;
+	resize: vertical;
+    padding: 6px 12px;
+	overflow: auto;
+	border: 1px solid #ccc;
+    border-radius: 4px;
+    -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,0.075);
+    box-shadow: inset 0 1px 1px rgba(0,0,0,0.075);
+}
+
+#comtra_translation-glossary {
+	dt {
+		.label {
+    		margin-left: 5px;
+		}
+		a {
+			visibility: hidden;
+			margin-right: 3px;
+		}
+		&:hover a {
+			visibility: visible;
+		}
+	}
+}

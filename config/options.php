@@ -1,19 +1,19 @@
 <?php
 return [
-    'translatedThreshold' => 90,
-    'downloadAccess' => 'members',
     'api' => [
-        'entryPoint' => '/api',
         'access' => [
-            'stats' => (int) GUEST_GROUP_ID,
             'download' => (int) GUEST_GROUP_ID,
             'importPackages' => (int) ADMIN_GROUP_ID,
+            'stats' => (int) GUEST_GROUP_ID,
             'updatePackageTranslations' => (int) REGISTERED_GROUP_ID,
         ],
+        'entryPoint' => '/api',
     ],
-    'parser' => 'CommunityTranslation\Parser\Concrete5Parser',
-    'tempDir' => null,
+    'downloadAccess' => 'members',
     'notificationsSenderAddress' => '',
     'notificationsSenderName' => '',
-    'translatorPath' => '/translate/online2',
+    'onlineTranslationPath' => '/translate/online',
+    'parser' => 'CommunityTranslation\Parser\Concrete5Parser',
+    'tempDir' => null,
+    'translatedThreshold' => 90,
 ];

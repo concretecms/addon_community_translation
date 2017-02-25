@@ -179,6 +179,16 @@ class Controller extends Package
             'community_translation/common' => [
                 ['javascript', 'js/common.js', ['minify' => true, 'combine' => true], $this],
             ],
+            'community_translation/online_translation/bootstrap' => [
+                ['javascript', 'js/bootstrap.min.js', ['minify' => false, 'combine' => true], $this],
+            ],
+            'community_translation/online_translation/markdown-it' => [
+                ['javascript', 'js/markdown-it.min.js', ['minify' => false, 'combine' => true], $this],
+            ],
+            'community_translation/online_translation/core' => [
+                ['css', 'css/online-translation.css', ['minify' => false, 'combine' => true], $this],
+                ['javascript', 'js/online-translation.js', ['minify' => true, 'combine' => true], $this],
+            ],
         ]);
         $al->registerGroupMultiple([
             'jquery/scroll-to' => [
@@ -193,6 +203,14 @@ class Controller extends Package
                     ['javascript', 'community_translation/common'],
                 ],
             ],
+            'community_translation/online_translation' => [
+                [
+                    ['css', 'community_translation/online_translation/core'],
+                    ['javascript', 'community_translation/online_translation/bootstrap'],
+                    ['javascript', 'community_translation/online_translation/markdown-it'],
+                    ['javascript', 'community_translation/online_translation/core'],
+                ]
+            ]
         ]);
     }
 
@@ -202,19 +220,40 @@ class Controller extends Package
     private function registerRoutes()
     {
         $config = $this->app->make('community_translation/config');
+        $onlineTranslationPath = $config->get('options.onlineTranslationPath');
         $apiEntryPoint = $config->get('options.api.entryPoint');
-        $translatorPath = $config->get('options.translatorPath');
         $handleRegex = '[A-Za-z0-9]([A-Za-z0-9\_]*[A-Za-z0-9])?';
         $localeRegex = '[a-zA-Z]{2,3}([_\-][a-zA-Z0-9]{2,3})?';
         $this->app->make('Concrete\Core\Routing\Router')->registerMultiple([
-            "$translatorPath/{packageVersionID}/{localeID}" => [
-                'Concrete\Package\CommunityTranslation\Controller\Frontend\Translate::view',
+            "$onlineTranslationPath/{packageVersionID}/{localeID}" => [
+                'Concrete\Package\CommunityTranslation\Controller\Frontend\OnlineTranslation::view',
                 null,
                 ['packageVersionID' => 'unreviewed|[1-9][0-9]*', 'localeID' => $localeRegex],
                 [],
                 '',
                 [],
                 ['GET'],
+            ],
+            "$onlineTranslationPath/action/save_comment" => [
+                'Concrete\Package\CommunityTranslation\Controller\Frontend\OnlineTranslation::save_comment',
+            ],
+            "$onlineTranslationPath/action/delete_comment" => [
+                'Concrete\Package\CommunityTranslation\Controller\Frontend\OnlineTranslation::delete_comment',
+            ],
+            "$onlineTranslationPath/action/load_all_places" => [
+                'Concrete\Package\CommunityTranslation\Controller\Frontend\OnlineTranslation::load_all_places',
+            ],
+            "$onlineTranslationPath/action/process_translation" => [
+                'Concrete\Package\CommunityTranslation\Controller\Frontend\OnlineTranslation::process_translation',
+            ],
+            "$onlineTranslationPath/action/load_translation" => [
+                'Concrete\Package\CommunityTranslation\Controller\Frontend\OnlineTranslation::load_translation',
+            ],
+            "$onlineTranslationPath/action/save_glossary_term" => [
+                'Concrete\Package\CommunityTranslation\Controller\Frontend\OnlineTranslation::save_glossary_term',
+            ],
+            "$onlineTranslationPath/action/delete_glossary_term" => [
+                'Concrete\Package\CommunityTranslation\Controller\Frontend\OnlineTranslation::delete_glossary_term',
             ],
             "$apiEntryPoint/locales/" => [
                 'CommunityTranslation\Api\EntryPoint::getApprovedLocales',
