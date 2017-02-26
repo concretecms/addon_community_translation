@@ -179,10 +179,9 @@ EOT
             if ($translations === null || count($translations) === 0) {
                 throw new UserException(t("The specified file does not contain any translations.\nPlease be sure it is a .po file"));
             }
-            
+            /*
             // @todo START
             
-            if (isset($options['checkLocale']) && $options['checkLocale']) {
                 if (@strcasecmp(strtolower(str_replace('-', '_', $translations->getLanguage())), strtolower($locale->getID())) !== 0) {
                     $name = \Punic\Language::getName($translations->getLanguage());
                     if ($name) {
@@ -191,18 +190,11 @@ EOT
                         throw new UserException(t('It was not possible to determine the language of the uploaded file.'));
                     }
                 }
-            }
             
-            // @todo END
-            
-            // @todo START
-            
-            if (isset($options['checkPlural']) && $options['checkPlural']) {
                 $pluralForms = $translations->getPluralForms();
                 $pluralCount = isset($pluralForms) ? $pluralForms[0] : null;
                 if ($pluralCount === null || $pluralCount !== $locale->getPluralCount()) {
                     foreach ($translations as $translation) {
-                        /* @var \Gettext\Translation $translation */
                         if ($translation->hasPlural() && $translation->hasTranslation()) {
                             if ($pluralCount === null) {
                                 throw new UserException(t('For the language %1$s there should be %2$d plural forms, but in your file this is not specified', $locale->getDisplayName(), $locale->getPluralCount()));
@@ -212,11 +204,10 @@ EOT
                         }
                     }
                 }
-            }
             
             // @todo END
-            
-            $result = $this->app->make('community_translation/translation/importer')->import($translations, $locale, [, 'checkPlural' => true]);
+            */
+            $result = $this->app->make('community_translation/translation/importer')->import($translations, $locale);
             $message = '';
             foreach ([
                 'emptyTranslations' => t('Number of strings not translated (skipped)'),

@@ -3,12 +3,14 @@
 
     <blocktypes>
         <blocktype package="community_translation" handle="translation_team_request" />
+        <blocktype package="community_translation" handle="download_translations" />
         <blocktype package="community_translation" handle="fill_translations" />
     </blocktypes>
 
     <blocktypesets>
         <blocktypeset package="community_translation" handle="community_translation" name="Community Translation">
         	<blocktype handle="translation_team_request" />
+        	<blocktype handle="download_translations" />
             <blocktype handle="fill_translations" />
         </blocktypeset>
 	</blocktypesets>
