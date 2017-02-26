@@ -22,27 +22,6 @@ use Doctrine\ORM\Mapping as ORM;
 class Translation
 {
     /**
-     * Status: approved.
-     *
-     * @var int
-     */
-    const STATUS_APPROVED = 30;
-
-    /**
-     * Status: not approved.
-     *
-     * @var int
-     */
-    const STATUS_PENDINGAPPROVAL = 20;
-
-    /**
-     * Status: deleted.
-     *
-     * @var int
-     */
-    const STATUS_REJECTED = 10;
-
-    /**
      * Translation ID.
      *
      * @ORM\Column(type="integer", options={"unsigned": true, "comment": "Translation ID"})
@@ -181,22 +160,40 @@ class Translation
     }
 
     /**
-     * Translation status (see the STATUS_... constants).
+     * Translation is approved (true: yes, false: no, null: pending review).
      *
-     * @ORM\Column(type="smallint", nullable=false, options={"comment": "Translation status"})
+     * @ORM\Column(type="boolean", nullable=true, options={"comment": "Translation is approved (true: yes, false: no, null: pending review)"})
      *
-     * @var int
+     * @var bool|null
      */
-    protected $status;
+    protected $approved;
 
     /**
-     * Get the translation status (one of the Translation::STATUS_... constants).
+     * Is the translation approved? (true: yes, false: no, null: pending review).
      *
-     * @return int
+     * @param bool|null $value
+     *
+     * @return static
      */
-    public function getStatus()
+    public function setIsApproved($value)
     {
-        return $this->status;
+        if ($value === null || $value === '') {
+            $this->approved = null;
+        } else {
+            $this->approved = (bool) $value;
+        }
+
+        return $this;
+    }
+
+    /**
+     * Is the translation approved? (true: yes, false: no, null: pending review).
+     *
+     * @return bool|null
+     */
+    public function isApproved()
+    {
+        return $this->approved;
     }
 
     /**

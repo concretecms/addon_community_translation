@@ -1,12 +1,12 @@
 <?php
 namespace CommunityTranslation\Translation;
 
-use CommunityTranslation\Entity\Locale;
-use CommunityTranslation\Entity\Translation;
+use CommunityTranslation\Entity\Locale as LocaleEntity;
+use CommunityTranslation\Entity\Translation as TranslationEntity;
 use CommunityTranslation\UserException;
 use Concrete\Core\Application\Application;
 use Concrete\Core\Database\Connection\Connection;
-use Concrete\Core\Entity\User\User;
+use Concrete\Core\Entity\User\User as UserEntity;
 use DateTime;
 use Doctrine\ORM\EntityManager;
 use Exception;
@@ -56,17 +56,18 @@ class Importer
      * Import translations into the database.
      *
      * This function works directly with the database, not with entities (so that working on thousands of strings requires seconds instead of minutes).
-     * This implies that entities related to Translation may become invalid.
+     * This implies that entities related to TranslationEntity may become invalid.
      *
      * @param Translations $translations The translations to be imported
-     * @param Locale $locale The locale of the translations
+     * @param LocaleEntity $locale The locale of the translations
+     * @param UserEntity $user The user to which new translations should be associated
      * @param bool $reviewerRole Is the current user able to review the translations for this locale?
      *
      * @throws UserException
      *
      * @return ImportResult
      */
-    public function import(Translations $translations, Locale $locale, $reviewerRole = false, User $user = null)
+    public function import(Translations $translations, LocaleEntity $locale, UserEntity $user, $reviewerRole = false)
     {
         $pluralCount = $locale->getPluralCount();
 
@@ -96,12 +97,12 @@ where
             /* @var \Doctrine\DBAL\Driver\Statement $insertQuery */
 
             $unsetCurrentTranslationQuery = $connection->prepare(
-                'UPDATE CommunityTranslationTranslations SET current = NULL, currentSince = NULL, status = ? WHERE id = ? LIMIT 1'
+                'UPDATE CommunityTranslationTranslations SET current = NULL, currentSince = NULL, approved = ? WHERE id = ? LIMIT 1'
             )->getWrappedStatement();
             /* @var \Doctrine\DBAL\Driver\Statement $unsetCurrentTranslationQuery */
 
             $setCurrentTranslationQuery = $connection->prepare(
-                'UPDATE CommunityTranslationTranslations SET current = 1, currentSince = ' . $nowExpression . ', status = ? WHERE id = ? LIMIT 1'
+                'UPDATE CommunityTranslationTranslations SET current = 1, currentSince = ' . $nowExpression . ', approved = ? WHERE id = ? LIMIT 1'
             )->getWrappedStatement();
             /* @var \Doctrine\DBAL\Driver\Statement $setCurrentTranslationQuery */
 
@@ -155,57 +156,46 @@ where
                     $isFuzzy = true;
                 }
 
-                /*
-            // current
-            '?',
-            // currentSince
-            '?',
-            // status
-            '?',
-            // translatable
-            '?',
-            // text0... text5
-                 */
                 if ($sameRow === null) {
                     // This translation is not already present - Let's add it
                     if ($currentRow === null) {
                         // No current translation for this string: add this new one and mark it as the current one
                         $addCurrent = 1;
                         if ($isFuzzy) {
-                            $addStatus = Translation::STATUS_PENDINGAPPROVAL;
+                            $addApproved = null;
                             ++$result->newApprovalNeeded;
                         } else {
-                            $addStatus = Translation::STATUS_APPROVED;
+                            $addApproved = 1;
                         }
                         $translatablesChanged[] = $translatableID;
                         ++$result->addedAsCurrent;
-                    } elseif ($isFuzzy === false || (int) $currentRow['status'] < Translation::STATUS_APPROVED) {
+                    } elseif ($isFuzzy === false || !$currentRow['approved']) {
                         // There's already a current translation for this string, but we'll activate this new one
-                        $s = (int) $currentRow['status'];
-                        if ($isFuzzy === false && $s === Translation::STATUS_PENDINGAPPROVAL) {
-                            $s = Translation::STATUS_REJECTED;
+                        if ($isFuzzy === false && $currentRow['approved'] === null) {
+                            $unsetCurrentTranslationQuery->execute([0, $currentRow['id']]);
+                        } else {
+                            $unsetCurrentTranslationQuery->execute([$currentRow['approved'], $currentRow['id']]);
                         }
-                        $unsetCurrentTranslationQuery->execute([$s, $currentRow['id']]);
                         $addCurrent = 1;
                         if ($isFuzzy) {
-                            $addStatus = Translation::STATUS_PENDINGAPPROVAL;
+                            $addApproved = null;
                             ++$result->newApprovalNeeded;
                         } else {
-                            $addStatus = Translation::STATUS_APPROVED;
+                            $addApproved = 1;
                         }
                         $translatablesChanged[] = $translatableID;
                         ++$result->addedAsCurrent;
                     } else {
                         // Let keep the previously current translation as the current one, but let's add this new one
                         $addCurrent = null;
-                        $addStatus = Translation::STATUS_PENDINGAPPROVAL;
+                        $addApproved = null;
                         ++$result->addedNotAsCurrent;
                         ++$result->newApprovalNeeded;
                     }
                     // Add the new record to the queue
                     $insertParams[] = $addCurrent;
                     $insertParams[] = ($addCurrent === 1) ? $sqlNow : null;
-                    $insertParams[] = $addStatus;
+                    $insertParams[] = $addApproved;
                     $insertParams[] = $translatableID;
                     $insertParams[] = $translation->getTranslation();
                     for ($p = 1; $p <= 5; ++$p) {
@@ -219,38 +209,35 @@ where
                     }
                 } elseif ($currentRow === null) {
                     // This translation is already present, but there's no current translation: let's activate it
-                    $newStatus = max((int) $sameRow['status'], $isFuzzy ? Translation::STATUS_PENDINGAPPROVAL : Translation::STATUS_APPROVED);
-                    $setCurrentTranslationQuery->execute([
-                        $newStatus,
-                        (int) $sameRow['id'],
-                    ]);
+                    if ($isFuzzy) {
+                        $setCurrentTranslationQuery->execute([$sameRow['approved'], $sameRow['id']]);
+                    } else {
+                        $setCurrentTranslationQuery->execute([1, $sameRow['id']]);
+                        if (!$sameRow['approved']) {
+                            ++$result->newApprovalNeeded;
+                        }
+                    }
                     $translatablesChanged[] = $translatableID;
                     $result->addedAsCurrent;
-                    if ($newStatus === Translation::STATUS_PENDINGAPPROVAL && (int) $sameRow['status'] !== Translation::STATUS_PENDINGAPPROVAL) {
-                        ++$result->newApprovalNeeded;
-                    }
                 } elseif ($sameRow['current'] === '1') {
                     // This translation is already present and it's the current one
-                    if ($isFuzzy === false && (int) $sameRow['status'] < Translation::STATUS_APPROVED) {
+                    if ($isFuzzy === false && !$sameRow['approved']) {
                         // Let's mark the translation as approved
-                        $setCurrentTranslationQuery->execute([
-                            Translation::STATUS_APPROVED,
-                            (int) $sameRow['id'],
-                        ]);
+                        $setCurrentTranslationQuery->execute([1, $sameRow['id']]);
                         ++$result->existingCurrentApproved;
                     } else {
                         ++$result->existingCurrentUntouched;
                     }
                 } else {
                     // This translation exists, but we have already another translation that's the current one
-                    if ($isFuzzy === false || (int) $currentRow['status'] < Translation::STATUS_APPROVED) {
+                    if ($isFuzzy === false || !$currentRow['approved']) {
                         // Let's make the new translation the current one
-                        $s = (int) $currentRow['status'];
-                        if ($isFuzzy === false && $s === Translation::STATUS_PENDINGAPPROVAL) {
-                            $s = Translation::STATUS_REJECTED;
+                        if ($isFuzzy === false && $currentRow['approved'] === null) {
+                            $unsetCurrentTranslationQuery->execute([0, $currentRow['id']]);
+                        } else {
+                            $unsetCurrentTranslationQuery->execute([$currentRow['approved'], $currentRow['id']]);
                         }
-                        $unsetCurrentTranslationQuery->execute([$s, $currentRow['id']]);
-                        $setCurrentTranslationQuery->execute([Translation::STATUS_APPROVED, $sameRow['id']]);
+                        $setCurrentTranslationQuery->execute([1, $sameRow['id']]);
                         $translatablesChanged[] = $translatableID;
                         ++$result->existingActivated;
                     } else {
@@ -272,7 +259,7 @@ where
             }
             throw $x;
         }
-        $this->em->clear(Translation::class);
+        $this->em->clear(TranslationEntity::class);
 
         if (count($translatablesChanged) > 0) {
             try {
@@ -310,25 +297,25 @@ where
     /**
      * @param Connection $connection
      * @param int $numRecords
-     * @param User|null $user
+     * @param UserEntity $user
      *
      * @return string
      */
-    private function buildInsertTranslationsSQL(Connection $connection, Locale $locale, $numRecords, User $user = null)
+    private function buildInsertTranslationsSQL(Connection $connection, LocaleEntity $locale, $numRecords, UserEntity $user)
     {
-        $fields = '(locale, createdOn, createdBy, current, currentSince, status, translatable, text0, text1, text2, text3, text4, text5)';
+        $fields = '(locale, createdOn, createdBy, current, currentSince, approved, translatable, text0, text1, text2, text3, text4, text5)';
         $values = ' (' . implode(', ', [
             // locale
             $connection->quote($locale->getID()),
             // createdOn
             $connection->getDatabasePlatform()->getNowExpression(),
             // createdBy
-            $user === null ? 'null' : $user->getUserID(),
+            $user->getUserID(),
             // current
             '?',
             // currentSince
             '?',
-            // status
+            // approved
             '?',
             // translatable
             '?',
