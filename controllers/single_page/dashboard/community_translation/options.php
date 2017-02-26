@@ -29,6 +29,7 @@ class Options extends DashboardPageController
         $this->set('tempDir', str_replace('/', DIRECTORY_SEPARATOR, (string) $config->get('options.tempDir')));
         $this->set('notificationsSenderAddress', $config->get('options.notificationsSenderAddress'));
         $this->set('notificationsSenderName', $config->get('options.notificationsSenderName'));
+        $this->set('onlineTranslationPath', $config->get('options.onlineTranslationPath'));
         $this->set('apiEntryPoint', $config->get('options.api.entryPoint'));
         foreach ([
             'options.api.access.stats' => 'apiAccess_stats',
@@ -123,6 +124,15 @@ class Options extends DashboardPageController
                 $this->error->add(t('The specified temporary directory is not writable'));
             }
         }
+        $onlineTranslationPath = (string) $this->post('onlineTranslationPath');
+        $onlineTranslationPath = preg_replace('/\s+/', '', $onlineTranslationPath);
+        $onlineTranslationPath = preg_replace('/[\/\\\\]+/', '/', $onlineTranslationPath);
+        $onlineTranslationPath = trim($onlineTranslationPath, '/');
+        if ($onlineTranslationPath === '') {
+            $this->error->add(t('Please specify the Online Translation URI'));
+        } else {
+            $onlineTranslationPath = '/' . $onlineTranslationPath;
+        }
         $apiEntryPoint = (string) $this->post('apiEntryPoint');
         $apiEntryPoint = preg_replace('/\s+/', '', $apiEntryPoint);
         $apiEntryPoint = preg_replace('/[\/\\\\]+/', '/', $apiEntryPoint);
@@ -132,7 +142,6 @@ class Options extends DashboardPageController
         } else {
             $apiEntryPoint = '/' . $apiEntryPoint;
         }
-
         $apiAccess_stats = @intval($this->post('apiAccess_stats'));
         if ($apiAccess_stats <= 0) {
             $this->error->add(t('Please specify the user group to control the API access to statistical data'));
@@ -167,6 +176,7 @@ class Options extends DashboardPageController
             $config->save('options.tempDir', $tempDir);
             $config->save('options.notificationsSenderAddress', (string) $this->post('notificationsSenderAddress'));
             $config->save('options.notificationsSenderName', (string) $this->post('notificationsSenderName'));
+            $config->save('options.onlineTranslationPath', $onlineTranslationPath);
             $config->save('options.api.entryPoint', $apiEntryPoint);
             $config->save('options.api.access.stats', $apiAccess_stats);
             $config->save('options.api.access.download', $apiAccess_download);

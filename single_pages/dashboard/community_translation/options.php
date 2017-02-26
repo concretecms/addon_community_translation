@@ -89,6 +89,14 @@ defined('C5_EXECUTE') or die('Access Denied.');
 		<legend><?= t('Paths') ?></legend>
         <div class="row">
             <div class="form-group">
+                <label for="apiEntryPoint" class="control-label col-sm-3"><?= t('Online Translation URI') ?></label>
+                <div class="col-sm-7">
+                    <?= $form->text('onlineTranslationPath', $onlineTranslationPath, ['required' => 'required']) ?>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="form-group">
                 <label for="apiEntryPoint" class="control-label col-sm-3"><?= t('API Entry Point') ?></label>
                 <div class="col-sm-7">
                     <?= $form->text('apiEntryPoint', $apiEntryPoint, ['required' => 'required']) ?>
