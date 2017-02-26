@@ -5,6 +5,7 @@ use CommunityTranslation\Entity\Locale as LocaleEntity;
 use CommunityTranslation\Repository\Locale as LocaleRepository;
 use CommunityTranslation\Translation\Importer;
 use Concrete\Core\Console\Command;
+use Concrete\Core\Entity\User\User as UserEntity;
 use Concrete\Core\Support\Facade\Application;
 use Doctrine\ORM\EntityManager;
 use Exception;
@@ -32,8 +33,9 @@ class TransifexTranslationsCommand extends Command
             ->addOption('password', 'p', InputOption::VALUE_REQUIRED, 'The Transifex password')
             ->addOption('create', 'c', InputOption::VALUE_NONE, 'Create the locales that are not yet defined')
             ->addOption('approve', 'a', InputOption::VALUE_NONE, 'Import the translations as already approved')
+            ->addOption('locale', 'l', InputOption::VALUE_REQUIRED, 'The locale identifier (if not specified we\'ll fetch all Transifex locales)')
+            ->addOption('resource', 'r', InputOption::VALUE_REQUIRED, 'The Transifex resource handle (if not specified we\'ll fetch all the resources)')
             ->addArgument('project', InputArgument::REQUIRED, 'The Transifex project handle')
-            ->addArgument('resource', InputArgument::OPTIONAL, 'The Transifex resource handle (if not specified we\'ll fetch all the resources)')
             ->setHelp(<<<EOT
 Returns codes:
   0 operation completed successfully
@@ -53,18 +55,34 @@ EOT
 
         $this->getTransifexAccount($input, $output);
 
-        $output->write('Retrieve list of locales... ');
-        $transifexLocales = $this->fetchTransifexLocales($input->getArgument('project'));
-        $output->writeln('<info>done (' . count($transifexLocales) . ' found)</info>');
+        $output->write('Retrieve list of available Transifex locales... ');
+        $availableTransifexLocales = $this->fetchTransifexLocales($input->getArgument('project'));
+        $output->writeln('<info>done (' . count($availableTransifexLocales) . ' found)</info>');
 
-        if ($input->getArgument('resource') === null) {
+        if ($input->getOption('locale') === null) {
+            $transifexLocales = $availableTransifexLocales;
+        } else {
+            $transifexLocales = [];
+            foreach ($availableTransifexLocales as $availableTransifexLocale) {
+                if (strcasecmp($input->getOption('locale'), $availableTransifexLocale) === 0) {
+                    $transifexLocales[] = $availableTransifexLocale;
+                    break;
+                }
+            }
+            if (!isset($transifexLocales[0])) {
+                throw new Exception("Unable to find the requested locale with id '%s'", $input->getOption('locale'));
+            }
+        }
+
+        if ($input->getOption('resource') === null) {
             $output->write('Retrieve list of resources... ');
             $transifexResources = $this->fetchTransifexResources($input->getArgument('project'));
             $output->writeln('<info>done (' . count($transifexResources) . ' found)</info>');
         } else {
-            $transifexResources = [$input->getArgument('resource')];
+            $transifexResources = [$input->getOption('resource')];
         }
 
+        $user = $app->make(EntityManager::class)->find(UserEntity::class, USER_SUPER_ID);
         $translationsImporter = $app->make(Importer::class);
         /* @var Importer $translationsImporter */
         $localeRepo = $app->make(LocaleRepository::class);
@@ -76,7 +94,7 @@ EOT
             if ($locale === null) {
                 if ($createNewLocales) {
                     $locale = LocaleEntity::create($transifexLocale)
-                        ->setIsApproved(true)
+                        ->setIsApproved($approveTranslations)
                     ;
                     $em->persist($locale);
                     $em->flush($locale);
@@ -86,7 +104,7 @@ EOT
                     continue;
                 }
             } elseif ($locale->isApproved() === false) {
-                if ($createNewLocales) {
+                if ($approveTranslations) {
                     $locale->setIsApproved(true);
                     $em->persist($locale);
                     $em->flush($locale);
@@ -115,7 +133,7 @@ EOT
                 }
 
                 $output->write('   > saving... ');
-                $details = $translationsImporter->import($translations, $locale, $approveTranslations);
+                $details = $translationsImporter->import($translations, $locale, $user, $approveTranslations);
                 $output->writeln('<info>done</info>');
                 $output->writeln('   > details:');
                 $output->writeln('      - strings not translated           : ' . $details->emptyTranslations);
