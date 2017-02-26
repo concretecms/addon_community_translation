@@ -23,7 +23,19 @@ use Doctrine\ORM\Mapping as ORM;
  */
 class Entry
 {
-    public function __construct()
+    /**
+     * @return static
+     */
+    public static function create()
+    {
+        $result = new static();
+        $result->comments = '';
+        $result->type = '';
+
+        return $result;
+    }
+
+    protected function __construct()
     {
         $this->translations = new ArrayCollection();
     }
@@ -37,7 +49,7 @@ class Entry
      *
      * @var int|null
      */
-    protected $id = null;
+    protected $id;
 
     /**
      * Get the glossary entry ID.
@@ -56,17 +68,7 @@ class Entry
      *
      * @var string
      */
-    protected $term = null;
-
-    /**
-     * Get the term.
-     *
-     * @return string
-     */
-    public function getTerm()
-    {
-        return $this->term;
-    }
+    protected $term;
 
     /**
      * Set the term.
@@ -83,23 +85,23 @@ class Entry
     }
 
     /**
+     * Get the term.
+     *
+     * @return string
+     */
+    public function getTerm()
+    {
+        return $this->term;
+    }
+
+    /**
      * Term type.
      *
      * @ORM\Column(type="string", length=50, nullable=false, options={"comment": "Term type"})
      *
      * @var string
      */
-    protected $type = null;
-
-    /**
-     * Get the term type (one of the CommunityTranslation\Glossary\EntryType::... constants).
-     *
-     * @return string
-     */
-    public function getType()
-    {
-        return $this->type;
-    }
+    protected $type;
 
     /**
      * Set the term type (one of the Entry::CommunityTranslation\Glossary\EntryType:... constants).
@@ -116,23 +118,23 @@ class Entry
     }
 
     /**
+     * Get the term type (one of the CommunityTranslation\Glossary\EntryType::... constants).
+     *
+     * @return string
+     */
+    public function getType()
+    {
+        return $this->type;
+    }
+
+    /**
      * Comments about the term.
      *
      * @ORM\Column(type="text", nullable=false, options={"comment": "Comments about the term"})
      *
      * @var string
      */
-    protected $comments = '';
-
-    /**
-     * Get the comments about the term.
-     *
-     * @return string
-     */
-    public function getComments()
-    {
-        return $this->comments;
-    }
+    protected $comments;
 
     /**
      * Set the comments about the term.
@@ -144,6 +146,16 @@ class Entry
     public function setComments($value)
     {
         $this->comments = (string) $value;
+    }
+
+    /**
+     * Get the comments about the term.
+     *
+     * @return string
+     */
+    public function getComments()
+    {
+        return $this->comments;
     }
 
     /**

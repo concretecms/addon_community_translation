@@ -1,9 +1,9 @@
 <?php
 namespace CommunityTranslation\Entity\Translatable;
 
-use CommunityTranslation\Entity\Locale;
-use CommunityTranslation\Entity\Translatable;
-use Concrete\Core\Entity\User\User;
+use CommunityTranslation\Entity\Locale as LocaleEntity;
+use CommunityTranslation\Entity\Translatable as TranslatableEntity;
+use Concrete\Core\Entity\User\User as UserEntity;
 use DateTime;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping as ORM;
@@ -21,10 +21,32 @@ use Doctrine\ORM\Mapping as ORM;
  */
 class Comment
 {
-    public function __construct()
+    /**
+     * Create a new (unsaved) entity.
+     *
+     * @param TranslatableEntity $translatable The associated translatable string
+     * @param UserEntity $postedBy The user that posted the comment
+     * @param LocaleEntity $locale NULL if it's a global comment, the locale instance if it's translation-specific
+     * @param Comment $parentComment The parent comment (if this is a followup) or null
+     *
+     * @return static
+     */
+    public static function create(TranslatableEntity $translatable, UserEntity $postedBy, LocaleEntity $locale = null, Comment $parentComment = null)
+    {
+        $result = new static();
+        $result->translatable = $translatable;
+        $result->locale = null;
+        $result->parentComment = $parentComment;
+        $result->postedOn = new DateTime();
+        $result->postedBy = $postedBy;
+        $result->text = null;
+
+        return $result;
+    }
+
+    protected function __construct()
     {
         $this->childComments = new ArrayCollection();
-        $this->postedOn = new DateTime();
     }
 
     /**
@@ -36,7 +58,7 @@ class Comment
      *
      * @var int|null
      */
-    protected $id = null;
+    protected $id;
 
     /**
      * Get the comment ID.
@@ -54,32 +76,18 @@ class Comment
      * @ORM\ManyToOne(targetEntity="CommunityTranslation\Entity\Translatable", inversedBy="comments")
      * @ORM\JoinColumn(name="translatable", referencedColumnName="id", nullable=false, onDelete="CASCADE")
      *
-     * @var Translatable
+     * @var TranslatableEntity
      */
-    protected $translatable = null;
+    protected $translatable;
 
     /**
      * Get the associated Translatable string.
      *
-     * @return Translatable
+     * @return TranslatableEntity
      */
     public function getTranslatable()
     {
         return $this->translatable;
-    }
-
-    /**
-     * Set the associated Translatable string.
-     *
-     * @param Translatable $value
-     *
-     * @return static
-     */
-    public function setTranslatable(Translatable $value)
-    {
-        $this->translatable = $value;
-
-        return $this;
     }
 
     /**
@@ -88,32 +96,32 @@ class Comment
      * @ORM\ManyToOne(targetEntity="CommunityTranslation\Entity\Locale", inversedBy="comments")
      * @ORM\JoinColumn(name="locale", referencedColumnName="id", nullable=true, onDelete="CASCADE")
      *
-     * @var Locale|null
+     * @var LocaleEntity|null
      */
-    protected $locale = null;
-
-    /**
-     * Get the associated Locale (null for global comments).
-     *
-     * @return Locale|null
-     */
-    public function getLocale()
-    {
-        return $this->locale;
-    }
+    protected $locale;
 
     /**
      * Set the associated Locale (null for global comments).
      *
-     * @param Locale|null $value
+     * @param LocaleEntity|null $value
      *
      * @return static
      */
-    public function setLocale(Locale $value = null)
+    public function setLocale(LocaleEntity $value = null)
     {
         $this->locale = $value;
 
         return $this;
+    }
+
+    /**
+     * Get the associated Locale (null for global comments).
+     *
+     * @return LocaleEntity|null
+     */
+    public function getLocale()
+    {
+        return $this->locale;
     }
 
     /**
@@ -124,7 +132,7 @@ class Comment
      *
      * @var Comment|null
      */
-    protected $parentComment = null;
+    protected $parentComment;
 
     /**
      * Get the parent comment (null for root comments).
@@ -134,20 +142,6 @@ class Comment
     public function getParentComment()
     {
         return $this->parentComment;
-    }
-
-    /**
-     * Get the parent comment (null for root comments).
-     *
-     * @param Comment|null $value
-     *
-     * @return static
-     */
-    public function setParentComment(Comment $value = null)
-    {
-        $this->parentComment = $value;
-
-        return $this;
     }
 
     /**
@@ -189,51 +183,23 @@ class Comment
     }
 
     /**
-     * Set the record creation date/time.
-     *
-     * @param DateTime $value
-     *
-     * @return static
-     */
-    public function setPostedOn(DateTime $value)
-    {
-        $this->postedOn = $value;
-
-        return $this;
-    }
-
-    /**
      * User that posted this comment.
      *
      * @ORM\ManyToOne(targetEntity="Concrete\Core\Entity\User\User")
      * @ORM\JoinColumn(name="postedBy", referencedColumnName="uID", nullable=true, onDelete="SET NULL")
      *
-     * @var User|null
+     * @var UserEntity|null
      */
-    protected $postedBy = null;
+    protected $postedBy;
 
     /**
-     * Get the User that posted this comment.
+     * Get the User that posted this comment (null if the user has been deleted).
      *
-     * @return User|null
+     * @return UserEntity|null
      */
     public function getPostedBy()
     {
         return $this->postedBy;
-    }
-
-    /**
-     * Set the User that posted this comment.
-     *
-     * @param User|null $value
-     *
-     * @return static
-     */
-    public function setPostedBy(User $value = null)
-    {
-        $this->postedBy = $value;
-
-        return $this;
     }
 
     /**
@@ -243,17 +209,7 @@ class Comment
      *
      * @var string
      */
-    protected $text = '';
-
-    /**
-     * Get the comment text.
-     *
-     * @return string
-     */
-    public function getText()
-    {
-        return $this->text;
-    }
+    protected $text;
 
     /**
      * Set the comment text.
@@ -267,5 +223,15 @@ class Comment
         $this->text = (string) $value;
 
         return $this;
+    }
+
+    /**
+     * Get the comment text.
+     *
+     * @return string
+     */
+    public function getText()
+    {
+        return $this->text;
     }
 }

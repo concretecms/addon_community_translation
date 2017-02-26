@@ -234,26 +234,68 @@ class Controller extends Package
                 [],
                 ['GET'],
             ],
-            "$onlineTranslationPath/action/save_comment" => [
+            "$onlineTranslationPath/action/save_comment/{localeID}" => [
                 'Concrete\Package\CommunityTranslation\Controller\Frontend\OnlineTranslation::save_comment',
+                null,
+                ['localeID' => $localeRegex],
+                [],
+                '',
+                [],
+                ['POST'],
             ],
-            "$onlineTranslationPath/action/delete_comment" => [
+            "$onlineTranslationPath/action/delete_comment/{localeID}" => [
                 'Concrete\Package\CommunityTranslation\Controller\Frontend\OnlineTranslation::delete_comment',
+                null,
+                ['localeID' => $localeRegex],
+                [],
+                '',
+                [],
+                ['POST'],
             ],
-            "$onlineTranslationPath/action/load_all_places" => [
+            "$onlineTranslationPath/action/load_all_places/{localeID}" => [
                 'Concrete\Package\CommunityTranslation\Controller\Frontend\OnlineTranslation::load_all_places',
+                null,
+                ['localeID' => $localeRegex],
+                [],
+                '',
+                [],
+                ['POST'],
             ],
-            "$onlineTranslationPath/action/process_translation" => [
+            "$onlineTranslationPath/action/process_translation/{localeID}" => [
                 'Concrete\Package\CommunityTranslation\Controller\Frontend\OnlineTranslation::process_translation',
+                null,
+                ['localeID' => $localeRegex],
+                [],
+                '',
+                [],
+                ['POST'],
             ],
-            "$onlineTranslationPath/action/load_translation" => [
+            "$onlineTranslationPath/action/load_translation/{localeID}" => [
                 'Concrete\Package\CommunityTranslation\Controller\Frontend\OnlineTranslation::load_translation',
+                null,
+                ['localeID' => $localeRegex],
+                [],
+                '',
+                [],
+                ['POST'],
             ],
-            "$onlineTranslationPath/action/save_glossary_term" => [
+            "$onlineTranslationPath/action/save_glossary_term/{localeID}" => [
                 'Concrete\Package\CommunityTranslation\Controller\Frontend\OnlineTranslation::save_glossary_term',
+                null,
+                ['localeID' => $localeRegex],
+                [],
+                '',
+                [],
+                ['POST'],
             ],
-            "$onlineTranslationPath/action/delete_glossary_term" => [
+            "$onlineTranslationPath/action/delete_glossary_term/{localeID}" => [
                 'Concrete\Package\CommunityTranslation\Controller\Frontend\OnlineTranslation::delete_glossary_term',
+                null,
+                ['localeID' => $localeRegex],
+                [],
+                '',
+                [],
+                ['POST'],
             ],
             "$apiEntryPoint/locales/" => [
                 'CommunityTranslation\Api\EntryPoint::getApprovedLocales',

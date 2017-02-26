@@ -19,6 +19,13 @@ use Doctrine\ORM\Mapping as ORM;
 class Notification
 {
     /**
+     * Unspecified recipient (should be evaluated when the notification is sent).
+     *
+     * @var int
+     */
+    const RECIPIENT_UNSPECIFIED = 0x0000;
+
+    /**
      * Notification for a single user.
      *
      * @var int

@@ -4,6 +4,7 @@ namespace CommunityTranslation\Repository;
 use CommunityTranslation\Entity\Locale as LocaleEntity;
 use CommunityTranslation\Entity\Notification as NotificationEntity;
 use CommunityTranslation\Entity\Package\Version as PackageVersionEntity;
+use CommunityTranslation\Entity\Translatable\Comment as TranslatableCommentEntity;
 use CommunityTranslation\UserException;
 use Concrete\Core\Entity\User\User as UserEntity;
 use Concrete\Core\User\User;
@@ -185,6 +186,24 @@ class Notification extends EntityRepository
                 'numTranslations' => $numTranslations,
                 'packageHandle' => $packageVersion ? $packageVersion->getPackage()->getHandle() : null,
                 'packageVersion' => $packageVersion ? $packageVersion->getVersion() : null,
+            ],
+            $locale
+        );
+        $em = $this->getEntityManager();
+        $em->persist($n);
+        $em->flush($n);
+    }
+
+    /**
+     * @param TranslatableCommentEntity $comment
+     */
+    public function newTranslatableCommentSubmitted(TranslatableCommentEntity $comment)
+    {
+        $n = NotificationEntity::create(
+            'new_translatable_comment',
+            NotificationEntity::RECIPIENT_UNSPECIFIED,
+            [
+                'commentID' => $comment->getID(),
             ],
             $locale
         );

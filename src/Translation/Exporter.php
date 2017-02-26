@@ -3,7 +3,6 @@ namespace CommunityTranslation\Translation;
 
 use CommunityTranslation\Entity\Locale as LocaleEntity;
 use CommunityTranslation\Entity\Package\Version as PackageVersionEntity;
-use CommunityTranslation\Entity\Translation as TranslationEntity;
 use CommunityTranslation\Repository\Package\Version as PackageVersionRepository;
 use CommunityTranslation\UserException;
 use Concrete\Core\Application\Application;
@@ -120,7 +119,7 @@ class Exporter
             ";
         }
         $result .= '
-                CommunityTranslationTranslations.status,
+                CommunityTranslationTranslations.approved,
                 CommunityTranslationTranslations.text0,
                 CommunityTranslationTranslations.text1,
                 CommunityTranslationTranslations.text2,
@@ -159,9 +158,9 @@ class Exporter
 
         return $cn->executeQuery(
             $this->getBaseSelectString($locale, false, false) .
-            ' inner join
+            " inner join
                 (
-                    select distinct translatable from CommunityTranslationTranslations where current is null and status = ' . TranslationEntity::STATUS_PENDINGAPPROVAL . " and locale = $queryLocaleID
+                    select distinct translatable from CommunityTranslationTranslations where current is null and approved is null and locale = $queryLocaleID
                 ) as tNR on CommunityTranslationTranslatables.id = tNR.translatable
             order by
                 CommunityTranslationTranslatables.text
@@ -228,7 +227,7 @@ class Exporter
         $numPlurals = $locale->getPluralCount();
         while (($row = $rs->fetch()) !== false) {
             $translation = new \Gettext\Translation($row['context'], $row['text'], $row['plural']);
-            if ((int) $row['status'] < TranslationEntity::STATUS_APPROVED) {
+            if (!$row['approved']) {
                 $translation->addFlag('fuzzy');
             }
             foreach (unserialize($row['locations']) as $location) {

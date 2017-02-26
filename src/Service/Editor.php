@@ -3,13 +3,13 @@ namespace CommunityTranslation\Service;
 
 use CommunityTranslation\Entity\Locale as LocaleEntity;
 use CommunityTranslation\Entity\Package\Version as PackageVersionEntity;
+use CommunityTranslation\Entity\Translatable as TranslatableEntity;
+use CommunityTranslation\Entity\Translatable\Comment as TranslatableCommentEntity;
 use CommunityTranslation\Repository\GitRepository as GitRepositoryRepository;
 use CommunityTranslation\Repository\Translatable\Comment as TranslatableCommentRepository;
 use CommunityTranslation\Repository\Translatable\Place as TranslatablePlaceRepository;
 use CommunityTranslation\Repository\Translation as TranslationRepository;
 use CommunityTranslation\Service\User as UserService;
-use CommunityTranslation\Translatable\Comment\Comment;
-use CommunityTranslation\Translatable\Translatable;
 use CommunityTranslation\Translation\Exporter as TranslationExporter;
 use Concrete\Core\Application\Application;
 use Doctrine\ORM\EntityManager;
@@ -132,13 +132,13 @@ class Editor
      * Returns the data to be used in the editor when editing a string.
      *
      * @param LocaleEntity $locale the current editor locale
-     * @param Translatable $translatable the source string that's being translated
+     * @param TranslatableEntity $translatable the source string that's being translated
      * @param PackageVersionEntity $packageVersion the package version where this string is used
      * @param bool $initial set to true when a string is first loaded, false after it has been saved
      *
      * @return array
      */
-    public function getTranslatableData(LocaleEntity $locale, Translatable $translatable, PackageVersionEntity $packageVersion = null, $initial = false)
+    public function getTranslatableData(LocaleEntity $locale, TranslatableEntity $translatable, PackageVersionEntity $packageVersion = null, $initial = false)
     {
         $result = [
             'id' => $translatable->getID(),
@@ -168,11 +168,11 @@ class Editor
      * Search all the translations associated to a translatable string.
      *
      * @param LocaleEntity $locale
-     * @param Translatable $translatable
+     * @param TranslatableEntity $translatable
      *
      * @return array
      */
-    public function getTranslations(LocaleEntity $locale, Translatable $translatable)
+    public function getTranslations(LocaleEntity $locale, TranslatableEntity $translatable)
     {
         $numPlurals = $locale->getPluralCount();
 
@@ -211,14 +211,13 @@ class Editor
                 'id' => $translation->getID(),
                 'createdOn' => $dh->formatPrettyDateTime($translation->getCreatedOn(), false, true),
                 'createdBy' => $uh->format($translation->getCreatedBy()),
-                'reviewed' => $translation->isReviewed(),
+                'approved' => $translation->isApproved(),
                 'translations' => array_reverse($texts),
             ];
             if ($translation->isCurrent()) {
-                $item['currentSince'] = $dh->formatPrettyDateTime($translation->isCurrentSince(), false, true);
+                $item['currentSince'] = $dh->formatPrettyDateTime($translation->getCurrentSince(), false, true);
                 $result['current'] = $item;
             } else {
-                $item['needReview'] = $translation->needReview();
                 $result['others'][] = $item;
             }
         }
@@ -230,9 +229,9 @@ class Editor
      * Get the comments associated to a translatable strings.
      *
      * @param LocaleEntity $locale
-     * @param Translatable $translatable
+     * @param TranslatableEntity $translatable
      */
-    public function getComments(LocaleEntity $locale, Translatable $translatable, Comment $parentComment = null)
+    public function getComments(LocaleEntity $locale, TranslatableEntity $translatable, TranslatableCommentEntity $parentComment = null)
     {
         $repo = $this->app->make(TranslatableCommentRepository::class);
         if ($parentComment === null) {
@@ -279,26 +278,26 @@ class Editor
      * Search for similar translations.
      *
      * @param LocaleEntity $locale
-     * @param Translatable $translatable
+     * @param TranslatableEntity $translatable
      *
      * @return array
      */
-    public function getSuggestions(LocaleEntity $locale, Translatable $translatable)
+    public function getSuggestions(LocaleEntity $locale, TranslatableEntity $translatable)
     {
         $result = [];
         $connection = $this->app->make(EntityManager::class)->getConnection();
         $rs = $connection->executeQuery(
             '
                 select distinct
-                    Translatables.text,
-                    Translations.text0,
-                    match(Translatables.text) against (:search in natural language mode) as relevance
+                    CommunityTranslationTranslatables.text,
+                    CommunityTranslationTranslations.text0,
+                    match(CommunityTranslationTranslatables.text) against (:search in natural language mode) as relevance
                 from
-                    Translations
-                    inner join Translatables on Translations.translatable = Translatables.id and 1 = Translations.current and :locale = Translations.locale
+                    CommunityTranslationTranslations
+                    inner join CommunityTranslationTranslatables on CommunityTranslationTranslations.translatable = CommunityTranslationTranslatables.id and 1 = CommunityTranslationTranslations.current and :locale = CommunityTranslationTranslations.locale
                 where
-                    Translatables.id <> :currentTranslatableID
-                    and length(Translatables.text) between :minLength and :maxLength
+                    CommunityTranslationTranslatables.id <> :currentTranslatableID
+                    and length(CommunityTranslationTranslatables.text) between :minLength and :maxLength
                 having
                     relevance > 0
                 order by
@@ -330,32 +329,32 @@ class Editor
      * Search the glossary entries to show when translating a string in a specific locale.
      *
      * @param LocaleEntity $locale the current editor locale
-     * @param Translatable $translatable the source string that's being translated
+     * @param TranslatableEntity $translatable the source string that's being translated
      *
      * @return array
      */
-    public function getGlossaryTerms(LocaleEntity $locale, Translatable $translatable)
+    public function getGlossaryTerms(LocaleEntity $locale, TranslatableEntity $translatable)
     {
         $result = [];
         $connection = $this->app->make(EntityManager::class)->getConnection();
         $rs = $connection->executeQuery(
             '
                 select
-                    id,
-                    term,
-                    type,
-                    comments,
-                    translation,
-                    comments,
-                    match(term) against (:search in natural language mode) as relevance
+                    CommunityTranslationGlossaryEntries.id,
+                    CommunityTranslationGlossaryEntries.term,
+                    CommunityTranslationGlossaryEntries.type,
+                    CommunityTranslationGlossaryEntries.comments as commentsE,
+                    CommunityTranslationGlossaryEntriesLocalized.translation,
+                    CommunityTranslationGlossaryEntriesLocalized.comments as commentsEL,
+                    match(CommunityTranslationGlossaryEntries.term) against (:search in natural language mode) as relevance
                 from
-                    GlossaryEntries
-                    left join GlossaryLocalizedEntries on GlossaryEntries.id = GlossaryLocalizedEntries.entry and :locale = GlossaryLocalizedEntries.locale
+                    CommunityTranslationGlossaryEntries
+                    left join CommunityTranslationGlossaryEntriesLocalized on CommunityTranslationGlossaryEntries.id = CommunityTranslationGlossaryEntriesLocalized.entry and :locale = CommunityTranslationGlossaryEntriesLocalized.locale
                 having
                     relevance > 0
                 order by
                     relevance desc,
-                    term asc
+                    CommunityTranslationGlossaryEntries.term asc
                 limit
                     0, ' . ((int) self::MAX_GLOSSARY_ENTRIES) . '
             ',
@@ -369,9 +368,9 @@ class Editor
                 'id' => (int) $row['id'],
                 'term' => $row['term'],
                 'type' => $row['type'],
-                'termComments' => $row['comments'],
+                'termComments' => $row['commentsE'],
                 'translation' => ($row['translation'] === null) ? '' : $row['translation'],
-                'translationComments' => ($row['comments'] === null) ? '' : $row['comments'],
+                'translationComments' => ($row['commentsEL'] === null) ? '' : $row['comments'],
             ];
         }
         $rs->closeCursor();

@@ -26,13 +26,12 @@ class Localized
      *
      * @return static
      */
-    public static function create(Entry $entry, Locale $locale, $translation, $comments = '')
+    public static function create(Entry $entry, Locale $locale)
     {
         $result = new static();
         $result->entry = $entry;
         $result->locale = $locale;
-        $result->translation = (string) $translation;
-        $result->comments = (string) $comments;
+        $result->comments = '';
 
         return $result;
     }
@@ -93,16 +92,6 @@ class Localized
     protected $translation;
 
     /**
-     * Get the term translation.
-     *
-     * @return string
-     */
-    public function getTranslation()
-    {
-        return $this->$translation;
-    }
-
-    /**
      * Set the term translation.
      *
      * @param string $value
@@ -111,9 +100,19 @@ class Localized
      */
     public function setTranslation($value)
     {
-        $this->$translation = (string) $value;
+        $this->translation = (string) $value;
 
         return $this;
+    }
+
+    /**
+     * Get the term translation.
+     *
+     * @return string
+     */
+    public function getTranslation()
+    {
+        return $this->translation;
     }
 
     /**
@@ -124,16 +123,6 @@ class Localized
      * @var string
      */
     protected $comments;
-
-    /**
-     * Get the locale-specific comments about the term.
-     *
-     * @return string
-     */
-    public function getComments()
-    {
-        return $this->comments;
-    }
 
     /**
      * Set the locale-specific comments about the term.
@@ -147,5 +136,15 @@ class Localized
         $this->comments = (string) $value;
 
         return $this;
+    }
+
+    /**
+     * Get the locale-specific comments about the term.
+     *
+     * @return string
+     */
+    public function getComments()
+    {
+        return $this->comments;
     }
 }

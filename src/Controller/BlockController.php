@@ -24,7 +24,6 @@ abstract class BlockController extends CoreBlockController
         return $this->access;
     }
 
-
     /**
      * {@inheritdoc}
      *
@@ -41,7 +40,7 @@ abstract class BlockController extends CoreBlockController
                 }
             }
         }
-    
+
         return $result;
     }
 
