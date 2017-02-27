@@ -5,12 +5,15 @@ use CommunityTranslation\Console\Command\ProcessGitRepositoriesCommand;
 use CommunityTranslation\Console\Command\TransifexGlossaryCommand;
 use CommunityTranslation\Console\Command\TransifexTranslationsCommand;
 use CommunityTranslation\Entity\Locale as LocaleEntity;
+use CommunityTranslation\Parser\Concrete5Parser;
+use CommunityTranslation\Parser\Provider as ParserProvider;
 use CommunityTranslation\Repository\Locale as LocaleRepository;
 use CommunityTranslation\Service\EventSubscriber;
 use CommunityTranslation\ServiceProvider;
 use Concrete\Core\Asset\AssetList;
 use Concrete\Core\Backup\ContentImporter;
 use Concrete\Core\Package\Package;
+use Concrete\Core\Routing\Router;
 use Doctrine\ORM\EntityManager;
 
 /**
@@ -39,7 +42,7 @@ class Controller extends Package
      *
      * @var string
      */
-    protected $pkgVersion = '0.0.1';
+    protected $pkgVersion = '0.0.2';
 
     /**
      * The mapping between RelativeDirectory <-> Namespace to autoload package classes.
@@ -129,9 +132,6 @@ class Controller extends Package
     {
         $this->registerServiceProvider();
         $this->registerParsers();
-        \Route::setThemesByRoutes([
-            '/translate/online' => ['community_translation', 'full_page.php'],
-        ]);
         $this->app->make('director')->addSubscriber($this->app->make(EventSubscriber::class));
         if ($this->app->isRunThroughCommandLineInterface()) {
             $this->registerCLICommands();
@@ -152,7 +152,7 @@ class Controller extends Package
 
     private function registerParsers()
     {
-        $this->app->make(\CommunityTranslation\Parser\Provider::class)->register(\CommunityTranslation\Parser\Concrete5Parser::class);
+        $this->app->make(ParserProvider::class)->register(Concrete5Parser::class);
     }
 
     /**
@@ -209,8 +209,8 @@ class Controller extends Package
                     ['javascript', 'community_translation/online_translation/bootstrap'],
                     ['javascript', 'community_translation/online_translation/markdown-it'],
                     ['javascript', 'community_translation/online_translation/core'],
-                ]
-            ]
+                ],
+            ],
         ]);
     }
 
@@ -224,7 +224,7 @@ class Controller extends Package
         $apiEntryPoint = $config->get('options.api.entryPoint');
         $handleRegex = '[A-Za-z0-9]([A-Za-z0-9\_]*[A-Za-z0-9])?';
         $localeRegex = '[a-zA-Z]{2,3}([_\-][a-zA-Z0-9]{2,3})?';
-        $this->app->make('Concrete\Core\Routing\Router')->registerMultiple([
+        $this->app->make(Router::class)->registerMultiple([
             "$onlineTranslationPath/{packageVersionID}/{localeID}" => [
                 'Concrete\Package\CommunityTranslation\Controller\Frontend\OnlineTranslation::view',
                 null,
@@ -290,6 +290,24 @@ class Controller extends Package
             ],
             "$onlineTranslationPath/action/delete_glossary_term/{localeID}" => [
                 'Concrete\Package\CommunityTranslation\Controller\Frontend\OnlineTranslation::delete_glossary_term',
+                null,
+                ['localeID' => $localeRegex],
+                [],
+                '',
+                [],
+                ['POST'],
+            ],
+            "$onlineTranslationPath/action/download/{localeID}" => [
+                'Concrete\Package\CommunityTranslation\Controller\Frontend\OnlineTranslation::download',
+                null,
+                ['localeID' => $localeRegex],
+                [],
+                '',
+                [],
+                ['POST'],
+            ],
+            "$onlineTranslationPath/action/upload/{localeID}" => [
+                'Concrete\Package\CommunityTranslation\Controller\Frontend\OnlineTranslation::upload',
                 null,
                 ['localeID' => $localeRegex],
                 [],

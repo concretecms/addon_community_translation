@@ -205,7 +205,7 @@ EOT
         if (count($line) !== $this->numFields) {
             throw new Exception('Bad fields count!');
         }
-        $entry = new GlossaryEntryEntity();
+        $entry = GlossaryEntryEntity::create();
         $translations = [];
         foreach ($line as $index => $value) {
             if (!isset($this->map[$index])) {
@@ -270,7 +270,9 @@ EOT
                 $output->writeln('already in DB - skipped');
                 continue;
             }
-            $localizedEntry = GlossaryEntryLocalizedEntity::create($entry, $locale, $translation['text'], $translation['comments']);
+            $localizedEntry = GlossaryEntryLocalizedEntity::create($entry, $locale)
+                ->setTranslation($translation['text'])
+                ->setComments($translation['comments']);
             $entry->getTranslations()->add($localizedEntry);
             $this->em->persist($localizedEntry);
             $this->em->flush($localizedEntry);

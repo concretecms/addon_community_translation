@@ -6,6 +6,7 @@ use CommunityTranslation\Entity\Package\Version as PackageVersionEntity;
 use CommunityTranslation\Repository\Package\Version as PackageVersionRepository;
 use CommunityTranslation\UserException;
 use Concrete\Core\Application\Application;
+use Concrete\Core\Database\Driver\PDOStatement;
 use Doctrine\ORM\EntityManager;
 use Gettext\Translations;
 
@@ -149,7 +150,7 @@ class Exporter
      *
      * @param LocaleEntity $locale
      *
-     * @return \Concrete\Core\Database\Driver\PDOStatement
+     * @return PDOStatement
      */
     public function getUnreviewedSelectQuery(LocaleEntity $locale)
     {
@@ -174,7 +175,7 @@ class Exporter
      * @param PackageVersionEntity $packageVersion
      * @param LocaleEntity $locale
      *
-     * @return \Concrete\Core\Database\Driver\PDOStatement
+     * @return PDOStatement
      */
     public function getPackageSelectQuery(PackageVersionEntity $packageVersion, LocaleEntity $locale, $excludeUntranslatedStrings = false)
     {
@@ -222,14 +223,46 @@ class Exporter
             throw new UserException(t('Invalid translated package version specified'));
         }
         $rs = $this->getPackageSelectQuery($packageVersion, $locale, $excludeUntranslatedStrings);
+
+        $result = $this->buildTranslations($locale, $rs);
+
+        $result->setHeader('Project-Id-Version', $packageVersion->getPackage()->getHandle() . ' ' . $packageVersion->getVersion());
+
+        return $result;
+    }
+
+    /**
+     * Get the unreviewed translations for a locale.
+     *
+     * @param LocaleEntity $locale the locale that you want
+     * @param bool $excludeUntranslatedStrings set to true to filter out untranslated strings
+     *
+     * @return Translations
+     */
+    public function unreviewed(LocaleEntity $locale)
+    {
+        $rs = $this->getUnreviewedSelectQuery($locale);
+
+        $result = $this->buildTranslations($locale, $rs);
+
+        $result->setHeader('Project-Id-Version', 'unreviewed');
+
+        return $result;
+    }
+
+    /**
+     * @param LocaleEntity $locale
+     * @param PDOStatement $rs
+     *
+     * @return Translations
+     */
+    protected function buildTranslations(LocaleEntity $locale, PDOStatement $rs)
+    {
         $translations = new Translations();
         $translations->setLanguage($locale->getID());
         $numPlurals = $locale->getPluralCount();
         while (($row = $rs->fetch()) !== false) {
             $translation = new \Gettext\Translation($row['context'], $row['text'], $row['plural']);
-            if (!$row['approved']) {
-                $translation->addFlag('fuzzy');
-            }
             foreach (unserialize($row['locations']) as $location) {
                 $translation->addReference($location);
             }
@@ -237,6 +270,9 @@ class Exporter
                 $translation->addExtractedComment($comment);
             }
             if ($row['text0'] !== null) {
+                if (!$row['approved']) {
+                    $translation->addFlag('fuzzy');
+                }
                 $translation->setTranslation($row['text0']);
                 if ($translation->hasPlural()) {
                     switch ($numPlurals) {

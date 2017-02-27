@@ -13,6 +13,7 @@ use CommunityTranslation\Service\User as UserService;
 use CommunityTranslation\Translation\Exporter as TranslationExporter;
 use Concrete\Core\Application\Application;
 use Doctrine\ORM\EntityManager;
+use Gettext\Translations;
 
 class Editor
 {
@@ -370,7 +371,7 @@ class Editor
                 'type' => $row['type'],
                 'termComments' => $row['commentsE'],
                 'translation' => ($row['translation'] === null) ? '' : $row['translation'],
-                'translationComments' => ($row['commentsEL'] === null) ? '' : $row['comments'],
+                'translationComments' => ($row['commentsEL'] === null) ? '' : $row['commentsEL'],
             ];
         }
         $rs->closeCursor();
@@ -391,15 +392,15 @@ class Editor
         if (empty($references)) {
             return $references;
         }
-        $repositories = $this->app->make(GitRepositoryRepository::class)->findBy(['packageVersion' => $packageVersion->getHandle()]);
+        $gitRepositories = $this->app->make(GitRepositoryRepository::class)->findBy(['packageHandle' => $packageVersion->getPackage()->getHandle()]);
         $applicableRepository = null;
         $gitSubDir = '';
         if (strpos($packageVersion->getVersion(), PackageVersionEntity::DEV_PREFIX) === 0) {
-            foreach ($repositories as $repository) {
-                foreach ($repository->getDevBranches() as $devBranch => $packageVersion) {
-                    if ($packageVersion->getVersion() === $packageVersion) {
+            foreach ($gitRepositories as $gitRepository) {
+                foreach ($gitRepository->getDevBranches() as $devBranch => $version) {
+                    if ($packageVersion->getVersion() === $version) {
                         $gitSubDir = 'blob/' . $devBranch . '/';
-                        $applicableRepository = $repository;
+                        $applicableRepository = $gitRepository;
                         break;
                     }
                 }
@@ -408,12 +409,21 @@ class Editor
                 }
             }
         } else {
-            foreach ($repositories as $repository) {
-                $vx = $repository->getTagsFilterExpanded();
-                if ($vx !== null && version_compare($packageVersion->getVersion(), $vx['version'], $vx['operator'])) {
-                    $gitSubDir = 'blob/' . $packageVersion->getVersion() . '/';
-                    $applicableRepository = $repository;
-                    break;
+            foreach ($gitRepositories as $gitRepository) {
+                $vxList = $gitRepository->getTagFiltersExpanded();
+                if ($vxList !== null) {
+                    $ok = true;
+                    foreach ($vxList as $vx) {
+                        if (!version_compare($packageVersion->getVersion(), $vx['version'], $vx['operator'])) {
+                            $ok = false;
+                            break;
+                        }
+                    }
+                    if ($ok) {
+                        $gitSubDir = 'blob/' . $packageVersion->getVersion() . '/';
+                        $applicableRepository = $gitRepository;
+                        break;
+                    }
                 }
             }
         }

@@ -233,7 +233,7 @@ class Controller extends BlockController
                         $packageVersion = $this->app->make(PackageVersionRepository::class)->findByHandleAndVersion($this->packageHandle, $this->packageVersion);
                         if ($packageVersion === null) {
                             if ($this->packageVersionFixed) {
-                                throw new UserException(t("Unable to find a package with handle '%1\$s' with version '$2\$s'", $this->packageHandle, $this->packageVersion));
+                                throw new UserException(t("Unable to find a package with handle '%1\$s' and version '$2\$s'", $this->packageHandle, $this->packageVersion));
                             }
                         }
                     }
@@ -245,7 +245,7 @@ class Controller extends BlockController
                     $availableVersions[$pv->getVersion()] = $pv->getDisplayVersion();
                 }
                 if (count($availableVersions) === 0 && $this->packageHandleFixed) {
-                    throw new UserException(t("The with handle '%1\$s' doesn't have any available version", $this->packageHandle));
+                    throw new UserException(t("The package '\$s' doesn't have any available version", h($package->getDisplayName())));
                 }
                 $this->set('availableVersions', $availableVersions);
             }

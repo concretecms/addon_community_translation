@@ -5,8 +5,7 @@ use CommunityTranslation\Glossary\EntryType as GlossaryEntryType;
 /* @var Concrete\Package\CommunityTranslation\Controller\Frontend\OnlineTranslation $controllers */
 
 // Arguments
-/* @var CommunityTranslation\Entity\Package\Version|null $packageVersion */
-/* @var string $onlineTranslationPath */
+/* @var CommunityTranslation\Entity\Package\Version|string $packageVersion */
 /* @var Concrete\Core\Validation\CSRF\Token $token */
 /* @var bool $canApprove */
 /* @var CommunityTranslation\Entity\Locale $locale */
@@ -14,6 +13,11 @@ use CommunityTranslation\Glossary\EntryType as GlossaryEntryType;
 /* @var array $pluralCases */
 /* @var array $translations */
 /* @var string $pageTitle */
+/* @var array $allVersions */
+/* @var array $allLocales */
+/* @var string $onlineTranslationPath */
+/* @var array $translationFormats */
+/* @var string|null $showDialogAtStartup */
 
 ?><!DOCTYPE html>
 <html lang="<?= Localization::activeLanguage() ?>">
@@ -33,32 +37,60 @@ use CommunityTranslation\Glossary\EntryType as GlossaryEntryType;
         }
     </script>
 </head><body>
-
 <nav class="navbar navbar-inverse">
     <div class="container-fluid">
         <div class="navbar-header">
-            <a class="navbar-brand" href="<?= URL::to('/translate') ?>"><?= h($pageTitle) ?></a>
-            <?php
-            if ($canApprove && $packageVersion !== null) {
-                ?>
-                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
-                    <span class="sr-only"><?= t('Toggle navigation') ?></span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                </button>
-            <?php
-} ?>
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="<?= URL::to('/') ?>"><?= h($pageTitle) ?></a>
         </div>
-        <?php if ($canApprove && $packageVersion !== null) {
-    ?>
-            <div id="navbar" class="collapse navbar-collapse">
-                <ul class="nav navbar-nav">
-                    <li><a href="<?= URL::to('/translate/online', 'unreviewed', $locale->getID()) ?>"><?= t('View all strings to be reviewed') ?></a></li>
-                </ul>
-            </div>
-        <?php
-} ?>
+        <div id="navbar" class="collapse navbar-collapse">
+            <ul class="nav navbar-nav navbar-right">
+                <?php
+                if ($canApprove && is_object($packageVersion)) {
+                    ?><li><a href="<?= URL::to($onlineTranslationPath, 'unreviewed', $locale->getID()) ?>" title="<?= t('View all strings to be reviewed') ?>"><i class="fa fa-thumbs-up"></i></a></li><?php
+                }
+                ?>
+                <li><a href="#" data-toggle="modal" data-target="#comtra_translation-upload" title="<?= t('Upload translations') ?>"><i class="fa fa-cloud-upload"></i></a>
+                <li><a href="#" data-toggle="modal" data-target="#comtra_translation-download" title="<?= t('Download translations') ?>"><i class="fa fa-cloud-download"></i></a>
+            </ul>
+            <?php
+            if (!empty($allVersions) || !empty($allLocales)) {
+                ?>
+                <form class="navbar-form navbar-right" onsubmit="return false">
+                    <?php
+                    if (!empty($allVersions)) {
+                        ?>
+                        <select class="form-control" onchange="if (this.value) { window.location.href = this.value; this.disabled = true; }">
+                            <?php
+                            foreach ($allVersions as $u => $n) {
+                                ?><option value="<?= h($u) ?>"<?= ($u === '') ? ' selected="selected"' : ''?>><?= h($n) ?></option><?php
+                            }
+                            ?>
+                        </select>
+                        <?php
+                    }
+                    if (!empty($allLocales)) {
+                        ?>
+                        <select class="form-control" onchange="if (this.value) { window.location.href = this.value; this.disabled = true; }">
+                            <?php
+                            foreach ($allLocales as $u => $n) {
+                                ?><option value="<?= h($u) ?>"<?= ($u === '') ? ' selected="selected"' : ''?>><?= h($n) ?></option><?php
+                            }
+                            ?>
+                        </select>
+                        <?php
+                    }
+                    ?>
+                </form>
+                <?php
+            }
+            ?>
+        </div>
     </div>
 </nav>
 
@@ -123,18 +155,20 @@ use CommunityTranslation\Glossary\EntryType as GlossaryEntryType;
                 <?= t('No glossary terms found for this string.') ?>
             </div>
             <dl class="comtra_some dl-horizontal"></dl>
-            <?php if ($canEditGlossary) {
-    ?>
+            <?php
+            if ($canEditGlossary) {
+                ?>
                 <div style="text-align: right">
                     <a href="#" class="btn btn-primary btn-sm" id="comtra_translation-glossary-add"><?= t('New term') ?></a>
                 </div>
-            <?php
-} ?>
+                <?php
+            }
+            ?>
         </div>
     </div>
 </div>
 
-<div id="comtra_translation-comments-dialog" class="modal" tabindex="-1">
+<div id="comtra_translation-comments-dialog" class="modal">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -178,7 +212,7 @@ use CommunityTranslation\Glossary\EntryType as GlossaryEntryType;
     </div>
 </div>
 
-<div id="comtra_allplaces-dialog" class="modal" tabindex="-1">
+<div id="comtra_allplaces-dialog" class="modal">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
@@ -195,9 +229,10 @@ use CommunityTranslation\Glossary\EntryType as GlossaryEntryType;
     </div>
 </div>
 
-<?php if ($canEditGlossary) {
+<?php
+if ($canEditGlossary) {
     ?>
-    <div id="comtra_translation-glossary-dialog" class="modal" tabindex="-1">
+    <div id="comtra_translation-glossary-dialog" class="modal">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -222,11 +257,11 @@ use CommunityTranslation\Glossary\EntryType as GlossaryEntryType;
                                 <div class="col-sm-10">
                                     <select class="form-control" id="comtra_gloentry_type">
                                         <option value=""><?= tc('Type', 'none') ?></option>
-                                        <?php foreach (GlossaryEntryType::getTypesInfo() as $typeHandle => $typeInfo) {
-        ?>
-                                            <option value="<?= h($typeHandle) ?>"><?= h($typeInfo['name']) ?></option>
                                         <?php
-    } ?>
+                                        foreach (GlossaryEntryType::getTypesInfo() as $typeHandle => $typeInfo) {
+                                            ?><option value="<?= h($typeHandle) ?>"><?= h($typeInfo['name']) ?></option><?php
+                                        }
+                                        ?>
                                     </select>
                                 </div>
                             </div>
@@ -265,6 +300,100 @@ use CommunityTranslation\Glossary\EntryType as GlossaryEntryType;
 <?php
 } ?>
 
+<div id="comtra_translation-upload" class="modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" enctype="multipart/form-data" action="<?= $this->action('upload', $locale->getID()) ?>" onsubmit="if (this.already) return; this.already = true">
+                <?php $token->output('comtra-upload-translations' . $locale->getID()); ?>
+                <input type="hidden" name="packageVersion" value="<?= is_object($packageVersion) ? $packageVersion->getID() : h($packageVersion) ?>" />
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                    <h4 class="modal-title"><?= t('Upload translations') ?></h4>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="control-label" for="comtra_upload-translations-file"><?= t('File to be imported') ?></label>
+                        <input class="form-control" type="file" name="file" id="comtra_upload-translations-file" required="required" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal"><?= t('Cancel') ?></button>
+                    <input type="submit" class="btn btn-primary" value="<?= t('Upload') ?>" />
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="comtra_translation-download" class="modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="<?= $this->action('download', $locale->getID()) ?>" target="_blank">
+                <?php $token->output('comtra-download-translations' . $locale->getID()); ?>
+                <input type="hidden" name="packageVersion" value="<?= is_object($packageVersion) ? $packageVersion->getID() : h($packageVersion) ?>" />
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                    <h4 class="modal-title"><?= t('Download translations') ?></h4>
+                </div>
+                <div class="modal-body">
+                    <fieldset>
+                        <legend><?= t('File format') ?></legend>
+                        <?php
+                        foreach ($translationFormats as $f => $n) {
+                            ?>
+                            <div class="radio">
+                                <label>
+                                    <input type="radio" name="download-format" value="<?= h($f) ?>" required="required" />
+                                    <?= h($n) ?>
+                                </label>
+                            </div>
+                            <?php
+                        }
+                        ?>
+                    </fieldset>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal"><?= t('Close') ?></button>
+                    <input type="submit" class="btn btn-primary" value="<?= t('Download') ?>" />
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<?php
+if (isset($showDialogAtStartup)) {
+    ?>
+    <div class="modal fade" role="dialog" id="comtra_startup-dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                    <h4 class="modal-title"><?= t('Message') ?></h4>
+                </div>
+                <div class="modal-body">
+                    <?= $showDialogAtStartup ?>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        $(document).ready(function() {
+            $('#comtra_startup-dialog')
+                .modal()
+                .on('hidden.bs.modal', function() {
+                    $('#comtra_startup-dialog').remove();
+                })
+            ;
+        });
+    </script>
+    <?php
+}
+?>
+
 <script>$(document).ready(function() {
 
 window.ccmTranslator.configureFrontend({
@@ -273,7 +402,7 @@ window.ccmTranslator.configureFrontend({
 });
 window.comtraOnlineEditorInitialize(<?php
 $params = [
-    'packageID' => $packageVersion === null ? null : $packageVersion->getID(),
+    'packageVersionID' => is_object($packageVersion) ? $packageVersion->getID() : null,
     'canApprove' => $canApprove,
     'pluralRuleByIndex' => array_keys($pluralCases),
     'plurals' => $pluralCases,

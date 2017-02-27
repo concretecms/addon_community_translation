@@ -1,13 +1,13 @@
 <?php
 namespace Concrete\Package\CommunityTranslation\Controller\SinglePage\Translate;
 
-use Concrete\Core\Page\Controller\PageController;
-use CommunityTranslation\Entity\Stats as StatsEntity;
 use CommunityTranslation\Entity\Package\Version as PackageVersionEntity;
+use CommunityTranslation\Entity\Stats as StatsEntity;
 use CommunityTranslation\Repository\Locale as LocaleRepository;
 use CommunityTranslation\Repository\Notification as NotificationRepository;
-use CommunityTranslation\UserException;
 use CommunityTranslation\Service\Access;
+use CommunityTranslation\UserException;
+use Concrete\Core\Page\Controller\PageController;
 
 class Details extends PageController
 {
@@ -181,7 +181,7 @@ EOT
             }
             /*
             // @todo START
-            
+
                 if (@strcasecmp(strtolower(str_replace('-', '_', $translations->getLanguage())), strtolower($locale->getID())) !== 0) {
                     $name = \Punic\Language::getName($translations->getLanguage());
                     if ($name) {
@@ -190,7 +190,7 @@ EOT
                         throw new UserException(t('It was not possible to determine the language of the uploaded file.'));
                     }
                 }
-            
+
                 $pluralForms = $translations->getPluralForms();
                 $pluralCount = isset($pluralForms) ? $pluralForms[0] : null;
                 if ($pluralCount === null || $pluralCount !== $locale->getPluralCount()) {
@@ -204,7 +204,7 @@ EOT
                         }
                     }
                 }
-            
+
             // @todo END
             */
             $result = $this->app->make('community_translation/translation/importer')->import($translations, $locale);
@@ -221,7 +221,7 @@ EOT
             ] as $propName => $description) {
                 $num = $result->$propName;
                 if ($num) {
-                    $message .= $description . ': ' . $num . "<br />";
+                    $message .= $description . ': ' . $num . '<br />';
                 }
             }
             if ($result->addedNeedReview > 0) {

@@ -1,7 +1,7 @@
 <?php
 namespace CommunityTranslation\Entity;
 
-use Concrete\Core\Entity\User\User;
+use Concrete\Core\Entity\User\User as UserEntity;
 use DateTime;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -21,6 +21,30 @@ use Doctrine\ORM\Mapping as ORM;
  */
 class Translation
 {
+    public static function create(Locale $locale, Translatable $translatable, $singularText, UserEntity $createdBy = null)
+    {
+        $result = new static();
+        $result->locale = $locale;
+        $result->translatable = $translatable;
+        $result->createdOn = new DateTime();
+        $result->createdBy = $createdBy;
+        $result->current = null;
+        $result->currentSince = null;
+        $result->approved = null;
+        $result->text0 = (string) $singularText;
+        $result->text1 = '';
+        $result->text2 = '';
+        $result->text3 = '';
+        $result->text4 = '';
+        $result->text5 = '';
+
+        return $result;
+    }
+
+    protected function __construct()
+    {
+    }
+
     /**
      * Translation ID.
      *
@@ -68,7 +92,7 @@ class Translation
      * @ORM\ManyToOne(targetEntity="CommunityTranslation\Entity\Translatable", inversedBy="translations")
      * @ORM\JoinColumn(name="translatable", referencedColumnName="id", nullable=false, onDelete="CASCADE")
      *
-     * @var int
+     * @var Translatable
      */
     protected $translatable;
 
@@ -107,7 +131,7 @@ class Translation
      * @ORM\ManyToOne(targetEntity="Concrete\Core\Entity\User\User")
      * @ORM\JoinColumn(name="createdBy", referencedColumnName="uID", nullable=true, onDelete="SET NULL")
      *
-     * @var User|null
+     * @var UserEntity|null
      */
     protected $createdBy;
 
@@ -129,6 +153,25 @@ class Translation
      * @var true|null
      */
     protected $current;
+
+
+    /**
+     * Is this the current translation?
+     *
+     * @param bool
+     *
+     * @return static
+     */
+    public function setIsCurrent($value)
+    {
+        if ($value) {
+            $this->current = true;
+        } else {
+            $this->current = null;
+        }
+
+        return $this;
+    }
 
     /**
      * Is this the current translation?

@@ -7,7 +7,7 @@ window.ccm_enableUserProfileMenu = function() {
 'use strict';
 
 // Some global vars
-var translator, $extra, canApprove, packageID, actions, tokens, i18n, canEditGlossary, currentTranslation = null, pluralRuleByIndex;
+var translator, $extra, canApprove, packageVersionID, actions, tokens, i18n, canEditGlossary, currentTranslation = null, pluralRuleByIndex;
 
 
 // Helper functions
@@ -112,7 +112,7 @@ var showAllPlaces = (function() {
             $list.closest('.modal-body').css({overflow: 'auto', 'overflow-x': 'hidden', 'max-height': Math.max(50, $(window).height() - 200) + 'px'});
             $.each(data, function() {
                 var $div;
-                $list.append($('<div class="list-group-item active" />').text(this['package']));
+                $list.append($('<div class="list-group-item active" />').text(this['packageVersionDisplayName']));
                 if (this.comments.length > 0) {
                     $list.append($div = $('<div class="list-group-item" />')
                         .append($('<span class="label label-info" />').text(i18n.Comments))
@@ -154,7 +154,7 @@ function processTranslation(operation, send, cb) {
     }
     $.ajax({
         cache: false,
-        data: $.extend(true, {ccm_token: tokens.processTranslation, packageID: (packageID === null) ? '' : packageID, id: currentTranslation.id, operation: operation}, send),
+        data: $.extend(true, {ccm_token: tokens.processTranslation, packageVersionID: (packageVersionID === null) ? '' : packageVersionID, id: currentTranslation.id, operation: operation}, send),
         dataType: 'json',
         method: 'POST',
         url: actions.processTranslation
@@ -807,7 +807,7 @@ function loadFullTranslation(foo, translation, cb)
     var success = true;
     $.ajax({
         cache: false,
-        data: {ccm_token: tokens.loadTranslation, translatableID: translation.id, packageID: (packageID === null) ? '' : packageID},
+        data: {ccm_token: tokens.loadTranslation, translatableID: translation.id, packageVersionID: (packageVersionID === null) ? '' : packageVersionID},
         dataType: 'json',
         method: 'POST',
         url: actions.loadTranslation
@@ -859,7 +859,7 @@ function saveCurrentTranslation(translation, postData, cb)
 window.comtraOnlineEditorInitialize = function(options) {
     var height = Math.max(200, $(window).height() - 280);
     $('#comtra_extra>.tab-content').height((height - $('#comtra_extra>.nav-tabs').height()) + 'px');
-    packageID = options.packageID || null;
+    packageVersionID = options.packageVersionID || null;
     canApprove = !!options.canApprove;
     pluralRuleByIndex = options.pluralRuleByIndex;
     actions = options.actions;

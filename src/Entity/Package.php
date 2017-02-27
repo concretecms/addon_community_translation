@@ -177,12 +177,78 @@ class Package
     protected $versions;
 
     /**
-     * Get the artwork pictures.
+     * Get the package versions.
      *
      * @return \CommunityTranslation\Entity\Package\Version[]|ArrayCollection
      */
     public function getVersions()
     {
         return $this->versions;
+    }
+
+    /**
+     * Get the development versions, sorted in ascending or descending order.
+     *
+     * @param bool $descending
+     *
+     * @return \CommunityTranslation\Entity\Package\Version[]
+     */
+    public function getSortedDevelopmentVersions($descending = false)
+    {
+        $versions = [];
+        foreach ($this->getVersions() as $v) {
+            if (strpos($v->getVersion(), Package\Version::DEV_PREFIX) === 0) {
+                $versions[] = $v;
+            }
+        }
+        usort($versions, function (Package\Version $a, Package\Version $b) use ($descending) {
+            return version_compare($a->getVersion(), $b->getVersion()) * ($descending ? -1 : 1);
+        });
+
+        return $versions;
+    }
+
+    /**
+     * Get the production versions, sorted in ascending or descending order.
+     *
+     * @param bool $descending
+     *
+     * @return \CommunityTranslation\Entity\Package\Version[]
+     */
+    public function getSortedProductionVersions($descending = false)
+    {
+        $versions = [];
+        foreach ($this->getVersions() as $v) {
+            if (strpos($v->getVersion(), Package\Version::DEV_PREFIX) !== 0) {
+                $versions[] = $v;
+            }
+        }
+        usort($versions, function (Package\Version $a, Package\Version $b) use ($descending) {
+            return version_compare($a->getVersion(), $b->getVersion()) * ($descending ? -1 : 1);
+        });
+
+        return $versions;
+    }
+
+    /**
+     * Get the versions, sorted in ascending or descending order, with development or production versions first.
+     *
+     * @param bool $descending
+     * @param bool $developmentVersionsFirst
+     *
+     * @return array
+     */
+    public function getSortedVersions($descending = false, $developmentVersionsFirst = false)
+    {
+        $devVersions = $this->getSortedDevelopmentVersions($descending);
+        $prodVersions = $this->getSortedProductionVersions($descending);
+
+        if ($developmentVersionsFirst) {
+            $result = array_merge($devVersions, $prodVersions);
+        } else {
+            $result = array_merge($prodVersions, $devVersions);
+        }
+
+        return $result;
     }
 }

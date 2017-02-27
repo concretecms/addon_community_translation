@@ -76,7 +76,7 @@ class Version
     }
 
     /**
-     * Artwork associated to this picture.
+     * Package associated to this version.
      *
      * @ORM\ManyToOne(targetEntity="CommunityTranslation\Entity\Package", inversedBy="versions")
      * @ORM\JoinColumn(name="package", referencedColumnName="id", nullable=false, onDelete="CASCADE")

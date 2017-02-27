@@ -189,6 +189,7 @@ class Stats extends EntityRepository
      */
     public function resetForLocaleTranslatables(LocaleEntity $locale, $translatables)
     {
+        $this->resetForLocale($locale);
         $translatableIDs = [];
         if ($translatables) {
             if ($translatables instanceof TranslatableEntity) {
@@ -213,10 +214,10 @@ class Stats extends EntityRepository
         $this->getEntityManager()->getConnection()->executeQuery(
             '
                 delete s.*
-                from TranslationStats as s
-                inner join TranslatablePlaces as p on s.sPackage = p.tpPackage
-                where s.sLocale = ?
-                and (p.tpTranslatable = ' . implode(' or p.tpTranslatable = ', $translatableIDs) . ')
+                from CommunityTranslationStats as s
+                inner join CommunityTranslationTranslatablePlaces as p on s.packageVersion = p.packageVersion
+                where s.locale = ?
+                and (p.translatable = ' . implode(' or p.translatable = ', $translatableIDs) . ')
             ',
             [$locale->getID()]
         );

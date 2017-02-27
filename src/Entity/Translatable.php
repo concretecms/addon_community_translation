@@ -130,7 +130,7 @@ class Translatable
     /**
      * Places associated to this translatable string.
      *
-     * @ORM\OneToMany(targetEntity="CommunityTranslation\Entity\Translatable\Place", mappedBy="tpTranslatable")
+     * @ORM\OneToMany(targetEntity="CommunityTranslation\Entity\Translatable\Place", mappedBy="translatable")
      *
      * @var ArrayCollection
      */
@@ -139,7 +139,7 @@ class Translatable
     /**
      * Translations associated to this translatable string.
      *
-     * @ORM\OneToMany(targetEntity="CommunityTranslation\Entity\Translation", mappedBy="tTranslatable")
+     * @ORM\OneToMany(targetEntity="CommunityTranslation\Entity\Translation", mappedBy="translatable")
      *
      * @var ArrayCollection
      */
@@ -148,7 +148,7 @@ class Translatable
     /**
      * Comments about this translatable string.
      *
-     * @ORM\OneToMany(targetEntity="CommunityTranslation\Entity\Translatable\Comment", mappedBy="tcTranslatable")
+     * @ORM\OneToMany(targetEntity="CommunityTranslation\Entity\Translatable\Comment", mappedBy="translatable")
      *
      * @var ArrayCollection
      */
