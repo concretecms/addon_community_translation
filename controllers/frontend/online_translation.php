@@ -846,8 +846,10 @@ class OnlineTranslation extends Controller
         $translation = $this->app->make(TranslationRepository::class)->find($translationID);
         $result = $this->app->make(Editor::class)->getTranslations($translation->getLocale(), $translation->getTranslatable());
         if ($imported->newApprovalNeeded) {
-            unset($result['current']);
             $result['message'] = t('Since the current translation is approved, you have to wait that this new translation will be approved');
+        }
+        if ($imported->addedNotAsCurrent || $imported->existingNotCurrentUntouched) {
+            unset($result['current']);
         }
 
         return $this->app->make(ResponseFactoryInterface::class)->json($result);
@@ -862,8 +864,6 @@ class OnlineTranslation extends Controller
      * @throws UserException
      *
      * @return JsonResponse
-     *
-     * @todo
      */
     protected function setTranslationFromEditor($access, LocaleEntity $locale, TranslatableEntity $translatable, UserEntity $user, PackageVersionEntity $packageVersion = null)
     {

@@ -11,7 +11,7 @@ class ImportResult
     public $emptyTranslations = 0;
 
     /**
-     * Number of translations for unknown translatable strings (skipped).
+     * Number of unknown translations (skipped).
      *
      * @var int
      */

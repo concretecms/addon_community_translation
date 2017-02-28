@@ -67,8 +67,6 @@ class Access
      */
     protected $groups;
 
-    private $currentUser = 'notset';
-
     /**
      * @param Application $application
      */
@@ -89,14 +87,10 @@ class Access
     {
         $result = null;
         if ($user === 'current') {
-            if ($this->currentUser === 'notset') {
-                $this->currentUser = null;
-                $u = new \User();
-                if ($u->isRegistered()) {
-                    $this->currentUser = $u;
-                }
+            $u = new \User();
+            if ($u->isRegistered()) {
+                $result = $u;
             }
-            $result = $this->currentUser;
         } elseif (is_int($user) || (is_string($user) && is_numeric($user))) {
             $result = \User::getByUserID($user);
         } elseif ($user instanceof User) {
