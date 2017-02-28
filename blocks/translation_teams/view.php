@@ -138,7 +138,7 @@ switch ($step) {
                 <div class="panel-heading"><h3><?= t('Would you like a new translation group?') ?></h3></div>
                 <div class="panel-body">
                     <p><?=
-                        t("If you'd like to help us translating concrete5 to a new language, you can ask us to <a href=\"%s\"%s>create a new Translators Team</a>.",
+                        t("If you'd like to help us translating to a new language, you can ask us to <a href=\"%s\"%s>create a new Translators Team</a>.",
                         ($me === null) ? '#' : h($askNewTeamURL),
                         ($me === null) ? (' onclick="window.alert(' . h(json_encode('You must sign-in in order to ask the creation of a new translation group.')) . '); return false"') : ''
                     ) ?></p>

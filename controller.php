@@ -70,7 +70,7 @@ class Controller extends Package
      */
     public function getPackageDescription()
     {
-        return t('Translate concrete5 core and packages');
+        return t('Community-driven collaborative translation');
     }
 
     /**
