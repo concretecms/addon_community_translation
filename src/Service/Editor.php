@@ -394,59 +394,66 @@ class Editor
         }
         $gitRepositories = $this->app->make(GitRepositoryRepository::class)->findBy(['packageHandle' => $packageVersion->getPackage()->getHandle()]);
         $applicableRepository = null;
-        $gitSubDir = '';
-        if (strpos($packageVersion->getVersion(), PackageVersionEntity::DEV_PREFIX) === 0) {
-            foreach ($gitRepositories as $gitRepository) {
-                foreach ($gitRepository->getDevBranches() as $devBranch => $version) {
-                    if ($packageVersion->getVersion() === $version) {
-                        $gitSubDir = 'blob/' . $devBranch . '/';
-                        $applicableRepository = $gitRepository;
-                        break;
-                    }
-                }
-                if ($applicableRepository !== null) {
-                    break;
-                }
-            }
-        } else {
-            foreach ($gitRepositories as $gitRepository) {
-                $vxList = $gitRepository->getTagFiltersExpanded();
-                if ($vxList !== null) {
-                    $ok = true;
-                    foreach ($vxList as $vx) {
-                        if (!version_compare($packageVersion->getVersion(), $vx['version'], $vx['operator'])) {
-                            $ok = false;
-                            break;
-                        }
-                    }
-                    if ($ok) {
-                        $gitSubDir = 'blob/' . $packageVersion->getVersion() . '/';
-                        $applicableRepository = $gitRepository;
-                        break;
-                    }
-                }
-            }
-        }
-        if ($applicableRepository === null) {
-            return $references;
-        }
-        if (!preg_match('/^(https?:\/\/github.com\/[^?]+)\.git($|\?)/i', $applicableRepository->getURL(), $matches)) {
-            return $references;
-        }
-        $baseURL = $matches[1] . '/' . $gitSubDir;
-        if ($applicableRepository->getDirectoryToParse() !== '') {
-            $baseURL .= $applicableRepository->getDirectoryToParse() . '/';
-        }
-        foreach ($references as $index => $reference) {
-            if (!preg_match('/^\w*:\/\//', $reference)) {
-                $url = $baseURL . ltrim($reference, '/');
-                if (preg_match('/^(.+):(\d+)$/', $url, $m)) {
-                    $url = $m[1] . '#L' . $m[2];
-                }
-                $references[$index] = [$url, $reference];
+        $foundVersionData = null;
+        foreach ($gitRepositories as $gitRepository) {
+            $d = $gitRepository->getDetectedVersion($packageVersion->getVersion());
+            if ($d !== null) {
+                $applicableRepository = $gitRepository;
+                $foundVersionData = $d;
+                break;
             }
         }
 
-        return $references;
+        $pattern = null;
+        $lineFormat = null;
+        if ($applicableRepository !== null) {
+            switch (true) {
+                case 1 == preg_match('/^(?:\w+:\/\/|\w+@)github.com[:\/]([a-z0-9_.\-]+\/[a-z0-9_.\-]+)\.git$/i', $applicableRepository->getURL(), $matches):
+                    switch ($foundVersionData['kind']) {
+                        case 'tag':
+                            $pattern = 'https://github.com/' . $matches[1] . '/blob/' . $foundVersionData['repoName'] . '/<<FILE>><<LINE>>';
+                            $lineFormat = '#L%s';
+                            break;
+                        case 'branch':
+                            $pattern = 'https://github.com/' . $matches[1] . '/blob/' . $foundVersionData['repoName'] . '/<<FILE>><<LINE>>';
+                            $lineFormat = '#L%s';
+                            break;
+                    }
+                    break;
+            }
+        }
+        $result = $references;
+        if ($pattern !== null) {
+            $prefix = $applicableRepository->getDirectoryToParse();
+            if ($prefix !== '') {
+                $prefix .= '/';
+            }
+            $stripSuffix = $applicableRepository->getDirectoryForPlaces();
+            if ($stripSuffix !== '') {
+                $stripSuffix .= '/';
+            }
+            foreach ($result as $index => $reference) {
+                if (!preg_match('/^\w*:\/\//', $reference)) {
+                    if (preg_match('/^(.+):(\d+)$/', $reference, $m)) {
+                        $file = $m[1];
+                        $line = $m[2];
+                    } else {
+                        $file = $reference;
+                        $line = null;
+                    }
+                    $file = ltrim($file, '/');
+                    $line = ($line === null || $lineFormat === null) ? '' : sprintf($lineFormat, $line);
+                    if ($stripSuffix !== '' && strpos($file, $stripSuffix) === 0) {
+                        $file = $prefix . substr($file, strlen($stripSuffix));
+                    }
+                    $result[$index] = [
+                        str_replace(['<<FILE>>', '<<LINE>>'], [$file, $line], $pattern),
+                        $reference,
+                    ];
+                }
+            }
+        }
+
+        return $result;
     }
 }

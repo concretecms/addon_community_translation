@@ -32,6 +32,7 @@ class GitRepository
         $result->devBranches = [];
         $result->directoryToParse = '';
         $result->directoryForPlaces = '';
+        $result->detectedVersions = [];
         $result->tagToVersionRegexp = '/^(?:v(?:er(?:s(?:ion)?)?)?[.\s]*)?(\d+(?:\.\d+)*)$/';
         $result->tagFilters = [];
 
@@ -259,6 +260,44 @@ class GitRepository
     public function getDirectoryForPlaces()
     {
         return $this->directoryForPlaces;
+    }
+
+    /**
+     * Detected versions.
+     *
+     * @ORM\Column(type="array", nullable=false, options={"comment": "Repository detected versions"})
+     *
+     * @var array
+     */
+    protected $detectedVersions;
+
+    /**
+     * Add a repository detected version.
+     *
+     * @param string $version
+     * @param string $kind
+     * @param string $repoName
+     *
+     * @return static
+     */
+    public function addDetectedVersion($version, $kind, $repoName)
+    {
+        $this->detectedVersions[$version] = [
+            'kind' => $kind,
+            'repoName' => $repoName,
+        ];
+
+        return $this;
+    }
+
+    /**
+     * Get the repository tag filters.
+     *
+     * @return array|null
+     */
+    public function getDetectedVersion($version)
+    {
+        return isset($this->detectedVersions[$version]) ? $this->detectedVersions[$version] : null;
     }
 
     /**

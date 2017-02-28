@@ -57,7 +57,6 @@ class Importer
      */
     public function import(GitRepositoryEntity $gitRepository)
     {
-        @set_time_limit(3600);
         $importer = $this->app->make(TranslatableImporter::class);
         $fetcher = $this->app->make(Fetcher::class, ['gitRepository' => $gitRepository]);
         $packagesRepo = $this->app->make(PackageRepository::class);
@@ -80,6 +79,11 @@ class Importer
         $taggedVersions = $fetcher->getTaggedVersions();
         $skippedTags = [];
         foreach ($taggedVersions as $tag => $version) {
+            if ($gitRepository->getDetectedVersion($version) === null) {
+                $gitRepository->addDetectedVersion($version, 'tag', $tag);
+                $this->em->persist($gitRepository);
+                $this->em->flush($gitRepository);
+            }
             $packageVersion = null;
             foreach ($package->getVersions() as $pv) {
                 if ($pv->getVersion() === $version) {
@@ -95,7 +99,7 @@ class Importer
                 if ($this->logger !== null) {
                     $this->logger->info(t('Extracting strings from tag %1$s for version %2$s', $tag, $version));
                 }
-                $importer->importDirectory($fetcher->getRootDirectory(), $package->getHandle(), $version, $gitRepository->getDirectoryForPlaces());
+                $importer->importDirectory($fetcher->getRootDirectory(), $package->getHandle(), $version, '');
             } else {
                 if ($this->logger !== null) {
                     $this->logger->debug(t('Tag already imported: %1$s (version: %2$s)', $tag, $version));
@@ -103,6 +107,11 @@ class Importer
             }
         }
         foreach ($gitRepository->getDevBranches() as $branch => $version) {
+            if ($gitRepository->getDetectedVersion($version) === null) {
+                $gitRepository->addDetectedVersion($version, 'branch', $branch);
+                $this->em->persist($gitRepository);
+                $this->em->flush($gitRepository);
+            }
             if ($this->logger !== null) {
                 $this->logger->debug(t('Checking out development branch %s', $branch));
             }
@@ -110,7 +119,7 @@ class Importer
             if ($this->logger !== null) {
                 $this->logger->info(t('Extracting strings from development branch %1$s for version %2$s', $branch, $version));
             }
-            $importer->importDirectory($fetcher->getRootDirectory(), $package->getHandle(), $version, $gitRepository->getDirectoryForPlaces());
+            $importer->importDirectory($fetcher->getRootDirectory(), $package->getHandle(), $version, '');
         }
     }
 }
