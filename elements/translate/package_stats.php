@@ -2,8 +2,8 @@
 defined('C5_EXECUTE') or die('Access Denied.');
 
 use CommunityTranslation\Locale\Locale;
-use CommunityTranslation\Stats\Stats;
 use CommunityTranslation\Package\Package;
+use CommunityTranslation\Stats\Stats;
 
 /* @var Locale[] $locales */
 /* @var Package[] $packages */

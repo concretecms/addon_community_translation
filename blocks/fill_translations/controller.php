@@ -213,7 +213,7 @@ class Controller extends BlockController
             $this->set('maxFileSizeDisplay', $this->app->make('helper/number')->formatSize($maxFileSize));
         }
     }
-    
+
     /**
      * {@inheritdoc}
      *

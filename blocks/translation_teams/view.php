@@ -22,7 +22,6 @@ if (isset($showSuccess) && $showSuccess !== '') {
 }
 
 switch ($step) {
-
     case 'teamList':
         /* @var string $askNewTeamURL */
         /* @var Concrete\Core\Validation\CSRF\Token $token */
@@ -41,7 +40,7 @@ switch ($step) {
                     <div class="alert alert-warning" role="alert">
                         <?= t('No translation teams so far') ?>
                     </div>
-                    <?php                    
+                    <?php
                 } else {
                     ?>
                     <table class="table table-hover">
@@ -69,13 +68,13 @@ switch ($step) {
                                             case Access::TRANSLATE:
                                                 ?><form method="POST" action="<?= $view->action('leave_translation_group', $l['id']) ?>" data-comtra-warning="<?= h(t('Are you sure you want to leave this translation group?'))?>" onsubmit="comtraConfirmPost(this); return false">
                                                     <?php $token->output('comtra_leave_translation_group' . $l['id']); ?>
-                                                    <input type="submit" class="btn btn-sm btn-danger pull-right" value="<?= h(t('Leave')) ?>" /> 
+                                                    <input type="submit" class="btn btn-sm btn-danger pull-right" value="<?= h(t('Leave')) ?>" />
                                                 </form><?php
                                                 break;
                                             case Access::ASPRIRING:
                                                 ?><form method="POST" action="<?= $view->action('leave_translation_group', $l['id']) ?>" data-comtra-warning="<?= h(t('Are you sure you want to cancel your join request?'))?>" onsubmit="comtraConfirmPost(this); return false">
                                                     <?php $token->output('comtra_leave_translation_group' . $l['id']); ?>
-                                                    <input type="submit" class="btn btn-sm btn-warning pull-right" value="<?= h(t('Cancel request')) ?>" /> 
+                                                    <input type="submit" class="btn btn-sm btn-warning pull-right" value="<?= h(t('Cancel request')) ?>" />
                                                 </form><?php
                                                 break;
                                         }
@@ -112,13 +111,13 @@ switch ($step) {
                                         if ($l['canApprove']) {
                                             ?><form method="POST" action="<?= $view->action('approve_new_locale_request', $l['id']) ?>" data-comtra-warning="<?= h(t('Are you sure you want to approve this new translation group?'))?>" onsubmit="comtraConfirmPost(this); return false">
                                                 <?php $token->output('comtra_approve_new_locale_request' . $l['id']); ?>
-                                                <input type="submit" class="btn btn-sm btn-success pull-right" value="<?= h(t('Approve')) ?>" /> 
+                                                <input type="submit" class="btn btn-sm btn-success pull-right" value="<?= h(t('Approve')) ?>" />
                                             </form><?php
                                         }
                                         if ($l['canCancel']) {
                                             ?><form method="POST" action="<?= $view->action('cancel_new_locale_request', $l['id']) ?>" data-comtra-warning="<?= h(t('Are you sure you want to cancel this request?'))?>" onsubmit="comtraConfirmPost(this); return false">
                                                 <?php $token->output('comtra_cancel_locale_request' . $l['id']); ?>
-                                                <input type="submit" class="btn btn-sm btn-danger pull-right" value="<?= h($l['canApprove'] ? t('Reject') : t('Cancel')) ?>" /> 
+                                                <input type="submit" class="btn btn-sm btn-danger pull-right" value="<?= h($l['canApprove'] ? t('Reject') : t('Cancel')) ?>" />
                                             </form><?php
                                         }
                                     ?></td>
@@ -183,7 +182,7 @@ switch ($step) {
         /* @var array[] $admins */
         /* @var array[] $translators */
         /* @var array[] $aspiring */
-        
+
         ?><h1><?= t('%s Translation Team', $locale->getDisplayName()) ?></h1><?php
 
         if (!empty($globalAdmins)) {
@@ -200,7 +199,7 @@ switch ($step) {
             </div>
             <?php
         }
-        
+
         ?>
         <div class="panel panel-default">
             <div class="panel-heading"><h3><?= t('Team Coordinators') ?></h3></div>
@@ -269,7 +268,7 @@ switch ($step) {
                                             <input type="submit" class="btn btn-info" value="<?= t('Expel') ?>" />
                                         </form>
                                     </div>
-                                    <?php 
+                                    <?php
                                 }
                                 ?>
                                 <?= $userService->format($u['ui']) ?>
@@ -320,7 +319,7 @@ switch ($step) {
                     </ul>
                 </div>
             </div>
-            <?php 
+            <?php
         }
         ?>
         <div class="pull-right">
@@ -395,7 +394,7 @@ function comtraConfirmPost(form) {
                 click: function() {
                     $dlg.dialog('close');
                 }
-            }          
+            }
         ]
     });
 }

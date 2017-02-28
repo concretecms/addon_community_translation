@@ -13,7 +13,7 @@ $id = 'comtra-fill-translations-' . uniqid();
 
     <legend><?= t('Fill-in already translated strings')?></legend>
 
-    <p><?= t("Here you can upload a ZIP file containing a package, or a dictionary file.") ?></p>
+    <p><?= t('Here you can upload a ZIP file containing a package, or a dictionary file.') ?></p>
     <p><?= t("You'll get back a ZIP file containing all the translatable strings found (.pot file) and the translated strings we already know for the languages that you specify (as source .po files or as compiled .mo files).") ?></p>
 
     <form method="POST" action="<?= $view->action('fill_in') ?>" enctype="multipart/form-data" target="<?= $id ?>_process">
@@ -96,7 +96,7 @@ $(document).ready(function() {
             $labels.removeClass('text-muted');
         } else {
             $lists.attr('disabled', 'disabled');
-            $labels.addClass('text-muted');        
+            $labels.addClass('text-muted');
         }
     }).trigger('change');
 });

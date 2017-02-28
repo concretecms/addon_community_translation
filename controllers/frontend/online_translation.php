@@ -754,7 +754,7 @@ class OnlineTranslation extends Controller
                 throw new UserException(t('The translation file does not define the plural rules'));
             }
             if ($pf[0] !== $locale->getPluralCount()) {
-                throw new UserException(t("The translation file defines %1\$s plural forms instead of %2\$s", $pf[0], $locale->getPluralCount()));
+                throw new UserException(t('The translation file defines %1$s plural forms instead of %2$s', $pf[0], $locale->getPluralCount()));
             }
 
             $importer = $this->app->make(Importer::class);

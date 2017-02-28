@@ -7,7 +7,7 @@ defined('C5_EXECUTE') or die('Access Denied.');
 
 /* @var string $step */
 
-$id = 'comtra-translation-team-request-'.uniqid();
+$id = 'comtra-translation-team-request-' . uniqid();
 
 ?>
 <div class="panel panel-default comtra-translation-team-request">
@@ -24,7 +24,6 @@ if (isset($showError) && $showError !== '') {
 }
 
 switch ($step) {
-
     case 'notLoggedIn':
         ?>
         <?php
@@ -68,7 +67,7 @@ switch ($step) {
                 <p><?= t('Are you sure you want to create another team for %s?', h($languageName)) ?></p>
                 <div class="form-actions">
                     <a href="<?= URL::to('/') ?>" class="btn btn-default"><?= t("Don't create a new team") ?></a>
-                    <a href="#" class="btn btn-default" onclick="$('#<?= $id ?>_warning').hide();$('#<?= $id ?>_create').show(); return false"><?= t("Create a new team anyway") ?></a>
+                    <a href="#" class="btn btn-default" onclick="$('#<?= $id ?>_warning').hide();$('#<?= $id ?>_create').show(); return false"><?= t('Create a new team anyway') ?></a>
                 </div>
             </form>
             <?php
