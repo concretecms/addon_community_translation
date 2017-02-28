@@ -6,8 +6,8 @@ use CommunityTranslation\Repository\Locale as LocaleRepository;
 use CommunityTranslation\Repository\Package as PackageRepository;
 use CommunityTranslation\Repository\Package\Version as PackageVersionRepository;
 use CommunityTranslation\Service\Access;
-use Punic\Comparer;
 use CommunityTranslation\UserException;
+use Punic\Comparer;
 
 class Controller extends BlockController
 {
@@ -164,6 +164,16 @@ class Controller extends BlockController
         }
 
         return $error->has() ? $error : $normalized;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see BlockController::getInstanceSpecificTasks()
+     */
+    protected function getInstanceSpecificTasks()
+    {
+        return '*';
     }
 
     private function getAvailableFormats()

@@ -25,6 +25,21 @@ abstract class BlockController extends CoreBlockController
     }
 
     /**
+     * Ovrride this method to define tasks that are instance-specific.
+     *
+     * Valid return values:
+     * - '*': all the tasks are instance-specific
+     * - whitelist (eg: ['action_one', 'action_two']): instance-specific tasks are only the listed ones.
+     * - blacklist (eg: ['!action_one', '!action_two']): instance-specific tasks are ones that are not listed here.
+     *
+     * @return string[]|string
+     */
+    protected function getInstanceSpecificTasks()
+    {
+        return [];
+    }
+
+    /**
      * {@inheritdoc}
      *
      * @see CoreBlockController::isValidControllerTask()
@@ -33,11 +48,29 @@ abstract class BlockController extends CoreBlockController
     {
         $result = false;
         if (parent::isValidControllerTask($method, $parameters)) {
-            $bID = array_pop($parameters);
-            if ((is_string($bID) && is_numeric($bID)) || is_int($bID)) {
-                if ($this->bID == $bID) {
-                    $result = true;
+            $instanceSpecificTasks = $this->getInstanceSpecificTasks();
+            if ($instanceSpecificTasks === '*') {
+                $isInstanceSpecific = true;
+            } else {
+                $m = strtolower($method);
+                $instanceSpecificTasks = array_map('strtolower', $this->getInstanceSpecificTasks());
+                if (in_array($m, $instanceSpecificTasks, true)) {
+                    $isInstanceSpecific = true;
+                } elseif (in_array('!' . $m, $instanceSpecificTasks, true)) {
+                    $isInstanceSpecific = false;
+                } else {
+                    $isInstanceSpecific = strpos(implode('', $instanceSpecificTasks), '!') !== false;
                 }
+            }
+            if ($isInstanceSpecific) {
+                $bID = array_pop($parameters);
+                if ((is_string($bID) && is_numeric($bID)) || is_int($bID)) {
+                    if ($this->bID == $bID) {
+                        $result = true;
+                    }
+                }
+            } else {
+                $result = true;
             }
         }
 

@@ -117,6 +117,16 @@ class Controller extends BlockController
     }
 
     /**
+     * {@inheritdoc}
+     *
+     * @see BlockController::getInstanceSpecificTasks()
+     */
+    protected function getInstanceSpecificTasks()
+    {
+        return '*';
+    }
+
+    /**
      * @return bool
      */
     private function startStep($checkToken = null)
