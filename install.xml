@@ -4,6 +4,7 @@
     <blocktypes>
     	<blocktype package="community_translation" handle="translation_teams" />
         <blocktype package="community_translation" handle="translation_team_request" />
+    	<blocktype package="community_translation" handle="search_packages" />
         <!-- @todo
         <blocktype package="community_translation" handle="download_translations" />
         -->
@@ -14,6 +15,7 @@
         <blocktypeset package="community_translation" handle="community_translation" name="Community Translation">
         	<blocktype handle="translation_teams" />
         	<blocktype handle="translation_team_request" />
+        	<blocktype handle="search_packages" />
 	        <!-- @todo
         	<blocktype handle="download_translations" />
         	-->
@@ -80,13 +82,6 @@
             </attributes>
         </page>
         <page package="community_translation" name="Community Translation Options" description="" pagetype="" path="/dashboard/community_translation/options" filename="/dashboard/community_translation/options.php">
-        </page>
-        <page package="community_translation" name="Translate" description="" pagetype="" path="/translate" filename="/translate.php">
-        </page>
-        <page package="community_translation" name="Package details" description="" pagetype="" path="/translate/details" filename="/translate/details.php">
-            <attributes>
-                <attributekey handle="exclude_nav"><value>1</value></attributekey>
-            </attributes>
         </page>
     </singlepages>
 
