@@ -742,6 +742,21 @@ class OnlineTranslation extends Controller
                 throw new UserException(t('No translations found in uploaded file'));
             }
 
+            if (!$translations->getLanguage()) {
+                throw new UserException(t('The translation file does not contain a language header'));
+            }
+            if (strcasecmp($translations->getLanguage(), $locale->getID) !== 0) {
+                throw new UserException(t("The translation file is for the '%1\$s' language, not for '%2\$s'", $translations->getLanguage(), $locale->getID()));
+            }
+
+            $pf = $translations->getPluralForms();
+            if (!isset($pf)) {
+                throw new UserException(t('The translation file does not define the plural rules'));
+            }
+            if ($pf[0] !== $locale->getPluralCount()) {
+                throw new UserException(t("The translation file defines %1\$s plural forms instead of %2\$s", $pf[0], $locale->getPluralCount()));
+            }
+
             $importer = $this->app->make(Importer::class);
             /* @var Importer $importer */
             $imported = $importer->import($translations, $locale, $accessHelper->getUserEntity('current'), $access >= Access::ADMIN);
