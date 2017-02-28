@@ -47,7 +47,7 @@ class Notification extends EntityRepository
         $result = null;
         $id = $this->getCurrentUserID($required);
         if ($id !== null) {
-            $result = $this->getEntityManager()->find(UserEntity::class, $u->getUserID());
+            $result = $this->getEntityManager()->find(UserEntity::class, $id);
         }
 
         if ($result === null && $required) {
@@ -106,9 +106,11 @@ class Notification extends EntityRepository
             NotificationEntity::RECIPIENT_GLOBAL_ADMINISTRATORS | NotificationEntity::RECIPIENT_LOCALE_ADMINISTRATORS | NotificationEntity::RECIPIENT_USER,
             [
                 'by' => $this->getCurrentUserID(true),
+                'localeID' => $locale->getID(),
+                'requestedBy' => $locale->getRequestedBy() ? $locale->getRequestedBy()->getUserID() : null,
             ],
-            $locale,
-            $locale->getRequestedBy()
+            null,
+            null
         );
         $em = $this->getEntityManager();
         $em->persist($n);

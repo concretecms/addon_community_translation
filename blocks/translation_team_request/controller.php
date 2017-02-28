@@ -45,7 +45,7 @@ class Controller extends BlockController
 
     public $helpers = [];
 
-    protected $btTable = 'btCTTranslationTeamRrequest';
+    protected $btTable = 'btCTTranslationTeamRequest';
 
     protected $btInterfaceWidth = 600;
     protected $btInterfaceHeight = 200;

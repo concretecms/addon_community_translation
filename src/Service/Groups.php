@@ -80,9 +80,10 @@ class Groups
      */
     protected function getGroup($name, $parent = null)
     {
+        $name = trim($name, '/');
         if ($parent === null || $parent === false || $parent === '') {
             $parent = null;
-            $path = $name;
+            $path = '/' . $name;
         } else {
             if (!$parent instanceof Group) {
                 $parent = $this->getGroup($parent);

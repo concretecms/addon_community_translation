@@ -19,7 +19,7 @@ if ($perc > 0 && $perc < 10) {
     $percClass .= ' progress-bar-minwidth2';
 }
 ?><div class="progress">
-	<div class="progress-bar <?php echo $percClass; ?>" role="progressbar" style="width: <?php echo $perc; ?>%">
-		<span><?php echo $perc; ?></span>
-	</div>
+    <div class="progress-bar <?php echo $percClass; ?>" role="progressbar" style="width: <?php echo $perc; ?>%">
+        <span><?php echo $perc; ?></span>
+    </div>
 </div><?php

@@ -3,7 +3,9 @@ namespace CommunityTranslation\Controller;
 
 use CommunityTranslation\Service\Access;
 use Concrete\Core\Block\BlockController as CoreBlockController;
+use Concrete\Core\Block\View\BlockView;
 use Exception;
+use ZendQueue\Message;
 
 abstract class BlockController extends CoreBlockController
 {
@@ -108,5 +110,44 @@ abstract class BlockController extends CoreBlockController
             throw new Exception(implode("\n", $normalized->getList()));
         }
         parent::save($normalized);
+    }
+
+    /**
+     * @param string $message The message
+     * @param bool $isError
+     * @param mixed $action,... Arguments for the redirection
+     */
+    protected function redirectWithMessage($message, $isError, $action)
+    {
+        $session = $this->app->make('session');
+        /* @var \Symfony\Component\HttpFoundation\Session\Session $session */
+        $session->set('block_flash_message', [$message, $isError]);
+        if ($action) {
+            $args = func_get_args();
+            array_shift($args);
+            array_shift($args);
+            $view = new BlockView($this->getBlockObject());
+            $this->redirect(call_user_func_array([$view, 'action'], $args));
+        } else {
+            $this->redirect(\Page::getCurrentPage());
+        }
+    }
+
+    public function on_start()
+    {
+        parent::on_start();
+        $session = $this->app->make('session');
+        /* @var \Symfony\Component\HttpFoundation\Session\Session $session */
+        if ($session->has('block_flash_message')) {
+            $data = $session->get('block_flash_message');
+            $session->remove('block_flash_message');
+            if (is_array($data)) {
+                if ($data[1]) {
+                    $this->set('showError', $data[0]);
+                } else {
+                    $this->set('showSuccess', $data[0]);
+                }
+            }
+        }
     }
 }

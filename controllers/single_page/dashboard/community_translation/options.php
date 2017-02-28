@@ -76,16 +76,15 @@ class Options extends DashboardPageController
         }
         if ($newSourceLocale === null) {
             $this->error->add(t('Please specify a valid source locale'));
+        } elseif ($this->app->make('community_translation/sourceLocale') === $newSourceLocale->getID()) {
+            $newSourceLocale = null;
+        } elseif ($newSourceLocale->getPluralCount() !== 2) {
+            $this->error->add(t('Because of the gettext specifications, the source locale must have exactly 2 plural forms'));
         } else {
             $repo = $this->app->make(LocaleRepository::class);
-            $oldSourceLocale = $repo->findOneBy(['isSource' => true]);
-            if ($oldSourceLocale !== null && $oldSourceLocale->getID() === $newSourceLocale->getID()) {
-                $newSourceLocale = null;
-            } else {
-                $existingLocale = $repo->find($newSourceLocale->getID());
-                if ($existingLocale !== null) {
-                    $this->error->add(t("There's already an existing locale with code %s that's not the current source locale", $newSourceLocale->getID()));
-                }
+            $existingLocale = $repo->find($newSourceLocale->getID());
+            if ($existingLocale !== null) {
+                $this->error->add(t("There's already an existing locale with code %s that's not the current source locale", $newSourceLocale->getID()));
             }
         }
 

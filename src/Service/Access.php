@@ -6,7 +6,7 @@ use CommunityTranslation\Repository\Locale as LocaleRepository;
 use CommunityTranslation\UserException;
 use Concrete\Core\Application\Application;
 use Concrete\Core\Entity\User\User as UserEntity;
-use Concrete\Core\User\User;
+use Concrete\Core\User\User as UserService;
 use Doctrine\ORM\EntityManager;
 
 class Access
@@ -79,7 +79,7 @@ class Access
     /**
      * Parse the $user parameter of the functions.
      *
-     * @param int|User|UserEntity|'current' $user
+     * @param int|UserService|UserEntity|'current' $user
      *
      * @return \User|null
      */
@@ -93,7 +93,7 @@ class Access
             }
         } elseif (is_int($user) || (is_string($user) && is_numeric($user))) {
             $result = \User::getByUserID($user);
-        } elseif ($user instanceof User) {
+        } elseif ($user instanceof UserService) {
             $result = $user;
         } elseif ($user instanceof UserEntity) {
             $result = \User::getByUserID($user->getUserID());
@@ -105,7 +105,7 @@ class Access
     /**
      * Parse the $user parameter of the functions.
      *
-     * @param int|User|UserEntity|'current' $user
+     * @param int|UserService|UserEntity|'current' $user
      *
      * @return UserEntity|null
      */
@@ -155,7 +155,7 @@ class Access
      * Get the access level to a specific locale.
      *
      * @param LocaleEntity|string $locale
-     * @param User|int|'current' $user
+     * @param UserService|int|'current' $user
      *
      * @return int One of the Access constants
      */
@@ -193,7 +193,7 @@ class Access
      *
      * @param LocaleEntity|string $wantedLocale
      * @param int $access One of the Access constants
-     * @param User|int|'current' $wantedUser
+     * @param UserService|int|'current' $wantedUser
      *
      * @return int One of the Access constants
      */
@@ -266,7 +266,7 @@ class Access
      * Set or unset global administration access.
      *
      * @param bool $enable
-     * @param User|int|'current' $user
+     * @param UserService|int|'current' $user
      */
     public function setGlobalAccess($enable, $user = 'current')
     {
@@ -297,7 +297,7 @@ class Access
      * If the user has access, an empty string will be returned, otherwise the reason why she/he can't download the translations.
      *
      * @param LocaleEntity|string $locale
-     * @param User|int|'current' $user
+     * @param UserService|int|'current' $user
      *
      * @return string
      */

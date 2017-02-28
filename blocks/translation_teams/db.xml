@@ -5,15 +5,17 @@
   xsi:schemaLocation="http://www.concrete5.org/doctrine-xml/0.5 http://concrete5.github.io/doctrine-xml/doctrine-xml-0.5.xsd"
 >
 
-  <table name="btCTTranslationTeamRequest">
+  <table name="btCTTranslationTeams">
     <field name="bID" type="integer">
       <unsigned/>
       <key/>
     </field>
-    <field name="territoryRequestLevel" type="integer">
-    	<unsigned/>
+	<field name="askNewTeamCID" type="integer">
+		<unsigned/>
+	</field>
+    <field name="askNewTeamLink" type="string" size="255">
     	<notnull/>
-    </field>
+	</field>
   </table>
 
 </schema>

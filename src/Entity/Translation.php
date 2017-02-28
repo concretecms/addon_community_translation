@@ -154,7 +154,6 @@ class Translation
      */
     protected $current;
 
-
     /**
      * Is this the current translation?
      *

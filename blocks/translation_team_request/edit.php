@@ -18,7 +18,6 @@ $form = $app->make('helper/form');
     <div class="form-group">
         <?= $form->label('territoryRequestLevel', t('Territory specification')) ?>
         <?= $form->select('territoryRequestLevel', $territoryRequestLevels, $territoryRequestLevel) ?>
-        </div>
     </div>
 
 </fieldset>

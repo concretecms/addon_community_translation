@@ -2,6 +2,7 @@
 <concrete5-cif version="1.0">
 
     <blocktypes>
+    	<blocktype package="community_translation" handle="translation_teams" />
         <blocktype package="community_translation" handle="translation_team_request" />
         <!-- @todo
         <blocktype package="community_translation" handle="download_translations" />
@@ -11,6 +12,7 @@
 
     <blocktypesets>
         <blocktypeset package="community_translation" handle="community_translation" name="Community Translation">
+        	<blocktype handle="translation_teams" />
         	<blocktype handle="translation_team_request" />
 	        <!-- @todo
         	<blocktype handle="download_translations" />
@@ -78,13 +80,6 @@
             </attributes>
         </page>
         <page package="community_translation" name="Community Translation Options" description="" pagetype="" path="/dashboard/community_translation/options" filename="/dashboard/community_translation/options.php">
-        </page>
-        <page package="community_translation" name="Translation Teams" description="" pagetype="" path="/teams" filename="/teams.php">
-        </page>
-        <page package="community_translation" name="Translation Team Details" description="" pagetype="" path="/teams/details" filename="/teams/details.php">
-            <attributes>
-                <attributekey handle="exclude_nav"><value>1</value></attributekey>
-            </attributes>
         </page>
         <page package="community_translation" name="Translate" description="" pagetype="" path="/translate" filename="/translate.php">
         </page>
