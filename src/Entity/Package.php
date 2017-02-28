@@ -234,19 +234,43 @@ class Package
      * Get the versions, sorted in ascending or descending order, with development or production versions first.
      *
      * @param bool $descending
-     * @param bool $developmentVersionsFirst
+     * @param bool|null $developmentVersionsFirst If null, development versions are placed among the production versions
      *
      * @return array
      */
-    public function getSortedVersions($descending = false, $developmentVersionsFirst = false)
+    public function getSortedVersions($descending = false, $developmentVersionsFirst = null)
     {
-        $devVersions = $this->getSortedDevelopmentVersions($descending);
-        $prodVersions = $this->getSortedProductionVersions($descending);
+        if ($developmentVersionsFirst === null) {
+            $result = $this->getVersions()->toArray();
+            usort($result, function (Package\Version $a, Package\Version $b) use ($descending) {
+                $aIsDev = (strpos($a->getVersion(), Package\Version::DEV_PREFIX) === 0);
+                $aVer = $aIsDev ? substr($a->getVersion(), strlen(Package\Version::DEV_PREFIX)) : $a->getVersion();
+                while (preg_match('/^(\.)\.0+$/', $aVer, $m)) {
+                    $aVer = $m[1];
+                }
+                if ($aIsDev) {
+                    $aVer .= str_repeat('.' . PHP_INT_MAX, 5);
+                }
+                $bIsDev = (strpos($b->getVersion(), Package\Version::DEV_PREFIX) === 0);
+                $bVer = $bIsDev ? substr($b->getVersion(), strlen(Package\Version::DEV_PREFIX)) : $b->getVersion();
+                while (preg_match('/^(\.)\.0+$/', $bVer, $m)) {
+                    $bVer = $m[1];
+                }
+                if ($bIsDev) {
+                    $bVer .= str_repeat('.' . PHP_INT_MAX, 5);
+                }
 
-        if ($developmentVersionsFirst) {
-            $result = array_merge($devVersions, $prodVersions);
+                return version_compare($aVer, $bVer) * ($descending ? -1 : 1);
+            });
         } else {
-            $result = array_merge($prodVersions, $devVersions);
+            $devVersions = $this->getSortedDevelopmentVersions($descending);
+            $prodVersions = $this->getSortedProductionVersions($descending);
+
+            if ($developmentVersionsFirst) {
+                $result = array_merge($devVersions, $prodVersions);
+            } else {
+                $result = array_merge($prodVersions, $devVersions);
+            }
         }
 
         return $result;

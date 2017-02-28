@@ -970,7 +970,7 @@ class OnlineTranslation extends Controller
         $onlineTranslationPath = $config->get('options.onlineTranslationPath');
         $urlManager = $this->app->make('url/manager');
         $result = [];
-        foreach ($packageVersion->getPackage()->getSortedVersions(true, true) as $pv) {
+        foreach ($packageVersion->getPackage()->getSortedVersions(true, null) as $pv) {
             if ($pv === $packageVersion) {
                 $url = '';
             } else {
