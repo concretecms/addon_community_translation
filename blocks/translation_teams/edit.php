@@ -22,7 +22,7 @@ $pageSelector = $app->make('helper/form/page_selector');
     <div class="form-group">
         <?php
         $options = [
-            0 => t('None'),
+            0 => t('No link'),
             1 => t('Another Page'),
             2 => t('External URL'),
         ];
