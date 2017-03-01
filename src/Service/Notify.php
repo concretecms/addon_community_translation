@@ -4,7 +4,7 @@ namespace CommunityTranslation\Service;
 use CommunityTranslation\Locale\Locale;
 use CommunityTranslation\Package\Package;
 use Concrete\Core\Application\Application;
-use Concrete\Core\User\User;
+use Concrete\Core\User\User as ConcreteUser;
 
 class Notify implements \Concrete\Core\Application\ApplicationAwareInterface
 {
@@ -109,7 +109,7 @@ class Notify implements \Concrete\Core\Application\ApplicationAwareInterface
         $this->mail->reset();
     }
 
-    public function newAspirantTranslator(User $aspirant, Locale $locale)
+    public function newAspirantTranslator(ConcreteUser $aspirant, Locale $locale)
     {
         $this->send(
             'new_aspirant_translator',
@@ -122,7 +122,7 @@ class Notify implements \Concrete\Core\Application\ApplicationAwareInterface
         );
     }
 
-    public function newLocaleApproved(Locale $locale, User $approver)
+    public function newLocaleApproved(Locale $locale, ConcreteUser $approver)
     {
         $recipients = $this->getGlobalAdministrators();
         $requestedBy = \UserInfo::getByID($locale->getRequestedBy()) ?: null;
@@ -165,7 +165,7 @@ class Notify implements \Concrete\Core\Application\ApplicationAwareInterface
         );
     }
 
-    public function userApproved(Locale $locale, User $user)
+    public function userApproved(Locale $locale, ConcreteUser $user)
     {
         $operator = new \User();
         if (!$operator->isRegistered()) {
@@ -183,7 +183,7 @@ class Notify implements \Concrete\Core\Application\ApplicationAwareInterface
         );
     }
 
-    public function userDenied(Locale $locale, User $user)
+    public function userDenied(Locale $locale, ConcreteUser $user)
     {
         $operator = new \User();
         if (!$operator->isRegistered()) {
