@@ -19,10 +19,11 @@ use CommunityTranslation\Repository\Translatable\Comment as TranslatableCommentR
 use CommunityTranslation\Repository\Translation as TranslationRepository;
 use CommunityTranslation\Service\Access;
 use CommunityTranslation\Service\Editor;
-use CommunityTranslation\Service\TranslationFormats;
+use CommunityTranslation\Service\TranslationsFileExporter;
 use CommunityTranslation\Service\User as UserService;
 use CommunityTranslation\Translation\Exporter;
 use CommunityTranslation\Translation\Importer;
+use CommunityTranslation\TranslationsConverter\Provider as TranslationsConverterProvider;
 use CommunityTranslation\UserException;
 use Concrete\Core\Entity\User\User as UserEntity;
 use Concrete\Core\Http\ResponseAssetGroup;
@@ -135,7 +136,13 @@ class OnlineTranslation extends Controller
             $this->set('translations', $this->app->make(Editor::class)->getInitialTranslations($packageVersion, $locale));
             $this->set('pageTitle', t(/*i18n: %1$s is a package name, %2$s is a language name*/'Translating %1$s in %2$s', $packageVersion->getDisplayName(), $locale->getDisplayName()));
         }
-        $this->set('translationFormats', $this->app->make(TranslationFormats::class)->getList());
+        $translationFormats = [];
+        foreach ($this->app->make(TranslationsConverterProvider::class)->getRegisteredConverters() as $tfHandle => $tf) {
+            if ($tf->supportLanguageHeader() && $tf->supportPlurals()) {
+                $translationFormats[$tfHandle] = $tf;
+            }
+        }
+        $this->set('translationFormats', $translationFormats);
         $session = $this->app->make('session');
         /* @var \Symfony\Component\HttpFoundation\Session\Session $session */
         $showDialogAtStartup = null;
@@ -653,38 +660,35 @@ class OnlineTranslation extends Controller
             if ($access < Access::TRANSLATE) {
                 throw new UserException(t("You don't belong to the %s translation group", $locale->getDisplayName()));
             }
-            $format = (string) $this->post('download-format');
-            $translationFormatsHelper = $this->app->make(TranslationFormats::class);
-            $translationFormats = $translationFormatsHelper->getList();
-            if (!isset($translationFormats[$format])) {
+            $format = $this->app->make(TranslationsConverterProvider::class)->getByHandle((string) $this->post('download-format'));
+            if ($format === null) {
                 throw new UserException(t('Invalid format identifier received'));
             }
-            $translations = null;
+
             $packageVersionID = (string) $this->post('packageVersion');
             if ($packageVersionID === self::PACKAGEVERSION_UNREVIEWED) {
-                if ($access >= Access::ADMIN) {
-                    $translations = $this->app->make(Exporter::class)->unreviewed($locale);
+                if ($access < Access::ADMIN) {
+                    throw new UserException(t('Invalid translated package version identifier received'));
                 }
+                $translations = $this->app->make(Exporter::class)->unreviewed($locale);
+                $serializedTranslations = $format->convertTranslationsToString($translations);
+                unset($translations);
             } else {
                 $packageVersion = $this->app->make(PackageVersionRepository::class)->find($packageVersionID);
-                if ($packageVersion !== null) {
-                    $translations = $this->app->make(Exporter::class)->forPackage($packageVersion, $locale);
+                if ($packageVersion === null) {
+                    throw new UserException(t('Invalid translated package version identifier received'));
                 }
+                $serializedTranslations = $this->app->make(TranslationsFileExporter::class)->getSerializedTranslations($packageVersion, $locale, $format);
             }
-            if ($translations === null) {
-                throw new UserException(t('Invalid translated package version identifier received'));
-            }
-            $data = call_user_func([$translations, 'to' . $format . 'String']);
-            unset($translations);
 
             return $rf->create(
-                $data,
+                $serializedTranslations,
                 200,
                 [
                     'Content-Type' => 'application/octet-stream',
-                    'Content-Disposition' => 'attachment; filename=translations-' . $locale->getID() . '.' . $translationFormatsHelper->getFileExtension($format),
+                    'Content-Disposition' => 'attachment; filename=translations-' . $locale->getID() . '.' . $format->getFileExtension(),
                     'Content-Transfer-Encoding' => 'binary',
-                    'Content-Length' => strlen($data),
+                    'Content-Length' => strlen($serializedTranslations),
                     'Expires' => '0',
                 ]
             );
@@ -731,30 +735,43 @@ class OnlineTranslation extends Controller
             if (!$file->isValid()) {
                 throw new UserException($file->getErrorMessage());
             }
-            $translationFormatsHelper = $this->app->make(TranslationFormats::class);
-            $format = $translationFormatsHelper->getFormatFromFileExtension($file->getClientOriginalExtension());
-            if ($format === null) {
-                throw new UserException(t('Unknown file extension'));
+            $converters = [];
+            foreach ($this->app->make(TranslationsConverterProvider::class)->getByFileExtension($file->getClientOriginalExtension()) as $converter) {
+                if ($converter->supportLanguageHeader() && $converter->supportPlurals()) {
+                    $converters[] = $converter;
+                }
             }
-            $translations = call_user_func([GettextTranslations::class, 'from' . $format . 'File'], $file->getPathname());
-
-            if (count($translations) < 1) {
-                throw new UserException(t('No translations found in uploaded file'));
+            $err = null;
+            $translations = null;
+            foreach ($converters as $converter) {
+                $t = $converter->loadTranslationsFromFile($file->getPathname());
+                if (count($t) < 1) {
+                    if ($err === null) {
+                        $err = UserException(t('No translations found in uploaded file'));
+                    }
+                    continue;
+                } elseif (!$t->getLanguage()) {
+                    $err = new UserException(t('The translation file does not contain a language header'));
+                } elseif (strcasecmp($t->getLanguage(), $locale->getID()) !== 0) {
+                    $err = new UserException(t("The translation file is for the '%1\$s' language, not for '%2\$s'", $t->getLanguage(), $locale->getID()));
+                } else {
+                    $pf = $t->getPluralForms();
+                    if ($pf === null) {
+                        $err = new UserException(t('The translation file does not define the plural rules'));
+                    } elseif ($pf[0] !== $locale->getPluralCount()) {
+                        $err = new UserException(t('The translation file defines %1$s plural forms instead of %2$s', $pf[0], $locale->getPluralCount()));
+                    } else {
+                        $translations = $t;
+                        break;
+                    }
+                }
             }
-
-            if (!$translations->getLanguage()) {
-                throw new UserException(t('The translation file does not contain a language header'));
-            }
-            if (strcasecmp($translations->getLanguage(), $locale->getID) !== 0) {
-                throw new UserException(t("The translation file is for the '%1\$s' language, not for '%2\$s'", $translations->getLanguage(), $locale->getID()));
-            }
-
-            $pf = $translations->getPluralForms();
-            if (!isset($pf)) {
-                throw new UserException(t('The translation file does not define the plural rules'));
-            }
-            if ($pf[0] !== $locale->getPluralCount()) {
-                throw new UserException(t('The translation file defines %1$s plural forms instead of %2$s', $pf[0], $locale->getPluralCount()));
+            if ($translations === null) {
+                if ($err === null) {
+                    throw new UserException(t('Unknown file extension'));
+                } else {
+                    throw $err;
+                }
             }
 
             $importer = $this->app->make(Importer::class);
@@ -860,7 +877,7 @@ class OnlineTranslation extends Controller
         $this->app->make(EntityManager::class)->clear();
         $translation = $this->app->make(TranslationRepository::class)->find($translationID);
         $result = $this->app->make(Editor::class)->getTranslations($translation->getLocale(), $translation->getTranslatable());
-        if ($imported->newApprovalNeeded) {
+        if ($imported->newApprovalNeeded && !$imported->addedAsCurrent) {
             $result['message'] = t('Since the current translation is approved, you have to wait that this new translation will be approved');
         }
         if ($imported->addedNotAsCurrent || $imported->existingNotCurrentUntouched) {
@@ -923,7 +940,7 @@ class OnlineTranslation extends Controller
         $translatable = $this->app->make(TranslatableRepository::class)->find($translatable->getID());
         $locale = $this->app->make(LocaleRepository::class)->find($locale->getID());
         $result = $this->app->make(Editor::class)->getTranslations($locale, $translatable);
-        if ($imported->newApprovalNeeded) {
+        if ($imported->newApprovalNeeded && !$imported->addedAsCurrent) {
             $result['message'] = t('Since the current translation is approved, you have to wait that this new translation will be approved');
         }
 

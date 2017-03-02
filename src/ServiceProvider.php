@@ -14,6 +14,7 @@ class ServiceProvider extends Provider
         $this->registerEntityRepositories($this->app);
         $this->registerConfiguration($this->app);
         $this->registerInterfaces($this->app);
+        $this->registerTranslationConverters($this->app);
     }
 
     /**
@@ -28,6 +29,7 @@ class ServiceProvider extends Provider
             \CommunityTranslation\Service\Access::class,
             \CommunityTranslation\Service\Editor::class,
             \CommunityTranslation\Translation\Exporter::class,
+            \CommunityTranslation\Service\TranslationsFileExporter::class
         ] as $className) {
             $app->singleton($className);
         }
@@ -84,6 +86,24 @@ class ServiceProvider extends Provider
             $config = $app->make('community_translation/config');
 
             return $app->make($config->get('options.parser'));
+        });
+    }
+
+    /**
+     * @param Application $app
+     */
+    private function registerTranslationConverters(Application $app)
+    {
+        $this->app->singleton(\CommunityTranslation\TranslationsConverter\Provider::class, function () use ($app) {
+            $provider = $app->build(\CommunityTranslation\TranslationsConverter\Provider::class);
+            /* @var \CommunityTranslation\TranslationsConverter\Provider $provider */
+            $provider->register('jed', \CommunityTranslation\TranslationsConverter\JedConverter::class);
+            $provider->register('json_dictionary', \CommunityTranslation\TranslationsConverter\JsonDictionaryConverter::class);
+            $provider->register('mo', \CommunityTranslation\TranslationsConverter\MoConverter::class);
+            $provider->register('php_array', \CommunityTranslation\TranslationsConverter\PhpArrayConverter::class);
+            $provider->register('po', \CommunityTranslation\TranslationsConverter\PoConverter::class);
+
+            return $provider;
         });
     }
 }

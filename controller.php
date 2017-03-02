@@ -189,6 +189,10 @@ class Controller extends Package
                 ['css', 'css/online-translation.css', ['minify' => false, 'combine' => true], $this],
                 ['javascript', 'js/online-translation.js', ['minify' => true, 'combine' => true], $this],
             ],
+            'jquery/comtraSortable' => [
+                ['css', 'css/jquery.comtraSortable.css', ['minify' => true, 'combine' => true], $this],
+                ['javascript', 'js/jquery.comtraSortable.js', ['minify' => true, 'combine' => true], $this],
+            ],
         ]);
         $al->registerGroupMultiple([
             'jquery/scroll-to' => [
@@ -209,6 +213,13 @@ class Controller extends Package
                     ['javascript', 'community_translation/online_translation/bootstrap'],
                     ['javascript', 'community_translation/online_translation/markdown-it'],
                     ['javascript', 'community_translation/online_translation/core'],
+                ],
+            ],
+            'jquery/comtraSortable' => [
+                [
+                    ['css', 'font-awesome'],
+                    ['css', 'jquery/comtraSortable'],
+                    ['javascript', 'jquery/comtraSortable'],
                 ],
             ],
         ]);

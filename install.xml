@@ -1,26 +1,20 @@
 <?xml version="1.0"?>
 <concrete5-cif version="1.0">
 
-    <blocktypes>
-    	<blocktype package="community_translation" handle="translation_teams" />
-        <blocktype package="community_translation" handle="translation_team_request" />
-    	<blocktype package="community_translation" handle="search_packages" />
-        <!-- @todo
-        <blocktype package="community_translation" handle="download_translations" />
-        -->
-        <blocktype package="community_translation" handle="fill_translations" />
-    </blocktypes>
+	<blocktypes>
+		<blocktype package="community_translation" handle="translation_teams" />
+		<blocktype package="community_translation" handle="translation_team_request" />
+		<blocktype package="community_translation" handle="search_packages" />
+		<blocktype package="community_translation" handle="fill_translations" />
+	</blocktypes>
 
-    <blocktypesets>
-        <blocktypeset package="community_translation" handle="community_translation" name="Community Translation">
-        	<blocktype handle="translation_teams" />
-        	<blocktype handle="translation_team_request" />
-        	<blocktype handle="search_packages" />
-	        <!-- @todo
-        	<blocktype handle="download_translations" />
-        	-->
-            <blocktype handle="fill_translations" />
-        </blocktypeset>
+	<blocktypesets>
+		<blocktypeset package="community_translation" handle="community_translation" name="Community Translation">
+			<blocktype handle="translation_teams" />
+			<blocktype handle="translation_team_request" />
+			<blocktype handle="search_packages" />
+			<blocktype handle="fill_translations" />
+		</blocktypeset>
 	</blocktypesets>
 
 	<attributetypes>
@@ -30,7 +24,7 @@
 			</categories>
 		</attributetype>
 	</attributetypes>
-	
+
 	<attributekeys>
 		<attributekey
 			package="community_translation"
@@ -44,7 +38,7 @@
 			profile-editable="1"
 			profile-required="0"
 			register-editable="0"
-			register-required="0" 
+			register-required="0"
 			member-list-displayed="0"
 		>
 		</attributekey>
@@ -62,27 +56,27 @@
 			register-editable="1"
 		>
 			<type checked="1" />
-        </attributekey>
+		</attributekey>
 	</attributekeys>
 
-    <attributesets>
-        <attributeset package="community_translation"  category="user" handle="community_translation" name="Community Translation" locked="0">
-            <attributekey handle="api_token" />
-        </attributeset>
-    </attributesets>
+	<attributesets>
+		<attributeset package="community_translation"  category="user" handle="community_translation" name="Community Translation" locked="0">
+			<attributekey handle="api_token" />
+		</attributeset>
+	</attributesets>
 
-    <singlepages>
-        <page package="community_translation" name="Community Translation" description="" pagetype="" path="/dashboard/community_translation" filename="/dashboard/community_translation.php">
-        </page>
-        <page package="community_translation" name="Strings from Git Repositories" description="" pagetype="" path="/dashboard/community_translation/git_repositories" filename="/dashboard/community_translation/git_repositories.php">
-        </page>
-        <page package="community_translation" name="Git Repository details" description="" pagetype="" path="/dashboard/community_translation/git_repositories/details" filename="/dashboard/community_translation/git_repositories/details.php">
-            <attributes>
-                <attributekey handle="exclude_nav"><value>1</value></attributekey>
-            </attributes>
-        </page>
-        <page package="community_translation" name="Community Translation Options" description="" pagetype="" path="/dashboard/community_translation/options" filename="/dashboard/community_translation/options.php">
-        </page>
-    </singlepages>
+	<singlepages>
+		<page package="community_translation" name="Community Translation" description="" pagetype="" path="/dashboard/community_translation" filename="/dashboard/community_translation.php">
+		</page>
+		<page package="community_translation" name="Strings from Git Repositories" description="" pagetype="" path="/dashboard/community_translation/git_repositories" filename="/dashboard/community_translation/git_repositories.php">
+		</page>
+		<page package="community_translation" name="Git Repository details" description="" pagetype="" path="/dashboard/community_translation/git_repositories/details" filename="/dashboard/community_translation/git_repositories/details.php">
+			<attributes>
+				<attributekey handle="exclude_nav"><value>1</value></attributekey>
+			</attributes>
+		</page>
+		<page package="community_translation" name="Community Translation Options" description="" pagetype="" path="/dashboard/community_translation/options" filename="/dashboard/community_translation/options.php">
+		</page>
+	</singlepages>
 
 </concrete5-cif>

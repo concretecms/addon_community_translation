@@ -67,13 +67,16 @@ if ($package !== null) {
                                 <div class="panel-heading">
                                     <?= t('Translations for %s', h($packageVersion->getDisplayName())) ?>
                                 </div>
-                                <table class="table table-striped">
+                                <table class="table table-striped comtra-sortable">
+                                    <col width="1" />
                                     <col />
                                     <col width="1" />
                                     <thead>
-                                        <th><?= t('Language') ?></th>
+                                        <th><?= t('ID') ?></th>
+                                        <th class="comtra-sorted-asc"><?= t('Language') ?></th>
                                         <th></th>
-                                        <th><?= t('Progress') ?></th>
+                                        <th data-sortby-default="desc"><?= t('Updated') ?></th>
+                                        <th data-sortby-default="desc"><?= t('Progress') ?></th>
                                     </thead>
                                     <tbody>
                                         <?php
@@ -85,12 +88,12 @@ if ($package !== null) {
                                             $sections[t('Other languages')] = array_diff($allLocales, $myLocales);
                                         }
                                         $sections = array_filter($sections);
+                                        $sectionIndex = 0;
                                         foreach ($sections as $sectionName => $locales) {
                                             if (count($sections) > 1) {
-                                                ?><tr><th colspan="3" class="text-center"><?= $sectionName ?></th></tr><?php
+                                                ?><tr><th colspan="5" class="text-center"><?= $sectionName ?></th></tr><?php
                                             }
                                             foreach ($locales as $locale) {
-                                                $percClass = 'progress-bar-info';
                                                 $localeInfo = $localeInfos[$locale->getID()];
                                                 $whyNotTranslatable = null;
                                                 if (!in_array($locale, $myLocales, true)) {
@@ -109,25 +112,28 @@ if ($package !== null) {
                                                     $translateOnclick = ' onclick="' . h('window.alert(' . json_encode($whyNotTranslatable) . '); return false') . '"';
                                                     $translateClass = 'btn-default';
                                                 }
-                                                if ($localeInfo['perc'] > 0 && $localeInfo['perc'] < 10) {
-                                                    $percClass .= ' progress-bar-minwidth1';
-                                                } elseif ($perc >= 10 && $perc < 100) {
-                                                    $percClass .= ' progress-bar-minwidth2';
-                                                }
                                                 ?>
-                                                <tr>
-                                                    <td><?= $locale->getDisplayName() ?></td>
+                                                <tr data-sortsection="<?= $sectionIndex ?>">
+                                                    <td data-sortby="<?= h(mb_strtolower($locale->getID())) ?>"><span class="label label-default"><?= h($locale->getID()) ?></span></td>
+                                                    <td data-sortby="<?= h(mb_strtolower($locale->getDisplayName())) ?>"><?= $locale->getDisplayName() ?></td>
                                                     <td>
-                                                        <a href="<?= h($translateLink) ?>"<?= $translateOnclick ?> class="btn btn-sm <?= $translateClass ?>" style="padding: 5px 10px"><?= t('Translate') ?></a>
+                                                        <?php
+                                                        foreach ($localeInfo['downloadFormats'] as $adf) {
+                                                            ?><a class="btn btn-sm btn-info" style="padding: 5px 10px" target="_blank" href="<?= h($view->action('download_translations_file', $packageVersion->getID(), $locale->getID(), $adf->getHandle()) . '?' . $token->getParameter('comtra-download-translations-' . $packageVersion->getID() . '@' . $locale->getID() . '.' . $adf->getHandle())) ?>" title="<?= h(t('Download translations (%s)', $adf->getName())) ?>" style="padding: 5px 10px; white-space:nowrap"><i class="fa fa-cloud-download"></i> <?= h($adf->getFileExtension()) ?></a><?php
+                                                        }
+                                                        ?>
+                                                        <a class="btn btn-sm <?= $translateClass ?>" style="padding: 5px 10px" href="<?= h($translateLink) ?>"<?= $translateOnclick ?>><?= t('Translate') ?></a>
                                                     </td>
-                                                    <td><div class="progress" style="margin: 0" title="<?= t2('%s untranslated string', '%s untranslated strings', $localeInfo['untranslated']) ?>">
-                                                        <div class="progress-bar <?= $percClass ?>" role="progressbar" style="width: <?= $localeInfo['perc'] ?>%; background-color: <?= $localeInfo['color'] ?>">
+                                                    <td data-sortby="<?= h($localeInfo['updatedOn_sort']) ?>"><?= h($localeInfo['updatedOn']) ?></td>
+                                                    <td data-sortby-kind="numeric" data-sortby="<?= $localeInfo['percSort'] ?>"><div class="progress" style="margin: 0" title="<?= t2('%s untranslated string', '%s untranslated strings', $localeInfo['untranslated']) ?>">
+                                                        <div class="progress-bar <?= $localeInfo['progressBarClass'] ?>" role="progressbar" style="width: <?= $localeInfo['perc'] ?>%">
                                                             <span><?= $localeInfo['perc'] ?></span>
                                                         </div>
                                                     </div></td>
                                                 </tr>
                                                 <?php
                                             }
+                                            ++$sectionIndex;
                                         }
                                         ?>
                                     </tbody>

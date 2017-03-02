@@ -1,0 +1,11 @@
+.comtra-sorted-asc:after, .comtra-sorted-desc:after {
+	font-family: FontAwesome;
+	opacity: 0.5;
+	margin-left: 0.5em;
+}
+.comtra-sorted-asc:after {
+	content: "\f0de"; /* fa-sort-asc */
+}
+.comtra-sorted-desc:after {
+	content: "\f0dd"; /* fa-sort-desc */
+}

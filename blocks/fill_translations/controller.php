@@ -344,6 +344,7 @@ class Controller extends BlockController
                             $zip->addFromString($dir . '/messages.po', $po->toPoString());
                         }
                         if ($writeMO) {
+                            \Gettext\Generators\Mo::$includeEmptyTranslations = true;
                             $zip->addFromString($dir . '/messages.mo', $po->toMoString());
                         }
                     }

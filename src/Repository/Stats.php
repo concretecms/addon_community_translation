@@ -90,7 +90,22 @@ class Stats extends EntityRepository
     }
 
     /**
-     * Get some stats about one or more packages and one or more locales.
+     * Get some stats about a package version and a locale.
+     *
+     * @param PackageVersionEntity $packageVersion
+     * @param LocaleEntity $locale
+     *
+     * @return Stats
+     */
+    public function getOne(PackageVersionEntity $packageVersion, LocaleEntity $locale)
+    {
+        $array = $this->get($packageVersion, $locale);
+
+        return array_shift($array);
+    }
+
+    /**
+     * Get some stats about one or more package versions and one or more locales.
      *
      * @param PackageVersionEntity|PackageVersionEntity[]|array|array[array] $wantedPackageVersions
      * @param LocaleEntity|LocaleEntity[]|string|string[] $wantedLocales

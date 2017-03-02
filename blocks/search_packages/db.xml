@@ -13,6 +13,18 @@
     <field name="preloadPackageHandle" type="string" size="64">
     	<notnull/>
 	</field>
+	<field name="mimimumSearchLength" type="integer">
+		<unsigned/>
+	</field>
+	<field name="maximumSearchResults" type="integer">
+		<unsigned/>
+	</field>
+    <field name="allowedDownloadFormats" type="string" size="255">
+    	<notnull/>
+	</field>
+    <field name="allowedDownloadFor" type="string" size="30">
+    	<notnull/>
+	</field>
   </table>
 
 </schema>

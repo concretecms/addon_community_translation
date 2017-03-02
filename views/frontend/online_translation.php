@@ -16,7 +16,7 @@ use CommunityTranslation\Glossary\EntryType as GlossaryEntryType;
 /* @var array $allVersions */
 /* @var array $allLocales */
 /* @var string $onlineTranslationPath */
-/* @var array $translationFormats */
+/* @var CommunityTranslation\TranslationsConverter\ConverterInterface[] $translationFormats */
 /* @var string|null $showDialogAtStartup */
 
 ?><!DOCTYPE html>
@@ -52,7 +52,7 @@ use CommunityTranslation\Glossary\EntryType as GlossaryEntryType;
             <ul class="nav navbar-nav navbar-right">
                 <?php
                 if ($canApprove && is_object($packageVersion)) {
-                    ?><li><a href="<?= URL::to($onlineTranslationPath, 'unreviewed', $locale->getID()) ?>" title="<?= t('View all strings to be reviewed') ?>"><i class="fa fa-thumbs-up"></i></a></li><?php
+                    ?><li><a href="<?= URL::to($onlineTranslationPath, 'unreviewed', $locale->getID()) ?>" title="<?= t('View all strings to be reviewed') ?>"><i class="fa fa-handshake-o"></i></a></li><?php
                 }
                 ?>
                 <li><a href="#" data-toggle="modal" data-target="#comtra_translation-upload" title="<?= t('Upload translations') ?>"><i class="fa fa-cloud-upload"></i></a>
@@ -339,12 +339,12 @@ if ($canEditGlossary) {
                     <fieldset>
                         <legend><?= t('File format') ?></legend>
                         <?php
-                        foreach ($translationFormats as $f => $n) {
+                        foreach ($translationFormats as $tfHandle => $tf) {
                             ?>
                             <div class="radio">
                                 <label>
-                                    <input type="radio" name="download-format" value="<?= h($f) ?>" required="required" />
-                                    <?= h($n) ?>
+                                    <input type="radio" name="download-format" value="<?= h($tfHandle) ?>" required="required" />
+                                    <?= h($tf->getName()) ?>
                                 </label>
                             </div>
                             <?php
