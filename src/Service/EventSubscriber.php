@@ -5,7 +5,9 @@ use CommunityTranslation\Repository\LocaleStats as LocaleStatsRepository;
 use CommunityTranslation\Repository\Notification as NotificationRepository;
 use CommunityTranslation\Repository\Stats as StatsRepository;
 use Concrete\Core\Application\Application;
+use Concrete\Core\Entity\User\User as UserEntity;
 use Concrete\Core\User\Event\UserGroup;
+use Doctrine\ORM\EntityManager;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\EventDispatcher\GenericEvent;
 
@@ -35,6 +37,7 @@ class EventSubscriber implements EventSubscriberInterface
     {
         return [
             'on_user_enter_group' => 'userEnterGroup',
+            'on_user_exit_group' => 'userExitGroup',
             'community_translation.translatableUpdated' => 'translatableUpdated',
             'community_translation.translationsUpdated' => 'translationsUpdated',
             'community_translation.newApprovalNeeded' => 'newApprovalNeeded',
@@ -52,6 +55,27 @@ class EventSubscriber implements EventSubscriberInterface
             $locale = $groupManager->decodeAspiringTranslatorsGroup($evt->getGroupObject());
             if ($locale !== null) {
                 $this->app->make(NotificationRepository::class)->newTeamJoinRequestFromCurrentUser($locale);
+            }
+        }
+    }
+
+    /**
+     * @param UserGroup $evt
+     */
+    public function userExitGroup(UserGroup $evt)
+    {
+        $groupManager = $this->app->make(Groups::class);
+        $locale = $groupManager->decodeAspiringTranslatorsGroup($evt->getGroupObject());
+        if ($locale !== null) {
+            $user = $this->app->make(EntityManager::class)->find(UserEntity::class, $evt->getUserObject()->getUserID());
+            if ($user !== null) {
+                $this->app->make(NotificationRepository::class)
+                    ->createQueryBuilder('n')
+                        ->delete()
+                        ->where('n.classHandle = :classHandle')->setParameter('classHandle', 'new_team_join_request')
+                        ->andWhere('n.locale = :locale')->setParameter('locale', $locale)
+                        ->andWhere('n.user = :user')->setParameter('user', $user)
+                        ->getQuery()->execute();
             }
         }
     }
