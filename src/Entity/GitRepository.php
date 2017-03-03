@@ -34,7 +34,7 @@ class GitRepository
         $result->directoryForPlaces = '';
         $result->detectedVersions = [];
         $result->tagToVersionRegexp = '/^(?:v(?:er(?:s(?:ion)?)?)?[.\s]*)?(\d+(?:\.\d+)*)$/';
-        $result->tagFilters = [];
+        $result->setTagFilters(null);
 
         return $result;
     }
@@ -338,20 +338,26 @@ class GitRepository
      *
      * @ORM\Column(type="simple_array", nullable=false, options={"comment": "Repository tag filters"})
      *
-     * @var string
+     * @var string[]
      */
     protected $tagFilters;
 
     /**
      * Set the repository tag filters.
      *
-     * @param string[]|null $value
+     * @param string[]|null $value Null for no tags, an array otherwise (empty means all tags)
      *
      * @return static
      */
     public function setTagFilters(array $value = null)
     {
-        $this->tagFilters = ($value === null) ? ['0'] : $value;
+        if ($value === null) {
+            $this->tagFilters = ['none'];
+        } elseif (empty($value)) {
+            $this->tagFilters = ['all'];
+        } else {
+            $this->tagFilters = $value;
+        }
 
         return $this;
     }
@@ -363,9 +369,12 @@ class GitRepository
      */
     public function getTagFilters()
     {
-        $result = $this->tagFilters;
-        if ($result === ['0']) {
+        if ($this->tagFilters === ['none']) {
             $result = null;
+        } elseif ($this->tagFilters === ['all']) {
+            $result = [];
+        } else {
+            $result = $this->tagFilters;
         }
 
         return $result;
