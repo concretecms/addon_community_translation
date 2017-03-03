@@ -2,14 +2,18 @@
 return [
     'api' => [
         'access' => [
-            'download' => (int) GUEST_GROUP_ID,
-            'importPackages' => (int) ADMIN_GROUP_ID,
-            'stats' => (int) GUEST_GROUP_ID,
-            'updatePackageTranslations' => (int) REGISTERED_GROUP_ID,
+            'getLocales' => 'everybody',
+            'getPackages' => 'everybody',
+            'getPackageVersions' => 'everybody',
+            'getPackageVersionLocales' => 'everybody',
+            'getPackageVersionTranslations' => 'everybody',
+            'importPackageVersionTranslatables' => 'globaladmins',
+            'importTranslations' => 'translators-own-locales',
+            'importTranslations_approve' => 'localeadmins-own-locales',
         ],
+        'accessControlAllowOrigin' => '*',
         'entryPoint' => '/api',
     ],
-    'downloadAccess' => 'members',
     'notificationsSenderAddress' => '',
     'notificationsSenderName' => '',
     'onlineTranslationPath' => '/translate/online',

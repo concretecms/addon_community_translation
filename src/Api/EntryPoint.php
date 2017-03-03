@@ -2,41 +2,54 @@
 namespace CommunityTranslation\Api;
 
 use CommunityTranslation\Entity\Locale as LocaleEntity;
-use CommunityTranslation\Parser\Parser;
-use CommunityTranslation\Parser\ParserInterface;
+use CommunityTranslation\Entity\Package as PackageEntity;
 use CommunityTranslation\Repository\Locale as LocaleRepository;
-use CommunityTranslation\Repository\Package\Version as VersionRepository;
+use CommunityTranslation\Repository\Package as PackageRepository;
+use CommunityTranslation\Repository\Package\Version as PackageVersionRepository;
 use CommunityTranslation\Repository\Stats as StatsRepository;
-use CommunityTranslation\Service\DecompressedPackage;
+use CommunityTranslation\Service\Access;
+use CommunityTranslation\Service\TranslationsFileExporter;
+use CommunityTranslation\Translatable\Importer as TranslatableImporter;
+use CommunityTranslation\Translation\Importer as TranslationImporter;
+use CommunityTranslation\TranslationsConverter\Provider as TranslationsConverterProvider;
 use CommunityTranslation\UserException;
 use Concrete\Core\Controller\AbstractController;
 use Concrete\Core\Http\ResponseFactory;
-use DateTime;
+use Concrete\Core\Localization\Localization;
 use DateTimeZone;
 use Exception;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Throwable;
 
 class EntryPoint extends AbstractController
 {
     /**
-     * @var UserControl|null
+     * @var Localization|null
      */
-    protected $userControl = null;
+    private $localization = null;
 
     /**
-     * @param UserControl $userControl
+     * @return Localization
      */
-    public function setUserControl(UserControl $userControl)
+    protected function getLocalization()
     {
-        $this->userControl = $userControl;
+        if ($this->localization === null) {
+            $this->localization = $this->app->make(Localization::class);
+        }
+
+        return $this->localization;
     }
+
+    /**
+     * @var UserControl|null
+     */
+    private $userControl = null;
 
     /**
      * @return UserControl
      */
-    public function getUserControl()
+    protected function getUserControl()
     {
         if ($this->userControl === null) {
             $this->userControl = $this->app->make(UserControl::class, ['request' => $this->request]);
@@ -48,15 +61,7 @@ class EntryPoint extends AbstractController
     /**
      * @var ResponseFactory|null
      */
-    protected $responseFactory = null;
-
-    /**
-     * @param ResponseFactory $userControl
-     */
-    public function setResponseFactory(ResponseFactory $responseFactory)
-    {
-        $this->responseFactory = $responseFactory;
-    }
+    private $responseFactory = null;
 
     /**
      * @return ResponseFactory
@@ -73,7 +78,7 @@ class EntryPoint extends AbstractController
     /**
      * Build an error response.
      *
-     * @param string|Exception $error
+     * @param string|Exception|Throwable $error
      * @param int $code
      *
      * @return Response
@@ -87,23 +92,81 @@ class EntryPoint extends AbstractController
             if ($error instanceof AccessDeniedException) {
                 $error = $error->getMessage();
                 if ($code === null) {
-                    $code = 401;
+                    $code = Response::HTTP_UNAUTHORIZED;
                 }
             } elseif ($error instanceof UserException) {
                 $error = $error->getMessage();
-            } elseif ($error instanceof Exception) {
-                $error = 'Unspecified error';
+            } elseif ($error instanceof Exception || $error instanceof Throwable) {
+                $error = t('An unexpected error occurred');
+            } elseif (is_callable([$error, '__toString'])) {
+                $error = (string) $error;
+            } else {
+                $error = get_class($error);
             }
         }
         if ($code === null) {
-            $code = 500;
+            $code = Response::HTTP_INTERNAL_SERVER_ERROR;
         }
 
         return $this->getResponseFactory()->create(
             $error,
             $code,
-            ['Content-Type' => 'text/plain; charset=UTF-8']
+            [
+                'Content-Type' => 'text/plain; charset=UTF-8',
+            ]
         );
+    }
+
+    /**
+     * Build an JSON response.
+     *
+     * @param mixed $data
+     *
+     * @return Response
+     */
+    protected function buildJsonResponse($data)
+    {
+        return $this->getResponseFactory()->json($data);
+    }
+
+    /**
+     * @var string
+     */
+    private $requestedResultsLocale;
+
+    protected function start()
+    {
+        $this->requestedResultsLocale = (string) $this->request->query->get('rl', '');
+        if ($this->requestedResultsLocale !== '') {
+            $localization = $this->getLocalization();
+            if ($this->requestedResultsLocale === $localization->getLocale()) {
+                $this->requestedResultsLocale = '';
+            } else {
+                $localization->setContextLocale('communityTranslationAPI', $this->requestedResultsLocale);
+                $localization->pushActiveContext('communityTranslationAPI');
+            }
+        }
+    }
+
+    /**
+     * @param Response $response
+     *
+     * @return Response
+     */
+    protected function finish(Response $response)
+    {
+        if ($this->requestedResultsLocale !== '') {
+            $this->getLocalization()->popActiveContext();
+        }
+        if (!$response->headers->has('X-Frame-Options')) {
+            $response->headers->set('X-Frame-Options', 'DENY');
+        }
+        if (!$response->headers->has('Access-Control-Allow-Origin')) {
+            $config = $this->app->make('community_translation/config');
+            $response->headers->set('Access-Control-Allow-Origin', (string) $config->get('options.api.accessControlAllowOrigin'));
+        }
+
+        return $response;
     }
 
     /**
@@ -122,6 +185,7 @@ class EntryPoint extends AbstractController
             $item = [
                 'id' => $locale->getID(),
                 'name' => $locale->getName(),
+                'nameLocalized' => $locale->getDisplayName(),
             ];
             if ($cb !== null) {
                 $item = call_user_func($cb, $locale, $item);
@@ -135,49 +199,105 @@ class EntryPoint extends AbstractController
     }
 
     /**
-     * Check the access to a specific group of API functions.
+     * Get the list of approved locales.
      *
-     * @param string $configKey 'stats', 'download', 'importPackages', ...
-     */
-    protected function checkAccess($configKey)
-    {
-        $config = $this->app->make('community_translation/config');
-        $this->getUserControl()->checkRequest($config->get('options.api.access.' . $configKey));
-    }
-
-    /**
+     * @return Response
+     *
      * @example http://www.example.com/api/locales/
      */
-    public function getApprovedLocales()
+    public function getLocales()
     {
+        $this->start();
         try {
-            $this->checkAccess('stats');
+            $this->getUserControl()->checkGenericAccess(__FUNCTION__);
             $locales = $this->app->make(LocaleRepository::class)->getApprovedLocales();
-
-            return $this->getResponseFactory()->json($this->localesToArray($locales));
+            $result = $this->buildJsonResponse($this->localesToArray($locales));
         } catch (Exception $x) {
-            return $this->buildErrorResponse($x);
+            $result = $this->buildErrorResponse($x);
+        } catch (Throwable $x) {
+            $result = $this->buildErrorResponse($x);
         }
+
+        return $this->finish($result);
     }
 
     /**
-     * @example http://www.example.com/api/locales/concrete5/dev-8/90/
+     * Get the list of packages.
+     *
+     * @return Response
+     *
+     * @example http://www.example.com/api/packages/
      */
-    public function getLocalesForPackage($packageHandle, $packageVersion, $minimumLevel)
+    public function getPackages()
     {
+        $this->start();
         try {
-            $this->checkAccess('stats');
-            $version = $this->app->make(VersionRepository::class)->findByHandleAndVersion($packageHandle, $packageVersion);
+            $this->getUserControl()->checkGenericAccess(__FUNCTION__);
+            $repo = $this->app->make(PackageRepository::class);
+            $packages = $repo->createQueryBuilder('p')
+                ->select('p.handle, p.name')
+                ->getQuery()->getArrayResult();
+            $result = $this->buildJsonResponse($packages);
+        } catch (Exception $x) {
+            $result = $this->buildErrorResponse($x);
+        } catch (Throwable $x) {
+            $result = $this->buildErrorResponse($x);
+        }
+
+        return $this->finish($result);
+    }
+
+    /**
+     * Get the list of versions of a package.
+     *
+     * @return Response
+     *
+     * @example http://www.example.com/api/package/concrete5/versions/
+     */
+    public function getPackageVersions($packageHandle)
+    {
+        $this->start();
+        try {
+            $this->getUserControl()->checkGenericAccess(__FUNCTION__);
+            $package = $this->app->make(PackageRepository::class)->findOneBy(['handle' => $packageHandle]);
+            if ($package === null) {
+                throw new UserException(t('Unable to find the specified package'), Response::HTTP_NOT_FOUND);
+            }
+            $versions = [];
+            foreach ($package->getSortedVersions(true, null) as $packageVersion) {
+                $versions[] = $packageVersion->getVersion();
+            }
+            $result = $this->buildJsonResponse($versions);
+        } catch (Exception $x) {
+            $result = $this->buildErrorResponse($x);
+        } catch (Throwable $x) {
+            $result = $this->buildErrorResponse($x);
+        }
+
+        return $this->finish($result);
+    }
+
+    /**
+     * Get some stats about the translations of a package version.
+     *
+     * @return Response
+     *
+     * @example http://www.example.com/api/package/concrete5/8.2/locales/80/
+     */
+    public function getPackageVersionLocales($packageHandle, $packageVersion, $minimumLevel = null)
+    {
+        $this->start();
+        try {
+            $accessibleLocales = $this->getUserControl()->checkLocaleAccess(__FUNCTION__);
+            $version = $this->app->make(PackageVersionRepository::class)->findByHandleAndVersion($packageHandle, $packageVersion);
             if ($version === null) {
-                return $this->buildErrorResponse('Unable to find the specified package', 404);
+                throw new UserException(t('Unable to find the specified package version'), Response::HTTP_NOT_FOUND);
             }
             $minimumLevel = (int) $minimumLevel;
-            $result = [];
-            $allLocales = $this->app->make(LocaleRepository::class)->getApprovedLocales();
-            $stats = $this->app->make(StatsRepository::class)->get($version, $allLocales);
+            $stats = $this->app->make(StatsRepository::class)->get($version, $accessibleLocales);
             $utc = new DateTimeZone('UTC');
-            $result = $this->localesToArray(
-                $allLocales,
+            $resultData = $this->localesToArray(
+                $accessibleLocales,
                 function (LocaleEntity $locale, array $item) use ($stats, $minimumLevel, $utc) {
                     $result = null;
                     foreach ($stats as $stat) {
@@ -204,334 +324,216 @@ class EntryPoint extends AbstractController
                 }
             );
 
-            return JsonResponse::create($result);
+            $result = $this->buildJsonResponse($resultData);
         } catch (Exception $x) {
-            return $this->buildErrorResponse($x);
+            $result = $this->buildErrorResponse($x);
+        } catch (Throwable $x) {
+            $result = $this->buildErrorResponse($x);
         }
+
+        return $this->finish($result);
     }
 
     /**
-     * @example http://www.example.com/api/packages/
+     * Get the translations of a package version.
+     *
+     * @return Response
+     *
+     * @example http://www.example.com/api/package/concrete5/8.2/translations/it_IT/mo/
      */
-    public function getAvailablePackageHandles()
+    public function getPackageVersionTranslations($packageHandle, $packageVersion, $localeID, $formatHandle)
     {
+        $this->start();
         try {
-            $this->checkAccess('stats');
-            $em = $this->app->make('community_translation/em');
-            $handles = $em->getConnection()->executeQuery('select distinct pHandle from TranslatedPackages')->fetchAll(\PDO::FETCH_COLUMN);
-
-            return JsonResponse::create($handles);
-        } catch (Exception $x) {
-            return $this->buildErrorResponse($x);
-        }
-    }
-
-    /**
-     * @example http://www.example.com/api/package//versions/
-     */
-    public function getAvailablePackageVersions($packageHandle)
-    {
-        try {
-            $this->checkAccess('stats');
-            $em = $this->app->make('community_translation/em');
-            $handles = $em->getConnection()->executeQuery('select distinct pVersion from TranslatedPackages where pHandle = ?', [(string) $packageHandle])->fetchAll(\PDO::FETCH_COLUMN);
-            if (empty($handles)) {
-                return $this->buildErrorResponse('Unable to find the specified package', 404);
+            $accessibleLocales = $this->getUserControl()->checkLocaleAccess(__FUNCTION__);
+            $locale = $this->app->make(LocaleRepository::class)->findApproved($localeID);
+            if ($locale === null) {
+                throw new UserException(t('Unable to find the specified locale'), Response::HTTP_NOT_FOUND);
             }
-
-            return JsonResponse::create($handles);
-        } catch (Exception $x) {
-            return $this->buildErrorResponse($x);
-        }
-    }
-
-    /**
-     * @example http://www.example.com/api/po//dev-5.7/it_IT/
-     */
-    public function getPackagePo($packageHandle, $packageVersion, $localeID)
-    {
-        try {
-            $this->checkAccess('download');
-
-            return $this->getPackageTranslations($packageHandle, $packageVersion, $localeID, false);
-        } catch (Exception $x) {
-            return $this->buildErrorResponse($x);
-        }
-    }
-
-    /**
-     * @example http://www.example.com/api/mo//dev-5.7/it_IT/
-     */
-    public function getPackageMo($packageHandle, $packageVersion, $localeID)
-    {
-        try {
-            $this->checkAccess('download');
-
-            return $this->getPackageTranslations($packageHandle, $packageVersion, $localeID, true);
-        } catch (Exception $x) {
-            return $this->buildErrorResponse($x);
-        }
-    }
-
-    protected function getPackageTranslations($packageHandle, $packageVersion, $localeID, $compiled)
-    {
-        $package = $this->app->make('community_translation/package')->findOneBy(['pHandle' => $packageHandle, 'pVersion' => $packageVersion]);
-        if ($package === null) {
-            return $this->buildErrorResponse('Unable to find the specified package', 404);
-        }
-        $locale = $this->app->make(LocaleRepository::class)->findApproved($localeID);
-        if ($locale === null) {
-            return $this->buildErrorResponse('Unable to find the specified locale', 404);
-        }
-        $translations = $this->app->make('community_translation/translation/exporter')->forPackage($package, $locale);
-        if ($compiled) {
-            \Gettext\Generators\Mo::$includeEmptyTranslations = true;
-            $data = $translations->toMoString();
-            $filename = $locale->getID() . '.mo';
-        } else {
-            $data = $translations->toPoString();
-            $filename = $locale->getID() . '.po';
-        }
-
-        return Response::create(
-            $data,
-            200,
-            [
-                'Content-Disposition' => 'attachment; filename=' . $filename,
-                'Content-Type' => 'application/octet-stream',
-                'Content-Length' => strlen($data),
-            ]
-        );
-    }
-
-    public function importPackageTranslatable()
-    {
-        try {
-            $this->checkAccess('importPackages');
-            $packageHandle = $this->post('handle');
-            $packageHandle = is_string($packageHandle) ? trim($packageHandle) : '';
-            if ($packageHandle === '') {
-                return $this->buildErrorResponse('Package handle not specified', 400);
+            if (!in_array($locale, $accessibleLocales, true)) {
+                throw AccessDeniedException::create(t('Access denied to the specified locale'));
             }
-            $packageVersion = $this->post('version');
-            $packageVersion = is_string($packageVersion) ? trim($packageVersion) : '';
-            if ($packageVersion === '') {
-                return $this->buildErrorResponse('Package version not specified', 400);
+            $version = $this->app->make(PackageVersionRepository::class)->findByHandleAndVersion($packageHandle, $packageVersion);
+            if ($version === null) {
+                throw new UserException(t('Unable to find the specified package version'), Response::HTTP_NOT_FOUND);
             }
-            $archive = $this->request->files->get('archive');
-            if ($archive === null) {
-                return $this->buildErrorResponse('Package archive not received', 400);
+            $format = $this->app->make(TranslationsConverterProvider::class)->getByHandle($formatHandle);
+            if ($format === null) {
+                throw new UserException(t('Unable to find the specified translations format'), Response::HTTP_NOT_FOUND);
             }
-            if (!$archive->isValid()) {
-                return $this->buildErrorResponse(sprintf('Package archive not correctly received: %s', $archive->getErrorMessage()), 400);
-            }
-            $parsed = $this->app->make('community_translation/parser')->parseZip($archive->getPathname(), 'packages/' . $packageHandle, ParserInterface::DICTIONARY_NONE);
-            $pot = ($parsed === null) ? null : $parsed->getSourceStrings(false);
-            if ($pot === null || count($pot) === 0) {
-                return $this->buildErrorResponse('No translatable strings found', 406);
-            }
-            $changed = $this->app->make('community_translation/translatable/importer')->importTranslations($pot, $packageHandle, $packageVersion);
-
-            return JsonResponse::create(
-                ['changed' => $changed],
-                200
+            $translationsFile = $this->app->make(TranslationsFileExporter::class)->getSerializedTranslationsFile($version, $locale, $format);
+            $result = BinaryFileResponse::create(
+                // $file
+                $translationsFile,
+                // $status
+                Response::HTTP_OK,
+                // $headers
+                [
+                    'Content-Type' => 'application/octet-stream',
+                    'Content-Transfer-Encoding' => 'binary',
+                ]
+            )->setContentDisposition(
+                'attachment',
+                'translations-' . $locale->getID() . '.' . $format->getFileExtension()
             );
         } catch (Exception $x) {
-            return $this->buildErrorResponse($x);
+            $result = $this->buildErrorResponse($x);
+        } catch (Throwable $x) {
+            $result = $this->buildErrorResponse($x);
         }
+
+        return $this->finish($result);
     }
 
-    public function updatePackageTranslations()
+    /**
+     * Set the translatable strings of a package version.
+     *
+     * @return Response
+     *
+     * @example http://www.example.com/api/package/concrete5/8.2/translatables/po/
+     */
+    public function importPackageVersionTranslatables($packageHandle, $packageVersion, $formatHandle)
     {
+        $this->start();
         try {
-            $this->checkAccess('updatePackageTranslations');
-            $packageHandle = $this->post('handle');
-            $packageHandle = is_string($packageHandle) ? trim($packageHandle) : '';
-            if ($packageHandle === '') {
-                return $this->buildErrorResponse('Package handle not specified', 400);
+            $this->getUserControl()->checkGenericAccess(__FUNCTION__);
+            $em = $this->app->make(EntityManager::class);
+            $post = $this->request->request;
+            $packageName = $post->get('packageName', '');
+            if (!is_string($packageName)) {
+                $packageName = '';
             }
-            $packageVersion = $this->post('version');
             $packageVersion = is_string($packageVersion) ? trim($packageVersion) : '';
             if ($packageVersion === '') {
-                return $this->buildErrorResponse('Package version not specified', 400);
+                throw new UserException(t('Package version not specified'), Response::HTTP_NOT_ACCEPTABLE);
             }
-            $archive = $this->request->files->get('archive');
-            if ($archive === null) {
-                return $this->buildErrorResponse('Package archive not received', 400);
+            $format = $this->app->make(TranslationsConverterProvider::class)->getByHandle($formatHandle);
+            if ($format === null) {
+                throw new UserException(t('Unable to find the specified translations format'), 404);
             }
-            if (!$archive->isValid()) {
-                return $this->buildErrorResponse(sprintf('Package archive not correctly received: %s', $archive->getErrorMessage()), 400);
-            }
-            $keepOldTranslations = $this->post('keepOldTranslations');
-            $keepOldTranslations = empty($keepOldTranslations) ? false : true;
-            $localesToInclude = [];
-            $package = $this->app->make('community_translation/package')->findOneBy(['pHandle' => $packageHandle, 'pVersion' => $packageVersion]);
+            $package = $this->app->make(PackageRepository::class)->findOneBy(['handle' => $packageHandle]);
             if ($package === null) {
-                return $this->buildErrorResponse('Unable to find the specified package version', 404);
-            }
-            $allLocales = $this->app->make(LocaleRepository::class)->getApprovedLocales();
-            $threshold = (int) $this->app->make('community_translation/config')->get('options.translatedThreshold', 90);
-            $statsList = $this->app->make('community_translation/stats')->get([$packageHandle, $packageVersion], $allLocales);
-            $usedLocaleStats = [];
-            foreach ($statsList as $stats) {
-                if ($stats->getLastUpdated() !== null && $stats->getPercentage() >= $threshold) {
-                    $usedLocaleStats[] = $stats;
+                $package = PackageEntity::create($packageHandle, $packageName);
+                $em->persist($package);
+                $em->flush($package);
+                $version = null;
+            } else {
+                if ($packageName !== '' && $package->getName() !== $packageName) {
+                    $package->setName($packageName);
+                    $em->persist($package);
+                    $em->flush($package);
                 }
+                $version = $this->app->make(PackageVersionRepository::class)->findByOneBy(['package' => $package, 'version' => $packageVersion]);
             }
-            $updated = false;
-            if (!empty($usedLocaleStats)) {
-                $unzipped = $this->app->make(DecompressedPackage::class, ['packageArchive' => $archive->getPathname(), 'volatileDirectory' => null]);
-                $unzipped->extract();
-                $parsed = $this->app->make('community_translation/parser')->parseDirectory(
-                    $unzipped->getExtractedWorkDir(),
-                    'packages/' . $packageHandle,
-                    ParserInterface::DICTIONARY_LOCALIZED_COMPILED || ParserInterface::DICTIONARY_LOCALIZED_SOURCE
-                );
-                $exporter = $this->app->make('community_translation/translation/exporter');
-                \Gettext\Generators\Mo::$includeEmptyTranslations = true;
-                foreach ($usedLocaleStats as $stats) {
-                    $localTranslationsDate = max($stats->getLastUpdated(), $package->getUpdatedOn());
-                    $packageTranslationsDate = null;
-                    $packageTranslations = $parsed->getTranslations($stats->getLocale());
-                    if ($packageTranslations !== null) {
-                        $dt = $packageTranslations->getHeader('PO-Revision-Date');
-                        if ($dt !== null) {
-                            try {
-                                $packageTranslationsDate = new DateTime($dt);
-                            } catch (Exception $foo) {
-                            }
-                        }
-                    }
-                    if ($packageTranslationsDate !== null && $packageTranslationsDate >= $localTranslationsDate) {
-                        continue;
-                    }
-                    $localTranslations = $exporter->forPackage($package, $stats->getLocale());
-                    $dir = $unzipped->getExtractedWorkDir() . '/languages/' . $stats->getLocale()->getID() . '/LC_MESSAGES';
-                    if (!is_dir($dir)) {
-                        @mkdir($dir, 0777, true);
-                        if (!is_dir($dir)) {
-                            return $this->buildErrorResponse(sprintf('Failed to create directory: %s', $dir));
-                        }
-                    } elseif ($keepOldTranslations) {
-                        if (is_file($dir . '/messages.po')) {
-                            try {
-                                $existing = \Gettext\Translations::fromPoFile($dir . '/messages.po');
-                                if (count($existing) > 0) {
-                                    $localTranslations->mergeWith($existing, \Gettext\Translations::MERGE_ADD);
-                                }
-                            } catch (\Exception $foo) {
-                            }
-                        }
-                        if (is_file($dir . '/messages.mo')) {
-                            try {
-                                $existing = \Gettext\Translations::fromMoFile($dir . '/messages.mo');
-                                if (count($existing) > 0) {
-                                    $localTranslations->mergeWith($existing, \Gettext\Translations::MERGE_ADD);
-                                }
-                            } catch (\Exception $foo) {
-                            }
-                        }
-                    }
-                    $localTranslations->toMoFile($dir . '/messages.mo');
-                    $updated = true;
-                }
+            if ($version === null) {
+                $version = PackageVersionEntity::create($package, $packageVersion);
+                $em->persist($version);
+                $em->flush($version);
             }
-            if (!$updated) {
-                unset($unzipped);
-
-                return Response::create(
-                    '',
-                    304,
-                    [
-                        'Content-Length' => '0',
-                    ]
-                );
+            $file = $this->request->files->get('file');
+            if ($file === null) {
+                throw new UserException(t('The file with translatable strings has not been specified'), Response::HTTP_NOT_ACCEPTABLE);
             }
-            $unzipped->repack();
-            unset($unzipped);
-            $fileSize = @filesize($archive->getPathname());
-            if ($fileSize === false || $fileSize <= 0) {
-                throw new UserException('Failed to retrieve size of re-packed archive');
+            if (!$file->isValid()) {
+                throw new UserException(t('The file with translatable strings has not been received correctly: %s', $archive->getErrorMessage()), Response::HTTP_NOT_ACCEPTABLE);
             }
-            $response = BinaryFileResponse::create(
-                $archive->getPathname(),
-                201,
-                [
-                    'Content-Type' => 'application/zip',
-                    'Content-Length' => $fileSize,
-                ]
-            );
-            $response->prepare(\Request::getInstance());
-
-            return $response;
+            $translations = $format->loadTranslationsFromFile($file->getPathname());
+            if (count($t) < 1) {
+                throw new UserException(t('No translatable strings found in uploaded file'));
+            }
+            $importer = $this->app->make(TranslatableImporter::class);
+            $changed = $importer->importTranslations($translations, $package->getHandle(), $packageVersion->getVersion());
+            $result = $this->buildJsonResponse(['changed' => $changed]);
         } catch (Exception $x) {
-            try {
-                if (isset($unzipped)) {
-                    unset($unzipped);
-                }
-            } catch (Exception $foo) {
-            }
-
-            return $this->buildErrorResponse($x);
+            $result = $this->buildErrorResponse($x);
+        } catch (Throwable $x) {
+            $result = $this->buildErrorResponse($x);
         }
+
+        return $this->finish($result);
     }
 
-    public function recentPackagesUpdated()
+    /**
+     * Import the translations for a specific locale.
+     *
+     * @return Response
+     *
+     * @example http://www.example.com/api/translations/it_IT/po/0/
+     */
+    public function importTranslations($localeID, $formatHandle, $approve)
     {
+        $this->start();
         try {
-            $this->checkAccess('stats');
-            $sinceStr = $this->request->get('since');
-            $sinceStr = is_string($sinceStr) ? trim($sinceStr) : '';
-            if ($sinceStr === '') {
-                throw new UserException("Missing 'since' parameter in query string");
+            $approve = $approve ? true : false;
+            $accessibleLocales = $this->getUserControl()->checkLocaleAccess(__FUNCTION__ . ($approve ? '_approve' : ''));
+            $locale = $this->app->make(LocaleRepository::class)->findApproved($localeID);
+            if ($locale === null) {
+                throw new UserException(t('Unable to find the specified locale'), Response::HTTP_NOT_FOUND);
             }
-            $since = null;
-            $ts = preg_match('/^[0-9]{9,11}$/', $sinceStr) ? @intval($sinceStr, 10) : 0;
-            if ($ts > 0) {
-                $since = @DateTime::createFromFormat('U', $ts);
-                if ($since && ((int) $since->format('Y')) < 1990) {
-                    $since = null;
-                }
+            if (!in_array($locale, $accessibleLocales, true)) {
+                throw AccessDeniedException::create(t('Access denied to the specified locale'));
             }
-            if ($since === null) {
-                $sample = new DateTime();
-                $sample->modify('-2 days');
-                throw new UserException("The 'since' parameter should be a reasonable Unix timestamp (example: " . $sample->format('U') . ')');
+            $format = $this->app->make(TranslationsConverterProvider::class)->getByHandle($formatHandle);
+            if ($format === null) {
+                throw new UserException(t('Unable to find the specified translations format'), 404);
             }
-            $em = $this->app->make('community_translation/em');
-            $rs = $em->getConnection()->executeQuery(
-                "
-                    select distinct
-                        TranslatedPackages.pHandle as handle,
-                        TranslatedPackages.pVersion as version
-                    from
-                        Translations
-                        inner join TranslatablePlaces on Translations.tTranslatable = TranslatablePlaces.tpTranslatable
-                        inner join TranslatedPackages on TranslatablePlaces.tpPackage = TranslatedPackages.pID
-                    where
-                        TranslatedPackages.pHandle != ''
-                        and
-                        (
-                            TranslatedPackages.pUpdatedOn >= :date
-                            or
-                            (
-                                Translations.tCurrent = 1
-                                and Translations.tCurrentSince >= :date
-                            )
-                        )
-                ",
-                [
-                    'date' => $this->app->make('date')->toDB($since),
-                ]
-            );
-            $result = $rs->fetchAll(\PDO::FETCH_ASSOC);
-            $rs->closeCursor();
-
-            return JsonResponse::create(
-                $result
-            );
+            $file = $this->request->files->get('file');
+            if ($file === null) {
+                throw new UserException(t('The file with translated strings has not been specified'), Response::HTTP_NOT_ACCEPTABLE);
+            }
+            if (!$file->isValid()) {
+                throw new UserException(t('The file with translated strings has not been received correctly: %s', $archive->getErrorMessage()), Response::HTTP_NOT_ACCEPTABLE);
+            }
+            $translations = $format->loadTranslationsFromFile($file->getPathname());
+            if (count($translations) < 1) {
+                throw new UserException(t('No translations found in uploaded file'));
+            }
+            if (!$translations->getLanguage()) {
+                throw new UserException(t('The translation file does not contain a language header'));
+            }
+            if (strcasecmp($translations->getLanguage(), $locale->getID()) !== 0) {
+                throw new UserException(t("The translation file is for the '%1\$s' language, not for '%2\$s'", $translations->getLanguage(), $locale->getID()));
+            }
+            $pf = $t->getPluralForms();
+            if ($pf === null) {
+                throw new UserException(t('The translation file does not define the plural rules'));
+            }
+            if ($pf[0] !== $locale->getPluralCount()) {
+                throw new UserException(t('The translation file defines %1$s plural forms instead of %2$s', $pf[0], $locale->getPluralCount()));
+            }
+            $importer = $this->app->make(TranslationImporter::class);
+            $imported = $importer->import($translations, $locale, $this->getUserControl()->getAssociatedUserEntity(), $approve);
+            $result = $this->buildJsonResponse($imported);
         } catch (Exception $x) {
-            return $this->buildErrorResponse($x);
+            $result = $this->buildErrorResponse($x);
+        } catch (Throwable $x) {
+            $result = $this->buildErrorResponse($x);
         }
+
+        return $this->finish($result);
+    }
+
+    /**
+     * What to do if the entry point is not recognized.
+     *
+     * @param string $unrecognizedPath
+     *
+     * @return Response
+     */
+    public function unrecognizedCall($unrecognizedPath = '')
+    {
+        $this->start();
+
+        if ($unrecognizedPath === '') {
+            $message = t('Resource not specified');
+        } else {
+            $message = t(/*i18n: %1$s is a path, %2$s is an HTTP method*/'Unknown resource %1$s for %2$s method', $unrecognizedPath, $this->request->getMethod());
+        }
+        $result = $this->buildErrorResponse(
+            $message,
+            Response::HTTP_NOT_FOUND
+        );
+
+        return $this->finish($result);
     }
 }

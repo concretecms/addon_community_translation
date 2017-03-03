@@ -13,7 +13,8 @@ use CommunityTranslation\Service\Access;
 use CommunityTranslation\Service\TranslationsFileExporter;
 use CommunityTranslation\TranslationsConverter\Provider as TranslationsConverterProvider;
 use CommunityTranslation\UserException;
-use Concrete\Core\Http\ResponseFactoryInterface;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 class Controller extends BlockController
 {
@@ -466,19 +467,21 @@ EOT
                 throw new UserException(t('Unable to find the specified translations file format'));
             }
             $format = $formats[$formatHandle];
-            $serializedTranslations = $this->app->make(TranslationsFileExporter::class)->getSerializedTranslations($packageVersion, $locale, $format);
-            $rf = $this->app->make(ResponseFactoryInterface::class);
+            $serializedTranslationsFile = $this->app->make(TranslationsFileExporter::class)->getSerializedTranslationsFile($packageVersion, $locale, $format);
 
-            return $rf->create(
-                $serializedTranslations,
-                200,
+            return BinaryFileResponse::create(
+                // $file
+                $serializedTranslationsFile,
+                // $status
+                Response::HTTP_OK,
+                // $headers
                 [
                     'Content-Type' => 'application/octet-stream',
-                    'Content-Disposition' => 'attachment; filename=translations-' . $locale->getID() . '.' . $format->getFileExtension(),
                     'Content-Transfer-Encoding' => 'binary',
-                    'Content-Length' => strlen($serializedTranslations),
-                    'Expires' => '0',
                 ]
+            )->setContentDisposition(
+                'attachment',
+                'translations-' . $locale->getID() . '.' . $format->getFileExtension()
             );
         } catch (UserException $x) {
             return $this->app->make('helper/concrete/ui')->buildErrorResponse(

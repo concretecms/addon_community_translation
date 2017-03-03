@@ -29,7 +29,7 @@ class ServiceProvider extends Provider
             \CommunityTranslation\Service\Access::class,
             \CommunityTranslation\Service\Editor::class,
             \CommunityTranslation\Translation\Exporter::class,
-            \CommunityTranslation\Service\TranslationsFileExporter::class
+            \CommunityTranslation\Service\TranslationsFileExporter::class,
         ] as $className) {
             $app->singleton($className);
         }

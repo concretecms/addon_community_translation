@@ -236,7 +236,7 @@ class Package
      * @param bool $descending
      * @param bool|null $developmentVersionsFirst If null, development versions are placed among the production versions
      *
-     * @return array
+     * @return Package\Version[]
      */
     public function getSortedVersions($descending = false, $developmentVersionsFirst = null)
     {

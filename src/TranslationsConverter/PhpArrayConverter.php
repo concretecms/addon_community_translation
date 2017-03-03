@@ -1,8 +1,8 @@
 <?php
 namespace CommunityTranslation\TranslationsConverter;
 
-use Gettext\Translations;
 use CommunityTranslation\UserException;
+use Gettext\Translations;
 
 class PhpArrayConverter extends BaseConverter implements ConverterInterface
 {
