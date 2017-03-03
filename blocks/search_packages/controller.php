@@ -72,7 +72,13 @@ class Controller extends BlockController
         $this->set('allowedDownloadFor', $this->allowedDownloadFor ?: static::ALLOWDOWNLOADFOR_NOBODY);
         $this->set('allowedDownloadForList', $this->getDownloadAccessLevels());
         $this->set('allowedDownloadFormats', $this->allowedDownloadFormats ? explode(',', $this->allowedDownloadFormats) : []);
-        $this->set('downloadFormats', $this->app->make(TranslationsConverterProvider::class)->getRegisteredConverters());
+        $converters = [];
+        foreach ($this->app->make(TranslationsConverterProvider::class)->getRegisteredConverters() as $handle => $converter) {
+            if ($converter->canSerializeTranslations()) {
+                $converters[$handle] = $converter;
+            }
+        }
+        $this->set('downloadFormats', $converters);
     }
 
     /**
@@ -196,7 +202,7 @@ EOT
             $tcProvider = $this->app->make(TranslationsConverterProvider::class);
             foreach (explode(',', $this->allowedDownloadFormats) as $adf) {
                 $converter = $tcProvider->getByHandle($adf);
-                if ($converter !== null) {
+                if ($converter !== null && $converter->canSerializeTranslations()) {
                     $allowedFormats[$adf] = $converter;
                 }
             }

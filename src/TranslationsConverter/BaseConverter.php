@@ -23,10 +23,33 @@ abstract class BaseConverter implements ConverterInterface
     /**
      * {@inheritdoc}
      *
+     * @see ConverterInterface::canSerializeTranslations()
+     */
+    public function canSerializeTranslations()
+    {
+        return true;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see ConverterInterface::canUnserializeTranslations()
+     */
+    public function canUnserializeTranslations()
+    {
+        return true;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * @see ConverterInterface::saveTranslationsToFile()
      */
     public function saveTranslationsToFile(Translations $translations, $filename)
     {
+        if (!$this->canSerializeTranslations()) {
+            throw new UserException(t('The "%s" converter is not able to serialize translations', $this->getName()));
+        }
         $serialized = $this->convertTranslationsToString($translations);
         if (@$this->fs->put($filename, $serialized) === false) {
             throw new UserException(t('Failed to save translations to file'));
@@ -40,6 +63,10 @@ abstract class BaseConverter implements ConverterInterface
      */
     public function loadTranslationsFromFile($filename)
     {
+        if (!$this->canSerializeTranslations()) {
+            throw new UserException(t('The "%s" converter is not able to unserialize translations', $this->getName()));
+        }
+
         if (!$this->fs->isFile($filename)) {
             throw new UserException(t('File not found'));
         }

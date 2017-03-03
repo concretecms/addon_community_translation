@@ -138,7 +138,7 @@ class OnlineTranslation extends Controller
         }
         $translationFormats = [];
         foreach ($this->app->make(TranslationsConverterProvider::class)->getRegisteredConverters() as $tfHandle => $tf) {
-            if ($tf->supportLanguageHeader() && $tf->supportPlurals()) {
+            if ($tf->supportLanguageHeader() && $tf->supportPlurals() && $tf->canSerializeTranslations() && $tf->canUnserializeTranslations()) {
                 $translationFormats[$tfHandle] = $tf;
             }
         }
@@ -737,7 +737,7 @@ class OnlineTranslation extends Controller
             }
             $converters = [];
             foreach ($this->app->make(TranslationsConverterProvider::class)->getByFileExtension($file->getClientOriginalExtension()) as $converter) {
-                if ($converter->supportLanguageHeader() && $converter->supportPlurals()) {
+                if ($converter->supportLanguageHeader() && $converter->supportPlurals() && $converter->canSerializeTranslations() && $converter->canUnserializeTranslations()) {
                     $converters[] = $converter;
                 }
             }

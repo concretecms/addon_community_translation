@@ -49,6 +49,20 @@ interface ConverterInterface
     public function supportPlurals();
 
     /**
+     * Is this converter able to convert \Gettext\Translations instances to strings/files?
+     *
+     * @return bool
+     */
+    public function canSerializeTranslations();
+
+    /**
+     * Is this converter able to convert strings/files to \Gettext\Translations instances?
+     *
+     * @return bool
+     */
+    public function canUnserializeTranslations();
+
+    /**
      * Convert a \Gettext\Translations instance to string.
      *
      * @param Translations $translations
