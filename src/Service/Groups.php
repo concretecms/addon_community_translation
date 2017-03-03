@@ -76,7 +76,7 @@ class Groups
      * @param string $name the group name
      * @param string|Group|null $parent the parent group
      *
-     * @return Group
+     * @return \Group
      */
     protected function getGroup($name, $parent = null)
     {
