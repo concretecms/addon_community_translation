@@ -62,7 +62,7 @@ abstract class ApiTest extends PHPUnit_Framework_TestCase
     protected function setUp()
     {
         if (self::$apiRootURL === null) {
-            $this->markTestSkipped('CT_TEST_API_ROOTURL environment variable is missing');
+            $this->markTestSkipped('CT_TEST_API_ROOTURL environment variable is missing: set it to the URL of a running concrete5 instance with Community Translation installed');
         }
         if (self::$config === null) {
             $this->markTestSkipped('Unable to find the application directory. You can set it with the CT_TEST_APP_DIR environment variable');
