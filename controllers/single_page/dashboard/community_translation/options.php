@@ -1,6 +1,7 @@
 <?php
 namespace Concrete\Package\CommunityTranslation\Controller\SinglePage\Dashboard\CommunityTranslation;
 
+use CommunityTranslation\Api\UserControl as ApiUserControl;
 use CommunityTranslation\Entity\Locale as LocaleEntity;
 use CommunityTranslation\Parser\Provider as ParserProvider;
 use CommunityTranslation\Repository\Locale as LocaleRepository;
@@ -10,48 +11,90 @@ use Illuminate\Filesystem\Filesystem;
 
 class Options extends DashboardPageController
 {
+    private function getApiAccessOptions($localeDepentent)
+    {
+        return $localeDepentent ?
+            [
+                // 'localeadmins-all-locales', 'localeadmins-own-locales', 'globaladmins', 'nobody'
+                ApiUserControl::ACCESSOPTION_EVERYBODY => t('Everybody (no authentication required)'),
+                ApiUserControl::ACCESSOPTION_REGISTEREDUSERS => t('Registered users'),
+                ApiUserControl::ACCESSOPTION_TRANSLATORS_ALLLOCALES => t('Translators (access to all locales)'),
+                ApiUserControl::ACCESSOPTION_TRANSLATORS_OWNLOCALES => t('Translators (access to own locales only)'),
+                ApiUserControl::ACCESSOPTION_LOCALEADMINS_ALLLOCALES => t('Language team coordinators (access to all locales)'),
+                ApiUserControl::ACCESSOPTION_LOCALEADMINS_OWNLOCALES => t('Language team coordinators (access to own locales only)'),
+                ApiUserControl::ACCESSOPTION_GLOBALADMINS => t('Global localization administrators'),
+                ApiUserControl::ACCESSOPTION_NOBODY => t('Nobody'),
+            ]
+            :
+            [
+                ApiUserControl::ACCESSOPTION_EVERYBODY => t('Everybody (no authentication required)'),
+                ApiUserControl::ACCESSOPTION_REGISTEREDUSERS => t('Registered users'),
+                ApiUserControl::ACCESSOPTION_TRANSLATORS => t('Translators (of any locale)'),
+                ApiUserControl::ACCESSOPTION_LOCALEADMINS => t('Language team coordinators (of any locale)'),
+                ApiUserControl::ACCESSOPTION_GLOBALADMINS => t('Global localization administrators'),
+                ApiUserControl::ACCESSOPTION_NOBODY => t('Nobody'),
+            ]
+        ;
+    }
+
+    private function getApiAccessChecks()
+    {
+        return [
+            'getLocales' => [
+                'name' => t('Get the list of approved locales'),
+                'localeDepentent' => false,
+            ],
+            'getPackages' => [
+                'name' => t('Get the list of available packages'),
+                'localeDepentent' => false,
+            ],
+            'getPackageVersions' => [
+                'name' => t('Get the version list of packages'),
+                'localeDepentent' => false,
+            ],
+            'getPackageVersionLocales' => [
+                'name' => t('Get the translation progress of package versions'),
+                'localeDepentent' => true,
+            ],
+            'getPackageVersionTranslations' => [
+                'name' => t('Get the translations of a specific package version'),
+                'localeDepentent' => true,
+            ],
+            'importPackageVersionTranslatables' => [
+                'name' => t('Set the source strings of a specific package version'),
+                'localeDepentent' => false,
+            ],
+            'importTranslations' => [
+                'name' => t('Add translations (without approval)'),
+                'localeDepentent' => true,
+            ],
+            'importTranslations_approve' => [
+                'name' => t('Add translations (with approval)'),
+                'localeDepentent' => true,
+            ],
+        ];
+    }
+
     public function view()
     {
         $config = $this->app->make('community_translation/config');
         $this->set('sourceLocale', $this->app->make('community_translation/sourceLocale'));
         $this->set('translatedThreshold', $config->get('options.translatedThreshold', 90));
-        $downloadAccess = $config->get('options.downloadAccess');
-        switch ($downloadAccess) {
-            case 'anyone':
-            case 'members':
-            case 'translators':
-                break;
-            default:
-                $downloadAccess = 'members';
-                break;
-        }
-        $this->set('downloadAccess', $downloadAccess);
         $this->set('tempDir', str_replace('/', DIRECTORY_SEPARATOR, (string) $config->get('options.tempDir')));
         $this->set('notificationsSenderAddress', $config->get('options.notificationsSenderAddress'));
         $this->set('notificationsSenderName', $config->get('options.notificationsSenderName'));
         $this->set('onlineTranslationPath', $config->get('options.onlineTranslationPath'));
         $this->set('apiEntryPoint', $config->get('options.api.entryPoint'));
-        foreach ([
-            'options.api.access.stats' => 'apiAccess_stats',
-            'options.api.access.download' => 'apiAccess_download',
-            'options.api.access.importPackages' => 'apiAccess_import_packages',
-            'options.api.access.updatePackageTranslations' => 'apiAccess_updatePackageTranslations',
-        ] as $key => $varName) {
-            $gID = $config->get($key);
-            $gID = @intval($gID);
-            if ($gID !== 0 && $gID != GUEST_GROUP_ID) {
-                $group = \Group::getByID($gID);
-                if ($group === null) {
-                    $gName = '<i>' . t('Removed group') . '</i>';
-                } else {
-                    $gName = $group->getGroupDisplayName();
-                }
-            } else {
-                $gID = GUEST_GROUP_ID;
-                $gName = h(tc('GroupName', 'Guest'));
-            }
-            $this->set($varName, compact('gID', 'gName'));
+        $this->set('apiAccessControlAllowOrigin', (string) $config->get('options.api.accessControlAllowOrigin'));
+        $apiAccessChecks = [];
+        foreach ($this->getApiAccessChecks() as $aacKey => $aacInfo) {
+            $apiAccessChecks[$aacKey] = [
+                'label' => $aacInfo['name'],
+                'value' => $config->get('options.api.access.' . $aacKey),
+                'values' => $this->getApiAccessOptions($aacInfo['localeDepentent']),
+            ];
         }
+        $this->set('apiAccessChecks', $apiAccessChecks);
         $parsers = [];
         foreach ($this->app->make(ParserProvider::class)->getRegisteredParsers() as $parser) {
             $parsers[get_class($parser)] = $parser->getDisplayName();
@@ -99,16 +142,6 @@ class Options extends DashboardPageController
         if ($translatedThreshold === null) {
             $this->error->add(t('Please specify the translation thresold used to consider a language as translated'));
         }
-        $downloadAccess = $this->post('downloadAccess');
-        switch ($downloadAccess) {
-            case 'anyone':
-            case 'members':
-            case 'translators':
-                break;
-            default:
-                $this->error->add(t('Please specify who can download translations'));
-                break;
-        }
         $tempDir = $this->post('tempDir', '');
         if (!is_string($tempDir)) {
             $tempDir = '';
@@ -141,21 +174,21 @@ class Options extends DashboardPageController
         } else {
             $apiEntryPoint = '/' . $apiEntryPoint;
         }
-        $apiAccess_stats = @intval($this->post('apiAccess_stats'));
-        if ($apiAccess_stats <= 0) {
-            $this->error->add(t('Please specify the user group to control the API access to statistical data'));
+        $apiAccessControlAllowOrigin = $this->post('apiAccessControlAllowOrigin');
+        if (!is_string($apiAccessControlAllowOrigin) || $apiAccessControlAllowOrigin === '') {
+            $this->error->add(t(/*i18n: %s is an HTTP header name*/'Please specify the value of the %s header', 'Access-Control-Allow-Origin'));
         }
-        $apiAccess_download = @intval($this->post('apiAccess_download'));
-        if ($apiAccess_download <= 0) {
-            $this->error->add(t('Please specify the user group to control the API access to downloads'));
-        }
-        $apiAccess_import_packages = @intval($this->post('apiAccess_import_packages'));
-        if ($apiAccess_import_packages <= 0) {
-            $this->error->add(t('Please specify the user group to control the API access to import packages'));
-        }
-        $apiAccess_updatePackageTranslations = @intval($this->post('apiAccess_updatePackageTranslations'));
-        if ($apiAccess_updatePackageTranslations <= 0) {
-            $this->error->add(t('Please specify the user group to control the API access to update package translations'));
+        $apiAccess = [];
+        foreach ($this->getApiAccessChecks() as $aacKey => $aacInfo) {
+            $validValues = $this->getApiAccessOptions($aacInfo['localeDepentent']);
+            $value = (string) $this->post('apiAccess-' . $aacKey);
+            if ($value === '') {
+                $this->error->add(t('Please specify the API access for: %s', $aacInfo['name']));
+            } elseif (!isset($validValues[$value])) {
+                $this->error->add(t('Unrecognized value for the API access for: %s', $aacInfo['name']));
+            } else {
+                $apiAccess[$aacKey] = $value;
+            }
         }
         if (!$this->error->has()) {
             $config = $this->app->make('community_translation/config');
@@ -171,16 +204,15 @@ class Options extends DashboardPageController
                 $this->entityManager->commit();
             }
             $config->save('options.translatedThreshold', $translatedThreshold);
-            $config->save('options.downloadAccess', $downloadAccess);
             $config->save('options.tempDir', $tempDir);
             $config->save('options.notificationsSenderAddress', (string) $this->post('notificationsSenderAddress'));
             $config->save('options.notificationsSenderName', (string) $this->post('notificationsSenderName'));
             $config->save('options.onlineTranslationPath', $onlineTranslationPath);
             $config->save('options.api.entryPoint', $apiEntryPoint);
-            $config->save('options.api.access.stats', $apiAccess_stats);
-            $config->save('options.api.access.download', $apiAccess_download);
-            $config->save('options.api.access.importPackages', $apiAccess_import_packages);
-            $config->save('options.api.access.updatePackageTranslations', $apiAccess_updatePackageTranslations);
+            $config->save('options.api.accessControlAllowOrigin', $apiAccessControlAllowOrigin);
+            foreach ($apiAccess as $aacKey => $aacValue) {
+                $config->save('options.api.access.' . $aacKey, $aacValue);
+            }
             $config->save('options.parser', $this->post('parser'));
             $this->flash('message', t('Comminity Translation options have been saved.'));
             $this->redirect('/dashboard/community_translation/options');

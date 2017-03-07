@@ -32,6 +32,8 @@ use Controller;
 use Doctrine\ORM\EntityManager;
 use Exception;
 use Gettext\Translations as GettextTranslations;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Response;
 use URL;
 use View;
 
@@ -673,25 +675,40 @@ class OnlineTranslation extends Controller
                 $translations = $this->app->make(Exporter::class)->unreviewed($locale);
                 $serializedTranslations = $format->convertTranslationsToString($translations);
                 unset($translations);
+
+                return $rf->create(
+                    $serializedTranslations,
+                    200,
+                    [
+                        'Content-Type' => 'application/octet-stream',
+                        'Content-Disposition' => 'attachment; filename=translations-' . $locale->getID() . '.' . $format->getFileExtension(),
+                        'Content-Transfer-Encoding' => 'binary',
+                        'Content-Length' => strlen($serializedTranslations),
+                        'Expires' => '0',
+                    ]
+                );
             } else {
                 $packageVersion = $this->app->make(PackageVersionRepository::class)->find($packageVersionID);
                 if ($packageVersion === null) {
                     throw new UserException(t('Invalid translated package version identifier received'));
                 }
-                $serializedTranslations = $this->app->make(TranslationsFileExporter::class)->getSerializedTranslations($packageVersion, $locale, $format);
-            }
+                $serializedTranslationsFile = $this->app->make(TranslationsFileExporter::class)->getSerializedTranslationsFile($packageVersion, $locale, $format);
 
-            return $rf->create(
-                $serializedTranslations,
-                200,
-                [
-                    'Content-Type' => 'application/octet-stream',
-                    'Content-Disposition' => 'attachment; filename=translations-' . $locale->getID() . '.' . $format->getFileExtension(),
-                    'Content-Transfer-Encoding' => 'binary',
-                    'Content-Length' => strlen($serializedTranslations),
-                    'Expires' => '0',
-                ]
-            );
+                return BinaryFileResponse::create(
+                    // $file
+                    $serializedTranslationsFile,
+                    // $status
+                    Response::HTTP_OK,
+                    // $headers
+                    [
+                        'Content-Type' => 'application/octet-stream',
+                        'Content-Transfer-Encoding' => 'binary',
+                    ]
+                )->setContentDisposition(
+                    'attachment',
+                    'translations-' . $locale->getID() . '.' . $format->getFileExtension()
+                );
+            }
         } catch (UserException $x) {
             return $rf->error($x->getMessage());
         }

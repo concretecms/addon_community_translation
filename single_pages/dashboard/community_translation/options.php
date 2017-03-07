@@ -39,57 +39,49 @@ defined('C5_EXECUTE') or die('Access Denied.');
                 </div>
             </div>
         </div>
-        <div class="row">
-            <label for="downloadAccess" class="control-label col-sm-3"><?= t('Download access via web') ?></label>
-            <div class="col-sm-7">
-                <?= $form->select(
-                    'downloadAccess',
-                    [
-                        'anyone' => t('Anyone can download translations'),
-                        'members' => t('Only registered users can download translations'),
-                        'translators' => t('Only translators of a language can download the associated translations'),
-                    ],
-                    $downloadAccess
-                ) ?>
-            </div>
-        </div>
     </fieldset>
 
     <fieldset>
         <legend><?= t('API Access') ?></legend>
-        <div id="pick-api-fields"></div>
-        <script type="text/template" data-template="pick-api-group">
+
+        <div class="row">
+            <div class="form-group">
+                <div class="col-sm-3 control-label">
+                    <label for="apiAccessControlAllowOrigin" class="launch-tooltip" data-html="true" title="<?= h(t(/*i18n: %s is a header name of an HTTP response*/'Set the content of the %s header added to the API request responses', '<br /><code>Access-Control-Allow-Origin</code><br />')) ?>">
+                        <?= tc(/*i18n: %s is a header name of an HTTP response*/'ResponseHeader', '%s header', 'Access-Control-Allow-Origin') ?>
+                    </label>
+                </div>
+                <div class="col-sm-7">
+                    <?= $form->text('apiAccessControlAllowOrigin', $apiAccessControlAllowOrigin, ['required' => 'required']) ?>
+                </div>
+            </div>
+        </div>
+
+        <?php
+        foreach ($apiAccessChecks as $aacKey => $aacInfo) {
+            ?>
             <div class="row">
                 <div class="form-group">
                     <div class="col-sm-3 control-label">
-                        <label for="<%=field.id%>"><%=field.description%></label>
+                        <label for="apiAccess-<?= $aacKey ?>">
+                            <?= h($aacInfo['label']) ?>
+                        </label>
                     </div>
                     <div class="col-sm-7">
-                            <input type="hidden" name="<%=field.id%>" value="<%=value.id%>" />
-                            <a class="form-control"
-                                id="<%=field.id%>"
-                                class="input-group-addon btn btn-default btn-xs"
-                                data-button="pick-api-group"
-                                dialog-width="640"
-                                dialog-height="480"
-                                dialog-modal="true"
-                                href="<?= h(URL::to('/ccm/dialogs/group/search')) ?>"
-                                dialog-title="<?= h(t('Select group')) ?>"
-                                dialog-modal="true"
-                                data-field="<%=field.id%>"
-                            ><%=value.description%></a>
-                        </div>
+                        <?= $form->select('apiAccess-' . $aacKey, $aacInfo['values'], $aacInfo['value'], ['required' => 'required']) ?>
                     </div>
                 </div>
             </div>
-        </script>
+            <?php
+        }
+        ?>
     </fieldset>
 
     <fieldset>
         <legend><?= t('Paths') ?></legend>
         <div class="row">
             <div class="form-group">
-                <label for="apiEntryPoint" class="control-label col-sm-3"><?= t('Online Translation URI') ?></label>
+                <label for="onlineTranslationPath" class="control-label col-sm-3"><?= t('Online Translation URI') ?></label>
                 <div class="col-sm-7">
                     <?= $form->text('onlineTranslationPath', $onlineTranslationPath, ['required' => 'required']) ?>
                 </div>
@@ -154,62 +146,3 @@ defined('C5_EXECUTE') or die('Access Denied.');
     </div>
 
 </form>
-
-<script>$(document).ready(function() {
-
-var currentApiGroupID;
-var _pickApiGroup = _.template($('script[data-template=pick-api-group]').html());
-$('#pick-api-fields')
-    .append(_pickApiGroup(<?= json_encode([
-        'field' => [
-           'id' => 'apiAccess_stats',
-           'description' => t('Retrieve statistical data'),
-        ],
-        'value' => [
-           'id' => $apiAccess_stats['gID'],
-           'description' => $apiAccess_stats['gName'],
-        ],
-    ]) ?>))
-    .append(_pickApiGroup(<?= json_encode([
-        'field' => [
-           'id' => 'apiAccess_download',
-           'description' => t('Download translations'),
-        ],
-        'value' => [
-           'id' => $apiAccess_download['gID'],
-           'description' => $apiAccess_download['gName'],
-        ],
-    ]) ?>))
-    .append(_pickApiGroup(<?= json_encode([
-        'field' => [
-           'id' => 'apiAccess_import_packages',
-           'description' => t('Import translations from packages'),
-        ],
-        'value' => [
-           'id' => $apiAccess_import_packages['gID'],
-           'description' => $apiAccess_import_packages['gName'],
-        ],
-    ]) ?>))
-    .append(_pickApiGroup(<?= json_encode([
-        'field' => [
-           'id' => 'apiAccess_updatePackageTranslations',
-           'description' => t('Update package translations'),
-        ],
-        'value' => [
-           'id' => $apiAccess_updatePackageTranslations['gID'],
-           'description' => $apiAccess_updatePackageTranslations['gName'],
-        ],
-    ]) ?>))
-;
-ConcreteEvent.subscribe('SelectGroup', function (e, data) {
-    if (data && data.gID) {
-        $('input[name="' + currentApiGroupID + '"]').val(data.gID);
-        $('#' + currentApiGroupID).text(data.gName);
-        jQuery.fn.dialog.closeTop();
-    }
-});
-$('a[data-button=pick-api-group]').dialog().on('click', function() {
-    currentApiGroupID = $(this).data('field');
-});
-
-});</script>

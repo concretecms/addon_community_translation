@@ -20,6 +20,13 @@ class ApiClient
     protected $entryPoint;
 
     /**
+     * The query string.
+     *
+     * @var string
+     */
+    protected $queryString;
+
+    /**
      * The API token.
      *
      * @var string
@@ -68,6 +75,24 @@ class ApiClient
     public function setEntryPoint($value)
     {
         $this->entryPoint = (string) $value;
+
+        return $this;
+    }
+
+    /**
+     * Set the query string.
+     *
+     * @param string $value
+     *
+     * @return static
+     */
+    public function setQueryString($value)
+    {
+        $value = (string) $value;
+        if ($value !== '' && $value[0] !== '?') {
+            $value = '?' . $value;
+        }
+        $this->queryString = $value;
 
         return $this;
     }
@@ -155,6 +180,7 @@ class ApiClient
     {
         $this->lastResponse = null;
         $this->entryPoint = null;
+        $this->queryString = '';
         if (!$keepToken) {
             $this->token = '';
         }
@@ -179,7 +205,7 @@ class ApiClient
             throw new Exception('API entry point not set.');
         }
         $ch = curl_init();
-        $url = rtrim($this->rootURL, '/') . '/' . ltrim($this->entryPoint, '/');
+        $url = rtrim($this->rootURL, '/') . '/' . ltrim($this->entryPoint, '/') . $this->queryString;
         curl_setopt($ch, CURLOPT_URL, $url);
         curl_setopt($ch, CURLOPT_FAILONERROR, false);
         curl_setopt($ch, CURLOPT_HEADER, false);
@@ -239,11 +265,10 @@ class ApiClient
         }
         if ($responseCode >= 400) {
             if (strpos($contentType, 'text/plain') !== 0) {
-                $errorMessage = 'Wrong content type of error ' . $responseCode . ': ' . $contentType;
+                throw new Exception('Wrong content type of error ' . $responseCode . ': ' . $contentType, $responseCode);
             } else {
-                $errorMessage = $responseBody;
+                throw new ApiClientResponseException($responseBody, $responseCode);
             }
-            throw new Exception($errorMessage, $responseCode);
         }
         if ($contentLength !== null && strlen($responseBody) !== $contentLength) {
             throw new Exception("Wrong response size (expected: $contentLength, received: " . strlen($responseBody) . ')');

@@ -236,6 +236,7 @@ class Controller extends Package
         $handleRegex = '[A-Za-z0-9]([A-Za-z0-9\_]*[A-Za-z0-9])?';
         $localeRegex = '[a-zA-Z]{2,3}([_\-][a-zA-Z0-9]{2,3})?';
         $this->app->make(Router::class)->registerMultiple([
+            // Online Translation
             "$onlineTranslationPath/{packageVersionID}/{localeID}" => [
                 'Concrete\Package\CommunityTranslation\Controller\Frontend\OnlineTranslation::view',
                 null,
@@ -326,26 +327,18 @@ class Controller extends Package
                 [],
                 ['POST'],
             ],
+            // API Entry Points
             "$apiEntryPoint/locales/" => [
-                'CommunityTranslation\Api\EntryPoint::getApprovedLocales',
+                'CommunityTranslation\Api\EntryPoint::getLocales',
                 null,
                 [],
-                [],
-                '',
-                [],
-                ['GET'],
-            ],
-            "$apiEntryPoint/locales/{packageHandle}/{packageVersion}/{minimumLevel}/" => [
-                'CommunityTranslation\Api\EntryPoint::getLocalesForPackage',
-                null,
-                ['packageHandle' => $handleRegex, 'minimumLevel' => '[0-9]{1,3}'],
                 [],
                 '',
                 [],
                 ['GET'],
             ],
             "$apiEntryPoint/packages/" => [
-                'CommunityTranslation\Api\EntryPoint::getAvailablePackageHandles',
+                'CommunityTranslation\Api\EntryPoint::getPackages',
                 null,
                 [],
                 [],
@@ -354,7 +347,7 @@ class Controller extends Package
                 ['GET'],
             ],
             "$apiEntryPoint/package/{packageHandle}/versions/" => [
-                'CommunityTranslation\Api\EntryPoint::getAvailablePackageVersions',
+                'CommunityTranslation\Api\EntryPoint::getPackageVersions',
                 null,
                 ['packageHandle' => $handleRegex],
                 [],
@@ -362,50 +355,49 @@ class Controller extends Package
                 [],
                 ['GET'],
             ],
-            "$apiEntryPoint/package/import/translatable/" => [
-                'CommunityTranslation\Api\EntryPoint::importPackageTranslatable',
+            "$apiEntryPoint/package/{packageHandle}/{packageVersion}/locales/{minimumLevel}/" => [
+                'CommunityTranslation\Api\EntryPoint::getPackageVersionLocales',
                 null,
+                ['packageHandle' => $handleRegex, 'minimumLevel' => '[0-9]{1,3}'],
                 [],
+                '',
+                [],
+                ['GET'],
+            ],
+            "$apiEntryPoint/package/{packageHandle}/{packageVersion}/translations/{localeID}/{formatHandle}/" => [
+                'CommunityTranslation\Api\EntryPoint::getPackageVersionTranslations',
+                null,
+                ['packageHandle' => $handleRegex, 'localeID' => $localeRegex, 'formatHandle' => $handleRegex],
+                [],
+                '',
+                [],
+                ['GET'],
+            ],
+            "$apiEntryPoint/package/{packageHandle}/{packageVersion}/translatables/{formatHandle}/" => [
+                'CommunityTranslation\Api\EntryPoint::importPackageVersionTranslatables',
+                null,
+                ['packageHandle' => $handleRegex, 'formatHandle' => $handleRegex],
                 [],
                 '',
                 [],
                 ['POST'],
             ],
-            "$apiEntryPoint/package/update/translations/" => [
-                'CommunityTranslation\Api\EntryPoint::updatePackageTranslations',
+            "$apiEntryPoint/translations/{localeID}/{formatHandle}/{approve}/" => [
+                'CommunityTranslation\Api\EntryPoint::importTranslations',
                 null,
-                [],
+                ['localeID' => $localeRegex, 'formatHandle' => $handleRegex, 'approve' => '[01]'],
                 [],
                 '',
                 [],
                 ['POST'],
             ],
-            "$apiEntryPoint/package/updated/translations/" => [
-                'CommunityTranslation\Api\EntryPoint::recentPackagesUpdated',
+            "$apiEntryPoint/{unrecognizedPath}" => [
+                'CommunityTranslation\Api\EntryPoint::unrecognizedCall',
                 null,
-                [],
-                [],
-                '',
-                [],
-                ['GET'],
+                ['unrecognizedPath' => '.*'],
             ],
-            "$apiEntryPoint/po/{packageHandle}/{packageVersion}/{localeID}" => [
-                'CommunityTranslation\Api\EntryPoint::getPackagePo',
-                null,
-                ['packageHandle' => $handleRegex, 'localeID' => $localeRegex],
-                [],
-                '',
-                [],
-                ['GET'],
-            ],
-            "$apiEntryPoint/mo/{packageHandle}/{packageVersion}/{localeID}" => [
-                'CommunityTranslation\Api\EntryPoint::getPackageMo',
-                null,
-                ['packageHandle' => $handleRegex, 'localeID' => $localeRegex],
-                [],
-                '',
-                [],
-                ['GET'],
+            "$apiEntryPoint" => [
+                'CommunityTranslation\Api\EntryPoint::unrecognizedCall',
             ],
         ]);
     }

@@ -73,6 +73,7 @@ class MoConverter extends BaseConverter implements ConverterInterface
     public function convertTranslationsToString(Translations $translations)
     {
         \Gettext\Generators\Mo::$includeEmptyTranslations = true;
+
         return $translations->toMoString();
     }
 

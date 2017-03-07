@@ -111,7 +111,7 @@ class TranslationsFileExporter
      *
      * @return string
      */
-    public function getSerializedTranslations(PackageVersionEntity $packageVersion, LocaleEntity $locale, TranslationsConverter $format)
+    public function getSerializedTranslationsFile(PackageVersionEntity $packageVersion, LocaleEntity $locale, TranslationsConverter $format)
     {
         $fileMTime = null;
         $file = $this->getCacheDirectory($packageVersion, $locale, true) . '/data.' . $format->getHandle();
@@ -130,16 +130,32 @@ class TranslationsFileExporter
         }
         if ($refreshCache) {
             $translations = $this->app->make(Exporter::class)->forPackage($packageVersion, $locale);
-            $result = $format->convertTranslationsToString($translations);
+            $serializedTranslations = $format->convertTranslationsToString($translations);
             unset($translations);
-            if (@$this->fs->put($file, $result, true) === false) {
+            if (@$this->fs->put($file, $serializedTranslations, true) === false) {
                 throw new UserException(t('Failed to create a cache file'));
             }
-        } else {
-            $result = $this->fs->get($file);
-            if ($result === false) {
-                throw new UserException(t('Failed to read a cache file'));
-            }
+        }
+
+        return $file;
+    }
+
+    /**
+     * @param PackageVersionEntity $packageVersion
+     * @param LocaleEntity $locale
+     * @param TranslationsConverter $format
+     *
+     * @throws UserException
+     *
+     * @return string
+     */
+    public function getSerializedTranslations(PackageVersionEntity $packageVersion, LocaleEntity $locale, TranslationsConverter $format)
+    {
+        $file = $this->getSerializedTranslationsFile($packageVersion, $locale, $format);
+
+        $result = $this->fs->get($file);
+        if ($result === false) {
+            throw new UserException(t('Failed to read a cache file'));
         }
 
         return $result;
