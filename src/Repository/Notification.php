@@ -154,6 +154,23 @@ class Notification extends EntityRepository
         $em->flush($n);
     }
 
+    public function newTranslatorApprovedAutomatically(LocaleEntity $locale, UserEntity $translator)
+    {
+        $n = NotificationEntity::create(
+            'new_translator_approved',
+            NotificationEntity::RECIPIENT_GLOBAL_ADMINISTRATORS | NotificationEntity::RECIPIENT_LOCALE_ADMINISTRATORS | NotificationEntity::RECIPIENT_USER,
+            [
+                'by' => USER_SUPER_ID,
+                'automatic' => true,
+            ],
+            $locale,
+            $translator
+        );
+        $em = $this->getEntityManager();
+        $em->persist($n);
+        $em->flush($n);
+    }
+
     /**
      * @param LocaleEntity $locale
      * @param UserEntity $translator
