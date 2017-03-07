@@ -1,30 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schema
-  xmlns="http://www.concrete5.org/doctrine-xml/0.5"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://www.concrete5.org/doctrine-xml/0.5 http://concrete5.github.io/doctrine-xml/doctrine-xml-0.5.xsd"
+    xmlns="http://www.concrete5.org/doctrine-xml/0.5"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.concrete5.org/doctrine-xml/0.5 http://concrete5.github.io/doctrine-xml/doctrine-xml-0.5.xsd"
 >
 
-  <table name="btCTSearchPackages">
-    <field name="bID" type="integer">
-      <unsigned/>
-      <key/>
-    </field>
-    <field name="preloadPackageHandle" type="string" size="64">
-    	<notnull/>
-	</field>
-	<field name="mimimumSearchLength" type="integer">
-		<unsigned/>
-	</field>
-	<field name="maximumSearchResults" type="integer">
-		<unsigned/>
-	</field>
-    <field name="allowedDownloadFormats" type="string" size="255">
-    	<notnull/>
-	</field>
-    <field name="allowedDownloadFor" type="string" size="30">
-    	<notnull/>
-	</field>
-  </table>
+    <table name="btCTSearchPackages">
+        <field name="bID" type="integer">
+            <unsigned/>
+            <key/>
+        </field>
+        <field name="preloadPackageHandle" type="string" size="64">
+            <notnull/>
+        </field>
+        <field name="mimimumSearchLength" type="integer">
+            <unsigned/>
+        </field>
+        <field name="maximumSearchResults" type="integer">
+            <unsigned/>
+        </field>
+        <field name="allowedDownloadFormats" type="string" size="255">
+            <notnull/>
+        </field>
+        <field name="allowedDownloadFor" type="string" size="30">
+            <notnull/>
+        </field>
+    </table>
 
 </schema>

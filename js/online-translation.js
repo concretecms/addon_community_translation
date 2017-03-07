@@ -165,11 +165,11 @@ function processTranslation(operation, send, cb) {
         }
         if ('current' in data) {
             patchCoreTranslation(currentTranslation, data.current);
-          if (translator.currentTranslationView) {
-              translator.currentTranslationView.dispose();
-              translator.currentTranslationView = null;
-          }
-          translator.currentTranslationView = currentTranslation.isPlural ? new window.ccmTranslator.views.Plural(currentTranslation) :  new window.ccmTranslator.views.Singular(currentTranslation);
+            if (translator.currentTranslationView) {
+                translator.currentTranslationView.dispose();
+                translator.currentTranslationView = null;
+            }
+            translator.currentTranslationView = currentTranslation.isPlural ? new window.ccmTranslator.views.Plural(currentTranslation) : new window.ccmTranslator.views.Singular(currentTranslation);
         }
         if ('others' in data) {
             OtherTranslations.initialize(data.others);
@@ -592,7 +592,7 @@ var Suggestions = (function() {
 })();
 var Glossary = (function() {
     var $parent, editingEntry, ajaxing = false;
-    
+
     function Entry(data) {
         this.data = data;
         $parent.find('.comtra_some')
@@ -791,7 +791,7 @@ function initializeUI()
         $midRow = $('<div class="row" />');
     var $extraTabs = $('#comtra_extra-tabs').tab();
     var $references = $('#comtra_extra-references');
-    
+
     $translationsCol.before($midCell);
     $midCell.append($midRow);
     $midRow.append($translationsCol);

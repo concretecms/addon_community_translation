@@ -40,8 +40,8 @@ Table.prototype = {
                     rowSortableCells[cellIndex] = $cell;
                     if (populateHeadCells) {
                         me.headCells.push({
-                           cellIndex: cellIndex,
-                           $th: $($theadCells[cellIndex])
+                            cellIndex: cellIndex,
+                            $th: $($theadCells[cellIndex])
                         });
                     }
                 }
@@ -153,7 +153,7 @@ $.fn.comtraSortable = function() {
         new Table(this);
     });
 };
- 
+
 $(document).ready(function() {
     $('table.comtra-sortable').comtraSortable();
 });

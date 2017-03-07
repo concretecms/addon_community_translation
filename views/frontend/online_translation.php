@@ -453,7 +453,7 @@ if ($canEditGlossary) {
     ];
     $params['tokens'] += [
         'saveGlossaryTerm' => $token->generate('comtra-save-glossary-term' . $locale->getID()),
-         'deleteGlossaryTerm' => $token->generate('comtra-delete-glossary-term' . $locale->getID()),
+        'deleteGlossaryTerm' => $token->generate('comtra-delete-glossary-term' . $locale->getID()),
     ];
 }
 echo json_encode($params);

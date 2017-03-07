@@ -175,7 +175,7 @@ EOT
             if (!$input->isInteractive()) {
                 throw new Exception('Please specify the Transifex password');
             }
-            $question = new Question('Please specify the Transifex password  (will be hidden): ', '');
+            $question = new Question('Please specify the Transifex password (will be hidden): ', '');
             $question->setHidden(true);
             $this->transifexPassword = (string) $this->getHelper('question')->ask($input, $output, $question);
             if ($this->transifexPassword === '') {

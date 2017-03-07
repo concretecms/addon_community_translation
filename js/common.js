@@ -4,10 +4,10 @@
 'use strict';
 
 $(window).on('beforeunload', function() {
-	$('form').off('submit').removeAttr('onsubmit').on('submit', function(e) {
-		e.preventDefault();
-		return false;
-	});
+    $('form').off('submit').removeAttr('onsubmit').on('submit', function(e) {
+        e.preventDefault();
+        return false;
+    });
 });
 
 })();

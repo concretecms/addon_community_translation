@@ -176,7 +176,7 @@ $('input[name="parsetags"],#parsetagsAnd2').on('change', function() {
     $('.comtra-parsetags-filter2').css('visibility', ask2 ? 'visible' : 'hidden');
     $('#parsetagsVersion1,#parsetagsVersion2').removeAttr('required').removeAttr('pattern');
     if (ask1) {
-         $('#parsetagsVersion1').attr('required', 'required').attr('pattern', '[0-9]+(\.[0-9]+)*');
+        $('#parsetagsVersion1').attr('required', 'required').attr('pattern', '[0-9]+(\.[0-9]+)*');
     }
     if (ask2) {
         $('#parsetagsVersion2').attr('required', 'required').attr('pattern', '[0-9]+(\.[0-9]+)*');
