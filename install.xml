@@ -1,6 +1,13 @@
 <?xml version="1.0"?>
 <concrete5-cif version="1.0">
 
+	<groups>
+		<group package="community_translation" name="Global Locale Administrators" path="/Global Locale Administrators" description="Users with global access to translations (administrators of the localization teams)" />
+		<group package="community_translation" name="Locale Administrators" path="/Locale Administrators" description="Parent group of the locale-specific groups containing localization team coordinators" />
+		<group package="community_translation" name="Translators" path="/Translators" description="Parent group of the locale-specific groups containing localization team translators" />
+		<group package="community_translation" name="Aspiring Translators" path="/Aspiring Translators" description="Parent group of the locale-specific groups containing users that asked to join localization teams" />
+	</groups>
+
 	<blocktypes>
 		<blocktype package="community_translation" handle="translation_teams" />
 		<blocktype package="community_translation" handle="translation_team_request" />
