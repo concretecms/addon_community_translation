@@ -139,9 +139,9 @@ class OnlineTranslation extends Controller
             $this->set('pageTitle', t(/*i18n: %1$s is a package name, %2$s is a language name*/'Translating %1$s in %2$s', $packageVersion->getDisplayName(), $locale->getDisplayName()));
         }
         $translationFormats = [];
-        foreach ($this->app->make(TranslationsConverterProvider::class)->getRegisteredConverters() as $tfHandle => $tf) {
+        foreach ($this->app->make(TranslationsConverterProvider::class)->getRegisteredConverters() as $tf) {
             if ($tf->supportLanguageHeader() && $tf->supportPlurals() && $tf->canSerializeTranslations() && $tf->canUnserializeTranslations()) {
-                $translationFormats[$tfHandle] = $tf;
+                $translationFormats[] = $tf;
             }
         }
         $this->set('translationFormats', $translationFormats);

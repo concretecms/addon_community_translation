@@ -17,16 +17,9 @@ class Provider
     /**
      * The registered converters.
      *
-     * @var [ConverterInterface|string]
-     */
-    protected $converters;
-
-    /**
-     * The registered converters.
-     *
      * @var ConverterInterface[]
      */
-    protected $converterInstances;
+    protected $converters;
 
     /**
      * @param Application $app
@@ -35,19 +28,16 @@ class Provider
     {
         $this->app = $app;
         $this->converters = [];
-        $this->converterInstances = [];
     }
 
     /**
      * Register a converter.
      *
-     * @param string $handle
-     * @param ConverterInterface|string $converter
+     * @param ConverterInterface
      */
-    public function register($handle, $converter)
+    public function register(ConverterInterface $converter)
     {
-        $this->converters[$handle] = $converter;
-        unset($this->converterInstances[$handle]);
+        $this->converters[$converter->getHandle()] = $converter;
     }
 
     /**
@@ -63,7 +53,7 @@ class Provider
     }
 
     /**
-     * Get a handle given its handle.
+     * Get a converter given its handle.
      *
      * @param string $handle
      *
@@ -71,9 +61,7 @@ class Provider
      */
     public function getByHandle($handle)
     {
-        $converters = $this->getRegisteredConverters();
-
-        return isset($converters[$handle]) ? $converters[$handle] : null;
+        return isset($this->converters[$handle]) ? $this->converters[$handle] : null;
     }
 
     /**
@@ -87,9 +75,9 @@ class Provider
     {
         $fileExtension = ltrim($fileExtension);
         $result = [];
-        foreach ($this->getRegisteredConverters() as $handle => $converter) {
+        foreach ($this->converters as $converter) {
             if (strcasecmp($fileExtension, $converter->getFileExtension()) === 0) {
-                $result[$handle] = $converter;
+                $result[] = $converter;
             }
         }
 
@@ -105,21 +93,9 @@ class Provider
      */
     public function getRegisteredConverters()
     {
-        foreach (array_diff_key($this->converters, $this->converterInstances) as $handle => $converter) {
-            if ($converter instanceof ConverterInterface) {
-                $this->converterInstances[$handle] = $converter;
-            } else {
-                $instance = $this->app->make($converter);
-                if (!($instance instanceof ConverterInterface)) {
-                    throw new UserException(t(/*i18n: %1$s is the name of a PHP class, %2$s is the name of a PHP interface*/'%1$s does not implement %2$s', $converter, ConverterInterface::class));
-                }
-                $this->converterInstances[$handle] = $instance;
-            }
-        }
-
+        $result = $this->converters;
         $comparer = new Comparer();
-        $result = $this->converterInstances;
-        uasort($result, function (ConverterInterface $a, ConverterInterface $b) use ($comparer) {
+        usort($result, function (ConverterInterface $a, ConverterInterface $b) use ($comparer) {
             return $comparer->compare($a->getName(), $b->getName());
         });
 

@@ -339,11 +339,11 @@ if ($canEditGlossary) {
                     <fieldset>
                         <legend><?= t('File format') ?></legend>
                         <?php
-                        foreach ($translationFormats as $tfHandle => $tf) {
+                        foreach ($translationFormats as $tf) {
                             ?>
                             <div class="radio">
                                 <label>
-                                    <input type="radio" name="download-format" value="<?= h($tfHandle) ?>" required="required" />
+                                    <input type="radio" name="download-format" value="<?= h($tf->getHandle()) ?>" required="required" />
                                     <?= h($tf->getName()) ?>
                                 </label>
                             </div>

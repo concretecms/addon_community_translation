@@ -46,11 +46,11 @@ $form = $app->make('helper/form');
     <div class="form-group"<?= ($allowedDownloadFor === $controller::ALLOWDOWNLOADFOR_NOBODY) ? ' style="display: none"' : '' ?>>
         <?= $form->label('allowedDownloadFormats', t('Allowed download formats')) ?>
         <?php
-        foreach ($downloadFormats as $dfHandle => $df) {
+        foreach ($downloadFormats as $df) {
             ?>
             <div class="checkbox">
                 <label>
-                    <?= $form->checkbox('allowedDownloadFormats[]', $dfHandle, in_array($dfHandle, $allowedDownloadFormats)) ?>
+                    <?= $form->checkbox('allowedDownloadFormats[]', $df->getHandle(), in_array($df->getHandle(), $allowedDownloadFormats)) ?>
                     <?= h($df->getName()) ?>
                 </label>
             </div>

@@ -96,12 +96,11 @@ class ServiceProvider extends Provider
     {
         $this->app->singleton(\CommunityTranslation\TranslationsConverter\Provider::class, function () use ($app) {
             $provider = $app->build(\CommunityTranslation\TranslationsConverter\Provider::class);
-            /* @var \CommunityTranslation\TranslationsConverter\Provider $provider */
-            $provider->register('jed', \CommunityTranslation\TranslationsConverter\JedConverter::class);
-            $provider->register('json_dictionary', \CommunityTranslation\TranslationsConverter\JsonDictionaryConverter::class);
-            $provider->register('mo', \CommunityTranslation\TranslationsConverter\MoConverter::class);
-            $provider->register('php_array', \CommunityTranslation\TranslationsConverter\PhpArrayConverter::class);
-            $provider->register('po', \CommunityTranslation\TranslationsConverter\PoConverter::class);
+            $provider->register($app->make(\CommunityTranslation\TranslationsConverter\JedConverter::class));
+            $provider->register($app->make(\CommunityTranslation\TranslationsConverter\JsonDictionaryConverter::class));
+            $provider->register($app->make(\CommunityTranslation\TranslationsConverter\MoConverter::class));
+            $provider->register($app->make(\CommunityTranslation\TranslationsConverter\PhpArrayConverter::class));
+            $provider->register($app->make(\CommunityTranslation\TranslationsConverter\PoConverter::class));
 
             return $provider;
         });
