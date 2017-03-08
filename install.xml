@@ -85,6 +85,7 @@
         <attributeset package="community_translation" category="user" handle="community_translation" name="Community Translation" locked="0">
             <attributekey handle="api_token" />
             <attributekey handle="notify_new_packages" />
+            <attributekey handle="notify_translatable_messages" />
         </attributeset>
     </attributesets>
 
