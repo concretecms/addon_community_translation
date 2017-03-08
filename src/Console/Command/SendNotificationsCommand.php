@@ -56,6 +56,7 @@ EOT
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $this->app = Application::getFacadeApplication();
+        $this->checkCanonicalURL();
         $ctConfig = $this->app->make('community_translation/config');
         $fromEmail = (string) $ctConfig->get('options.notificationsSenderAddress');
         if ($fromEmail !== '') {
@@ -69,6 +70,8 @@ EOT
         $repo = $this->app->make(NotificationRepository::class);
         $mail = $this->app->make('mail');
         $lastID = null;
+        $someSent = false;
+        $someError = false;
         /* @var NotificationRepository $repo */
         for (; ;) {
             $criteria = Criteria::create()->where(Criteria::expr()->isNull('sentOn'))->setMaxResults(1);
@@ -92,10 +95,31 @@ EOT
                 $error = $x;
             }
             if ($error !== null) {
+                $this->writeError($output, $error);
                 $notification->addDeliveryError($error->getMessage());
             }
             $em->persist($notification);
             $em->flush($notification);
+        }
+        if ($someError && $someSent) {
+            $rc = 2;
+        } elseif ($someSent) {
+            $rc = 1;
+        } elseif ($someError) {
+            $rc = static::RETURN_CODE_ON_FAILURE;
+        } else {
+            $rc = 0;
+        }
+
+        return $rc;
+    }
+
+    private function checkCanonicalURL()
+    {
+        $site = $this->app->make('site')->getSite();
+        /* @var \Concrete\Core\Entity\Site\Site $site */
+        if (!$site->getSiteCanonicalURL()) {
+            throw new Exception('The site canonical URL must be set in order to run this command.');
         }
     }
 
@@ -144,6 +168,7 @@ EOT
      */
     private function processNotification(NotificationEntity $notification, MailService $mail)
     {
+        $mail->reset();
         $category = $this->getCategory($notification->getFQNClass());
         $recipients = $category->processNotification($notification, $mail);
         $notification->setSentCount($recipients);

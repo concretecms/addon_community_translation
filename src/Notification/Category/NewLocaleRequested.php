@@ -3,6 +3,7 @@ namespace CommunityTranslation\Notification\Category;
 
 use CommunityTranslation\Notification\Category;
 use Concrete\Core\Mail\Service as MailService;
+use Exception;
 
 /**
  * Notification category: a new locale has been requested.
@@ -16,6 +17,7 @@ class NewLocaleRequested extends Category
      */
     protected function addMailParameters(array $notificationData, MailService $mail)
     {
+        throw new Exception('@todo');
     }
 
     /**

@@ -4,6 +4,7 @@ namespace CommunityTranslation\Notification\Category;
 use CommunityTranslation\Notification\Category;
 use CommunityTranslation\Repository\Locale as LocaleRepository;
 use Concrete\Core\Mail\Service as MailService;
+use Exception;
 
 /**
  * Notification category: a translation team join request has been approved.
@@ -17,6 +18,7 @@ class NewTranslatorApproved extends Category
      */
     protected function addMailParameters(array $notificationData, MailService $mail)
     {
+        throw new Exception('@todo');
     }
 
     /**
@@ -29,10 +31,11 @@ class NewTranslatorApproved extends Category
         $result = [];
         $result[] = $notificationData['applicantUserID'];
         $locale = $this->app->make(LocaleRepository::class)->findApproved($notificationData['localeID']);
-        if ($locale !== null) {
-            $group = $this->getGroupsHelper()->getAdministrators($locale);
-            $result = array_merge($result, $group->getGroupMemberIDs());
+        if ($locale === null) {
+            throw new Exception(t('Unable to find the locale with ID %s', $notificationData['localeID']));
         }
+        $group = $this->getGroupsHelper()->getAdministrators($locale);
+        $result = array_merge($result, $group->getGroupMemberIDs());
         $group = $this->getGroupsHelper()->getGlobalAdministrators();
         $result = array_merge($result, $group->getGroupMemberIDs());
 

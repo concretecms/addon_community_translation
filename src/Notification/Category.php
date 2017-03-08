@@ -114,15 +114,17 @@ abstract class Category implements CategoryInterface
      */
     public function processNotification(NotificationEntity $notification, MailService $mail)
     {
-        $mail->reset();
-        $this->addMailParameters($notification->getNotificationData(), $mail);
-        $tp = $this->getMailTemplate();
-        $mail->load($tp[0], $tp[1]);
         $recipientEmails = $this->getRecipientEmails($notification->getNotificationData());
-        foreach ($recipientEmails as $recipientEmail) {
-            $mail->bcc($recipientEmail);
+        $numRecipient = count($recipientEmails);
+        if ($numRecipient > 0) {
+            $this->addMailParameters($notification->getNotificationData(), $mail);
+            $tp = $this->getMailTemplate();
+            $mail->load($tp[0], $tp[1]);
+            foreach ($recipientEmails as $recipientEmail) {
+                $mail->bcc($recipientEmail);
+            }
         }
 
-        return count($recipientEmails);
+        return $numRecipient;
     }
 }
