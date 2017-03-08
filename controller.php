@@ -178,9 +178,6 @@ class Controller extends Package
             'jquery/scroll-to' => [
                 ['javascript', 'js/jquery.scrollTo.min.js', ['minify' => true, 'combine' => true, 'version' => '2.1.2'], $this],
             ],
-            'community_translation/common' => [
-                ['javascript', 'js/common.js', ['minify' => true, 'combine' => true], $this],
-            ],
             'community_translation/online_translation/bootstrap' => [
                 ['javascript', 'js/bootstrap.min.js', ['minify' => false, 'combine' => true], $this],
             ],
@@ -201,12 +198,6 @@ class Controller extends Package
                 [
                     ['javascript', 'jquery'],
                     ['javascript', 'jquery/scroll-to'],
-                ],
-            ],
-            'community_translation/common' => [
-                [
-                    ['javascript', 'jquery'],
-                    ['javascript', 'community_translation/common'],
                 ],
             ],
             'community_translation/online_translation' => [

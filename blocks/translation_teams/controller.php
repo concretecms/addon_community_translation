@@ -377,7 +377,6 @@ class Controller extends BlockController
         $this->set('step', 'teamList');
         $this->set('askNewTeamURL', $this->getAskNewTeamURL());
         $this->requireAsset('jquery/scroll-to');
-        $this->requireAsset('community_translation/common');
         $this->requireAsset('jquery/ui');
         $this->set('token', $this->app->make('token'));
         $this->set('dh', $this->app->make('date'));
