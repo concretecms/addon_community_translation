@@ -20,17 +20,17 @@ class Notification
     /**
      * Create a new (unsaved) instance.
      *
-     * @param string $classHandle The notification class handle
+     * @param string $fqnClass The fully qualified name of the category class
      * @param array $notificationData Data specific to the notification class
      * @param Locale|null $locale Associated locale
      *
      * @return static
      */
-    public static function create($classHandle, array $notificationData = [])
+    public static function create($fqnClass, array $notificationData = [])
     {
         $result = new static();
         $result->createdOn = new DateTime();
-        $result->classHandle = (string) $classHandle;
+        $result->fqnClass = (string) $fqnClass;
         $result->notificationData = $notificationData;
         $result->sentOn = null;
         $result->sentCount = null;
@@ -84,22 +84,22 @@ class Notification
     }
 
     /**
-     * Notification class handle.
+     * Fully qualified name of the category class.
      *
-     * @ORM\Column(type="string", length=64, nullable=false, options={"comment": "Notification class handle"})
+     * @ORM\Column(type="string", length=255, nullable=false, options={"comment": "Fully qualified name of the category class"})
      *
      * @var string
      */
-    protected $classHandle;
+    protected $fqnClass;
 
     /**
-     * Get the notification class handle.
+     * Get the fully qualified name of the category class.
      *
      * @return string
      */
-    public function getClassHandle()
+    public function getFQNClass()
     {
-        return $this->classHandle;
+        return $this->fqnClass;
     }
 
     /**

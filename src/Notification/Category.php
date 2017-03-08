@@ -1,59 +1,33 @@
 <?php
 namespace CommunityTranslation\Notification;
 
-class Category
+use CommunityTranslation\Entity\Notification as NotificationEntity;
+use Concrete\Core\Mail\Service as MailService;
+
+abstract class Category
 {
     /**
-     * A new locale has been requested.
+     * Get the email recipient email addresses.
      *
-     * @var string
+     * @return string[]
      */
-    const CLASS_NEW_LOCALE_REQUESTED = 'new_locale_requested';
+    abstract public function getRecipients();
 
     /**
-     * The request of new locale has been approved.
+     * Set the.
      *
-     * @var string
-     */
-    const CLASS_NEW_LOCALE_APPROVED = 'new_locale_approved';
-
-    /**
-     * The request of new locale has been rejected.
-     */
-    const CLASS_NEW_LOCALE_REJECTED = 'new_locale_rejected';
-
-    /**
-     * Someone wants to join a translation team.
+     * @param NotificationEntity $notification
+     * @param MailService $notification
      *
-     * @var string
-     */
-    const CLASS_NEW_TEAM_JOIN_REQUEST = 'new_team_join_request';
-
-    /**
-     * A translation team join request has been approved.
+     * @todo
      *
-     * @var string
+     * @return int
      */
-    const CLASS_NEW_TRANSLATOR_APPROVED = 'new_translator_approved';
+    public function processNotification(NotificationEntity $notification, MailService $mail)
+    {
+        $recipients = $this->getRecipients();
+        $mail->reset();
 
-    /**
-     * A translation team join request has been rejected.
-     *
-     * @var string
-     */
-    const CLASS_NEW_TRANSLATOR_REJECTED = 'new_translator_rejected';
-
-    /**
-     * A new comment about a translation has been submitted.
-     *
-     * @var string
-     */
-    const CLASS_TRANSLATABLE_COMMENT = 'translatable_comment';
-
-    /**
-     * Some translations need approval.
-     *
-     * @var string
-     */
-    const CLASS_TRANSLATIONS_NEED_APPROVAL = 'translations_need_approval';
+        return count($recipients);
+    }
 }
