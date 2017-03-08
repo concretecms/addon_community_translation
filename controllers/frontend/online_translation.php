@@ -282,9 +282,7 @@ class OnlineTranslation extends Controller
             $em = $this->app->make(EntityManager::class);
             $em->persist($comment);
             $em->flush();
-            if ($id === 'new') {
-                $this->app->make(NotificationRepository::class)->newTranslatableCommentSubmitted($comment);
-            }
+            $this->app->make(NotificationRepository::class)->translatableCommentSubmitted($comment);
 
             return $rf->json(
                 [
@@ -618,7 +616,7 @@ class OnlineTranslation extends Controller
             }
             switch ($operation) {
                 case 'approve':
-                    return $this->approveTranslation($access, $processTranslation, $accessHelper->getUserEntity('current'));
+                    return $this->approveTranslation($access, $processTranslation, $accessHelper->getUserEntity('current'), $packageVersionID);
                 case 'deny':
                     return $this->denyTranslation($access, $processTranslation, $accessHelper->getUserEntity('current'));
                 case 'reuse':
@@ -792,8 +790,17 @@ class OnlineTranslation extends Controller
             }
 
             $importer = $this->app->make(Importer::class);
+            $me = $accessHelper->getUserEntity('current');
             /* @var Importer $importer */
-            $imported = $importer->import($translations, $locale, $accessHelper->getUserEntity('current'), $access >= Access::ADMIN);
+            $imported = $importer->import($translations, $locale, $me, $access >= Access::ADMIN);
+            if ($imported->newApprovalNeeded > 0) {
+                $this->app->make(NotificationRepository::class)->translationsNeedApproval(
+                    $locale,
+                    $imported->newApprovalNeeded,
+                    $me->getUserID(),
+                    ($packageVersionID === self::PACKAGEVERSION_UNREVIEWED) ? null : $packageVersionID
+                );
+            }
             $session->set('comtraShowDialogAtStartup', '
 <table class="table table-condensed">
     <tbody>
@@ -821,12 +828,14 @@ class OnlineTranslation extends Controller
     /**
      * @param int $access
      * @param TranslationEntity $translation
+     * @param UserEntity $user
+     * @param mixed $packageVersionID
      *
      * @throws UserException
      *
      * @return JsonResponse
      */
-    protected function approveTranslation($access, TranslationEntity $translation, UserEntity $user)
+    protected function approveTranslation($access, TranslationEntity $translation, UserEntity $user, $packageVersionID)
     {
         if ($access < Access::ADMIN) {
             throw new UserException(t('Access denied'));
@@ -837,7 +846,7 @@ class OnlineTranslation extends Controller
         $translationID = $translation->getID();
         $translations = $this->convertTranslationToGettext($translation, false);
         $importer = $this->app->make(Importer::class);
-        $importer->import($translations, $translation->getLocale(), $user, true);
+        $imported = $importer->import($translations, $translation->getLocale(), $user, true);
         $this->app->make(EntityManager::class)->clear();
         $translation = $this->app->make(TranslationRepository::class)->find($translationID);
         $result = $this->app->make(Editor::class)->getTranslations($translation->getLocale(), $translation->getTranslatable());
@@ -875,13 +884,14 @@ class OnlineTranslation extends Controller
     /**
      * @param int $access
      * @param TranslationEntity $translation
-     * @param PackageVersionEntity $packageVersion
+     * @param UserEntity $user
+     * @param mixed $packageVersionID
      *
      * @throws UserException
      *
      * @return JsonResponse
      */
-    protected function reuseTranslation($access, TranslationEntity $translation, UserEntity $user)
+    protected function reuseTranslation($access, TranslationEntity $translation, UserEntity $user, $packageVersionID)
     {
         if ($translation->isCurrent()) {
             throw new UserException(t('The selected translation is already the current one'));
@@ -893,6 +903,14 @@ class OnlineTranslation extends Controller
         $imported = $importer->import($translations, $translation->getLocale(), $user, $access >= Access::ADMIN);
         $this->app->make(EntityManager::class)->clear();
         $translation = $this->app->make(TranslationRepository::class)->find($translationID);
+        if ($imported->newApprovalNeeded > 0) {
+            $this->app->make(NotificationRepository::class)->translationsNeedApproval(
+                $translation->getLocale(),
+                $imported->newApprovalNeeded,
+                $user->getUserID(),
+                ($packageVersionID === self::PACKAGEVERSION_UNREVIEWED) ? null : $packageVersionID
+             );
+        }
         $result = $this->app->make(Editor::class)->getTranslations($translation->getLocale(), $translation->getTranslatable());
         if ($imported->newApprovalNeeded && !$imported->addedAsCurrent) {
             $result['message'] = t('Since the current translation is approved, you have to wait that this new translation will be approved');
@@ -956,6 +974,15 @@ class OnlineTranslation extends Controller
         $this->app->make(EntityManager::class)->clear();
         $translatable = $this->app->make(TranslatableRepository::class)->find($translatable->getID());
         $locale = $this->app->make(LocaleRepository::class)->find($locale->getID());
+        if ($imported->newApprovalNeeded > 0) {
+            $this->app->make(NotificationRepository::class)->translationsNeedApproval(
+                $locale,
+                $imported->newApprovalNeeded,
+                $user->getUserID(),
+                ($packageVersion === null) ? null : $packageVersion->getID()
+            );
+        }
+
         $result = $this->app->make(Editor::class)->getTranslations($locale, $translatable);
         if ($imported->newApprovalNeeded && !$imported->addedAsCurrent) {
             $result['message'] = t('Since the current translation is approved, you have to wait that this new translation will be approved');

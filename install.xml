@@ -54,7 +54,22 @@
             category="user"
             type="boolean"
             handle="notify_new_packages"
-            name="I would like to be notified about new packages"
+            name="Notify me when there are new translatable packages"
+            indexed="1"
+            searchable="1"
+            profile-displayed="0"
+            profile-editable="1"
+            profile-required="0"
+            register-editable="1"
+        >
+            <type checked="1" />
+        </attributekey>
+        <attributekey
+            package="community_translation"
+            category="user"
+            type="boolean"
+            handle="notify_translatable_messages"
+            name="Notify me about translation discussions"
             indexed="1"
             searchable="1"
             profile-displayed="0"
@@ -69,6 +84,7 @@
     <attributesets>
         <attributeset package="community_translation" category="user" handle="community_translation" name="Community Translation" locked="0">
             <attributekey handle="api_token" />
+            <attributekey handle="notify_new_packages" />
         </attributeset>
     </attributesets>
 

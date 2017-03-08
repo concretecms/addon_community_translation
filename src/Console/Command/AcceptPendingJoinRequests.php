@@ -247,7 +247,7 @@ EOT
             } else {
                 $userEntity = $this->em->find(UserEntity::class, $memberID);
                 $this->accessHelper->setLocaleAccess($locale, AccessHelper::TRANSLATE, $memberID);
-                $this->notificationRepository->newTranslatorApprovedAutomatically($locale, $userEntity);
+                $this->notificationRepository->newTranslatorApproved($locale, $memberID, USER_SUPER_ID, true);
                 if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
                     $this->output->writeln(sprintf('  - User accepted: %s (ID: %d)', $userEntity->getUserName(), $userEntity->getUserID()));
                 }

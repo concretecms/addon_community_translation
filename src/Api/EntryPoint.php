@@ -4,6 +4,7 @@ namespace CommunityTranslation\Api;
 use CommunityTranslation\Entity\Locale as LocaleEntity;
 use CommunityTranslation\Entity\Package as PackageEntity;
 use CommunityTranslation\Repository\Locale as LocaleRepository;
+use CommunityTranslation\Repository\Notification as NotificationRepository;
 use CommunityTranslation\Repository\Package as PackageRepository;
 use CommunityTranslation\Repository\Package\Version as PackageVersionRepository;
 use CommunityTranslation\Repository\Stats as StatsRepository;
@@ -502,7 +503,16 @@ class EntryPoint extends AbstractController
                 throw new UserException(t('The translation file defines %1$s plural forms instead of %2$s', $pf[0], $locale->getPluralCount()));
             }
             $importer = $this->app->make(TranslationImporter::class);
-            $imported = $importer->import($translations, $locale, $this->getUserControl()->getAssociatedUserEntity(), $approve);
+            $me = $this->getUserControl()->getAssociatedUserEntity();
+            $imported = $importer->import($translations, $locale, $me, $approve);
+            if ($imported->newApprovalNeeded > 0) {
+                $this->app->make(NotificationRepository::class)->translationsNeedApproval(
+                    $locale,
+                    $imported->newApprovalNeeded,
+                    $me->getUserID(),
+                    null
+                );
+            }
             $result = $this->buildJsonResponse($imported);
         } catch (Exception $x) {
             $result = $this->buildErrorResponse($x);

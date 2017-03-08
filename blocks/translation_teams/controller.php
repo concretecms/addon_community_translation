@@ -7,9 +7,10 @@ use CommunityTranslation\Repository\Locale as LocaleRepository;
 use CommunityTranslation\Repository\Notification as NotificationRepository;
 use CommunityTranslation\Service\Access;
 use CommunityTranslation\Service\Groups;
-use CommunityTranslation\Service\User;
+use CommunityTranslation\Service\User as UserService;
 use CommunityTranslation\UserException;
 use Concrete\Core\User\Group\Group;
+use Concrete\Core\User\User as CoreUser;
 use Doctrine\ORM\EntityManager;
 use Exception;
 use Page;
@@ -162,7 +163,7 @@ class Controller extends BlockController
                 case Access::GLOBAL_ADMIN:
                     break;
                 default:
-                    $me = new \User();
+                    $me = new CoreUser();
                     if (!$me->isRegistered() || !$locale->getRequestedBy() || $me->getUserID() != $locale->getRequestedBy()->getUserID()) {
                         throw new UserException(t('Invalid user rights'));
                     }
@@ -171,7 +172,7 @@ class Controller extends BlockController
             $em = $this->app->make(EntityManager::class);
             $em->remove($locale);
             $em->flush();
-            $this->app->make(NotificationRepository::class)->newLocaleRequestRejectedByCurrentUser($locale);
+            $this->app->make(NotificationRepository::class)->newLocaleRequestRejected($locale, (new CoreUser())->getUserID());
             $this->redirectWithMessage(t("The request to create the '%s' translation group has been canceled", $locale->getDisplayName()), false, '');
         } catch (UserException $x) {
             $this->redirectWithMessage($x->getMessage(), true, '');
@@ -202,7 +203,7 @@ class Controller extends BlockController
             $em->flush();
             if ($locale->getRequestedBy() !== null) {
                 try {
-                    $requester = \User::getByUserID($locale->getRequestedBy()->getUserID());
+                    $requester = CoreUser::getByUserID($locale->getRequestedBy()->getUserID());
                     if ($requester) {
                         $accessHelper = $this->app->make(Access::class);
                         $requesterAccess = $accessHelper->getLocaleAccess($locale, $requester);
@@ -214,7 +215,7 @@ class Controller extends BlockController
                 } catch (Throwable $foo) {
                 }
             }
-            $this->app->make(NotificationRepository::class)->newLocaleRequestApprovedByCurrentUser($locale);
+            $this->app->make(NotificationRepository::class)->newLocaleRequestApproved($locale, (new CoreUser())->getUserID());
             $this->redirectWithMessage(t("The language team for '%s' has been approved", $locale->getDisplayName()), false, '');
         } catch (UserException $x) {
             $this->redirectWithMessage($x->getMessage(), true, '');
@@ -303,7 +304,7 @@ class Controller extends BlockController
                 default:
                     throw new UserException(t('Invalid user rights'));
             }
-            $user = \User::getByUserID($userID);
+            $user = CoreUser::getByUserID($userID);
             if ($user) {
                 if ($accessHelper->getLocaleAccess($locale, $user) !== Access::ASPRIRING) {
                     $user = null;
@@ -314,11 +315,11 @@ class Controller extends BlockController
             }
             if ($approve) {
                 $accessHelper->setLocaleAccess($locale, Access::TRANSLATE, $user);
-                $this->app->make(NotificationRepository::class)->newTranslatorApprovedByCurrentUser($locale, $accessHelper->getUserEntity($user));
+                $this->app->make(NotificationRepository::class)->newTranslatorApproved($locale, $user->getUserID(), (new CoreUser())->getUserID(), false);
                 $message = t('User %s has been accepted as translator', $user->getUserName());
             } else {
                 $accessHelper->setLocaleAccess($locale, Access::NONE, $user);
-                $this->app->make(NotificationRepository::class)->newTranslatorRejectedByCurrentUser($locale, $accessHelper->getUserEntity($user));
+                $this->app->make(NotificationRepository::class)->newTranslatorRejected($locale, $user->getUserID(), (new CoreUser())->getUserID());
                 $message = t('The request by %s has been refused', $user->getUserName());
             }
             $this->redirectWithMessage($message, false, 'details', $locale->getID());
@@ -344,7 +345,7 @@ class Controller extends BlockController
                 throw new UserException(t("The locale identifier '%s' is not valid", $localeID));
             }
             $gotoLocale = $locale;
-            $user = \User::getByUserID($userID);
+            $user = CoreUser::getByUserID($userID);
             if (!$user) {
                 throw new UserException(t('Invalid user'));
             }
@@ -380,8 +381,8 @@ class Controller extends BlockController
         $this->requireAsset('jquery/ui');
         $this->set('token', $this->app->make('token'));
         $this->set('dh', $this->app->make('date'));
-        $this->set('userService', $this->app->make(User::class));
-        $me = new \User();
+        $this->set('userService', $this->app->make(UserService::class));
+        $me = new CoreUser();
         if (!$me->isRegistered()) {
             $me = null;
         }
@@ -430,7 +431,7 @@ class Controller extends BlockController
         $this->set('locale', $locale);
         $this->set('token', $this->app->make('token'));
         $this->set('dh', $this->app->make('helper/date'));
-        $this->set('userService', $this->app->make(User::class));
+        $this->set('userService', $this->app->make(UserService::class));
         $this->set('access', $this->app->make(Access::class)->getLocaleAccess($locale));
         $g = $this->app->make(Groups::class);
         $this->set('globalAdmins', $this->getGroupMembers($g->getGlobalAdministrators()));

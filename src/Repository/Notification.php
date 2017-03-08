@@ -5,6 +5,7 @@ use CommunityTranslation\Entity\Locale as LocaleEntity;
 use CommunityTranslation\Entity\Notification as NotificationEntity;
 use CommunityTranslation\Entity\Package\Version as PackageVersionEntity;
 use CommunityTranslation\Entity\Translatable\Comment as TranslatableCommentEntity;
+use CommunityTranslation\Notification\Category as NotificationCategory;
 use CommunityTranslation\UserException;
 use Concrete\Core\Entity\User\User as UserEntity;
 use Concrete\Core\User\User;
@@ -59,18 +60,17 @@ class Notification extends EntityRepository
 
     /**
      * @param LocaleEntity $locale
+     * @param LocaleEntity $locale
      * @param string $notes
      */
     public function newLocaleRequested(LocaleEntity $locale, $notes = '')
     {
         $n = NotificationEntity::create(
-            'new_locale_requested',
-            NotificationEntity::RECIPIENT_GLOBAL_ADMINISTRATORS | NotificationEntity::RECIPIENT_LOCALE_ADMINISTRATORS,
+            NotificationCategory::CLASS_NEW_LOCALE_REQUESTED,
             [
+                'locale' => $locale->getID(),
                 'notes' => (string) $notes,
-            ],
-            $locale,
-            $locale->getRequestedBy()
+            ]
         );
         $em = $this->getEntityManager();
         $em->persist($n);
@@ -79,38 +79,35 @@ class Notification extends EntityRepository
 
     /**
      * @param LocaleEntity $locale
+     * @param int $byUserID
      */
-    public function newLocaleRequestApprovedByCurrentUser(LocaleEntity $locale)
+    public function newLocaleRequestApproved(LocaleEntity $locale, $byUserID)
     {
         $n = NotificationEntity::create(
-            'new_locale_approved',
-            NotificationEntity::RECIPIENT_GLOBAL_ADMINISTRATORS | NotificationEntity::RECIPIENT_LOCALE_ADMINISTRATORS | NotificationEntity::RECIPIENT_USER,
+            NotificationCategory::CLASS_NEW_LOCALE_APPROVED,
             [
-                'by' => $this->getCurrentUserID(true),
-            ],
-            $locale,
-            $locale->getRequestedBy()
-        );
-        $em = $this->getEntityManager();
-        $em->persist($n);
-        $em->flush($n);
-    }
-
-    /**
-     * @param LocaleEntity $locale
-     */
-    public function newLocaleRequestRejectedByCurrentUser(LocaleEntity $locale)
-    {
-        $n = NotificationEntity::create(
-            'new_locale_rejected',
-            NotificationEntity::RECIPIENT_GLOBAL_ADMINISTRATORS | NotificationEntity::RECIPIENT_LOCALE_ADMINISTRATORS | NotificationEntity::RECIPIENT_USER,
-            [
-                'by' => $this->getCurrentUserID(true),
                 'localeID' => $locale->getID(),
+                'by' => (int) ($byUserID ?: USER_SUPER_ID),
+            ]
+        );
+        $em = $this->getEntityManager();
+        $em->persist($n);
+        $em->flush($n);
+    }
+
+    /**
+     * @param LocaleEntity $locale
+     * @param int $byUserID
+     */
+    public function newLocaleRequestRejected(LocaleEntity $locale, $byUserID)
+    {
+        $n = NotificationEntity::create(
+            NotificationCategory::CLASS_NEW_LOCALE_REJECTED,
+            [
+                'localeID' => $locale->getID(),
+                'by' => (int) ($byUserID ?: USER_SUPER_ID),
                 'requestedBy' => $locale->getRequestedBy() ? $locale->getRequestedBy()->getUserID() : null,
-            ],
-            null,
-            null
+            ]
         );
         $em = $this->getEntityManager();
         $em->persist($n);
@@ -119,15 +116,16 @@ class Notification extends EntityRepository
 
     /**
      * @param LocaleEntity $locale
+     * @param int $applicantUserID
      */
-    public function newTeamJoinRequestFromCurrentUser(LocaleEntity $locale)
+    public function newTeamJoinRequest(LocaleEntity $locale, $applicantUserID)
     {
         $n = NotificationEntity::create(
-            'new_team_join_request',
-            NotificationEntity::RECIPIENT_GLOBAL_ADMINISTRATORS | NotificationEntity::RECIPIENT_LOCALE_ADMINISTRATORS,
-            [],
-            $locale,
-            $this->getCurrentUser(true)
+            NotificationCategory::CLASS_NEW_TEAM_JOIN_REQUEST,
+            [
+                'localeID' => $locale->getID(),
+                'applicantUserID' => (int) $applicantUserID,
+            ]
         );
         $em = $this->getEntityManager();
         $em->persist($n);
@@ -136,35 +134,20 @@ class Notification extends EntityRepository
 
     /**
      * @param LocaleEntity $locale
-     * @param UserEntity $translator
+     * @param int $applicantUserID
+     * @param int $approvedByUserID
+     * @param bool $automatic
      */
-    public function newTranslatorApprovedByCurrentUser(LocaleEntity $locale, UserEntity $translator)
+    public function newTranslatorApproved(LocaleEntity $locale, $applicantUserID, $approvedByUserID, $automatic)
     {
         $n = NotificationEntity::create(
-            'new_translator_approved',
-            NotificationEntity::RECIPIENT_GLOBAL_ADMINISTRATORS | NotificationEntity::RECIPIENT_LOCALE_ADMINISTRATORS | NotificationEntity::RECIPIENT_USER,
+            NotificationCategory::CLASS_NEW_TRANSLATOR_APPROVED,
             [
-                'by' => $this->getCurrentUserID(true),
-            ],
-            $locale,
-            $translator
-        );
-        $em = $this->getEntityManager();
-        $em->persist($n);
-        $em->flush($n);
-    }
-
-    public function newTranslatorApprovedAutomatically(LocaleEntity $locale, UserEntity $translator)
-    {
-        $n = NotificationEntity::create(
-            'new_translator_approved',
-            NotificationEntity::RECIPIENT_GLOBAL_ADMINISTRATORS | NotificationEntity::RECIPIENT_LOCALE_ADMINISTRATORS | NotificationEntity::RECIPIENT_USER,
-            [
-                'by' => USER_SUPER_ID,
-                'automatic' => true,
-            ],
-            $locale,
-            $translator
+                'localeID' => $locale->getID(),
+                'applicantUserID' => (int) $applicantUserID,
+                'approvedByUserID' => (int) $approvedByUserID,
+                'automatic' => (bool) $automatic,
+            ]
         );
         $em = $this->getEntityManager();
         $em->persist($n);
@@ -173,40 +156,18 @@ class Notification extends EntityRepository
 
     /**
      * @param LocaleEntity $locale
-     * @param UserEntity $translator
+     * @param int $applicantUserID
+     * @param int $rejectedByUserID
      */
-    public function newTranslatorRejectedByCurrentUser(LocaleEntity $locale, UserEntity $translator)
+    public function newTranslatorRejected(LocaleEntity $locale, $applicantUserID, $rejectedByUserID)
     {
         $n = NotificationEntity::create(
-            'new_translator_rejected',
-            NotificationEntity::RECIPIENT_GLOBAL_ADMINISTRATORS | NotificationEntity::RECIPIENT_LOCALE_ADMINISTRATORS | NotificationEntity::RECIPIENT_USER,
+            NotificationCategory::CLASS_NEW_TRANSLATOR_REJECTED,
             [
-                'by' => $this->getCurrentUserID(true),
-            ],
-            $locale,
-            $translator
-        );
-        $em = $this->getEntityManager();
-        $em->persist($n);
-        $em->flush($n);
-    }
-
-    /**
-     * @param LocaleEntity $locale
-     * @param UserEntity $translator
-     */
-    public function translationsNeedApproval(LocaleEntity $locale, $numTranslations, PackageVersionEntity $packageVersion = null, UserEntity $translator = null)
-    {
-        $n = NotificationEntity::create(
-            'new_translator_rejected',
-            NotificationEntity::RECIPIENT_GLOBAL_ADMINISTRATORS | NotificationEntity::RECIPIENT_LOCALE_ADMINISTRATORS,
-            [
-                'by' => $translator ? $translator->getUserID() : null,
-                'numTranslations' => $numTranslations,
-                'packageHandle' => $packageVersion ? $packageVersion->getPackage()->getHandle() : null,
-                'packageVersion' => $packageVersion ? $packageVersion->getVersion() : null,
-            ],
-            $locale
+                'localeID' => $locale->getID(),
+                'applicantUserID' => (int) $applicantUserID,
+                'rejectedByUserID' => (int) $approvedByUserID,
+            ]
         );
         $em = $this->getEntityManager();
         $em->persist($n);
@@ -216,18 +177,93 @@ class Notification extends EntityRepository
     /**
      * @param TranslatableCommentEntity $comment
      */
-    public function newTranslatableCommentSubmitted(TranslatableCommentEntity $comment)
+    public function translatableCommentSubmitted(TranslatableCommentEntity $comment)
     {
-        $n = NotificationEntity::create(
-            'new_translatable_comment',
-            NotificationEntity::RECIPIENT_UNSPECIFIED,
-            [
-                'commentID' => $comment->getID(),
-            ],
-            $locale
-        );
         $em = $this->getEntityManager();
-        $em->persist($n);
-        $em->flush($n);
+        $localeID = $comment->getLocale() ? $comment->getLocale()->getID() : null;
+        $commentID = $comment->getID();
+        $createNew = true;
+        foreach ($this->findBy(['classHandle' => NotificationCategory::CLASS_TRANSLATABLE_COMMENT, 'sentOn' => null]) as $existing) {
+            $data = $existing->getNotificationData();
+            if (in_array($commentID, $data['commentIDs'], true)) {
+                if ($data['localeID'] === $localeID) {
+                    $createNew = false;
+                } else {
+                    $otherMessageIDs = array_diff($data['commentIDs'], [$commentID]);
+                    if (empty($otherMessageIDs)) {
+                        $data['localeID'] = $localeID;
+                        $existing->setNotificationData($data);
+                        $em->persist($existing);
+                        $em->flush($existing);
+                        $createNew = false;
+                    } else {
+                        $data['commentIDs'] = array_values($otherMessageIDs);
+                        $existing->setNotificationData($data);
+                        $em->persist($existing);
+                        $em->flush($existing);
+                    }
+                }
+                break;
+            }
+        }
+        if ($createNew) {
+            $n = NotificationEntity::create(
+                NotificationCategory::CLASS_TRANSLATABLE_COMMENT,
+                [
+                    'commentIDs' => [$commentID],
+                    'localeID' => $localeID,
+                ]
+            );
+            $em->persist($n);
+            $em->flush($n);
+        }
+    }
+
+    /**
+     * @param LocaleEntity $locale
+     * @param int $numTranslations
+     * @param int $translatorUserID
+     * @param PackageVersionEntity $packageVersion
+     */
+    public function translationsNeedApproval(LocaleEntity $locale, $numTranslations, $translatorUserID = null, PackageVersionEntity $packageVersion = null)
+    {
+        $em = $this->getEntityManager();
+        $localeID = $locale->getID();
+        $packageVersionID = ($packageVersion === null) ? null : $packageVersion->getID();
+        $numTranslations = (int) $numTranslations;
+        $createNew = true;
+        $userKey = (int) ($translatorUserID ?: USER_SUPER_ID);
+        foreach ($this->findBy(['classHandle' => NotificationCategory::CLASS_TRANSLATIONS_NEED_APPROVAL, 'sentOn' => null]) as $existing) {
+            $data = $existing->getNotificationData();
+            if ($data['localeID'] === $localeID) {
+                if ($data['packageVersionID'] !== $packageVersionID) {
+                    $data['packageVersionID'] = null;
+                }
+                if (isset($data['numTranslations'][$userKey])) {
+                    $data['numTranslations'][$userKey] += $numTranslations;
+                } else {
+                    $data['numTranslations'][$userKey] = $numTranslations;
+                }
+                $existing->setNotificationData($data);
+                $em->persist($existing);
+                $em->flush($existing);
+                $createNew = false;
+                break;
+            }
+        }
+        if ($createNew) {
+            $n = NotificationEntity::create(
+                NotificationCategory::CLASS_TRANSLATIONS_NEED_APPROVAL,
+                [
+                    'localeID' => $localeID,
+                    'packageVersionID' => $packageVersionID,
+                    'numTranslations' => [
+                        $userKey => $numTranslations,
+                    ],
+                ]
+            );
+            $em->persist($n);
+            $em->flush($n);
+        }
     }
 }

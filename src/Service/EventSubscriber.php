@@ -54,7 +54,7 @@ class EventSubscriber implements EventSubscriberInterface
             $groupManager = $this->app->make(Groups::class);
             $locale = $groupManager->decodeAspiringTranslatorsGroup($evt->getGroupObject());
             if ($locale !== null) {
-                $this->app->make(NotificationRepository::class)->newTeamJoinRequestFromCurrentUser($locale);
+                $this->app->make(NotificationRepository::class)->newTeamJoinRequest($locale, $user->getUserID());
             }
         }
     }
