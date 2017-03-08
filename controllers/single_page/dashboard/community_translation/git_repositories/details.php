@@ -1,10 +1,10 @@
 <?php
 namespace Concrete\Package\CommunityTranslation\Controller\SinglePage\Dashboard\CommunityTranslation\GitRepositories;
 
-use CommunityTranslation\Entity\GitRepository as Entity;
-use CommunityTranslation\Git\Repository;
-use CommunityTranslation\Repository\GitRepository as EntityRepository;
+use CommunityTranslation\Entity\GitRepository as GitRepositoryEntity;
+use CommunityTranslation\Repository\GitRepository as GitRepositoryRepository;
 use Concrete\Core\Page\Controller\DashboardPageController;
+use Doctrine\ORM\EntityManager;
 
 class Details extends DashboardPageController
 {
@@ -12,10 +12,10 @@ class Details extends DashboardPageController
     {
         $gitRepository = null;
         if ($gitRepositoryID === 'new') {
-            $gitRepository = Entity::create();
+            $gitRepository = GitRepositoryEntity::create();
         } else {
             $gitRepositoryID = (int) $gitRepositoryID;
-            $gitRepository = $this->entityManager->find(Entity::class, $gitRepositoryID);
+            $gitRepository = $this->entityManager->find(GitRepositoryEntity::class, $gitRepositoryID);
             if ($gitRepository === null) {
                 $this->flash('error', t('Unable to find the specified repository'));
                 $this->redirect('/dashboard/community_translation/git_repositories');
@@ -41,18 +41,18 @@ class Details extends DashboardPageController
             $this->error->add($valt->getErrorMessage());
         } else {
             if ($gitRepositoryID !== 'new') {
-                $gitRepository = $this->entityManager->find(Entity::class, $gitRepositoryID);
+                $gitRepository = $this->entityManager->find(GitRepositoryEntity::class, $gitRepositoryID);
                 if ($gitRepository === null) {
                     $this->flash('error', t('Unable to find the specified repository'));
                     $this->redirect('/dashboard/community_translation/git_repositories');
                 }
             } else {
-                $gitRepository = Entity::create();
+                $gitRepository = GitRepositoryEntity::create();
             }
             if ($gitRepository->setName($post->get('name'))->getName() === '') {
                 $this->error->add(t('Please specify the repository mnemonic name'));
             } else {
-                $already = $this->app->make(EntityRepository::class)->findOneBy(['name' => $gitRepository->getName()]);
+                $already = $this->app->make(GitRepositoryRepository::class)->findOneBy(['name' => $gitRepository->getName()]);
                 if ($already !== null && $already->getID() !== $gitRepository->getID()) {
                     $this->error->add(t("There's already another repository named '%s'", $gitRepository->getName()));
                 }
@@ -130,14 +130,14 @@ class Details extends DashboardPageController
         if (!$valt->validate('comtra-repository-delete' . $gitRepositoryID)) {
             $this->error->add($valt->getErrorMessage());
         } else {
-            $gitRepository = $this->app->make('community_translation/git')->find($gitRepositoryID);
+            $gitRepository = $this->app->make(GitRepositoryRepository::class)->find($gitRepositoryID);
             if ($gitRepository === null) {
                 $this->flash('error', t('Unable to find the specified repository'));
                 $this->redirect('/dashboard/community_translation/git_repositories');
             }
-            $em = $this->app->make('community_translation/em');
+            $em = $this->app->make(EntityManager::class);
             $em->remove($gitRepository);
-            $em->flush();
+            $em->flush($gitRepository);
             $this->flash('message', t('The Git Repository has been deleted'));
             $this->redirect('/dashboard/community_translation/git_repositories');
         }
