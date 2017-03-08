@@ -146,7 +146,7 @@ class Groups
     /**
      * Get the global administrators group.
      *
-     * @return string
+     * @return \Group
      */
     public function getGlobalAdministrators()
     {

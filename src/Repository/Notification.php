@@ -75,7 +75,7 @@ class Notification extends EntityRepository
         $n = NotificationEntity::create(
             NewLocaleRequested::class,
             [
-                'locale' => $locale->getID(),
+                'localeID' => $locale->getID(),
                 'notes' => (string) $notes,
             ]
         );
