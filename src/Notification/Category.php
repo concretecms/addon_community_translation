@@ -8,7 +8,7 @@ use Concrete\Core\Entity\User\User as UserEntity;
 use Concrete\Core\Mail\Service as MailService;
 use Doctrine\ORM\EntityManager;
 
-abstract class Category
+abstract class Category implements CategoryInterface
 {
     /**
      * @var Application
@@ -108,14 +108,9 @@ abstract class Category
     }
 
     /**
-     * Set the.
+     * {@inheritdoc}
      *
-     * @param NotificationEntity $notification
-     * @param MailService $notification
-     *
-     * @todo
-     *
-     * @return int
+     * @see CategoryInterface::processNotification()
      */
     public function processNotification(NotificationEntity $notification, MailService $mail)
     {

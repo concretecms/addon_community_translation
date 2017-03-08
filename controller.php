@@ -3,6 +3,7 @@ namespace Concrete\Package\CommunityTranslation;
 
 use CommunityTranslation\Console\Command\AcceptPendingJoinRequests;
 use CommunityTranslation\Console\Command\ProcessGitRepositoriesCommand;
+use CommunityTranslation\Console\Command\SendNotificationsCommand;
 use CommunityTranslation\Console\Command\TransifexGlossaryCommand;
 use CommunityTranslation\Console\Command\TransifexTranslationsCommand;
 use CommunityTranslation\Entity\Locale as LocaleEntity;
@@ -166,6 +167,7 @@ class Controller extends Package
         $console->add(new TransifexGlossaryCommand());
         $console->add(new ProcessGitRepositoriesCommand());
         $console->add(new AcceptPendingJoinRequests());
+        $console->add(new SendNotificationsCommand());
     }
 
     /**

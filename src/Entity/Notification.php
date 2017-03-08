@@ -225,6 +225,20 @@ class Notification
     }
 
     /**
+     * Add am error thrown during delivery.
+     *
+     * @param string[] $value
+     *
+     * @return static
+     */
+    public function addDeliveryError($value)
+    {
+        $this->deliveryErrors[] = (string) $value;
+
+        return $this;
+    }
+
+    /**
      * Set list of errors throws during delivery (empty if not yet delivered or if no errors occurred).
      *
      * @param string[] $value
