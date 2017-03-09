@@ -4,7 +4,8 @@ namespace CommunityTranslation\Notification\Category;
 use CommunityTranslation\Entity\Notification as NotificationEntity;
 use CommunityTranslation\Notification\Category;
 use Concrete\Core\User\UserInfo;
-use Exception;
+use Concrete\Core\User\UserInfoRepository;
+use Punic\Language;
 
 /**
  * Notification category: the request of a new locale has been rejected.
@@ -34,6 +35,16 @@ class NewLocaleRejected extends Category
      */
     public function getMailParameters(NotificationEntity $notification, UserInfo $recipient)
     {
-        throw new Exception('@todo');
+        $notificationData = $notification->getNotificationData();
+        $uir = $this->app->make(UserInfoRepository::class);
+        $requestedBy = $notificationData['requestedBy'] ? $uir->getByID($notificationData['requestedBy']) : null;
+        $deniedBy = $notificationData['by'] ? $uir->getByID($notificationData['by']) : null;
+
+        return [
+            'localeName' => Language::getName($notificationData['localeID']),
+            'requestedBy' => $requestedBy ? $requestedBy->getUserName() : '',
+            'deniedBy' => $deniedBy ? $deniedBy->getUserName() : '',
+            'teamsUrl' => $this->getBlockPageURL('CommunityTranslation Team List'),
+        ] + $this->getCommonMailParameters($notification, $recipient);
     }
 }

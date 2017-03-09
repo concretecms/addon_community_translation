@@ -19,9 +19,17 @@ class NewLocaleRequested extends Category
      */
     protected function getRecipientIDs(NotificationEntity $notification)
     {
-        $group = $this->getGroupsHelper()->getGlobalAdministrators();
+        $notificationData = $notification->getNotificationData();
+        $locale = $this->app->make(LocaleRepository::class)->find($notificationData['localeID']);
+        if ($locale === null && $locale->isApproved()) {
+            // The request has already been approved/refused
+            $result = [];
+        } else {
+            $group = $this->getGroupsHelper()->getGlobalAdministrators();
+            $result = $group->getGroupMemberIDs();
+        }
 
-        return $group->getGroupMemberIDs();
+        return $result;
     }
 
     /**
@@ -43,6 +51,6 @@ class NewLocaleRequested extends Category
             'localeName' => $locale->getDisplayName(),
             'teamsUrl' => $this->getBlockPageURL('CommunityTranslation Team List'),
             'notes' => $notificationData['notes'] ? $this->app->make('helper/text')->makenice($notificationData['notes']) : '',
-        ] + parent::getCommonMailParameters($notification, $recipient);
+        ] + $this->getCommonMailParameters($notification, $recipient);
     }
 }
