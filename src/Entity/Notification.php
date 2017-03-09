@@ -30,10 +30,13 @@ class Notification
     {
         $result = new static();
         $result->createdOn = new DateTime();
+        $result->updatedOn = new DateTime();
         $result->fqnClass = (string) $fqnClass;
         $result->notificationData = $notificationData;
+        $result->deliveryAttempts = 0;
         $result->sentOn = null;
-        $result->sentCount = null;
+        $result->sentCountPotential = null;
+        $result->sentCountActual = null;
         $result->deliveryErrors = [];
 
         return $result;
@@ -84,6 +87,39 @@ class Notification
     }
 
     /**
+     * Date/time when the data was last modified.
+     *
+     * @ORM\Column(type="datetime", nullable=false, options={"comment": "Date/time when the data was last modified"})
+     *
+     * @var DateTime
+     */
+    protected $updatedOn;
+
+    /**
+     * Get date/time when the data was last modified.
+     *
+     * @return DateTime
+     */
+    public function getUpdatedOn()
+    {
+        return $this->updatedOn;
+    }
+
+    /**
+     * Set date/time when the data was last modified.
+     *
+     * @param DateTime $value
+     *
+     * @return static
+     */
+    public function setUpdatedOn(DateTime $value)
+    {
+        $this->updatedOn = $value;
+
+        return $this;
+    }
+
+    /**
      * Fully qualified name of the category class.
      *
      * @ORM\Column(type="string", length=255, nullable=false, options={"comment": "Fully qualified name of the category class"})
@@ -119,6 +155,39 @@ class Notification
     public function getNotificationData()
     {
         return $this->notificationData;
+    }
+
+    /**
+     * Number of delivery attempts.
+     *
+     * @ORM\Column(type="integer", nullable=false, options={"unsigned": true, "comment": "Number of delivery attempts"})
+     *
+     * @var int
+     */
+    protected $deliveryAttempts;
+
+    /**
+     * Get the number of delivery attempts.
+     *
+     * @return int
+     */
+    public function getDeliveryAttempts()
+    {
+        return $this->deliveryAttempts;
+    }
+
+    /**
+     * Set the number of delivery attempts.
+     *
+     * @param int $value
+     *
+     * @return static
+     */
+    public function setDeliveryAttempts($value)
+    {
+        $this->deliveryAttempts = (int) $value;
+
+        return $this;
     }
 
     /**
@@ -169,22 +238,22 @@ class Notification
     }
 
     /**
-     * Number of actual recipients notified (null if not yed delivered).
+     * Number of potential recipients notified (null if not yed delivered).
      *
-     * @ORM\Column(type="integer", nullable=true, options={"unsigned": true, "comment": "Number of actual recipients notified (null if not yed delivered)"})
+     * @ORM\Column(type="integer", nullable=true, options={"unsigned": true, "comment": "Number of potential recipients notified (null if not yed delivered)"})
      *
      * @var int|null
      */
-    protected $sentCount;
+    protected $sentCountPotential;
 
     /**
-     * Get the number of actual recipients notified (null if not yed delivered).
+     * Get the number of potential recipients notified (null if not yed delivered).
      *
      * @return int|null
      */
-    public function getSentCount()
+    public function getSentCountPotential()
     {
-        return $this->sentCount;
+        return $this->sentCountPotential;
     }
 
     /**
@@ -194,12 +263,49 @@ class Notification
      *
      * @return static
      */
-    public function setSentCount($value = null)
+    public function setSentCountPotential($value = null)
     {
         if ($value === null || $value === '' || $value === false) {
-            $this->sentCount = null;
+            $this->sentCountPotential = null;
         } else {
-            $this->sentCount = (int) $value;
+            $this->sentCountPotential = (int) $value;
+        }
+
+        return $this;
+    }
+
+    /**
+     * Number of actual recipients notified (null if not yed delivered).
+     *
+     * @ORM\Column(type="integer", nullable=true, options={"unsigned": true, "comment": "Number of actual recipients notified (null if not yed delivered)"})
+     *
+     * @var int|null
+     */
+    protected $sentCountActual;
+
+    /**
+     * Get the number of actual recipients notified (null if not yed delivered).
+     *
+     * @return int|null
+     */
+    public function getSentCountActual()
+    {
+        return $this->sentCountActual;
+    }
+
+    /**
+     * Set the number of actual recipients notified (null if not yed delivered).
+     *
+     * @param int|null $value
+     *
+     * @return static
+     */
+    public function setSentCountActual($value = null)
+    {
+        if ($value === null || $value === '' || $value === false) {
+            $this->sentCountActual = null;
+        } else {
+            $this->sentCountActual = (int) $value;
         }
 
         return $this;

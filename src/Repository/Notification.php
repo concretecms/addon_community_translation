@@ -16,6 +16,7 @@ use CommunityTranslation\Notification\Category\TranslationsNeedApproval;
 use CommunityTranslation\UserException;
 use Concrete\Core\Entity\User\User as UserEntity;
 use Concrete\Core\User\User;
+use DateTime;
 use Doctrine\ORM\EntityRepository;
 
 class Notification extends EntityRepository
@@ -199,13 +200,13 @@ class Notification extends EntityRepository
                     $otherMessageIDs = array_diff($data['commentIDs'], [$commentID]);
                     if (empty($otherMessageIDs)) {
                         $data['localeID'] = $localeID;
-                        $existing->setNotificationData($data);
+                        $existing->setNotificationData($data)->setUpdatedOn(new DateTime());
                         $em->persist($existing);
                         $em->flush($existing);
                         $createNew = false;
                     } else {
                         $data['commentIDs'] = array_values($otherMessageIDs);
-                        $existing->setNotificationData($data);
+                        $existing->setNotificationData($data)->setUpdatedOn(new DateTime());
                         $em->persist($existing);
                         $em->flush($existing);
                     }
@@ -251,7 +252,7 @@ class Notification extends EntityRepository
                 } else {
                     $data['numTranslations'][$userKey] = $numTranslations;
                 }
-                $existing->setNotificationData($data);
+                $existing->setNotificationData($data)->setUpdatedOn(new DateTime());
                 $em->persist($existing);
                 $em->flush($existing);
                 $createNew = false;
