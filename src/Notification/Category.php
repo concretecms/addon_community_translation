@@ -16,12 +16,15 @@ abstract class Category implements CategoryInterface
      */
     protected $app;
 
+    private $blockPageURLs;
+
     /**
      * @param Application $app
      */
     public function __construct(Application $app)
     {
         $this->app = $app;
+        $this->blockPageURLs = [];
     }
 
     /**
@@ -122,16 +125,27 @@ abstract class Category implements CategoryInterface
      *
      * @return string
      */
-    protected function getBlockPageURL($blockName)
+    protected function getBlockPageURL($blockName, $blockAction = '')
     {
-        $page = null;
-        if ($blockName) {
-            $block = Block::getByName($blockName);
-            if ($block && $block->getBlockID()) {
-                $page = $block->getOriginalCollection();
+        if (!isset($this->blockPageURLs[$blockName])) {
+            $page = null;
+            if ($blockName) {
+                $block = Block::getByName($blockName);
+                if ($block && $block->getBlockID()) {
+                    $page = $block->getOriginalCollection();
+                }
             }
+            $this->blockPageURLs[$blockName] = [
+                'foundBlockID' => ($page === null) ? null : $block->getBlockID(),
+                'url' => (string) ($page ? URL::to($page) : URL::to('/')),
+            ];
         }
 
-        return (string) ($page ? URL::to($page) : URL::to('/'));
+        $url = $this->blockPageURLs[$blockName]['url'];
+        if ($blockAction !== '' && $this->blockPageURLs[$blockName]['foundBlockID'] !== null) {
+            $url = rtrim($url, '/') . '/' . trim($blockAction, '/') . '/' . $this->blockPageURLs[$blockName]['foundBlockID'];
+        }
+
+        return $url;
     }
 }

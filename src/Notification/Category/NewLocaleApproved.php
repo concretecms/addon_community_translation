@@ -5,6 +5,7 @@ use CommunityTranslation\Entity\Notification as NotificationEntity;
 use CommunityTranslation\Notification\Category;
 use CommunityTranslation\Repository\Locale as LocaleRepository;
 use Concrete\Core\User\UserInfo;
+use Concrete\Core\User\UserInfoRepository;
 use Exception;
 
 /**
@@ -41,6 +42,19 @@ class NewLocaleApproved extends Category
      */
     public function getMailParameters(NotificationEntity $notification, UserInfo $recipient)
     {
-        throw new Exception('@todo');
+        $notificationData = $notification->getNotificationData();
+        $locale = $this->app->make(LocaleRepository::class)->findApproved($notificationData['localeID']);
+        if ($locale === null) {
+            throw new Exception(t('Unable to find the locale with ID %s', $notificationData['localeID']));
+        }
+        $requestedBy = $locale->getRequestedBy();
+        $approvedBy = $notificationData['by'] ? $this->app->make(UserInfoRepository::class)->getByID($notificationData['by']) : null;
+
+        return [
+            'localeName' => $locale->getDisplayName(),
+            'requestedBy' => $requestedBy ? $requestedBy->getUserName() : '',
+            'approvedBy' => $approvedBy ? $approvedBy->getUserName() : '',
+            'teamsUrl' => $this->getBlockPageURL('CommunityTranslation Team List', 'details/' . $locale->getID()),
+        ] + $this->getCommonMailParameters($notification, $recipient);
     }
 }
