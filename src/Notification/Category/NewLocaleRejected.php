@@ -42,8 +42,8 @@ class NewLocaleRejected extends Category
 
         return [
             'localeName' => Language::getName($notificationData['localeID']),
-            'requestedBy' => $requestedBy ? $requestedBy->getUserName() : '',
-            'deniedBy' => $deniedBy ? $deniedBy->getUserName() : '',
+            'requestedBy' => $requestedBy,
+            'deniedBy' => $deniedBy,
             'teamsUrl' => $this->getBlockPageURL('CommunityTranslation Team List'),
         ] + $this->getCommonMailParameters($notification, $recipient);
     }

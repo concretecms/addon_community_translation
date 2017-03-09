@@ -47,7 +47,7 @@ class NewLocaleRequested extends Category
         $requestedBy = $locale->getRequestedBy();
 
         return [
-            'requestedBy' => $requestedBy ? $requestedBy->getUserName() : '',
+            'requestedBy' => $requestedBy,
             'localeName' => $locale->getDisplayName(),
             'teamsUrl' => $this->getBlockPageURL('CommunityTranslation Team List'),
             'notes' => $notificationData['notes'] ? $this->app->make('helper/text')->makenice($notificationData['notes']) : '',

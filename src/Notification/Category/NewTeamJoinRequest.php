@@ -26,6 +26,19 @@ class NewTeamJoinRequest extends Category
         if ($locale === null) {
             throw new Exception(t('Unable to find the locale with ID %s', $notificationData['localeID']));
         }
+        $uir = $this->app->make(UserInfoRepository::class);
+        $applicantUser = $uir->getByID($notificationData['applicantUserID']);
+        if ($applicantUser === null) {
+            throw new Exception(t('Unable to find the user with ID %s', $notificationData['applicantUserID']));
+        }
+        /* @var UserInfo $applicantUser */
+        if (!$applicantUser->getUserObject()->inGroup($this->getGroupsHelper()->getAspiringTranslators($locale))) {
+            throw new Exception(t(
+                'The user %1$s is no more in the aspiring translators of %2$s',
+                sprintf('%s (%s)', $applicantUser->getUserName(), $applicantUser->getUserID()),
+                $locale->getDisplayName()
+            ));
+        }
         $group = $this->getGroupsHelper()->getAdministrators($locale);
         $result = array_merge($result, $group->getGroupMemberIDs());
         $group = $this->getGroupsHelper()->getGlobalAdministrators();
@@ -47,15 +60,15 @@ class NewTeamJoinRequest extends Category
             throw new Exception(t('Unable to find the locale with ID %s', $notificationData['localeID']));
         }
         $uir = $this->app->make(UserInfoRepository::class);
-        $applicantUser = $uir->getByID($notificationData['applicantUserID']);
-        if ($applicantUser === null) {
+        $applicant = $uir->getByID($notificationData['applicantUserID']);
+        if ($applicant === null) {
             throw new Exception(t('Unable to find the user with ID %s', $notificationData['applicantUserID']));
         }
 
         return [
             'localeName' => $locale->getDisplayName(),
-            'applicantUser' => $applicantUser->getUserName(),
-            'teamsUrl' => $this->getBlockPageURL('CommunityTranslation Team List', 'details/' . $notificationData['localeID']),
+            'applicant' => $applicant,
+            'teamsUrl' => $this->getBlockPageURL('CommunityTranslation Team List', 'details/' . $locale->getID()),
         ] + $this->getCommonMailParameters($notification, $recipient);
     }
 }

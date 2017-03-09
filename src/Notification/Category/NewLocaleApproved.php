@@ -52,8 +52,8 @@ class NewLocaleApproved extends Category
 
         return [
             'localeName' => $locale->getDisplayName(),
-            'requestedBy' => $requestedBy ? $requestedBy->getUserName() : '',
-            'approvedBy' => $approvedBy ? $approvedBy->getUserName() : '',
+            'requestedBy' => $requestedBy,
+            'approvedBy' => $approvedBy,
             'teamsUrl' => $this->getBlockPageURL('CommunityTranslation Team List', 'details/' . $locale->getID()),
         ] + $this->getCommonMailParameters($notification, $recipient);
     }

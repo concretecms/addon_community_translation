@@ -117,6 +117,7 @@ abstract class Category implements CategoryInterface
             'siteName' => $site->getSiteName(),
             'siteUrl' => (string) $site->getSiteCanonicalURL(),
             'recipientName' => $recipient->getUserName(),
+            'usersHelper' => $this->app->make(\CommunityTranslation\Service\User::class),
         ];
     }
 

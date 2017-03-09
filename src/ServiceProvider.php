@@ -24,12 +24,13 @@ class ServiceProvider extends Provider
     {
         foreach ([
             \CommunityTranslation\Parser\Provider::class,
-            \CommunityTranslation\Translation\Importer::class,
-            \CommunityTranslation\Service\Groups::class,
             \CommunityTranslation\Service\Access::class,
             \CommunityTranslation\Service\Editor::class,
-            \CommunityTranslation\Translation\Exporter::class,
+            \CommunityTranslation\Service\Groups::class,
             \CommunityTranslation\Service\TranslationsFileExporter::class,
+            \CommunityTranslation\Service\User::class,
+            \CommunityTranslation\Translation\Exporter::class,
+            \CommunityTranslation\Translation\Importer::class,
         ] as $className) {
             $app->singleton($className);
         }

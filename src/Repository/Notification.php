@@ -174,7 +174,7 @@ class Notification extends EntityRepository
             [
                 'localeID' => $locale->getID(),
                 'applicantUserID' => (int) $applicantUserID,
-                'rejectedByUserID' => (int) $approvedByUserID,
+                'rejectedByUserID' => (int) $rejectedByUserID,
             ]
         );
         $em = $this->getEntityManager();

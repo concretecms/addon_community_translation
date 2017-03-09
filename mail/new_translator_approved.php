@@ -1,13 +1,14 @@
-<?php // @todo
-
+<?php
 defined('C5_EXECUTE') or die('Access Denied.');
 
 $subject = "[$siteName] User accepted for the team $localeName";
 
-$bodyHTML = <<<EOT
-<p>Hi $recipientName,</p>
+$bodyHTML = "<p>Hi $recipientName,</p>";
 
-<p>The user <i>$applicant</i> has been accepted by <i>$operator</i> as a translator of <a href="$teamUrl">$localeName</a>.</p>
+$applicantHTML = $usersHelper->format($applicant);
 
-EOT
-;
+if ($automatic) {
+    $bodyHTML .= "<p>The user $applicantHTML has been automatically accepted as a translator of <a href=\"$teamsUrl\">$localeName</a>.</p>";
+} else {
+    $bodyHTML .= "<p>The user $applicantHTML has been accepted by " . $usersHelper->format($approvedBy) . " as a translator of <a href=\"$teamsUrl\">$localeName</a>.</p>";
+}
