@@ -3,7 +3,6 @@ namespace CommunityTranslation\Repository;
 
 use CommunityTranslation\Entity\Locale as LocaleEntity;
 use CommunityTranslation\Entity\Notification as NotificationEntity;
-use CommunityTranslation\Entity\Package\Version as PackageVersionEntity;
 use CommunityTranslation\Entity\Translatable\Comment as TranslatableCommentEntity;
 use CommunityTranslation\Notification\Category\NewLocaleApproved;
 use CommunityTranslation\Notification\Category\NewLocaleRejected;
@@ -191,7 +190,7 @@ class Notification extends EntityRepository
         $localeID = $comment->getLocale() ? $comment->getLocale()->getID() : null;
         $commentID = $comment->getID();
         $createNew = true;
-        foreach ($this->findBy(['classHandle' => TranslatableComment::class, 'sentOn' => null]) as $existing) {
+        foreach ($this->findBy(['fqnClass' => TranslatableComment::class, 'sentOn' => null]) as $existing) {
             $data = $existing->getNotificationData();
             if (in_array($commentID, $data['commentIDs'], true)) {
                 if ($data['localeID'] === $localeID) {
@@ -231,17 +230,17 @@ class Notification extends EntityRepository
      * @param LocaleEntity $locale
      * @param int $numTranslations
      * @param int $translatorUserID
-     * @param PackageVersionEntity $packageVersion
+     * @param int|null $packageVersion
      */
-    public function translationsNeedApproval(LocaleEntity $locale, $numTranslations, $translatorUserID = null, PackageVersionEntity $packageVersion = null)
+    public function translationsNeedApproval(LocaleEntity $locale, $numTranslations, $translatorUserID = null, $packageVersionID = null)
     {
         $em = $this->getEntityManager();
         $localeID = $locale->getID();
-        $packageVersionID = ($packageVersion === null) ? null : $packageVersion->getID();
         $numTranslations = (int) $numTranslations;
         $createNew = true;
         $userKey = (int) ($translatorUserID ?: USER_SUPER_ID);
-        foreach ($this->findBy(['classHandle' => TranslationsNeedApproval::class, 'sentOn' => null]) as $existing) {
+        $packageVersionID = $packageVersionID ? (int) $packageVersionID : null;
+        foreach ($this->findBy(['fqnClass' => TranslationsNeedApproval::class, 'sentOn' => null]) as $existing) {
             $data = $existing->getNotificationData();
             if ($data['localeID'] === $localeID) {
                 if ($data['packageVersionID'] !== $packageVersionID) {

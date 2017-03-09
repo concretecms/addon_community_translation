@@ -4,8 +4,11 @@ namespace CommunityTranslation\Notification\Category;
 use CommunityTranslation\Entity\Notification as NotificationEntity;
 use CommunityTranslation\Notification\Category;
 use CommunityTranslation\Repository\Locale as LocaleRepository;
+use CommunityTranslation\Repository\Package\Version as PackageVersionRepository;
 use Concrete\Core\User\UserInfo;
+use Concrete\Core\User\UserInfoRepository;
 use Exception;
+use URL;
 
 /**
  * Notification category: some translations need approval.
@@ -42,6 +45,29 @@ class TranslationsNeedApproval extends Category
      */
     public function getMailParameters(NotificationEntity $notification, UserInfo $recipient)
     {
-        throw new Exception('@todo');
+        $notificationData = $notification->getNotificationData();
+        $locale = $this->app->make(LocaleRepository::class)->findApproved($notificationData['localeID']);
+        if ($locale === null) {
+            throw new Exception(t('Unable to find the locale with ID %s', $notificationData['localeID']));
+        }
+        $uir = $this->app->make(UserInfoRepository::class);
+        $packageVersion = $notificationData['packageVersionID'] ? $this->app->make(PackageVersionRepository::class)->find($notificationData['packageVersionID']) : null;
+        $translations = [];
+        foreach ($notificationData['numTranslations'] as $userID => $numTranslations) {
+            $translations[] = [
+                'user' => $uir->getByID($userID),
+                'numTranslations' => $numTranslations,
+            ];
+        }
+
+        return [
+            'localeName' => $locale->getDisplayName(),
+            'translations' => $translations,
+            'approvalURL' => (string) URL::to(
+                $this->app->make('community_translation/config')->get('options.onlineTranslationPath'),
+                $packageVersion ? $packageVersion->getID() : 'unreviewed',
+                $locale->getID()
+            ),
+        ] + $this->getCommonMailParameters($notification, $recipient);
     }
 }
