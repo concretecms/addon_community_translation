@@ -373,6 +373,38 @@ class Controller extends BlockController
         }
     }
 
+    public function action_delete_translation_group($localeID)
+    {
+        $gotoLocale = null;
+        try {
+            $locale = $this->app->make(LocaleRepository::class)->findApproved($localeID);
+            if ($locale === null) {
+                throw new UserException(t("The locale identifier '%s' is not valid", $localeID));
+            }
+            $gotoLocale = $locale;
+            $token = $this->app->make('helper/validation/token');
+            if (!$token->validate('comtra_delete_translation_group' . $localeID)) {
+                throw new UserException($token->getErrorMessage());
+            }
+            $accessHelper = $this->app->make(Access::class);
+            $myAccess = $accessHelper->getLocaleAccess($locale);
+            if ($myAccess < Access::GLOBAL_ADMIN) {
+                throw new UserException(t('Invalid user rights'));
+            }
+            $em = $this->app->make(EntityManager::class);
+            $em->remove($locale);
+            $em->flush($locale);
+            $this->app->make(Groups::class)->deleteLocaleGroups($locale->getID());
+            $this->redirectWithMessage(t('The language team for %s has been deleted', $locale->getDisplayName()), false, '');
+        } catch (UserException $x) {
+            if ($gotoLocale === null) {
+                $this->redirectWithMessage($x->getMessage(), true, '');
+            } else {
+                $this->redirectWithMessage($x->getMessage(), true, 'details', $gotoLocale->getID());
+            }
+        }
+    }
+
     private function showTeamListStep()
     {
         $this->set('step', 'teamList');

@@ -209,4 +209,24 @@ class Groups
 
         return $result;
     }
+
+    /**
+     * Delete the user groups associated to a locale ID.
+     *
+     * @param string $localeID
+     */
+    public function deleteLocaleGroups($localeID)
+    {
+        foreach ([
+            self::GROUPNAME_LOCALE_ADMINISTRATORS,
+            self::GROUPNAME_TRANSLATORS,
+            self::GROUPNAME_ASPIRING_TRANSLATORS,
+        ] as $parentGroupName) {
+            $path = "/$parentGroupName/$localeID";
+            $group = Group::getByPath($path);
+            if ($group !== null) {
+                $group->delete();
+            }
+        }
+    }
 }

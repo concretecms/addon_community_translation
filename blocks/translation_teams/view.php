@@ -356,8 +356,8 @@ switch ($step) {
             }
             if ($access >= Access::GLOBAL_ADMIN) {
                 ?>
-                <form style="display: inline" method="POST" action="<?= $view->action('delete', $locale->getID()) ?>">
-                    <?php $token->output('comtra_delete' . $locale->getID()); ?>
+                <form style="display: inline" method="POST" action="<?= $view->action('delete_translation_group', $locale->getID()) ?>" data-comtra-warning="<?= h(t('Are you sure you want to PERMANENTLY DELETE this translation group?<br /><br />WARNING! THIS OPERATION CAN\'T BE UNDONE!'))?>" onsubmit="comtraConfirmPost(this); return false">
+                    <?php $token->output('comtra_delete_translation_group' . $locale->getID()); ?>
                     <input type="submit" class="btn btn-danger" value="<?= t('Delete') ?>" />
                 </form>
                 <?php
@@ -372,8 +372,8 @@ switch ($step) {
 <script>
 function comtraConfirmPost(form) {
     var $form = $(form),
-        text = $(form).data('comtra-warning') || <?= json_encode(t('Are you sure?')) ?>,
-        $dlg = $('<div />').append($('<p />').text(text));
+        html = $(form).data('comtra-warning') || <?= json_encode(t('Are you sure?')) ?>,
+        $dlg = $('<div />').append($('<p />').html(html));
     $(document.body).append($dlg);
     $dlg.dialog({
         close: function() {
