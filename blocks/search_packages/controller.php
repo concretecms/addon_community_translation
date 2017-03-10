@@ -91,7 +91,7 @@ class Controller extends BlockController
     {
         $error = $this->app->make('helper/validation/error');
         $normalized['preloadPackageHandle'] = '';
-        if (isset($args['preloadPackageHandle']) && is_string($args['preloadPackageHandle'])) {
+        if (isset($args['preloadPackageHandle']) && is_string($args['preloadPackageHandle']) && $args['preloadPackageHandle'] !== '') {
             $package = $this->app->make(PackageRepository::class)->findOneBy(['handle' => $args['preloadPackageHandle']]);
             if ($package === null) {
                 $error->add(t('No package with handle "%s"', h($args['preloadPackageHandle'])));
