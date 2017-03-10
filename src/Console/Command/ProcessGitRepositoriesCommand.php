@@ -1,17 +1,12 @@
 <?php
 namespace CommunityTranslation\Console\Command;
 
+use CommunityTranslation\Console\Command;
 use CommunityTranslation\Git\Importer;
 use CommunityTranslation\Repository\GitRepository as GitRepositoryRepository;
-use Concrete\Core\Console\Command;
-use Concrete\Core\Support\Facade\Application;
 use Doctrine\ORM\EntityManager;
 use Exception;
-use Psr\Log\LogLevel;
-use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Logger\ConsoleLogger;
-use Symfony\Component\Console\Output\OutputInterface;
 use Throwable;
 
 class ProcessGitRepositoriesCommand extends Command
@@ -33,20 +28,18 @@ EOT
         ;
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function executeWithLogger()
     {
-        $app = Application::getFacadeApplication();
-        $em = $app->make(EntityManager::class);
+        $em = $this->app->make(EntityManager::class);
         /* @var EntityManager $em */
-        $gitRepositories = $this->getGitRepositories($input->getOption('repository'));
-        $importer = $app->make(Importer::class);
+        $gitRepositories = $this->getGitRepositories($this->input->getOption('repository'));
+        $importer = $this->app->make(Importer::class);
         /* @var Importer $importer */
-        $logger = new ConsoleLogger($output, [LogLevel::INFO => OutputInterface::VERBOSITY_NORMAL]);
-        $importer->setLogger($logger);
+        $importer->setLogger($this->logger);
         $someError = false;
         $someSuccess = true;
         foreach ($gitRepositories as $gitRepository) {
-            $output->writeln(sprintf('Processing repository %s', $gitRepository->getName()));
+            $this->logger->info(sprintf('Processing repository %s', $gitRepository->getName()));
             $error = null;
             try {
                 $importer->import($gitRepository);
@@ -59,7 +52,7 @@ EOT
                 $someSuccess = true;
             } else {
                 $someError = true;
-                $this->writeError($output, $error);
+                $this->logger->error($this->formatThrowable($error));
             }
         }
         if ($someError && $someSuccess) {
@@ -83,8 +76,7 @@ EOT
      */
     private function getGitRepositories(array $filter)
     {
-        $app = Application::getFacadeApplication();
-        $allGitRepositories = $app->make(GitRepositoryRepository::class)->findAll();
+        $allGitRepositories = $this->app->make(GitRepositoryRepository::class)->findAll();
         if (empty($allGitRepositories)) {
             throw new Exception('No git repository defined');
         }

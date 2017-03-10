@@ -15,9 +15,9 @@ class ConsoleHandler extends AbstractProcessingHandler
         $this->output = $output;
         $verbosity = $this->output->getVerbosity();
         if ($verbosity >= OutputInterface::VERBOSITY_VERBOSE) {
-            $level = Logger::INFO;
+            $level = Logger::DEBUG;
         } elseif ($verbosity >= OutputInterface::VERBOSITY_NORMAL) {
-            $level = Logger::NOTICE;
+            $level = Logger::INFO;
         } else {
             $level = Logger::ERROR;
         }

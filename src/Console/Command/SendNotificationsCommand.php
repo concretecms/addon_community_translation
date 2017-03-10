@@ -1,19 +1,16 @@
 <?php
 namespace CommunityTranslation\Console\Command;
 
+use CommunityTranslation\Console\Command;
 use CommunityTranslation\Entity\Notification as NotificationEntity;
 use CommunityTranslation\Notification\CategoryInterface;
 use CommunityTranslation\Repository\Notification as NotificationRepository;
-use Concrete\Core\Console\Command;
-use Concrete\Core\Support\Facade\Application;
 use Concrete\Core\User\UserInfo;
 use DateTime;
 use Doctrine\Common\Collections\Criteria;
 use Doctrine\ORM\EntityManager;
 use Exception;
-use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Output\OutputInterface;
 use Throwable;
 
 class SendNotificationsCommand extends Command
@@ -62,11 +59,6 @@ EOT
     }
 
     /**
-     * @var \Concrete\Core\Application\Application|null
-     */
-    private $app;
-
-    /**
      * @var EntityManager|null
      */
     private $em;
@@ -111,10 +103,10 @@ EOT
      */
     private $timeLimit;
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function executeWithLogger()
     {
         $this->initializeState();
-        $this->readParameters($input);
+        $this->readParameters();
         $this->checkCanonicalURL();
 
         $lastID = null;
@@ -132,6 +124,7 @@ EOT
                 break;
             }
             $lastID = $notification->getID();
+            $this->logger->debug(sprintf('Processing notification %s', $notification->getID()));
             $this->processNotification($notification);
         }
         if ($this->someNotificationSent && $this->someNotificationFailed) {
@@ -149,7 +142,6 @@ EOT
 
     private function initializeState()
     {
-        $this->app = Application::getFacadeApplication();
         $this->em = $this->app->make(EntityManager::class);
         $this->repo = $this->app->make(NotificationRepository::class);
         $this->mail = $this->app->make('mail');
@@ -166,16 +158,16 @@ EOT
         $this->someNotificationFailed = false;
     }
 
-    private function readParameters(InputInterface $input)
+    private function readParameters()
     {
-        $deliveryRetries = $input->getOption('retries');
+        $deliveryRetries = $this->input->getOption('retries');
         $deliveryRetries = is_numeric($deliveryRetries) ? (int) $deliveryRetries : -1;
         if ($deliveryRetries < 0) {
             throw new Exception('Invalid value of the retries parameter (it must be a non negative integer)');
         }
         $this->deliveryRetries = $deliveryRetries;
 
-        $maxAge = (int) $input->getOption('max-age');
+        $maxAge = (int) $this->input->getOption('max-age');
         if ($maxAge <= 0) {
             throw new Exception('Invalid value of the max-age parameter (it must be an integer greater than 0)');
         }
@@ -283,6 +275,9 @@ EOT
         }
         $this->em->persist($notification);
         $this->em->flush($notification);
+        if ($error !== null) {
+            $this->logger->error($this->formatThrowable($error));
+        }
     }
 
     private function prepareMail(NotificationEntity $notification, UserInfo $recipient, CategoryInterface $category)

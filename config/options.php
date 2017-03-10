@@ -14,15 +14,22 @@ return [
         'accessControlAllowOrigin' => '*',
         'entryPoint' => '/api',
     ],
+    'nonInteractiveCLICommands' => [
+        'notify' => false,
+        'to' => [
+            /* Example:
+             [
+             'handler' => 'slack',
+             'apiToken' => 'xxx',
+             'channel' => '#general',
+             ],
+             */
+        ],
+    ],
     'notificationsSenderAddress' => '',
     'notificationsSenderName' => '',
     'onlineTranslationPath' => '/translate/online',
     'parser' => 'CommunityTranslation\Parser\Concrete5Parser',
     'tempDir' => null,
     'translatedThreshold' => 90,
-    'nonInteractiveCLICommands' => [
-        'notify' => true,
-        'to' => [
-        ],
-    ],
 ];

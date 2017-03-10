@@ -63,7 +63,7 @@ class Importer
         $package = $packagesRepo->findOneBy(['handle' => $gitRepository->getPackageHandle()]);
         if ($package === null) {
             if ($this->logger !== null) {
-                $this->logger->info(t('Creating new package with handle %s', $gitRepository->getPackageHandle()));
+                $this->logger->notice(t('Creating new package with handle %s', $gitRepository->getPackageHandle()));
             }
             $package = PackageEntity::create($gitRepository->getPackageHandle());
             $this->em->persist($package);
