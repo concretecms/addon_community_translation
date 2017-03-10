@@ -1,10 +1,10 @@
 /* jshint unused:vars, undef:true, jquery:true, browser:true */
 
-window.ccm_enableUserProfileMenu = function() {
-};
-
 (function($, window, undefined) {
 'use strict';
+
+window.ccm_enableUserProfileMenu = function() {
+};
 
 // Some global vars
 var translator, $extra, canApprove, packageVersionID, actions, tokens, i18n, canEditGlossary, currentTranslation = null, pluralRuleByIndex;
@@ -112,7 +112,7 @@ var showAllPlaces = (function() {
             $list.closest('.modal-body').css({overflow: 'auto', 'overflow-x': 'hidden', 'max-height': Math.max(50, $(window).height() - 200) + 'px'});
             $.each(data, function() {
                 var $div;
-                $list.append($('<div class="list-group-item active" />').text(this['packageVersionDisplayName']));
+                $list.append($('<div class="list-group-item active" />').text(this.packageVersionDisplayName));
                 if (this.comments.length > 0) {
                     $list.append($div = $('<div class="list-group-item" />')
                         .append($('<span class="label label-info" />').text(i18n.Comments))
@@ -877,7 +877,23 @@ window.comtraOnlineEditorInitialize = function(options) {
         saveAction: saveCurrentTranslation,
         onUILaunched: initializeUI,
         onBeforeActivatingTranslation: loadFullTranslation,
-        onCurrentTranslationChanged: showFullTranslation
+        onCurrentTranslationChanged: showFullTranslation,
+        getInitialTranslationIndex: function() {
+            var initialTranslationIndex = 0, hash = window.location.hash;
+            if (hash) {
+                var matches = /(^|#|\|)tid:(\d+)/.exec(hash);
+                if (matches) {
+                    var initialTranslationID = parseInt(matches[2]);
+                    for (var n = this.translations.length, i = 0; i < n; i++) {
+                        if (this.translations[i].id === initialTranslationID) {
+                            initialTranslationIndex = i;
+                            break;
+                        }
+                    }
+                }
+            }
+            return initialTranslationIndex;
+        }
     });
     $('#comtra_editcomment').on('change keydown keyup keypress', function() {
         $('#comtra_editcomment_render').html(markdownToHtml($.trim(this.value)));
