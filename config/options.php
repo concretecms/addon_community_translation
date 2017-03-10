@@ -20,4 +20,9 @@ return [
     'parser' => 'CommunityTranslation\Parser\Concrete5Parser',
     'tempDir' => null,
     'translatedThreshold' => 90,
+    'nonInteractiveCLICommands' => [
+        'notify' => true,
+        'to' => [
+        ],
+    ],
 ];

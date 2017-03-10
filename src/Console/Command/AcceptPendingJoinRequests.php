@@ -1,23 +1,20 @@
 <?php
 namespace CommunityTranslation\Console\Command;
 
+use CommunityTranslation\Console\Command;
 use CommunityTranslation\Entity\Locale as LocaleEntity;
 use CommunityTranslation\Repository\Locale as LocaleRepository;
 use CommunityTranslation\Repository\Notification as NotificationRepository;
 use CommunityTranslation\Service\Access as AccessHelper;
 use CommunityTranslation\Service\Groups as GroupsHelper;
-use Concrete\Core\Console\Command;
 use Concrete\Core\Entity\User\User as UserEntity;
-use Concrete\Core\Support\Facade\Application;
 use Concrete\Core\User\Group\Group as CoreGroup;
 use Concrete\Core\User\User as CoreUser;
 use DateTime;
 use Doctrine\ORM\EntityManager;
 use Exception;
 use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
-use Symfony\Component\Console\Output\OutputInterface;
 use Throwable;
 
 class AcceptPendingJoinRequests extends Command
@@ -50,21 +47,6 @@ EOT
             )
         ;
     }
-
-    /**
-     * @var InputInterface|null
-     */
-    private $input;
-
-    /**
-     * @var OutputInterface|null
-     */
-    private $output;
-
-    /**
-     * @var Application|null
-     */
-    private $app;
 
     /**
      * @var EntityManager|null
@@ -101,28 +83,26 @@ EOT
      */
     private $dateLimit;
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function executeWithLogger()
     {
-        $this->initializeState($input, $output);
+        $this->initializeState();
         $this->readOptions();
-        if ($output->getVerbosity() >= OutputInterface::VERBOSITY_NORMAL) {
-            $this->output->writeln(($this->dateLimit === null) ? 'Accepting all the pending join requests' : sprintf('Accepting the pending join requests made before %s', $this->dateLimit->format('r')));
-        }
+        $this->logger->info(($this->dateLimit === null) ? 'Accepting all the pending join requests' : sprintf('Accepting the pending join requests made before %s', $this->dateLimit->format('r')));
         $someErrors = false;
         $totalAcceptedUsers = 0;
         foreach ($this->localesToProcess as $locale) {
             try {
                 $totalAcceptedUsers += $this->processLocale($locale);
             } catch (Exception $x) {
-                $this->writeError($this->output, $x);
+                $this->logger->error($this->formatThrowable($x));
                 $someErrors = true;
             } catch (Throwable $x) {
-                $this->writeError($this->output, $x);
+                $this->logger->error($this->formatThrowable($x));
                 $someErrors = true;
             }
         }
 
-        $this->output->writeln(sprintf('All done. %d locales processed, %d requests accepted.', count($this->localesToProcess), $totalAcceptedUsers));
+        $this->logger->info(sprintf('All done. %d locales processed, %d requests accepted.', count($this->localesToProcess), $totalAcceptedUsers));
         if ($someErrors) {
             $rc = ($totalAcceptedUsers === 0) ? static::RETURN_CODE_ON_FAILURE : 2;
         } else {
@@ -132,15 +112,8 @@ EOT
         return $rc;
     }
 
-    /**
-     * @param InputInterface $input
-     * @param OutputInterface $output
-     */
-    private function initializeState(InputInterface $input, OutputInterface $output)
+    private function initializeState()
     {
-        $this->input = $input;
-        $this->output = $output;
-        $this->app = Application::getFacadeApplication();
         $this->em = $this->app->make(EntityManager::class);
         $this->groupsHelper = $this->app->make(GroupsHelper::class);
         $this->accessHelper = $this->app->make(AccessHelper::class);
@@ -190,25 +163,19 @@ EOT
     private function processLocale(LocaleEntity $locale)
     {
         $result = 0;
-        if ($this->output->getVerbosity() >= OutputInterface::OUTPUT_NORMAL) {
-            $this->output->writeln(sprintf('Processing %s (%s)', $locale->getName(), $locale->getID()));
-        }
+        $this->logger->info(sprintf('Processing %s (%s)', $locale->getName(), $locale->getID()));
         $aspiringGroup = $this->groupsHelper->getAspiringTranslators($locale);
         $aspiringGroupMemberIDs = $aspiringGroup->getGroupMemberIDs();
         $numberOfAspiringMembers = count($aspiringGroupMemberIDs);
         if ($numberOfAspiringMembers === 0) {
-            if ($this->output->getVerbosity() >= OutputInterface::OUTPUT_NORMAL) {
-                $this->output->writeln('  - No pending requests found.');
-            }
+            $this->logger->info('  - No pending requests found.');
         } else {
             foreach ($aspiringGroupMemberIDs as $memberID) {
                 if ($this->processAspiring($locale, $aspiringGroup, $memberID)) {
                     ++$result;
                 }
             }
-            if ($this->output->getVerbosity() >= OutputInterface::OUTPUT_NORMAL) {
-                $this->output->writeln(sprintf('  - %d out of %d requests accepted.', $result, $numberOfAspiringMembers));
-            }
+            $this->logger->info(sprintf('  - %d out of %d requests accepted.', $result, $numberOfAspiringMembers));
         }
 
         return $result;
@@ -248,16 +215,12 @@ EOT
                 $userEntity = $this->em->find(UserEntity::class, $memberID);
                 $this->accessHelper->setLocaleAccess($locale, AccessHelper::TRANSLATE, $memberID);
                 $this->notificationRepository->newTranslatorApproved($locale, $memberID, USER_SUPER_ID, true);
-                if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
-                    $this->output->writeln(sprintf('  - User accepted: %s (ID: %d)', $userEntity->getUserName(), $userEntity->getUserID()));
-                }
+                $this->logger->info(sprintf('  - User accepted: %s (ID: %d)', $userEntity->getUserName(), $userEntity->getUserID()));
                 $result = true;
             }
         } else {
-            if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
-                $userEntity = $this->em->find(UserEntity::class, $memberID);
-                $this->output->writeln(sprintf('  - Request from %s (ID: %d) still too recent', $userEntity->getUserName(), $userEntity->getUserID()));
-            }
+            $userEntity = $this->em->find(UserEntity::class, $memberID);
+            $this->logger->debug(sprintf('  - Request from %s (ID: %d) still too recent', $userEntity->getUserName(), $userEntity->getUserID()));
         }
 
         return $result;
