@@ -54,10 +54,10 @@ abstract class Command extends ConcreteCommand
         } catch (Throwable $x) {
             $error = $x;
         }
-        if ($error !== $null) {
+        if ($error !== null) {
             $this->logger->error($this->formatThrowable($error));
 
-            return $this->RETURN_CODE_ON_FAILURE;
+            return static::RETURN_CODE_ON_FAILURE;
         }
 
         return $result;

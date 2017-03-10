@@ -1,9 +1,7 @@
 <?php
 defined('C5_EXECUTE') or die('Access Denied.');
 
-$subject = "[$siteName] New translation strings need review for $localeName";
-
-$sPlural = ($numTranslaions > 1) ? 's' : '';
+$subject = "[$siteName] New translations need review for $localeName";
 
 $bodyHTML = "<p>Hi $recipientName,</p>";
 if (count($translations) === 1) {
