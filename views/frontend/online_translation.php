@@ -19,6 +19,8 @@ use CommunityTranslation\Glossary\EntryType as GlossaryEntryType;
 /* @var CommunityTranslation\TranslationsConverter\ConverterInterface[] $translationFormats */
 /* @var string|null $showDialogAtStartup */
 
+$enableTranslationComments = is_object($packageVersion);
+
 ?><!DOCTYPE html>
 <html lang="<?= Localization::activeLanguage() ?>">
 <head>
@@ -114,7 +116,13 @@ use CommunityTranslation\Glossary\EntryType as GlossaryEntryType;
 <div id="comtra_extra-tabs" class="col-md-5">
     <ul class="nav nav-tabs">
         <li class="active"><a href="#comtra_translation-others" role="tab" data-toggle="tab"><?= t('Other translations') ?> <span class="badge" id="comtra_translation-others-count"></span></a></li>
-        <li><a href="#comtra_translation-comments" role="tab" data-toggle="tab"><?= t('Comments') ?> <span class="badge" id="comtra_translation-comments-count"></span></a></li>
+        <?php
+        if ($enableTranslationComments) {
+            ?>
+            <li><a href="#comtra_translation-comments" role="tab" data-toggle="tab"><?= t('Comments') ?> <span class="badge" id="comtra_translation-comments-count"></span></a></li>
+            <?php
+        }
+        ?>
         <li><a href="#comtra_translation-suggestions" role="tab" data-toggle="tab"><?= t('Suggestions') ?> <span class="badge" id="comtra_translation-suggestions-count"></span></a></li>
         <li><a href="#comtra_translation-glossary" role="tab" data-toggle="tab"><?= t('Glossary') ?> <span class="badge" id="comtra_translation-glossary-count"></span></a></li>
     </ul>
@@ -134,16 +142,22 @@ use CommunityTranslation\Glossary\EntryType as GlossaryEntryType;
                 <tbody></tbody>
             </table>
         </div>
-        <div role="tabpanel" class="tab-pane" role="tabpanel" id="comtra_translation-comments">
-            <div class="alert alert-info comtra_none">
-                <?= t('No comments found for this string.') ?>
+        <?php
+        if ($enableTranslationComments) {
+            ?>
+            <div role="tabpanel" class="tab-pane" role="tabpanel" id="comtra_translation-comments">
+                <div class="alert alert-info comtra_none">
+                    <?= t('No comments found for this string.') ?>
+                </div>
+                <div class="list-group" id="comtra_translation-comments-extracted"><div class="list-group-item active"><?= t('Extracted comments') ?></div></div>
+                <div class="list-group" id="comtra_translation-comments-online"><div class="list-group-item active"><?= t('Translators comments') ?></div></div>
+                <div style="text-align: right">
+                    <a href="#" class="btn btn-primary btn-sm" id="comtra_translation-comments-add"><?= t('New comment') ?></a>
+                </div>
             </div>
-            <div class="list-group" id="comtra_translation-comments-extracted"><div class="list-group-item active"><?= t('Extracted comments') ?></div></div>
-            <div class="list-group" id="comtra_translation-comments-online"><div class="list-group-item active"><?= t('Translators comments') ?></div></div>
-            <div style="text-align: right">
-                <a href="#" class="btn btn-primary btn-sm" id="comtra_translation-comments-add"><?= t('New comment') ?></a>
-            </div>
-        </div>
+            <?php
+        }
+        ?>
         <div role="tabpanel" class="tab-pane" role="tabpanel" id="comtra_translation-suggestions">
             <div class="alert alert-info comtra_none">
                 <?= t('No similar translations found for this string.') ?>
@@ -168,49 +182,55 @@ use CommunityTranslation\Glossary\EntryType as GlossaryEntryType;
     </div>
 </div>
 
-<div id="comtra_translation-comments-dialog" class="modal">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
-                <h4 class="modal-title"><?= t('Translation comment') ?></h4>
-            </div>
-            <div class="modal-body">
-                <form onsubmit="return false">
-                    <div class="form-group" id="comtra_editcomment-visibility">
-                        <label><?= t('Comment visibility') ?></label>
-                        <div class="radio">
-                            <label>
-                                <input type="radio" name="comtra_editcomment-visibility" value="locale" />
-                                <?= t('This is a comment only for %s', $locale->getDisplayName()) ?>
-                            </label>
+<?php
+if ($enableTranslationComments) {
+    ?>
+    <div id="comtra_translation-comments-dialog" class="modal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                    <h4 class="modal-title"><?= t('Translation comment') ?></h4>
+                </div>
+                <div class="modal-body">
+                    <form onsubmit="return false">
+                        <div class="form-group" id="comtra_editcomment-visibility">
+                            <label><?= t('Comment visibility') ?></label>
+                            <div class="radio">
+                                <label>
+                                    <input type="radio" name="comtra_editcomment-visibility" value="locale" />
+                                    <?= t('This is a comment only for %s', $locale->getDisplayName()) ?>
+                                </label>
+                            </div>
+                            <div class="radio">
+                                <label>
+                                    <input type="radio" name="comtra_editcomment-visibility" value="global" />
+                                    <?= t('This is a comment for all languages') ?>
+                                </label>
+                            </div>
                         </div>
-                        <div class="radio">
-                            <label>
-                                <input type="radio" name="comtra_editcomment-visibility" value="global" />
-                                <?= t('This is a comment for all languages') ?>
-                            </label>
+                        <div class="form-group">
+                            <div class="pull-right small"><a href="http://commonmark.org/help/" target="_blank"><?= t('Markdown syntax') ?></a></div>
+                            <label for="comtra_editcomment"><?= t('Comment') ?></label>
+                            <textarea class="form-control" id="comtra_editcomment"></textarea>
                         </div>
-                    </div>
-                    <div class="form-group">
-                        <div class="pull-right small"><a href="http://commonmark.org/help/" target="_blank"><?= t('Markdown syntax') ?></a></div>
-                        <label for="comtra_editcomment"><?= t('Comment') ?></label>
-                        <textarea class="form-control" id="comtra_editcomment"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label for="comtra_editcomment_render"><?= t('Preview') ?></label>
-                        <div id="comtra_editcomment_render"></div>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal"><?= t('Cancel') ?></button>
-                <button type="button" class="btn btn-danger" id="comtra_translation-glossary-delete"><?= t('Delete') ?></button>
-                <button type="button" class="btn btn-primary"><?= t('Save') ?></button>
+                        <div class="form-group">
+                            <label for="comtra_editcomment_render"><?= t('Preview') ?></label>
+                            <div id="comtra_editcomment_render"></div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal"><?= t('Cancel') ?></button>
+                    <button type="button" class="btn btn-danger" id="comtra_translation-glossary-delete"><?= t('Delete') ?></button>
+                    <button type="button" class="btn btn-primary"><?= t('Save') ?></button>
+                </div>
             </div>
         </div>
     </div>
-</div>
+    <?php
+}
+?>
 
 <div id="comtra_allplaces-dialog" class="modal">
     <div class="modal-dialog">

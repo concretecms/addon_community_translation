@@ -3,6 +3,7 @@ namespace CommunityTranslation\Repository;
 
 use CommunityTranslation\Entity\Locale as LocaleEntity;
 use CommunityTranslation\Entity\Notification as NotificationEntity;
+use CommunityTranslation\Entity\Package\Version as PackageVersionEntity;
 use CommunityTranslation\Entity\Translatable\Comment as TranslatableCommentEntity;
 use CommunityTranslation\Notification\Category\NewLocaleApproved;
 use CommunityTranslation\Notification\Category\NewLocaleRejected;
@@ -183,46 +184,68 @@ class Notification extends EntityRepository
 
     /**
      * @param TranslatableCommentEntity $comment
+     * @param PackageVersionEntity $packageVersion
+     * @param LocaleEntity $whileTranslatingLocale
      */
-    public function translatableCommentSubmitted(TranslatableCommentEntity $comment)
+    public function translatableCommentSubmitted(TranslatableCommentEntity $comment, PackageVersionEntity $packageVersion, LocaleEntity $whileTranslatingLocale)
     {
         $em = $this->getEntityManager();
-        $localeID = $comment->getLocale() ? $comment->getLocale()->getID() : null;
+        $locale = $comment->getRootComment()->getLocale();
+        $localeID = ($locale === null) ? null : $locale->getID();
         $commentID = $comment->getID();
         $createNew = true;
+        // First of all: let's see if we're already queued a notification for this comment
         foreach ($this->findBy(['fqnClass' => TranslatableComment::class, 'sentOn' => null]) as $existing) {
             $data = $existing->getNotificationData();
-            if (in_array($commentID, $data['commentIDs'], true)) {
+            if (isset($data['comments'][$commentID])) {
                 if ($data['localeID'] === $localeID) {
                     $createNew = false;
                 } else {
-                    $otherMessageIDs = array_diff($data['commentIDs'], [$commentID]);
-                    if (empty($otherMessageIDs)) {
+                    if (count($data['comments']) === 1) {
                         $data['localeID'] = $localeID;
-                        $existing->setNotificationData($data)->setUpdatedOn(new DateTime());
-                        $em->persist($existing);
-                        $em->flush($existing);
                         $createNew = false;
                     } else {
-                        $data['commentIDs'] = array_values($otherMessageIDs);
-                        $existing->setNotificationData($data)->setUpdatedOn(new DateTime());
-                        $em->persist($existing);
-                        $em->flush($existing);
+                        unset($data['comments'][$commentID]);
                     }
+                    $existing->setNotificationData($data)->setUpdatedOn(new DateTime());
+                    $em->persist($existing);
+                    $em->flush($existing);
                 }
                 break;
             }
         }
-        if ($createNew) {
-            $n = NotificationEntity::create(
-                TranslatableComment::class,
-                [
-                    'commentIDs' => [$commentID],
-                    'localeID' => $localeID,
-                ]
-            );
-            $em->persist($n);
-            $em->flush($n);
+        if ($createNew === true) {
+            $thisNotificationData = [
+                'packageVersionID' => $packageVersion->getID(),
+                'whileTranslatingLocaleID' => $whileTranslatingLocale->getID(),
+            ];
+            // A new notification is required: let's see if we have notifications for this locale
+            foreach ($this->findBy(['fqnClass' => TranslatableComment::class, 'sentOn' => null]) as $existing) {
+                $data = $existing->getNotificationData();
+                if ($data['localeID'] === $localeID) {
+                    $createNew = false;
+                    $data['comments'][$commentID] = $thisNotificationData;
+                    $existing->setNotificationData($data)->setUpdatedOn(new DateTime());
+                    $em->persist($existing);
+                    $em->flush($existing);
+                    $createNew = false;
+                    break;
+                }
+            }
+            if ($createNew === true) {
+                // A notification for a new locale is required
+                $n = NotificationEntity::create(
+                    TranslatableComment::class,
+                    [
+                        'localeID' => $localeID,
+                        'comments' => [
+                            $commentID => $thisNotificationData,
+                        ],
+                    ]
+                );
+                $em->persist($n);
+                $em->flush($n);
+            }
         }
     }
 

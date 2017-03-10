@@ -184,7 +184,7 @@ class OnlineTranslation extends Controller
             if ($packageVersionID) {
                 $packageVersion = $this->app->make(PackageVersionRepository::class)->find($packageVersionID);
                 if ($packageVersion === null) {
-                    $error = t('Invalid translated package version identifier received');
+                    throw new UserException(t('Invalid translated package version identifier received'));
                 }
             }
 
@@ -216,9 +216,15 @@ class OnlineTranslation extends Controller
             $accessHelper = $this->app->make(Access::class);
             $access = $accessHelper->getLocaleAccess($locale);
             if ($access <= Access::NOT_LOGGED_IN) {
-                $error = t('You need to log-in in order to translate');
-            } elseif ($access < Access::TRANSLATE) {
+                throw new UserException(t('You need to log-in in order to translate'));
+            }
+            if ($access < Access::TRANSLATE) {
                 throw new UserException(t("You don't belong to the %s translation group", $locale->getDisplayName()));
+            }
+            $packageVersionID = $this->post('packageVersionID');
+            $packageVersion = $packageVersionID ? $this->app->make(PackageVersionRepository::class)->find($packageVersionID) : null;
+            if ($packageVersion === null) {
+                throw new UserException(t('Invalid translated package version identifier received'));
             }
             $postedBy = $accessHelper->getUserEntity('current');
             $id = $this->post('id');
@@ -282,7 +288,7 @@ class OnlineTranslation extends Controller
             $em = $this->app->make(EntityManager::class);
             $em->persist($comment);
             $em->flush();
-            $this->app->make(NotificationRepository::class)->translatableCommentSubmitted($comment);
+            $this->app->make(NotificationRepository::class)->translatableCommentSubmitted($comment, $packageVersion, $locale);
 
             return $rf->json(
                 [

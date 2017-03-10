@@ -35,7 +35,7 @@ class Comment
     {
         $result = new static();
         $result->translatable = $translatable;
-        $result->locale = null;
+        $result->locale = $locale;
         $result->parentComment = $parentComment;
         $result->postedOn = new DateTime();
         $result->postedBy = $postedBy;
@@ -142,6 +142,21 @@ class Comment
     public function getParentComment()
     {
         return $this->parentComment;
+    }
+
+    /**
+     * Get the root comment (this instance itself if it's the root one).
+     *
+     * @return Comment
+     */
+    public function getRootComment()
+    {
+        $result = $this;
+        while (($parent = $result->getParentComment()) !== null) {
+            $result = $parent;
+        }
+
+        return $result;
     }
 
     /**

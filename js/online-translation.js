@@ -65,9 +65,11 @@ var markdownToHtml = (function() {
         }
         if (md === null) {
             md = window.markdownit({
-                breaks: true,
-                linkify: true,
-                typographer: true
+                html: false, // Disable HTML tags in source
+                xhtmlOut: true, //  Use '/' to close single tags (<br />)
+                breaks: true, // Convert '\n' in paragraphs into <br>
+                linkify: true, // Autoconvert URL-like text to links
+                typographer: true // Enable some language-neutral replacement + quotes beautification
             });
         }
         if ($div === null) {
@@ -448,7 +450,9 @@ var Comments = (function() {
         if (ajaxing) {
             return;
         }
-        var send = {};
+        var send = {
+            packageVersionID: packageVersionID
+        };
         if (editingComment === null) {
             send.id = 'new';
             if (editingParentComment === null) {
@@ -840,7 +844,9 @@ function showFullTranslation(foo)
     var extra = currentTranslation._extra;
     delete currentTranslation._extra;
     OtherTranslations.initialize(extra.otherTranslations);
-    Comments.initialize(extra.extractedComments, extra.comments);
+    if (packageVersionID) {
+        Comments.initialize(extra.extractedComments, extra.comments);
+    }
     References.initialize(extra.references);
     Suggestions.initialize(extra.suggestions);
     Glossary.initialize(extra.glossary);
@@ -898,33 +904,35 @@ window.comtraOnlineEditorInitialize = function(options) {
     $('#comtra_editcomment').on('change keydown keyup keypress', function() {
         $('#comtra_editcomment_render').html(markdownToHtml($.trim(this.value)));
     });
-    $('#comtra_translation-comments-dialog')
-        .modal({
-            show: false
-        })
-        .find('.btn-primary').on('click', function() {
-            Comments.doneEdit();
-        }).end()
-        .find('.btn-danger').on('click', function() {
-            if (window.confirm(i18n.Are_you_sure)) {
-                Comments.deleteEditing();
+    if (packageVersionID) {
+        $('#comtra_translation-comments-dialog')
+            .modal({
+                show: false
+            })
+            .find('.btn-primary').on('click', function() {
+                Comments.doneEdit();
+            }).end()
+            .find('.btn-danger').on('click', function() {
+                if (window.confirm(i18n.Are_you_sure)) {
+                    Comments.deleteEditing();
+                }
+            }).end()
+            .on('hide.bs.modal', function(e) {
+                if (!Comments.canCloseModal()) {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    return false;
+                }
+            })
+        ;
+        $('#comtra_translation-comments-add').on('click', function(e) {
+            if (!translator.busy) {
+                Comments.addNew();
             }
-        }).end()
-        .on('hide.bs.modal', function(e) {
-            if (!Comments.canCloseModal()) {
-                e.preventDefault();
-                e.stopImmediatePropagation();
-                return false;
-            }
-        })
-    ;
-    $('#comtra_translation-comments-add').on('click', function(e) {
-        if (!translator.busy) {
-            Comments.addNew();
-        }
-        e.preventDefault();
-        return false;
-    });
+            e.preventDefault();
+            return false;
+        });
+    }
     $('#comtra_translation-references-showallplaces').on('click', function(e) {
         showAllPlaces();
         e.preventDefault();
