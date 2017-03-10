@@ -620,7 +620,7 @@ class OnlineTranslation extends Controller
                 case 'deny':
                     return $this->denyTranslation($access, $processTranslation, $accessHelper->getUserEntity('current'));
                 case 'reuse':
-                    return $this->reuseTranslation($access, $processTranslation, $accessHelper->getUserEntity('current'));
+                    return $this->reuseTranslation($access, $processTranslation, $accessHelper->getUserEntity('current'), $packageVersionID);
                 case 'save-current':
                     if ($this->post('clear') !== '1') {
                         return $this->setTranslationFromEditor($access, $locale, $translatable, $accessHelper->getUserEntity('current'), $packageVersion);
