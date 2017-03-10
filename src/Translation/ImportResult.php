@@ -46,6 +46,13 @@ class ImportResult
     public $existingCurrentApproved = 0;
 
     /**
+     * Number of current translations marked as not approved.
+     *
+     * @var int
+     */
+    public $existingCurrentUnapproved = 0;
+
+    /**
      * Number of previous translations that have been activated (made current).
      *
      * @var int

@@ -230,6 +230,9 @@ where
                         // Let's mark the translation as approved
                         $querySetCurrentTranslation->execute([1, $sameTranslation['id']]);
                         ++$result->existingCurrentApproved;
+                    } elseif ($isFuzzy === true && $sameTranslation['approved'] && $reviewerRole) {
+                        $querySetCurrentTranslation->execute([0, $sameTranslation['id']]);
+                        ++$result->existingCurrentUnapproved;
                     } else {
                         ++$result->existingCurrentUntouched;
                     }

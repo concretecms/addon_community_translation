@@ -142,6 +142,7 @@ EOT
                 $output->writeln('      - new translations not activated   : ' . $details->addedNotAsCurrent);
                 $output->writeln('      - existing translations untouched  : ' . $details->existingCurrentUntouched);
                 $output->writeln('      - existing translations approved   : ' . $details->existingCurrentApproved);
+                $output->writeln('      - existing translations unapproved : ' . $details->existingCurrentUnapproved);
                 $output->writeln('      - existing translations activated  : ' . $details->existingActivated);
                 $output->writeln('      - untouched translations           : ' . $details->existingNotCurrentUntouched);
                 $output->writeln('      - new translations needing approval: ' . $details->newApprovalNeeded);

@@ -810,6 +810,7 @@ class OnlineTranslation extends Controller
         ' . ($imported->addedNotAsCurrent > 0 ? ('<tr><td>' . t('Number of new translations added but not marked as the current ones') . '</td><td> ' . $imported->addedNotAsCurrent . '</td></tr>') : '') . '
         ' . ($imported->existingCurrentUntouched > 0 ? ('<tr><td>' . t('Number of already current translations untouched') . '</td><td> ' . $imported->existingCurrentUntouched . '</td></tr>') : '') . '
         ' . ($imported->existingCurrentApproved > 0 ? ('<tr><td class="success">' . t('Number of current translations marked as approved') . '</td><td> ' . $imported->existingCurrentApproved . '</td></tr>') : '') . '
+        ' . ($imported->existingCurrentUnapproved > 0 ? ('<tr><td class="warning">' . t('Number of current translations marked as not approved') . '</td><td> ' . $imported->existingCurrentUnapproved . '</td></tr>') : '') . '
         ' . ($imported->existingActivated > 0 ? ('<tr><td class="success">' . t('Number of previous translations that have been activated (made current)') . '</td><td> ' . $imported->existingActivated . '</td></tr>') : '') . '
         ' . ($imported->existingNotCurrentUntouched > 0 ? ('<tr><td>' . t('Number of translations untouched') . '</td><td> ' . $imported->existingNotCurrentUntouched . '</td></tr>') : '') . '
         ' . ($imported->newApprovalNeeded > 0 ? ('<tr><td class="warning">' . t('Number of new translations needing approval') . '</td><td> ' . $imported->newApprovalNeeded . '</td></tr>') : '') . '
@@ -968,7 +969,7 @@ class OnlineTranslation extends Controller
             $approved = false;
         }
 
-        $translations = $this->convertTranslationToGettext($translation, $access < Access::ADMIN);
+        $translations = $this->convertTranslationToGettext($translation, !$approved);
         $importer = $this->app->make(Importer::class);
         $imported = $importer->import($translations, $locale, $user, $access >= Access::ADMIN);
         $this->app->make(EntityManager::class)->clear();
