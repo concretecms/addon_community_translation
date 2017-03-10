@@ -161,7 +161,18 @@ class Exporter
             $this->getBaseSelectString($locale, false, false) .
             " inner join
                 (
-                    select distinct translatable from CommunityTranslationTranslations where current is null and approved is null and locale = $queryLocaleID
+                    select distinct
+                        translatable
+                    from
+                        CommunityTranslationTranslations
+                    where
+                        locale = $queryLocaleID
+                        and
+                        (
+                            (approved is null)
+                            or
+                            (current = 1 and approved = 0)
+                        )
                 ) as tNR on CommunityTranslationTranslatables.id = tNR.translatable
             order by
                 CommunityTranslationTranslatables.text
