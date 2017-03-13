@@ -47,6 +47,36 @@ defined('C5_EXECUTE') or die('Access Denied.');
         <div class="row">
             <div class="form-group">
                 <div class="col-sm-3 control-label">
+                    <label for="apiRateLimitMaxRequests" class="launch-tooltip" title="<?= h(t('Leave empty for no limits')) ?>">
+                        <?= t('Max requests per IP address') ?>
+                    </label>
+                </div>
+                <div class="col-sm-2">
+                    <?= $form->number('apiRateLimitMaxRequests', $apiRateLimitMaxRequests, ['min' => '1']) ?>
+                </div>
+                <div class="col-sm-1">
+                    <?= tc('TimeInterval', 'every') ?>
+                </div>
+                <div class="col-sm-2">
+                    <?= $form->number(
+                        'apiRateLimitInValue',
+                        $apiRateLimitInValue,
+                        $apiRateLimitIn, ['min' => '1']
+                    ) ?>
+                </div>
+                <div class="col-sm-2">
+                    <?= $form->select(
+                        'apiRateLimitInUnit',
+                        $apiRateLimitInUnits,
+                        $apiRateLimitInUnit
+                    ) ?>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="form-group">
+                <div class="col-sm-3 control-label">
                     <label for="apiAccessControlAllowOrigin" class="launch-tooltip" data-html="true" title="<?= h(t(/*i18n: %s is a header name of an HTTP response*/'Set the content of the %s header added to the API request responses', '<br /><code>Access-Control-Allow-Origin</code><br />')) ?>">
                         <?= tc(/*i18n: %s is a header name of an HTTP response*/'ResponseHeader', '%s header', 'Access-Control-Allow-Origin') ?>
                     </label>

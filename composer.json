@@ -1,6 +1,14 @@
 {
-  "name": "concrete5/community_translation",
-  "type": "concrete5-package",
-  "description": "concrete5 translation package",
-  "license": "MIT"
+	"name" : "concrete5/community_translation",
+	"type" : "concrete5-package",
+	"description" : "concrete5 translation package",
+	"license" : "MIT",
+	"homepage" : "https://github.com/concrete5/addon_community_translation",
+	"support" : {
+		"issues" : "https://github.com/concrete5/addon_community_translation/issues",
+		"source" : "https://github.com/concrete5/addon_community_translation"
+	},
+	"require" : {
+		"mlocati/ip-lib" : "~1.2.0"
+	}
 }

@@ -44,7 +44,7 @@ class Controller extends Package
      *
      * @var string
      */
-    protected $pkgVersion = '0.1.0';
+    protected $pkgVersion = '0.2.0';
 
     /**
      * The mapping between RelativeDirectory <-> Namespace to autoload package classes.
@@ -132,6 +132,7 @@ class Controller extends Package
      */
     public function on_start()
     {
+        $this->registerVendorAutoload();
         $this->registerServiceProvider();
         $this->registerParsers();
         $this->app->make('director')->addSubscriber($this->app->make(EventSubscriber::class));
@@ -141,6 +142,11 @@ class Controller extends Package
             $this->registerAssets();
             $this->registerRoutes();
         }
+    }
+
+    private function registerVendorAutoload()
+    {
+        require $this->getPackagePath() . '/vendor/autoload.php';
     }
 
     /**
