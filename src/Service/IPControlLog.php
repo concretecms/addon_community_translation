@@ -87,6 +87,8 @@ class IPControlLog
      *
      * @param DateTime $before
      * @param string|null $type The type identifier for the visits to be deleted. Set to null to delete logs for all types
+     *
+     * @return int Returns the number of deleted records
      */
     public function clearVisits(DateTime $before, $type = null)
     {
@@ -96,7 +98,9 @@ class IPControlLog
             $query .= ' and type = ?';
             $params[] = (string) $type;
         }
-        $this->connection->executeQuery($query, $params);
+        $rs = $this->connection->executeQuery($query, $params);
+
+        return (int) $rs->rowCount();
     }
 
     /**
