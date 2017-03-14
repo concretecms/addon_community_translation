@@ -3,11 +3,14 @@ namespace CommunityTranslation\Api;
 
 use CommunityTranslation\Repository\Locale as LocaleRepository;
 use CommunityTranslation\Service\Access;
+use CommunityTranslation\Service\IPControlLog;
+use CommunityTranslation\UserException;
 use Concrete\Core\Application\Application;
 use Concrete\Core\Entity\User\User as UserEntity;
 use Concrete\Core\Http\Request;
 use Concrete\Core\User\User;
 use Concrete\Core\User\UserList;
+use DateTime;
 use Doctrine\ORM\EntityManager;
 
 class UserControl
@@ -277,5 +280,28 @@ class UserControl
         }
 
         return $ownLocalesOnly ? $ownLocales : $this->getApprovedLocales();
+    }
+
+    /**
+     * Check if the API Rate limit has been reached.
+     *
+     * @throws UserException
+     */
+    public function checkRateLimit()
+    {
+        $config = $this->app->make('community_translation/config');
+        $maxRequests = (int) $config->get('options.api.rateLimit.maxRequests');
+        if ($maxRequests > 0) {
+            $timeWindow = (int) $config->get('options.api.rateLimit.timeWindow');
+            if ($timeWindow > 0) {
+                $ipControlLog = $this->app->make(IPControlLog::class);
+                /* @var IPControlLog $ipControlLog */
+                $visits = $ipControlLog->countVisits('api', new DateTime("-$timeWindow seconds"));
+                if ($visits >= $maxRequests) {
+                    throw new UserException(t('You reached the API rate limit (%1$s requests every %2$s seconds)', $maxRequests, $timeWindow));
+                }
+                $ipControlLog->addVisit('api');
+            }
+        }
     }
 }
