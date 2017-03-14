@@ -6,7 +6,10 @@ $app = Application::getFacadeApplication();
 
 $form = $app->make('helper/form');
 /* @var Concrete\Core\Form\Service\Form $form */
+/* @var CommunityTranslation\Service\RateLimit $rateLimitHelper */
 
+/* @var int|null $rateLimit_maxRequests */
+/* @var int $rateLimit_timeWindow */
 /* @var int|null $maxFileSizeValue */
 /* @var string $maxFileSizeUnit */
 /* @var int|null $maxLocalesCount */
@@ -16,6 +19,11 @@ $form = $app->make('helper/form');
 <fieldset>
 
     <legend><?php echo t('Options'); ?></legend>
+
+    <div class="form-group">
+        <?= $form->label('', t('Rate limit')) ?>
+        <?= $rateLimitHelper->getWidgetHtml('rateLimit', $rateLimit_maxRequests, $rateLimit_timeWindow) ?>
+    </div>
 
     <div class="form-group">
         <?= $form->label('maxFileSizeValue', t('Max size of uploaded files')) ?>
