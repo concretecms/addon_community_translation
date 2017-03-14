@@ -5,11 +5,14 @@ use CommunityTranslation\Controller\BlockController;
 use CommunityTranslation\Parser\ParserInterface;
 use CommunityTranslation\Repository\Locale;
 use CommunityTranslation\Repository\LocaleStats;
+use CommunityTranslation\Service\IPControlLog;
+use CommunityTranslation\Service\RateLimit;
 use CommunityTranslation\Service\VolatileDirectory;
 use CommunityTranslation\Translation\Exporter;
 use CommunityTranslation\UserException;
 use Concrete\Core\Http\ResponseFactoryInterface;
 use Concrete\Core\Support\Facade\Application;
+use DateTime;
 use Exception;
 use Gettext\Generators\Mo as MOGenerator;
 use Illuminate\Filesystem\Filesystem;
@@ -23,7 +26,7 @@ class Controller extends BlockController
     protected $btTable = 'btCTFillTranslations';
 
     protected $btInterfaceWidth = 600;
-    protected $btInterfaceHeight = 465;
+    protected $btInterfaceHeight = 520;
 
     protected $btCacheBlockRecord = true;
     protected $btCacheBlockOutput = true;
@@ -35,6 +38,8 @@ class Controller extends BlockController
     protected $btSupportsInlineEdit = false;
     protected $btSupportsInlineAdd = false;
 
+    public $rateLimit_maxRequests;
+    public $rateLimit_timeWindow;
     public $maxFileSize;
     public $maxLocalesCount;
     public $maxStringsCount;
@@ -89,11 +94,15 @@ class Controller extends BlockController
 
     public function add()
     {
+        $this->rateLimit_timeWindow = 3600;
         $this->edit();
     }
 
     public function edit()
     {
+        $this->set('rateLimitHelper', $this->app->make(RateLimit::class));
+        $this->set('rateLimit_maxRequests', $this->rateLimit_maxRequests);
+        $this->set('rateLimit_timeWindow', $this->rateLimit_timeWindow);
         $postLimit = $this->getPostLimit();
         if ($postLimit === null) {
             $s = '';
@@ -135,6 +144,14 @@ class Controller extends BlockController
     {
         $error = $this->app->make('helper/validation/error');
         $normalized = [];
+
+        try {
+            /* @var \CommunityTranslation\Service\RateLimit $rateLimitHelper */
+            list($normalized['rateLimit_maxRequests'], $normalized['rateLimit_timeWindow']) = $this->app->make(RateLimit::class)->fromWidgetHtml('rateLimit', $this->rateLimit_timeWindow ?: 3600);
+        } catch (UserException $x) {
+            $error->add($x->getMessage());
+        }
+
         $normalized['maxFileSize'] = null;
         if (isset($args['maxFileSizeValue']) && (is_int($args['maxFileSizeValue']) || (is_string($args['maxFileSizeValue']) && is_numeric($args['maxFileSizeValue'])))) {
             $maxFileSizeValue = (int) $args['maxFileSizeValue'];
@@ -284,6 +301,26 @@ class Controller extends BlockController
         return $result;
     }
 
+    /**
+     * @throws UserException
+     */
+    private function checkRateLimit()
+    {
+        $maxRequests = (int) $this->rateLimit_maxRequests;
+        if ($maxRequests > 0) {
+            $timeWindow = (int) $this->rateLimit_timeWindow;
+            if ($timeWindow > 0) {
+                $ipControlLog = $this->app->make(IPControlLog::class);
+                /* @var IPControlLog $ipControlLog */
+                $visits = $ipControlLog->countVisits('fill-trans', new DateTime("-$timeWindow seconds"));
+                if ($visits >= $maxRequests) {
+                    throw new UserException(t('You reached the rate limit (%1$s requests every %2$s seconds)', $maxRequests, $timeWindow));
+                }
+                $ipControlLog->addVisit('fill-trans');
+            }
+        }
+    }
+
     public function action_fill_in()
     {
         $responseFactory = $this->app->make(ResponseFactoryInterface::class);
@@ -304,6 +341,8 @@ class Controller extends BlockController
             }
 
             $locales = ($writePO || $writeMO) ? $this->getPostedLocales() : [];
+
+            $this->checkRateLimit();
 
             $parsed = $this->app->make(ParserInterface::class)->parseFile('', '', $file->getPathname());
             if ($parsed === null) {
