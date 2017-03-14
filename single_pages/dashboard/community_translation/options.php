@@ -51,25 +51,8 @@ defined('C5_EXECUTE') or die('Access Denied.');
                         <?= t('Max requests per IP address') ?>
                     </label>
                 </div>
-                <div class="col-sm-2">
-                    <?= $form->number('apiRateLimitMaxRequests', $apiRateLimitMaxRequests, ['min' => '1']) ?>
-                </div>
-                <div class="col-sm-1">
-                    <?= tc('TimeInterval', 'every') ?>
-                </div>
-                <div class="col-sm-2">
-                    <?= $form->number(
-                        'apiRateLimitInValue',
-                        $apiRateLimitInValue,
-                        $apiRateLimitIn, ['min' => '1']
-                    ) ?>
-                </div>
-                <div class="col-sm-2">
-                    <?= $form->select(
-                        'apiRateLimitInUnit',
-                        $apiRateLimitInUnits,
-                        $apiRateLimitInUnit
-                    ) ?>
+                <div class="col-sm-7">
+                    <?= $rateLimitHelper->getWidgetHtml('apiRateLimit', $apiRateLimitMaxRequests, $apiRateLimitTimeWindow) ?>
                 </div>
             </div>
         </div>
