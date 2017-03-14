@@ -72,11 +72,13 @@ if ($package !== null) {
                                     <col />
                                     <col width="1" />
                                     <thead>
-                                        <th><?= t('ID') ?></th>
-                                        <th class="comtra-sorted-asc"><?= t('Language') ?></th>
-                                        <th></th>
-                                        <th data-sortby-default="desc"><?= t('Updated') ?></th>
-                                        <th data-sortby-default="desc"><?= t('Progress') ?></th>
+                                        <tr>
+                                            <th><?= t('ID') ?></th>
+                                            <th class="comtra-sorted-asc"><?= t('Language') ?></th>
+                                            <th></th>
+                                            <th data-sortby-default="desc"><?= t('Updated') ?></th>
+                                            <th data-sortby-default="desc"><?= t('Progress') ?></th>
+                                        </tr>
                                     </thead>
                                     <tbody>
                                         <?php
