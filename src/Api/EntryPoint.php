@@ -210,6 +210,7 @@ class EntryPoint extends AbstractController
     {
         $this->start();
         try {
+            $this->getUserControl()->checkRateLimit();
             $this->getUserControl()->checkGenericAccess(__FUNCTION__);
             $locales = $this->app->make(LocaleRepository::class)->getApprovedLocales();
             $result = $this->buildJsonResponse($this->localesToArray($locales));
@@ -233,6 +234,7 @@ class EntryPoint extends AbstractController
     {
         $this->start();
         try {
+            $this->getUserControl()->checkRateLimit();
             $this->getUserControl()->checkGenericAccess(__FUNCTION__);
             $repo = $this->app->make(PackageRepository::class);
             $packages = $repo->createQueryBuilder('p')
@@ -259,6 +261,7 @@ class EntryPoint extends AbstractController
     {
         $this->start();
         try {
+            $this->getUserControl()->checkRateLimit();
             $this->getUserControl()->checkGenericAccess(__FUNCTION__);
             $package = $this->app->make(PackageRepository::class)->findOneBy(['handle' => $packageHandle]);
             if ($package === null) {
@@ -289,6 +292,7 @@ class EntryPoint extends AbstractController
     {
         $this->start();
         try {
+            $this->getUserControl()->checkRateLimit();
             $accessibleLocales = $this->getUserControl()->checkLocaleAccess(__FUNCTION__);
             $version = $this->app->make(PackageVersionRepository::class)->findByHandleAndVersion($packageHandle, $packageVersion);
             if ($version === null) {
@@ -346,6 +350,7 @@ class EntryPoint extends AbstractController
     {
         $this->start();
         try {
+            $this->getUserControl()->checkRateLimit();
             $accessibleLocales = $this->getUserControl()->checkLocaleAccess(__FUNCTION__);
             $locale = $this->app->make(LocaleRepository::class)->findApproved($localeID);
             if ($locale === null) {
@@ -397,6 +402,7 @@ class EntryPoint extends AbstractController
     {
         $this->start();
         try {
+            $this->getUserControl()->checkRateLimit();
             $this->getUserControl()->checkGenericAccess(__FUNCTION__);
             $em = $this->app->make(EntityManager::class);
             $post = $this->request->request;
@@ -465,6 +471,7 @@ class EntryPoint extends AbstractController
     {
         $this->start();
         try {
+            $this->getUserControl()->checkRateLimit();
             $approve = $approve ? true : false;
             $accessibleLocales = $this->getUserControl()->checkLocaleAccess(__FUNCTION__ . ($approve ? '_approve' : ''));
             $locale = $this->app->make(LocaleRepository::class)->findApproved($localeID);

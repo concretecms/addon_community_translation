@@ -12,4 +12,23 @@
         </field>
     </table>
 
+    <table name="CommunityTranslationIPControl" comment="IP-based access control">
+    	<field name="type" type="string" size="10" comment="Type of access">
+    		<key/>
+    		<notnull/>
+    	</field>
+        <field name="ip" type="string" size="39" comment="IP address">
+        	<key/>
+        	<notnull/>
+        </field>
+        <field name="dateTime" type="datetime" comment="Date/time of the IP visit">
+        	<key/>
+        	<notnull/>
+        </field>
+        <field name="count" type="integer" comment="Number of visits in the logged date/time">
+    		<unsigned/>
+    		<notnull/>
+        </field>
+    </table>
+
 </schema>

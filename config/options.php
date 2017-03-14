@@ -13,6 +13,10 @@ return [
         ],
         'accessControlAllowOrigin' => '*',
         'entryPoint' => '/api',
+        'rateLimit' => [
+            'maxRequests' => null,
+            'timeWindow' => 3600,
+        ],
     ],
     'nonInteractiveCLICommands' => [
         'notify' => false,

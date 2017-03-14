@@ -75,6 +75,17 @@ class Options extends DashboardPageController
         ];
     }
 
+    private function getRateLimitInUnits()
+    {
+        return  [
+            1 => tc('Unit', 'seconds'),
+            60 => tc('Unit', 'minutes'),
+            3600 => tc('Unit', 'hours'),
+            86400 => tc('Unit', 'days'),
+            604800 => tc('Unit', 'weeks'),
+        ];
+    }
+
     public function view()
     {
         $config = $this->app->make('community_translation/config');
@@ -85,6 +96,17 @@ class Options extends DashboardPageController
         $this->set('notificationsSenderName', $config->get('options.notificationsSenderName'));
         $this->set('onlineTranslationPath', $config->get('options.onlineTranslationPath'));
         $this->set('apiEntryPoint', $config->get('options.api.entryPoint'));
+        $this->set('apiRateLimitMaxRequests', $config->get('options.api.rateLimit.maxRequests'));
+        $apiRateLimitInValue = (int) $config->get('options.api.rateLimit.timeWindow') ?: 3600;
+        foreach (array_keys($this->getRateLimitInUnits()) as $u) {
+            if (($apiRateLimitInValue % $u) === 0) {
+                $apiRateLimitInUnit = $u;
+            }
+        }
+        $apiRateLimitInValue = (int) ($apiRateLimitInValue / $apiRateLimitInUnit);
+        $this->set('apiRateLimitInValue', $apiRateLimitInValue);
+        $this->set('apiRateLimitInUnit', $apiRateLimitInUnit);
+        $this->set('apiRateLimitInUnits', $this->getRateLimitInUnits());
         $this->set('apiAccessControlAllowOrigin', (string) $config->get('options.api.accessControlAllowOrigin'));
         $apiAccessChecks = [];
         foreach ($this->getApiAccessChecks() as $aacKey => $aacInfo) {
@@ -111,6 +133,8 @@ class Options extends DashboardPageController
 
             return;
         }
+
+        $config = $this->app->make('community_translation/config');
 
         try {
             $newSourceLocale = LocaleEntity::create((string) $this->post('sourceLocale'));
@@ -174,6 +198,26 @@ class Options extends DashboardPageController
         } else {
             $apiEntryPoint = '/' . $apiEntryPoint;
         }
+        $apiRateLimitMaxRequests = $this->post('apiRateLimitMaxRequests');
+        if ($apiRateLimitMaxRequests === '') {
+            $apiRateLimitMaxRequests = null;
+        } else {
+            $apiRateLimitMaxRequests = (int) $apiRateLimitMaxRequests;
+            if ($apiRateLimitMaxRequests <= 0) {
+                $this->error->add(t('Please specify a positive integer for the maximum number of requests per IP address (or leave it empty)'));
+            }
+        }
+        $apiRateLimitInValue = (int) $this->post('apiRateLimitInValue');
+        $apiRateLimitInUnit = (int) $this->post('apiRateLimitInUnit');
+        if ($apiRateLimitInValue <= 0 || !array_key_exists($apiRateLimitInUnit, $this->getRateLimitInUnits())) {
+            if ($apiRateLimitMaxRequests !== null) {
+                $this->error->add(t('Please specify the time window for the maximum number of requests per IP address'));
+            } else {
+                $apiRateLimitIn = (int) $config->get('options.api.rateLimit.timeWindow') ?: 3600;
+            }
+        } else {
+            $apiRateLimitIn = $apiRateLimitInValue * $apiRateLimitInUnit;
+        }
         $apiAccessControlAllowOrigin = $this->post('apiAccessControlAllowOrigin');
         if (!is_string($apiAccessControlAllowOrigin) || $apiAccessControlAllowOrigin === '') {
             $this->error->add(t(/*i18n: %s is an HTTP header name*/'Please specify the value of the %s header', 'Access-Control-Allow-Origin'));
@@ -191,7 +235,6 @@ class Options extends DashboardPageController
             }
         }
         if (!$this->error->has()) {
-            $config = $this->app->make('community_translation/config');
             if ($newSourceLocale !== null) {
                 $this->entityManager->beginTransaction();
                 if ($oldSourceLocale !== null) {
@@ -209,6 +252,8 @@ class Options extends DashboardPageController
             $config->save('options.notificationsSenderName', (string) $this->post('notificationsSenderName'));
             $config->save('options.onlineTranslationPath', $onlineTranslationPath);
             $config->save('options.api.entryPoint', $apiEntryPoint);
+            $config->save('options.api.rateLimit.maxRequests', $apiRateLimitMaxRequests);
+            $config->save('options.api.rateLimit.timeWindow', $apiRateLimitIn);
             $config->save('options.api.accessControlAllowOrigin', $apiAccessControlAllowOrigin);
             foreach ($apiAccess as $aacKey => $aacValue) {
                 $config->save('options.api.access.' . $aacKey, $aacValue);
