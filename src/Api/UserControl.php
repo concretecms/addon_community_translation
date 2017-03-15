@@ -283,25 +283,55 @@ class UserControl
     }
 
     /**
+     * Returns the defined rate limit (if set).
+     *
+     * @return int[]|null First item is the max requests, second limit is the time window. If no rate limit is defined returns null.
+     */
+    public function getRateLimit()
+    {
+        $result = null;
+        $config = $this->app->make('community_translation/config');
+        $maxRequests = (int) $config->get('options.api.rateLimit.maxRequests');
+        if ($maxRequests > 0) {
+            $timeWindow = (int) $config->get('options.api.rateLimit.timeWindow');
+            if ($timeWindow > 0) {
+                $result = [$maxRequests, $timeWindow];
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Get the number of visits from the current IP address since a determined number of seconds ago.
+     *
+     * @param int $timeWindow
+     *
+     * @return int
+     */
+    public function getVisitsCountFromCurrentIP($timeWindow)
+    {
+        $timeWindow = (int) $timeWindow;
+        $ipControlLog = $this->app->make(IPControlLog::class);
+
+        return $ipControlLog->countVisits('api', new DateTime("-$timeWindow seconds"));
+    }
+
+    /**
      * Check if the API Rate limit has been reached.
      *
      * @throws UserException
      */
     public function checkRateLimit()
     {
-        $config = $this->app->make('community_translation/config');
-        $maxRequests = (int) $config->get('options.api.rateLimit.maxRequests');
-        if ($maxRequests > 0) {
-            $timeWindow = (int) $config->get('options.api.rateLimit.timeWindow');
-            if ($timeWindow > 0) {
-                $ipControlLog = $this->app->make(IPControlLog::class);
-                /* @var IPControlLog $ipControlLog */
-                $visits = $ipControlLog->countVisits('api', new DateTime("-$timeWindow seconds"));
-                if ($visits >= $maxRequests) {
-                    throw new UserException(t('You reached the API rate limit (%1$s requests every %2$s seconds)', $maxRequests, $timeWindow));
-                }
-                $ipControlLog->addVisit('api');
+        $rateLimit = $this->getRateLimit();
+        if ($rateLimit !== null) {
+            list($maxRequests, $timeWindow) = $rateLimit;
+            $visits = $this->getVisitsCountFromCurrentIP($timeWindow);
+            if ($visits >= $maxRequests) {
+                throw new UserException(t('You reached the API rate limit (%1$s requests every %2$s seconds)', $maxRequests, $timeWindow));
             }
+            $this->app->make(IPControlLog::class)->addVisit('api');
         }
     }
 }

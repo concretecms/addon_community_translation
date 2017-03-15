@@ -2,6 +2,7 @@
 return [
     'api' => [
         'access' => [
+            'getRateLimit' => 'everybody',
             'getLocales' => 'everybody',
             'getPackages' => 'everybody',
             'getPackageVersions' => 'everybody',

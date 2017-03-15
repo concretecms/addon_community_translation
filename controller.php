@@ -325,6 +325,15 @@ class Controller extends Package
                 ['POST'],
             ],
             // API Entry Points
+            "$apiEntryPoint/rate-limit/" => [
+                'CommunityTranslation\Api\EntryPoint::getRateLimit',
+                null,
+                [],
+                [],
+                '',
+                [],
+                ['GET'],
+            ],
             "$apiEntryPoint/locales/" => [
                 'CommunityTranslation\Api\EntryPoint::getLocales',
                 null,

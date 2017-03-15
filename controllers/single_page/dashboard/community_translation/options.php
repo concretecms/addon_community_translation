@@ -42,6 +42,10 @@ class Options extends DashboardPageController
     private function getApiAccessChecks()
     {
         return [
+            'getRateLimit' => [
+                'name' => t('Get the current status of the rate limit'),
+                'localeDepentent' => false,
+            ],
             'getLocales' => [
                 'name' => t('Get the list of approved locales'),
                 'localeDepentent' => false,

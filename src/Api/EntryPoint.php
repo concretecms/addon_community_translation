@@ -200,6 +200,40 @@ class EntryPoint extends AbstractController
     }
 
     /**
+     * Get the current rate limit status.
+     *
+     * @return Response
+     *
+     * @example http://www.example.com/api/rate-limit/
+     */
+    public function getRateLimit()
+    {
+        $this->start();
+        try {
+            $this->getUserControl()->checkRateLimit();
+            $this->getUserControl()->checkGenericAccess(__FUNCTION__);
+            $rateLimit = $this->getUserControl()->getRateLimit();
+            if ($rateLimit === null) {
+                $result = $this->buildJsonResponse(null);
+            } else {
+                list($maxRequests, $timeWindow) = $rateLimit;
+                $visits = $this->getUserControl()->getVisitsCountFromCurrentIP($timeWindow);
+                $result = $this->buildJsonResponse([
+                    'maxRequests' => $maxRequests,
+                    'timeWindow' => $timeWindow,
+                    'currentCounter' => $visits,
+                ]);
+            }
+        } catch (Exception $x) {
+            $result = $this->buildErrorResponse($x);
+        } catch (Throwable $x) {
+            $result = $this->buildErrorResponse($x);
+        }
+
+        return $this->finish($result);
+    }
+
+    /**
      * Get the list of approved locales.
      *
      * @return Response
