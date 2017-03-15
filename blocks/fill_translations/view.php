@@ -11,7 +11,7 @@ $id = 'comtra-fill-translations-' . uniqid();
 ?>
 <fieldset class="comtra-fill-translations" id="<?= $id ?>">
 
-    <legend><?= t('Fill-in already translated strings')?></legend>
+    <legend><?= t('Fill-in already translated strings1')?></legend>
 
     <p><?= t('Here you can upload a ZIP file containing a package, or a dictionary file.') ?></p>
     <p><?= t("You'll get back a ZIP file containing all the translatable strings found (.pot file) and the translated strings we already know for the languages that you specify (as source .po files or as compiled .mo files).") ?></p>
@@ -20,14 +20,27 @@ $id = 'comtra-fill-translations-' . uniqid();
 
         <?php $token->output('comtra-fill-translations') ?>
 
+        <?php
+        if (!empty($displayLimits)) {
+            ?>
+            <div class="form-group">
+                <label class="control-label"><?= t('Limits') ?></label>
+                <?php
+                foreach ($displayLimits as $n => $v) {
+                    ?>
+                    <br />
+                    <label style="font-weight: normal"><?= $n ?>: <code><?= $v ?></code></label>
+                    <?php
+                }
+                ?>
+            </div>
+            <?php
+        }
+        ?>
+
         <div class="form-group">
             <label class="control-label" for="<?= $id ?>_file"><?= t('File to be processed') ?></label>
             <input class="form-control" type="file" name="file" id="<?= $id ?>_file" required="required" />
-            <?php
-            if ($maxFileSizeDisplay !== '') {
-                ?><p class="text-muted"><?= t('Maximum file size: %s', $maxFileSizeDisplay) ?></p><?php
-            }
-            ?>
         </div>
 
         <div class="form-group">

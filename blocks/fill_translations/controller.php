@@ -217,6 +217,10 @@ class Controller extends BlockController
         }
         $this->set('translatedLocales', $translatedLocales);
         $this->set('untranslatedLocales', $translatedLocales);
+        $displayLimits = [];
+        if ($this->rateLimit_maxRequests && $this->rateLimit_timeWindow) {
+            $displayLimits[t('Requests limit')] = $this->app->make(RateLimit::class)->describeRate($this->rateLimit_maxRequests, $this->rateLimit_timeWindow);
+        }
         $maxFileSize = $this->maxFileSize ? (int) $this->maxFileSize : null;
         $r = $this->getPostLimit();
         if ($maxFileSize === null) {
@@ -224,11 +228,16 @@ class Controller extends BlockController
         } elseif ($r !== null) {
             $maxFileSize = min($r, $maxFileSize);
         }
-        if ($maxFileSize === null) {
-            $this->set('maxFileSizeDisplay', '');
-        } else {
-            $this->set('maxFileSizeDisplay', $this->app->make('helper/number')->formatSize($maxFileSize));
+        if ($maxFileSize !== null) {
+            $displayLimits[t('Maximum file size')] = $this->app->make('helper/number')->formatSize($maxFileSize);
         }
+        if ($this->maxLocalesCount) {
+            $displayLimits[t('Maximum number of languages')] = $this->maxLocalesCount;
+        }
+        if ($this->maxStringsCount) {
+            $displayLimits[t('Maximum number of strings')] = $this->maxStringsCount;
+        }
+        $this->set('displayLimits', $displayLimits);
     }
 
     /**

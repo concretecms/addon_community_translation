@@ -5,6 +5,7 @@ use CommunityTranslation\UserException;
 use Concrete\Core\Application\Application;
 use Concrete\Core\Error\ErrorList\Error\Error;
 use Concrete\Core\Http\Request;
+use Punic\Unit;
 
 class RateLimit
 {
@@ -203,5 +204,44 @@ EOT
         }
 
         return [$maxRequests, $timeWindow];
+    }
+
+    /**
+     * Format a rate limit.
+     *
+     * @param int|null $maxRequests
+     * @param int|null $timeWindow
+     *
+     * @return string
+     *
+     * @example: '2 requests every 1 hour'
+     */
+    public function describeRate($maxRequests, $timeWindow)
+    {
+        if ($maxRequests && $timeWindow) {
+            list($value, $unit) = $this->splitTimeWindow($timeWindow);
+            switch ($unit) {
+                case 60:
+                    $duration = Unit::format($value, 'duration/minute', 'long');
+                    break;
+                case 3600:
+                    $duration = Unit::format($value, 'duration/hour', 'long');
+                    break;
+                case 86400:
+                    $duration = Unit::format($value, 'duration/day', 'long');
+                    break;
+                case 604800:
+                    $duration = Unit::format($value, 'duration/week', 'long');
+                    break;
+                default:
+                    $duration = Unit::format($timeWindow, 'duration/second', 'long');
+                    break;
+            }
+            $result = t2('%1$d request every %2$s', '%1$d requests every %2$s', $maxRequests, $duration);
+        } else {
+            $result = '';
+        }
+
+        return $result;
     }
 }
