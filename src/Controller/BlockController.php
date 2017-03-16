@@ -4,6 +4,7 @@ namespace CommunityTranslation\Controller;
 use CommunityTranslation\Service\Access;
 use Concrete\Core\Block\BlockController as CoreBlockController;
 use Concrete\Core\Block\View\BlockView;
+use Concrete\Core\Url\UrlImmutable;
 use Exception;
 use ZendQueue\Message;
 
@@ -29,16 +30,11 @@ abstract class BlockController extends CoreBlockController
     /**
      * Ovrride this method to define tasks that are instance-specific.
      *
-     * Valid return values:
-     * - '*': all the tasks are instance-specific
-     * - whitelist (eg: ['action_one', 'action_two']): instance-specific tasks are only the listed ones.
-     * - blacklist (eg: ['!action_one', '!action_two']): instance-specific tasks are ones that are not listed here.
-     *
-     * @return string[]|string
+     * @return bool
      */
-    protected function getInstanceSpecificTasks()
+    protected function isControllerTaskInstanceSpecific($method)
     {
-        return [];
+        return false;
     }
 
     /**
@@ -50,21 +46,7 @@ abstract class BlockController extends CoreBlockController
     {
         $result = false;
         if (parent::isValidControllerTask($method, $parameters)) {
-            $instanceSpecificTasks = $this->getInstanceSpecificTasks();
-            if ($instanceSpecificTasks === '*') {
-                $isInstanceSpecific = true;
-            } else {
-                $m = strtolower($method);
-                $instanceSpecificTasks = array_map('strtolower', $this->getInstanceSpecificTasks());
-                if (in_array($m, $instanceSpecificTasks, true)) {
-                    $isInstanceSpecific = true;
-                } elseif (in_array('!' . $m, $instanceSpecificTasks, true)) {
-                    $isInstanceSpecific = false;
-                } else {
-                    $isInstanceSpecific = strpos(implode('', $instanceSpecificTasks), '!') !== false;
-                }
-            }
-            if ($isInstanceSpecific) {
+            if ($this->isControllerTaskInstanceSpecific($method)) {
                 $bID = array_pop($parameters);
                 if ((is_string($bID) && is_numeric($bID)) || is_int($bID)) {
                     if ($this->bID == $bID) {
@@ -73,6 +55,32 @@ abstract class BlockController extends CoreBlockController
                 }
             } else {
                 $result = true;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Creates a URL that can be posted or navigated to that, when done so, will automatically run the corresponding method inside the block's controller.
+     * <code>
+     *     <a href="<?= $controller->getActionURL($view, 'get_results') ?>">Get the results</a>
+     * </code>.
+     *
+     * @param string $task
+     *
+     * @return string $url
+     */
+    public function getActionURL(BlockView $view, $task)
+    {
+        $actionArguments = func_get_args();
+        array_shift($actionArguments);
+        $result = call_user_func_array([$view, 'action'], $actionArguments);
+        if ($this->bID && $result instanceof UrlImmutable && !$this->isControllerTaskInstanceSpecific("action_$task")) {
+            $pathParts = $result->getPath()->toArray();
+            /* @var \Concrete\Core\Url\Components\Path $pathParts */
+            if (array_pop($pathParts) == $this->bID) {
+                $result = $result->setPath($pathParts);
             }
         }
 
@@ -126,8 +134,8 @@ abstract class BlockController extends CoreBlockController
             $args = func_get_args();
             array_shift($args);
             array_shift($args);
-            $view = new BlockView($this->getBlockObject());
-            $this->redirect(call_user_func_array([$view, 'action'], $args));
+            array_unshift($args, new BlockView($this->getBlockObject()));
+            $this->redirect(call_user_func_array([$this, 'getActionURL'], $args));
         } else {
             $this->redirect(\Page::getCurrentPage());
         }

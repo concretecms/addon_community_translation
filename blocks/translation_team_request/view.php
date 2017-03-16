@@ -1,6 +1,10 @@
 <?php
 defined('C5_EXECUTE') or die('Access Denied.');
 
+/* @var Concrete\Core\Block\View\BlockView $view */
+/* @var Concrete\Package\CommunityTranslation\Block\TranslationTeamRequest\Controller $controller */
+/* @var int $bID */
+
 /* @var Concrete\Core\Validation\CSRF\Token $token */
 /* @var Concrete\Core\Block\View\BlockView $view */
 /* @var Concrete\Core\Form\Service\Form $form */
@@ -11,7 +15,7 @@ $id = 'comtra-translation-team-request-' . uniqid();
 
 ?>
 <div class="panel panel-default comtra-translation-team-request">
-    <div class="panel-heading"><h3><?php echo t('New Translators Team'); ?></h3></div>
+    <div class="panel-heading"><h3><?= t('New Translators Team') ?></h3></div>
     <div class="panel-body">
         <?php
 
@@ -33,7 +37,7 @@ switch ($step) {
         /* @var string $language */
         /* @var array $languages */
         ?>
-        <form class="form-stacked" method="POST" action="<?php echo $this->action('language_set'); ?>">
+        <form class="form-stacked" method="POST" action="<?= $controller->getActionURL($view, 'language_set') ?>">
             <?php $token->output('comtra-ttr-language_set') ?>
             <p><?= t('Please specify the new language you would like to translate') ?>
             <div class="form-group">
@@ -73,7 +77,7 @@ switch ($step) {
             <?php
         }
         ?>
-        <form class="form-stacked" method="POST" action="<?php echo $this->action('territory_set'); ?>" id="<?= $id ?>_create"<?= empty($existingLocales) ? '' : ' style="display: none"' ?>>
+        <form class="form-stacked" method="POST" action="<?= $controller->getActionURL($view, 'territory_set') ?>" id="<?= $id ?>_create"<?= empty($existingLocales) ? '' : ' style="display: none"' ?>>
             <?php $token->output('comtra-ttr-territory_set') ?>
             <?= $form->hidden('language', $language) ?>
             <div class="form-group">
@@ -141,7 +145,7 @@ switch ($step) {
         /* @var bool $askApprove */
         /* @var bool $askWhyNoCountry */
         ?>
-        <form class="form-stacked" method="POST" action="<?php echo $this->action('submit'); ?>">
+        <form class="form-stacked" method="POST" action="<?= $controller->getActionURL($view, 'submit') ?>">
             <?php $token->output('comtra-ttr-submit') ?>
             <?= $form->hidden('language', $language) ?>
             <?= $form->hidden('territory', $territory) ?>

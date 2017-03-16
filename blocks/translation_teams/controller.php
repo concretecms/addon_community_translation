@@ -104,11 +104,17 @@ class Controller extends BlockController
     /**
      * {@inheritdoc}
      *
-     * @see BlockController::getInstanceSpecificTasks()
+     * @see BlockController::isControllerTaskInstanceSpecific($method)
      */
-    protected function getInstanceSpecificTasks()
+    protected function isControllerTaskInstanceSpecific($method)
     {
-        return '*';
+        $method = strtolower($method);
+        switch ($method) {
+            case 'action_details':
+                return false;
+            default:
+                return true;
+        }
     }
 
     /**

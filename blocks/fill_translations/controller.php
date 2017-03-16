@@ -216,7 +216,7 @@ class Controller extends BlockController
             $untranslatedLocales = [];
         }
         $this->set('translatedLocales', $translatedLocales);
-        $this->set('untranslatedLocales', $translatedLocales);
+        $this->set('untranslatedLocales', $untranslatedLocales);
         $displayLimits = [];
         if ($this->rateLimit_maxRequests && $this->rateLimit_timeWindow) {
             $displayLimits[t('Requests limit')] = $this->app->make(RateLimit::class)->describeRate($this->rateLimit_maxRequests, $this->rateLimit_timeWindow);
@@ -243,11 +243,11 @@ class Controller extends BlockController
     /**
      * {@inheritdoc}
      *
-     * @see BlockController::getInstanceSpecificTasks()
+     * @see BlockController::isControllerTaskInstanceSpecific()
      */
-    protected function getInstanceSpecificTasks()
+    protected function isControllerTaskInstanceSpecific($method)
     {
-        return '*';
+        return true;
     }
 
     /**

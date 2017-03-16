@@ -141,13 +141,17 @@ class Controller extends BlockController
     /**
      * {@inheritdoc}
      *
-     * @see BlockController::getInstanceSpecificTasks()
+     * @see BlockController::isControllerTaskInstanceSpecific($method)
      */
-    protected function getInstanceSpecificTasks()
+    protected function isControllerTaskInstanceSpecific($method)
     {
-        return [
-            '!action_package',
-        ];
+        switch (strtolower($method)) {
+            case 'action_package':
+            case 'action_search':
+                return false;
+            default:
+                return true;
+        }
     }
 
     public function on_start()
@@ -377,11 +381,16 @@ EOT
     public function action_search()
     {
         try {
+            $text = $this->request->request->get('text');
+            $text = is_string($text) ? trim($text) : '';
+            if ($text === '') {
+                throw new UserException(t('Please specify the search criteria'));
+            }
             $token = $this->app->make('token');
             if (!$token->validate('comtra_search_packages-search')) {
                 throw new UserException($token->getErrorMessage());
             }
-            $text = $this->request->query->get('text');
+
             $words = is_string($text) ? $this->getSearchWords($text) : [];
             if (count($words) > 0) {
                 $this->set('searchText', $text);

@@ -1,10 +1,11 @@
 <?php
 defined('C5_EXECUTE') or die('Access Denied.');
 
-/* @var int $bID */
-/* @var Concrete\Core\Validation\CSRF\Token $token */
 /* @var Concrete\Core\Block\View\BlockView $view */
+/* @var Concrete\Package\CommunityTranslation\Block\SearchPackages\Controller $controller */
+/* @var int $bID */
 
+/* @var Concrete\Core\Validation\CSRF\Token $token */
 /* @var CommunityTranslation\Entity\Package|null $package */
 /* @var CommunityTranslation\Entity\Package\Version[]|null $packageVersions */
 /* @var CommunityTranslation\Entity\Package\Version|null $packageVersion */
@@ -48,7 +49,7 @@ if ($package !== null) {
                                         if ($pv === $packageVersion) {
                                             ?><option value="" selected="selected"><?= h($pv->getDisplayVersion()) ?></option><?php
                                         } else {
-                                            ?><option value="<?= h(preg_replace('/\/' . $bID . '(\/?)$/', '$1', $view->action('package', $package->getHandle(), $pv->getVersion()))) ?>"><?= h($pv->getDisplayVersion()) ?></option><?php
+                                            ?><option value="<?= h($controller->getActionURL($view, 'package', $package->getHandle(), $pv->getVersion())) ?>"><?= h($pv->getDisplayVersion()) ?></option><?php
                                         }
                                     }
                                     ?>
@@ -121,7 +122,7 @@ if ($package !== null) {
                                                     <td>
                                                         <?php
                                                         foreach ($localeInfo['downloadFormats'] as $adf) {
-                                                            ?><a class="btn btn-sm btn-info" style="padding: 5px 10px" href="<?= h($view->action('download_translations_file', $packageVersion->getID(), $locale->getID(), $adf->getHandle()) . '?' . $token->getParameter('comtra-download-translations-' . $packageVersion->getID() . '@' . $locale->getID() . '.' . $adf->getHandle())) ?>" title="<?= h(t('Download translations (%s)', $adf->getName())) ?>" style="padding: 5px 10px; white-space:nowrap"><i class="fa fa-cloud-download"></i> <?= h($adf->getFileExtension()) ?></a><?php
+                                                            ?><a class="btn btn-sm btn-info" style="padding: 5px 10px" href="<?= h($controller->getActionURL($view, 'download_translations_file', $packageVersion->getID(), $locale->getID(), $adf->getHandle()) . '?' . $token->getParameter('comtra-download-translations-' . $packageVersion->getID() . '@' . $locale->getID() . '.' . $adf->getHandle())) ?>" title="<?= h(t('Download translations (%s)', $adf->getName())) ?>" style="padding: 5px 10px; white-space:nowrap"><i class="fa fa-cloud-download"></i> <?= h($adf->getFileExtension()) ?></a><?php
                                                         }
                                                         ?>
                                                         <a class="btn btn-sm <?= $translateClass ?>" style="padding: 5px 10px" href="<?= h($translateLink) ?>"<?= $translateOnclick ?>><?= t('Translate') ?></a>
@@ -153,7 +154,7 @@ if ($package !== null) {
 }
 
 ?>
-<form class="form-inline" action="<?= $view->action('search') ?>" method="GET">
+<form class="form-inline" action="<?= $controller->getActionURL($view, 'search') ?>" method="POST">
     <?php $token->output('comtra_search_packages-search') ?>
     <div class="form-group">
         <label for="comtra_search_packages-search-text"><?= t('Search package') ?></label>
@@ -175,10 +176,9 @@ if (!empty($foundPackages)) {
     <div id="searchResults">
         <?php
         foreach ($foundPackages as $foundPackage) {
-            $url = preg_replace('/\/' . $bID . '(\/?)$/', '$1', $view->action('package', $foundPackage->getHandle()));
             ?>
             <div class="searchResult">
-                <h3><a href="<?= h($url) ?>"><?= h($foundPackage->getDisplayName()) ?></a></h3>
+                <h3><a href="<?= h($controller->getActionURL($view, 'package', $foundPackage->getHandle())) ?>"><?= h($foundPackage->getDisplayName()) ?></a></h3>
                 <p class="text-muted">
                     <?= h(t('Package handle: %s', $foundPackage->getHandle())) ?><br />
                     <?= h(t('Number of available versions: %d', count($foundPackage->getVersions()))) ?>

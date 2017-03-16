@@ -1,9 +1,11 @@
 <?php
 defined('C5_EXECUTE') or die('Access Denied.');
 
-/* @var Concrete\Core\Validation\CSRF\Token $token */
 /* @var Concrete\Core\Block\View\BlockView $view */
+/* @var Concrete\Package\CommunityTranslation\Block\FillTranslations\Controller $controller */
+/* @var int $bID */
 
+/* @var Concrete\Core\Validation\CSRF\Token $token */
 /* @var CommunityTranslation\Entity\Locale[] $translatedLocales */
 /* @var CommunityTranslation\Entity\Locale[] $untranslatedLocales */
 
@@ -11,12 +13,12 @@ $id = 'comtra-fill-translations-' . uniqid();
 ?>
 <fieldset class="comtra-fill-translations" id="<?= $id ?>">
 
-    <legend><?= t('Fill-in already translated strings1')?></legend>
+    <legend><?= t('Fill-in already translated strings')?></legend>
 
     <p><?= t('Here you can upload a ZIP file containing a package, or a dictionary file.') ?></p>
     <p><?= t("You'll get back a ZIP file containing all the translatable strings found (.pot file) and the translated strings we already know for the languages that you specify (as source .po files or as compiled .mo files).") ?></p>
 
-    <form method="POST" action="<?= $view->action('fill_in') ?>" enctype="multipart/form-data" target="<?= $id ?>_process">
+    <form method="POST" action="<?= $controller->getActionURL($view, 'fill_in') ?>" enctype="multipart/form-data" target="<?= $id ?>_process">
 
         <?php $token->output('comtra-fill-translations') ?>
 
@@ -55,7 +57,7 @@ $id = 'comtra-fill-translations-' . uniqid();
 
         <div class="form-group">
             <div class="control-label">
-                <label for="<?= $id ?>_translatedLocales"><?= t('Standard lanuages') ?></label>
+                <label for="<?= $id ?>_translatedLocales"><?= t('Main lanuages') ?></label>
                 <div class="pull-right">
                     <a href="#" onclick="$('#<?= $id ?>_translatedLocales option').prop('selected', true); return false"><?= tc('Languages', 'Select all') ?></a>
                     |
@@ -75,11 +77,11 @@ $id = 'comtra-fill-translations-' . uniqid();
             ?>
             <div class="form-group">
                 <div class="control-label">
-                    <label for="<?= $id ?>_untranslatedLocales"><?= t('Additional lanuages') ?></label>
+                    <label for="<?= $id ?>_untranslatedLocales"><?= t('Other lanuages') ?></label>
                     <div class="pull-right">
-                        <a href="#" onclick="$('#<?= $id ?>_untranslatedLocales[] option').prop('selected', true); return false"><?= tc('Languages', 'Select all') ?></a>
+                        <a href="#" onclick="$('#<?= $id ?>_untranslatedLocales option').prop('selected', true); return false"><?= tc('Languages', 'Select all') ?></a>
                         |
-                        <a href="#" onclick="$('#<?= $id ?>_untranslatedLocales[] option').prop('selected', false); return false"><?= tc('Languages', 'Select none') ?></a>
+                        <a href="#" onclick="$('#<?= $id ?>_untranslatedLocales option').prop('selected', false); return false"><?= tc('Languages', 'Select none') ?></a>
                     </div>
                     <select class="form-control" multiple="multiple" name="untranslatedLocales[]" id="<?= $id ?>_untranslatedLocales">
                         <?php
