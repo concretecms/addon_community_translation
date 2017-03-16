@@ -57,7 +57,7 @@ $id = 'comtra-fill-translations-' . uniqid();
 
         <div class="form-group">
             <div class="control-label">
-                <label for="<?= $id ?>_translatedLocales"><?= t('Main lanuages') ?></label>
+                <label for="<?= $id ?>_translatedLocales"><?= t('Main languages') ?></label>
                 <div class="pull-right">
                     <a href="#" onclick="$('#<?= $id ?>_translatedLocales option').prop('selected', true); return false"><?= tc('Languages', 'Select all') ?></a>
                     |
@@ -77,7 +77,7 @@ $id = 'comtra-fill-translations-' . uniqid();
             ?>
             <div class="form-group">
                 <div class="control-label">
-                    <label for="<?= $id ?>_untranslatedLocales"><?= t('Other lanuages') ?></label>
+                    <label for="<?= $id ?>_untranslatedLocales"><?= t('Other languages') ?></label>
                     <div class="pull-right">
                         <a href="#" onclick="$('#<?= $id ?>_untranslatedLocales option').prop('selected', true); return false"><?= tc('Languages', 'Select all') ?></a>
                         |
