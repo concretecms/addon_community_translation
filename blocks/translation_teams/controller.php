@@ -436,7 +436,8 @@ class Controller extends BlockController
                 'id' => $locale->getID(),
                 'name' => $locale->getDisplayName(),
                 'access' => $me ? $accessHelper->getLocaleAccess($locale, $me) : null,
-                'translators' => ((int) $groups->getAdministrators($locale)->getGroupMembersNum()) + ((int) $groups->getTranslators($locale)->getGroupMembersNum()),
+                'admins' => (int) $groups->getAdministrators($locale)->getGroupMembersNum(),
+                'translators' => (int) $groups->getTranslators($locale)->getGroupMembersNum(),
                 'aspiring' => (int) $groups->getAspiringTranslators($locale)->getGroupMembersNum(),
             ];
         }

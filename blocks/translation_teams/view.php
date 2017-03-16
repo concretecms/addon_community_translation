@@ -85,9 +85,11 @@ switch ($step) {
                         <thead>
                             <tr>
                                 <th><?= t('Team') ?></th>
-                                <th><?= t('Translators') ?></th>
+                                <th class="visible-xs-block"><?= t('Contributors') ?></th>
+                                <th class="hidden-xs"><?= t('Coordinators') ?></th>
+                                <th class="hidden-xs"><?= t('Translators') ?></th>
                                 <th><?= t('Join Requests') ?></th>
-                                <th></th>
+                                <th class="hidden-xs"></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -96,9 +98,11 @@ switch ($step) {
                                 ?>
                                 <tr data-locale-id="<?= h($l['id']) ?>" data-locale-name="<?= h(strtolower($l['name'])) ?>">
                                     <td><a href="<?= h($controller->getActionURL($view, 'details', $l['id'])) ?>"><?= h($l['name']) ?></a></td>
-                                    <td><?= $l['translators'] ? ('<span class="label label-success">' . $l['translators'] . '</span>') : '<span class="label label-default">0</span>' ?></td>
+                                    <td class="visible-xs-block"><?= ($l['admins'] || $l['translators']) ? ('<span class="label label-success">' . ($l['admins'] + $l['translators']) . '</span>') : '<span class="label label-default">0</span>' ?></td>
+                                    <td class="hidden-xs"><?= $l['admins'] ? ('<span class="label label-success">' . $l['admins'] . '</span>') : '<span class="label label-default">0</span>' ?></td>
+                                    <td class="hidden-xs"><?= $l['translators'] ? ('<span class="label label-success">' . $l['translators'] . '</span>') : '<span class="label label-default">0</span>' ?></td>
                                     <td><?= $l['aspiring'] ? ('<span class="label label-success">' . $l['aspiring'] . '</span>') : '<span class="label label-default">0</span>' ?></td>
-                                    <td><?php
+                                    <td class="hidden-xs"><?php
                                         switch ($l['access']) {
                                             case Access::GLOBAL_ADMIN:
                                                 break;
