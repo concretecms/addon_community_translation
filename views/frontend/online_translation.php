@@ -25,7 +25,7 @@ $enableTranslationComments = is_object($packageVersion);
 <html lang="<?= Localization::activeLanguage() ?>">
 <head>
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <?php View::element('header_required', ['pageTitle' => $pageTitle]); ?>
+    <?php View::element('header_required', ['pageTitle' => $pageTitle]) ?>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script>
         if (navigator.userAgent.match(/IEMobile\/10\.0/)) {
@@ -324,7 +324,7 @@ if ($canEditGlossary) {
     <div class="modal-dialog">
         <div class="modal-content">
             <form method="POST" enctype="multipart/form-data" action="<?= $this->action('upload', $locale->getID()) ?>" onsubmit="if (this.already) return; this.already = true">
-                <?php $token->output('comtra-upload-translations' . $locale->getID()); ?>
+                <?php $token->output('comtra-upload-translations' . $locale->getID()) ?>
                 <input type="hidden" name="packageVersion" value="<?= is_object($packageVersion) ? $packageVersion->getID() : h($packageVersion) ?>" />
                 <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
@@ -349,7 +349,7 @@ if ($canEditGlossary) {
     <div class="modal-dialog">
         <div class="modal-content">
             <form method="POST" action="<?= $this->action('download', $locale->getID()) ?>" target="_blank">
-                <?php $token->output('comtra-download-translations' . $locale->getID()); ?>
+                <?php $token->output('comtra-download-translations' . $locale->getID()) ?>
                 <input type="hidden" name="packageVersion" value="<?= is_object($packageVersion) ? $packageVersion->getID() : h($packageVersion) ?>" />
                 <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
@@ -482,5 +482,5 @@ echo json_encode($params);
 });
 </script>
 
-<?php View::element('footer_required', ['disableTrackingCode' => true, 'display_account_menu' => false]); ?>
+<?php View::element('footer_required', ['disableTrackingCode' => true, 'display_account_menu' => false]) ?>
 </body></html>

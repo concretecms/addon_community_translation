@@ -6,8 +6,8 @@ $id = preg_replace('/\W/', '_', $view->field('operation'));
     if ($value !== '') {
         ?>
         <code><?= h($value) ?></code>
-        <input type="hidden" name="<?= $view->field('current-token-hash') ?>" value="<?= h($valueHash); ?>" />
-        <input type="hidden" name="<?= $view->field('current-token') ?>" value="<?= h($value); ?>" />
+        <input type="hidden" name="<?= $view->field('current-token-hash') ?>" value="<?= h($valueHash) ?>" />
+        <input type="hidden" name="<?= $view->field('current-token') ?>" value="<?= h($value) ?>" />
         <?php
     }
     ?>

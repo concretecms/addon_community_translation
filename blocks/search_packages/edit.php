@@ -21,7 +21,7 @@ $form = $app->make('helper/form');
 
 <fieldset>
 
-    <legend><?php echo t('Options'); ?></legend>
+    <legend><?= t('Options') ?></legend>
 
     <div class="form-group">
         <?= $form->label('preloadPackageHandle', t('Preload package')) ?>

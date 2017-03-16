@@ -17,7 +17,7 @@ $pageSelector = $app->make('helper/form/page_selector');
 
 <fieldset>
 
-    <legend><?php echo t('Options'); ?></legend>
+    <legend><?= t('Options') ?></legend>
 
     <div class="form-group">
         <?php

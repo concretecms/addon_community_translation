@@ -35,7 +35,7 @@ if (empty($repositories)) {
                 ?>
                 <tr>
                     <td><a href="<?= URL::to('/dashboard/community_translation/git_repositories/details', $repository->getID()) ?>"><?= h($repository->getName()) ?></a></td>
-                    <td><?= h($repository->getPackageHandle()); ?></td>
+                    <td><?= h($repository->getPackageHandle()) ?></td>
                     <td><a href="<?= h($repository->getURL()) ?>" target="_blank"><?= h($repository->getURL()) ?></a></td>
                     <td><code>/<?php
                         if ($repository->getDirectoryToParse() !== '') {

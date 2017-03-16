@@ -18,7 +18,7 @@ $form = $app->make('helper/form');
 
 <fieldset>
 
-    <legend><?php echo t('Options'); ?></legend>
+    <legend><?= t('Options') ?></legend>
 
     <div class="form-group">
         <?= $form->label('', t('Rate limit')) ?>
@@ -28,7 +28,7 @@ $form = $app->make('helper/form');
     <div class="form-group">
         <?= $form->label('maxFileSizeValue', t('Max size of uploaded files')) ?>
         <div class="input-group" style="white-space: nowrap">
-            <?= $form->number('maxFileSizeValue', $maxFileSizeValue, ['min' => 1, 'placeholder' => t('Empty for no limit')]); ?>
+            <?= $form->number('maxFileSizeValue', $maxFileSizeValue, ['min' => 1, 'placeholder' => t('Empty for no limit')]) ?>
             <span class="input-group-addon">
                 <?= $form->select(
                     'maxFileSizeUnit',
@@ -52,12 +52,12 @@ $form = $app->make('helper/form');
 
     <div class="form-group">
         <?= $form->label('maxLocalesCount', t('Max number of locales')) ?>
-        <?= $form->number('maxLocalesCount', $maxLocalesCount, ['min' => 1, 'placeholder' => t('Empty for no limit')]); ?>
+        <?= $form->number('maxLocalesCount', $maxLocalesCount, ['min' => 1, 'placeholder' => t('Empty for no limit')]) ?>
     </div>
 
     <div class="form-group">
         <?= $form->label('maxStringsCount', t('Max number of strings')) ?>
-        <?= $form->number('maxStringsCount', $maxStringsCount, ['min' => 1, 'placeholder' => t('Empty for no limit')]); ?>
+        <?= $form->number('maxStringsCount', $maxStringsCount, ['min' => 1, 'placeholder' => t('Empty for no limit')]) ?>
     </div>
 
 </fieldset>
