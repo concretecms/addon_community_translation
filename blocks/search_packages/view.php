@@ -18,7 +18,7 @@ if (isset($showWarning) && $showWarning !== '') {
     <?php
 }
 
-if ($package !== null) {
+if (isset($package)) {
     ?>
     <ul class="nav-tabs nav" id="comtra_search_packages-tab-headers">
         <li class="active"><a href="#" data-tab="comtra_search_packages-tab-package"><?= h($package->getDisplayName()) ?></a></li>
@@ -191,7 +191,7 @@ if (!empty($foundPackages)) {
     <?php
 }
 
-if ($package !== null) {
+if (isset($package)) {
     ?>
         </div>
     </div>
