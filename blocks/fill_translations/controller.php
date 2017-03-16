@@ -429,26 +429,9 @@ class Controller extends BlockController
         } catch (Throwable $x) {
             $message = t('An unspecified error occurred');
         }
-        $jsonMessage = json_encode($message);
-
-        return $responseFactory->create(<<<EOT
-<!DOCTYPE html>
-<html>
-<head>
-    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
-    <script>
-        window.parent.alert($jsonMessage);
-    </script>
-</head>
-</html>
-EOT
-                ,
-                200,
-                [
-                    'Content-Type' => 'text/html; charset=' . APP_CHARSET,
-                    'Cache-Control' => 'no-cache',
-                    'X-Frame-Options' => 'SAMEORIGIN',
-                ]
+        return $this->app->make('helper/concrete/ui')->buildErrorResponse(
+            t('An unexpected error occurred.'),
+            nl2br(h($message))
         );
     }
 }
