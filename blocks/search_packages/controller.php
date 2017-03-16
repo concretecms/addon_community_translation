@@ -572,7 +572,7 @@ EOT
         }
         $qb->where($orFields);
         if ($this->maximumSearchResults) {
-            $qb->setMaxResults(static::MAX_SEARCH_RESULTS);
+            $qb->setMaxResults($this->maximumSearchResults);
         }
 
         return $qb;
