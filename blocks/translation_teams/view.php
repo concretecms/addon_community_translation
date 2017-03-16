@@ -9,6 +9,8 @@ use CommunityTranslation\Service\Access;
 
 /* @var string $step */
 
+$id = 'comtra-translation-teams-' . uniqid();
+
 if (isset($showError) && $showError !== '') {
     ?>
     <div class="alert alert-danger" role="alert">
@@ -45,8 +47,41 @@ switch ($step) {
                     </div>
                     <?php
                 } else {
+                    if (count($approved) > 15) {
+                        ?>
+                        <div class="row">
+                            <div class="col-xs-4 col-sm-8 col-lg-9"></div>
+                            <div class="col-xs-8 col-sm-4 col-lg-3">
+                                <div class="input-group">
+                                    <span class="input-group-addon"><i class="fa fa-search"></i></span>
+                                    <input id="<?= $id ?>_search" type="search" class="form-control" placeholder="<?= t('Search language') ?>" />
+                                </div>
+                            </div>
+                        </div>
+                        <script>
+                        $(document).ready(function() {
+                            var $search = $('#<?= $id ?>_search'), lastSearch = '', $rows = $('#<?= $id ?>_table>tbody>tr');
+                            $search.on('change keypress keydown keyup blur', function() {
+                                var search = $.trim(this.value.replace(/\s+/g, ' ')).toLowerCase();
+                                if (lastSearch === search) {
+                                    return;
+                                }
+                                lastSearch = search;
+                                if (search === '') {
+                                    $rows.show();
+                                    return;
+                                }
+                                $rows.each(function() {
+                                    var $row = $(this);
+                                    $row[$row.data('locale-name').indexOf(search) < 0 ? 'hide' : 'show']();
+                                });
+                            });
+                        });
+                        </script>
+                        <?php
+                    }
                     ?>
-                    <table class="table table-hover">
+                    <table class="table table-hover" id="<?= $id ?>_table">
                         <thead>
                             <tr>
                                 <th><?= t('Team') ?></th>
@@ -59,7 +94,7 @@ switch ($step) {
                             <?php
                             foreach ($approved as $l) {
                                 ?>
-                                <tr data-locale-id="<?= h($l['id']) ?>">
+                                <tr data-locale-id="<?= h($l['id']) ?>" data-locale-name="<?= h(strtolower($l['name'])) ?>">
                                     <td><a href="<?= h($controller->getActionURL($view, 'details', $l['id'])) ?>"><?= h($l['name']) ?></a></td>
                                     <td><?= $l['translators'] ? ('<span class="label label-success">' . $l['translators'] . '</span>') : '<span class="label label-default">0</span>' ?></td>
                                     <td><?= $l['aspiring'] ? ('<span class="label label-success">' . $l['aspiring'] . '</span>') : '<span class="label label-default">0</span>' ?></td>
