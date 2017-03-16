@@ -411,7 +411,7 @@ class Controller extends BlockController
             $contents = (new Filesystem())->get($zipName);
             unset($tmp);
 
-            return $responseFactory::create(
+            return $responseFactory->create(
                 $contents,
                 200,
                 [
