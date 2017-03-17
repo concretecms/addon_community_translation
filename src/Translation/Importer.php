@@ -142,7 +142,7 @@ where
                     throw new UserException(
                         t('The translation for the string \'%1$s\' contains the invalid character \'%2$s\'.', $translation->getOriginal(), $invalidCharsMap[$s[0]])
                         . "\n" .
-                        t('Translations can not contain these characters: %s', "'" . implode("', '", array_values($invalidCharsMap)) . '"')
+                        t('Translations can not contain these characters: %s', "'" . implode("', '", array_values($invalidCharsMap)) . "'")
                     );
                 }
                 // Let's look for the current translation and for an existing translation exactly the same as the one we're importing
