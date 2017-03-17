@@ -9,6 +9,7 @@ use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\SlackHandler;
 use Monolog\Logger as MonologLogger;
 use Psr\Log\LoggerInterface;
+use ReflectionClass;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Throwable;
@@ -16,9 +17,20 @@ use Throwable;
 abstract class Command extends ConcreteCommand
 {
     /**
-     * @var \Concrete\Core\Application\Application|null
+     * @var \Concrete\Core\Application\Application
      */
     protected $app;
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Symfony\Component\Console\Command\Command::__construct()
+     */
+    public function __construct($name = null)
+    {
+        parent::__construct($name);
+        $this->app = Application::getFacadeApplication();
+    }
 
     /**
      * @var LoggerInterface|null
@@ -42,7 +54,6 @@ abstract class Command extends ConcreteCommand
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->app = Application::getFacadeApplication();
         $this->input = $input;
         $this->output = $output;
         $this->logger = $this->createLogger($input, $output);
@@ -136,5 +147,98 @@ abstract class Command extends ConcreteCommand
         }
 
         return $message;
+    }
+
+    /**
+     * @param string|null $lockHandle
+     *
+     * @throws Exception
+     *
+     * @return string
+     */
+    private function getLockFilename($lockHandle = null)
+    {
+        $lockHandle = (string) $lockHandle;
+        if ($lockHandle === '') {
+            $myClass = new ReflectionClass($this);
+            $myFilename = $myClass->getFileName();
+            $lockHandle = $myClass->getShortName() . '-' . sha1($myClass->getFileName() . DIR_APPLICATION);
+        }
+        $config = $this->app->make('community_translation/config');
+        $tempDir = $config->get('options.tempDir');
+        $tempDir = is_string($tempDir) ? rtrim(str_replace(DIRECTORY_SEPARATOR, '/', $tempDir), '/') : '';
+        if ($tempDir === '') {
+            $fh = $this->app->make('helper/file');
+            $tempDir = $fh->getTemporaryDirectory();
+            $tempDir = is_string($tempDir) ? rtrim(str_replace(DIRECTORY_SEPARATOR, '/', $tempDir), '/') : '';
+            if ($tempDir === '') {
+                throw new Exception(t('Unable to retrieve the temporary directory.'));
+            }
+        }
+        $locksDir = $tempDir . '/command-locks';
+        if (!@is_dir($locksDir)) {
+            @mkdir($locksDir, DIRECTORY_PERMISSIONS_MODE_COMPUTED, true);
+            if (!@is_dir($locksDir)) {
+                throw new Exception(t('Unable to create a temporary directory.'));
+            }
+        }
+
+        return $locksDir . "/$lockHandle.lock";
+    }
+
+    private $lockHandles = [];
+
+    /**
+     * @param int $maxWaitSeconds
+     * @param string|null $lockHandle
+     *
+     * @return bool
+     */
+    protected function acquireLock($maxWaitSeconds = 5, $lockHandle = null)
+    {
+        $lockFile = $this->getLockFilename($lockHandle);
+        if (isset($this->lockHandles[$lockFile])) {
+            $result = true;
+        } else {
+            $startTime = time();
+            $result = false;
+            $fd = null;
+            while ($result === false) {
+                $fd = @fopen($lockFile, 'w');
+                if ($fd !== false) {
+                    if (@flock($fd, LOCK_EX | LOCK_NB) === true) {
+                        $result = true;
+                        break;
+                    } else {
+                        @fclose($fd);
+                    }
+                }
+                $elapsedTime = time() - $startTime;
+                if ($elapsedTime >= $maxWaitSeconds) {
+                    break;
+                }
+                sleep(1);
+            }
+            if ($result === true) {
+                $this->lockHandles[$lockFile] = $fd;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param string|null $lockHandle
+     */
+    protected function releaseLock($lockHandle = null)
+    {
+        $lockFile = $this->getLockFilename($lockHandle);
+        if (isset($this->lockHandles[$lockFile])) {
+            $fd = $this->lockHandles[$lockFile];
+            unset($this->lockHandles[$lockFile]);
+            @flock($fd, LOCK_UN);
+            @fclose($fd);
+            @unlink($lockFile);
+        }
     }
 }

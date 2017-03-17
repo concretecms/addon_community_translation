@@ -1,12 +1,11 @@
 <?php
 namespace CommunityTranslation\Console\Command;
 
+use CommunityTranslation\Console\Command;
 use CommunityTranslation\Entity\Locale as LocaleEntity;
 use CommunityTranslation\Repository\Locale as LocaleRepository;
 use CommunityTranslation\Translation\Importer;
-use Concrete\Core\Console\Command;
 use Concrete\Core\Entity\User\User as UserEntity;
-use Concrete\Core\Support\Facade\Application;
 use Doctrine\ORM\EntityManager;
 use Exception;
 use Gettext\Translations;
@@ -47,8 +46,7 @@ EOT
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $app = Application::getFacadeApplication();
-        $em = $app->make(EntityManager::class);
+        $em = $this->app->make(EntityManager::class);
 
         $createNewLocales = $input->getOption('create');
         $approveTranslations = $input->getOption('approve');
@@ -82,10 +80,10 @@ EOT
             $transifexResources = [$input->getOption('resource')];
         }
 
-        $user = $app->make(EntityManager::class)->find(UserEntity::class, USER_SUPER_ID);
-        $translationsImporter = $app->make(Importer::class);
+        $user = $this->app->make(EntityManager::class)->find(UserEntity::class, USER_SUPER_ID);
+        $translationsImporter = $this->app->make(Importer::class);
         /* @var Importer $translationsImporter */
-        $localeRepo = $app->make(LocaleRepository::class);
+        $localeRepo = $this->app->make(LocaleRepository::class);
         foreach ($transifexLocales as $transifexLocale) {
             $output->writeln('Working on locale ' . $transifexLocale);
 
@@ -190,8 +188,7 @@ EOT
      */
     private function getHttpClient()
     {
-        $app = Application::getFacadeApplication();
-        $client = $app->make('http/client');
+        $client = $this->app->make('http/client');
         $client
         ->setOptions(['timeout' => 60])
         ->setAuth($this->transifexUsername, $this->transifexPassword)
@@ -209,8 +206,6 @@ EOT
      */
     private function fetchTransifexLocales($transifexProject)
     {
-        $app = Application::getFacadeApplication();
-
         $client = $this->getHttpClient();
 
         $response = $client
@@ -225,7 +220,7 @@ EOT
         if (!is_array($rawLocales)) {
             throw new Exception('Failed to decode response');
         }
-        $sourceLocale = $app->make('community_translation/sourceLocale');
+        $sourceLocale = $this->app->make('community_translation/sourceLocale');
         $sourceVariants = [strtolower($sourceLocale)];
         if (preg_match('/^(.+?)[\-_]/', $sourceLocale, $m)) {
             $sourceVariants[] = strtolower($m[1]);

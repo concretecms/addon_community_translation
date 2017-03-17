@@ -1,13 +1,12 @@
 <?php
 namespace CommunityTranslation\Console\Command;
 
+use CommunityTranslation\Console\Command;
 use CommunityTranslation\Entity\Glossary\Entry as GlossaryEntryEntity;
 use CommunityTranslation\Entity\Glossary\Entry\Localized as GlossaryEntryLocalizedEntity;
 use CommunityTranslation\Glossary\EntryType as GlossaryEntryType;
 use CommunityTranslation\Repository\Glossary\Entry as GlossaryEntryRepository;
 use CommunityTranslation\Repository\Locale as LocaleRepository;
-use Concrete\Core\Console\Command;
-use Concrete\Core\Support\Facade\Application;
 use Doctrine\ORM\EntityManager;
 use Exception;
 use Illuminate\Filesystem\Filesystem;
@@ -49,10 +48,9 @@ EOT
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $app = Application::getFacadeApplication();
-        $em = $app->make(EntityManager::class);
+        $em = $this->app->make(EntityManager::class);
         /* @var EntityManager $em */
-        $fs = $app->make(Filesystem::class);
+        $fs = $this->app->make(Filesystem::class);
         /* @var Filesystem $fs */
         $glossaryFile = $input->getArgument('file');
         if (!$fs->isFile($glossaryFile)) {
@@ -102,11 +100,10 @@ EOT
         $this->rxLocalizedFields = $rx;
         $this->rowIndex = 0;
         $this->numFields = 0;
-        $app = Application::getFacadeApplication();
-        $this->em = $app->make(EntityManager::class);
-        $this->entryRepo = $app->make(GlossaryEntryRepository::class);
+        $this->em = $this->app->make(EntityManager::class);
+        $this->entryRepo = $this->app->make(GlossaryEntryRepository::class);
         $existingLocales = [];
-        foreach ($app->make(LocaleRepository::class)->findBy(['isSource' => null]) as $locale) {
+        foreach ($this->app->make(LocaleRepository::class)->findBy(['isSource' => null]) as $locale) {
             $existingLocales[$locale->getID()] = $locale;
         }
         $this->existingLocales = $existingLocales;
