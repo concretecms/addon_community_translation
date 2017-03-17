@@ -29,9 +29,9 @@ class Controller extends BlockController
     protected $btInterfaceHeight = 520;
 
     protected $btCacheBlockRecord = true;
-    protected $btCacheBlockOutput = true;
+    protected $btCacheBlockOutput = false;
     protected $btCacheBlockOutputOnPost = false;
-    protected $btCacheBlockOutputForRegisteredUsers = true;
+    protected $btCacheBlockOutputForRegisteredUsers = false;
 
     protected $btCacheBlockOutputLifetime = 0; // 86400 = 1 day
 
