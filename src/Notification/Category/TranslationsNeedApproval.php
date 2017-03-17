@@ -16,6 +16,11 @@ use URL;
 class TranslationsNeedApproval extends Category
 {
     /**
+     * @var int
+     */
+    const PRIORITY = 1;
+
+    /**
      * {@inheritdoc}
      *
      * @see Category::getRecipientIDs()

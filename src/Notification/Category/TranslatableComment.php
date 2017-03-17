@@ -18,6 +18,11 @@ use URL;
 class TranslatableComment extends Category
 {
     /**
+     * @var int
+     */
+    const PRIORITY = 5;
+
+    /**
      * @param TranslatableCommentEntity $comment
      *
      * @return int[]

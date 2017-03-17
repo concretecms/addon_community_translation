@@ -3,6 +3,7 @@ namespace CommunityTranslation\Entity;
 
 use DateTime;
 use Doctrine\ORM\Mapping as ORM;
+use ReflectionClass;
 
 /**
  * Notificatons.
@@ -22,16 +23,27 @@ class Notification
      *
      * @param string $fqnClass The fully qualified name of the category class
      * @param array $notificationData Data specific to the notification class
-     * @param Locale|null $locale Associated locale
+     * @param int|null $priority The notification priority (bigger values for higher priorities)
      *
      * @return static
      */
-    public static function create($fqnClass, array $notificationData = [])
+    public static function create($fqnClass, array $notificationData = [], $priority = null)
     {
+        if (!is_numeric($priority)) {
+            $priority = 0;
+            if (class_exists($fqnClass) && class_exists(ReflectionClass::class)) {
+                $reflectionClass = new ReflectionClass($fqnClass);
+                $classConstants = $reflectionClass->getConstants();
+                if (isset($classConstants['PRIORITY'])) {
+                    $priority = (int) $classConstants['PRIORITY'];
+                }
+            }
+        }
         $result = new static();
         $result->createdOn = new DateTime();
         $result->updatedOn = new DateTime();
         $result->fqnClass = (string) $fqnClass;
+        $result->priority = (int) $priority;
         $result->notificationData = $notificationData;
         $result->deliveryAttempts = 0;
         $result->sentOn = null;
@@ -136,6 +148,25 @@ class Notification
     public function getFQNClass()
     {
         return $this->fqnClass;
+    }
+
+    /**
+     * The notification priority (bigger values for higher priorities).
+     *
+     * @ORM\Column(type="smallint", nullable=false, options={"unsigned": false, "default" : 0, "comment": "Notification priority (bigger values for higher priorities)"})
+     *
+     * @var int
+     */
+    protected $priority;
+
+    /**
+     * Get the notification priority (bigger values for higher priorities).
+     *
+     * @return int
+     */
+    public function getPriority()
+    {
+        return $this->priority;
     }
 
     /**

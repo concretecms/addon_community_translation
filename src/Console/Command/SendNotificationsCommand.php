@@ -45,6 +45,7 @@ class SendNotificationsCommand extends Command
             ->setDescription('Send pending notifications')
             ->addOption('retries', 'r', InputOption::VALUE_REQUIRED, 'The number of network failures before giving up with a notification', static::DEFAULT_DELIVERY_RETRIES)
             ->addOption('max-age', 'a', InputOption::VALUE_REQUIRED, 'The maximum age (in days) of the unsent notifications to be parsed', static::DEFAULT_MAX_AGE)
+            ->addOption('priority', 'p', InputOption::VALUE_REQUIRED, 'The miminum priority of the notifications to be parsed')
             ->setHelp(<<<EOT
 This command send notifications about events of Community Translations, like requests for new translation teams and new translators.
 
@@ -103,12 +104,19 @@ EOT
      */
     private $timeLimit;
 
+    /**
+     * @var int|null
+     */
+    private $minPriority;
+
     protected function executeWithLogger()
     {
         $this->initializeState();
         $this->readParameters();
         $this->checkCanonicalURL();
-
+        if ($this->acquireLock(20) === false) {
+            throw new Exception('Failed to acquire lock');
+        }
         $lastID = null;
         for (; ;) {
             $criteria = Criteria::create()
@@ -119,6 +127,9 @@ EOT
             if ($lastID !== null) {
                 $criteria->andWhere(Criteria::expr()->gt('id', $lastID));
             }
+            if ($this->minPriority !== null) {
+                $criteria->andWhere(Criteria::expr()->gte('priority', $this->minPriority));
+            }
             $notification = $this->repo->matching($criteria)->first();
             if (!$notification) {
                 break;
@@ -127,6 +138,7 @@ EOT
             $this->logger->debug(sprintf('Processing notification %s', $notification->getID()));
             $this->processNotification($notification);
         }
+        $this->releaseLock();
         if ($this->someNotificationSent && $this->someNotificationFailed) {
             $rc = 2;
         } elseif ($this->someNotificationSent) {
@@ -172,6 +184,15 @@ EOT
             throw new Exception('Invalid value of the max-age parameter (it must be an integer greater than 0)');
         }
         $this->timeLimit = new DateTime("-$maxAge days");
+        $p = $this->input->getOption('priority');
+        if ($p === null) {
+            $this->minPriority = null;
+        } else {
+            $this->minPriority = @(int) $p;
+            if ((string) $this->minPriority !== (string) $p) {
+                throw new Exception('Invalid value of the priority parameter (it must be an integer)');
+            }
+        }
     }
 
     private function checkCanonicalURL()

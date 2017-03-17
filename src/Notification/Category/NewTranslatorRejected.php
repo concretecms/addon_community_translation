@@ -14,6 +14,11 @@ use Exception;
 class NewTranslatorRejected extends Category
 {
     /**
+     * @var int
+     */
+    const PRIORITY = 10;
+
+    /**
      * {@inheritdoc}
      *
      * @see Category::getRecipientIDs()
