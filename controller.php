@@ -45,7 +45,7 @@ class Controller extends Package
      *
      * @var string
      */
-    protected $pkgVersion = '0.2.9';
+    protected $pkgVersion = '0.2.10';
 
     /**
      * The mapping between RelativeDirectory <-> Namespace to autoload package classes.
