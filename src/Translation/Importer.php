@@ -77,6 +77,16 @@ class Importer
         $result = new ImportResult();
         $insertParams = [];
         $insertCount = 0;
+        // gettext strongly discourages the use of these characters
+        $invalidCharsMap = [
+            "\x07" => '\\a',
+            "\x08" => '\\b',
+            "\x0C" => '\\f',
+            "\x0D" => '\\r',
+            "\x0B" => '\\v',
+            "\x07" => '\\a',
+        ];
+        $invalidChars = implode('', array_keys($invalidCharsMap));
         $connection->beginTransaction();
         try {
             // Prepare some queries
@@ -122,6 +132,19 @@ where
                     continue;
                 }
 
+                $allTranslations = $translation->getTranslation();
+                if ($isPlural && $pluralCount > 1) {
+                    $allTranslations .= implode('', $translation->getPluralTranslation());
+                }
+
+                $s = strpbrk($allTranslations, $invalidChars);
+                if ($s !== false) {
+                    throw new UserException(
+                        t('The translation for the string \'%1$s\' contains the invalid character \'%2$s\'.', $translation->getOriginal(), $invalidCharsMap[$s[0]])
+                        . "\n" .
+                        t('Translations can not contain these characters: %s', "'" . implode("', '", array_values($invalidCharsMap)) . '"')
+                    );
+                }
                 // Let's look for the current translation and for an existing translation exactly the same as the one we're importing
                 $translatableID = null;
                 $currentTranslation = null;
