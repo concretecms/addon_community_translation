@@ -225,7 +225,7 @@ switch ($step) {
         /* @var array[] $translators */
         /* @var array[] $aspiring */
 
-        ?><h1><?= t('%s Translation Team', $locale->getDisplayName()) ?></h1><?php
+        ?><h2><?= t('%s Translation Team', $locale->getDisplayName()) ?></h2><?php
 
         if (!empty($globalAdmins)) {
             ?>
