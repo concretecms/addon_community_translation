@@ -96,7 +96,7 @@ $enableTranslationComments = is_object($packageVersion);
     </div>
 </nav>
 
-<div class="container-fluid" id="comtra_translator"></div>
+<div class="container-fluid ccm-translator" id="comtra_translator"></div>
 
 <div id="comtra_extra-references" class="col-md-12">
     <div class="panel panel-primary">
