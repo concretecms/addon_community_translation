@@ -84,7 +84,6 @@ class Importer
             "\x0C" => '\\f',
             "\x0D" => '\\r',
             "\x0B" => '\\v',
-            "\x07" => '\\a',
         ];
         $invalidChars = implode('', array_keys($invalidCharsMap));
         $connection->beginTransaction();
