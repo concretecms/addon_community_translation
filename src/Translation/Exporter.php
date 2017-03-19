@@ -312,4 +312,40 @@ class Exporter
 
         return $translations;
     }
+
+    /**
+     * Does a locale have translation strings that needs review?
+     *
+     * @param LocaleEntity $locale
+     *
+     * @return bool
+     */
+    public function localeHasPendingApprovals(LocaleEntity $locale)
+    {
+        $cn = $this->app->make(EntityManager::class)->getConnection();
+        $rs = $cn->executeQuery(
+            '
+                select
+                    CommunityTranslationTranslations.id
+                from
+                    CommunityTranslationTranslations
+                    inner join CommunityTranslationTranslatablePlaces on CommunityTranslationTranslations.translatable = CommunityTranslationTranslatablePlaces.translatable
+                where
+                    CommunityTranslationTranslations.locale = ?
+                    and (
+                        (CommunityTranslationTranslations.approved is null)
+                        or
+                        (CommunityTranslationTranslations.current = 1 and CommunityTranslationTranslations.approved = 0)
+                    )
+                limit 1
+            ',
+            [
+                $locale->getID(),
+            ]
+        );
+        $result = $rs->fetchColumn() !== false;
+        $rs->closeCursor();
+
+        return $result;
+    }
 }

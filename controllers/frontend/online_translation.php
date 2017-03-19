@@ -137,6 +137,9 @@ class OnlineTranslation extends Controller
         } else {
             $this->set('translations', $this->app->make(Editor::class)->getInitialTranslations($packageVersion, $locale));
             $this->set('pageTitle', t(/*i18n: %1$s is a package name, %2$s is a language name*/'Translating %1$s in %2$s', $packageVersion->getDisplayName(), $locale->getDisplayName()));
+            if ($access >= Access::ADMIN) {
+                $this->set('showUnreviewedIcon', $this->app->make(Exporter::class)->localeHasPendingApprovals($locale));
+            }
         }
         $translationFormats = [];
         foreach ($this->app->make(TranslationsConverterProvider::class)->getRegisteredConverters() as $tf) {

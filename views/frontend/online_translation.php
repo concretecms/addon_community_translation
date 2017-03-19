@@ -53,8 +53,8 @@ $enableTranslationComments = is_object($packageVersion);
         <div id="navbar" class="collapse navbar-collapse">
             <ul class="nav navbar-nav navbar-right">
                 <?php
-                if ($canApprove && is_object($packageVersion)) {
-                    ?><li><a href="<?= URL::to($onlineTranslationPath, 'unreviewed', $locale->getID()) ?>" title="<?= t('View all strings to be reviewed') ?>"><i class="fa fa-handshake-o"></i></a></li><?php
+                if (isset($showUnreviewedIcon) && $showUnreviewedIcon) {
+                    ?><li><a href="<?= URL::to($onlineTranslationPath, 'unreviewed', $locale->getID()) ?>" title="<?= t('View all strings to be reviewed') ?>"><i class="fa fa-handshake-o comtra-animate-review"></i></a></li><?php
                 }
                 ?>
                 <li><a href="#" data-toggle="modal" data-target="#comtra_translation-upload" title="<?= t('Upload translations') ?>"><i class="fa fa-cloud-upload"></i></a>
