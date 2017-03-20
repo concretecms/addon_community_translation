@@ -134,9 +134,11 @@ class OnlineTranslation extends Controller
         if ($packageVersion === static::PACKAGEVERSION_UNREVIEWED) {
             $this->set('translations', $this->app->make(Editor::class)->getUnreviewedInitialTranslations($locale));
             $this->set('pageTitle', t(/*i18n: %s is a language name*/'Strings awaiting review in %s', $locale->getDisplayName()));
+            $this->set('pageTitleShort', tc(/*i18n: %s is a language name*/'Language', 'Reviewing %s', $locale->getDisplayName()));
         } else {
             $this->set('translations', $this->app->make(Editor::class)->getInitialTranslations($packageVersion, $locale));
             $this->set('pageTitle', t(/*i18n: %1$s is a package name, %2$s is a language name*/'Translating %1$s in %2$s', $packageVersion->getDisplayName(), $locale->getDisplayName()));
+            $this->set('pageTitleShort', sprintf('%s %s @ %s', $packageVersion->getPackage()->getDisplayName(), $packageVersion->getVersion(), $locale->getID()));
             if ($access >= Access::ADMIN) {
                 $this->set('showUnreviewedIcon', $this->app->make(Exporter::class)->localeHasPendingApprovals($locale));
             }
