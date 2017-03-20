@@ -791,7 +791,7 @@ var Glossary = (function() {
 function initializeUI()
 {
     var $translationsCol = translator.UI.$container.find('.ccm-translator-col-translations'),
-        $midCell = $('<div class="col-md-4" />'),
+        $midCell = $('<div class="col-md-3" />'),
         $midRow = $('<div class="row" />');
     var $extraTabs = $('#comtra_extra-tabs').tab();
     var $references = $('#comtra_extra-references');

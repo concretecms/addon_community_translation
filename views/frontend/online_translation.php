@@ -114,7 +114,7 @@ $enableTranslationComments = is_object($packageVersion);
     </div>
 </div>
 
-<div id="comtra_extra-tabs" class="col-md-5">
+<div id="comtra_extra-tabs" class="col-md-4">
     <ul class="nav nav-tabs">
         <li class="active"><a href="#comtra_translation-others" role="tab" data-toggle="tab"><?= t('Other translations') ?> <span class="badge" id="comtra_translation-others-count"></span></a></li>
         <?php
@@ -418,7 +418,7 @@ if (isset($showDialogAtStartup)) {
 <script>$(document).ready(function() {
 
 window.ccmTranslator.configureFrontend({
-    colOriginal: 'col-md-3',
+    colOriginal: 'col-md-5',
     colTranslations: 'col-md-12'
 });
 window.comtraOnlineEditorInitialize(<?php
