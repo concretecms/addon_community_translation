@@ -453,7 +453,7 @@ if (is_object($packageVersion)) {
                                         $pv = $pvs->getPackageVersion();
                                         ?>
                                         <label>
-                                            <input type="checkbox" value="<?= $pv->getID() ?>" />
+                                            <input type="checkbox" value="<?= $pv->getID() ?>"<?= $pvs->notifyUpdates() ? ' checked="checked"' : '' ?> />
                                             <?= h($pv->getDisplayVersion()) ?>
                                         </label><br />
                                         <?php                            
@@ -561,8 +561,8 @@ $params = [
     ],
 ];
 if (is_object($packageVersion)) {
-    $params['actions']['saveNotifications'] = (string) $this->action('save_notifications', $packageVersion->getID());
-    $params['tokens']['saveNotifications'] = $token->generate('comtra-save-notifications' . $packageVersion->getID());
+    $params['actions']['saveNotifications'] = (string) $this->action('save_notifications', $packageVersion->getPackage()->getID());
+    $params['tokens']['saveNotifications'] = $token->generate('comtra-save-notifications' . $packageVersion->getPackage()->getID());
 }
 
 if ($canEditGlossary) {

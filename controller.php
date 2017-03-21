@@ -326,6 +326,15 @@ class Controller extends Package
                 [],
                 ['POST'],
             ],
+            "$onlineTranslationPath/action/save_notifications/{packageID}" => [
+                'Concrete\Package\CommunityTranslation\Controller\Frontend\OnlineTranslation::save_notifications',
+                null,
+                ['packageID' => '\d+'],
+                [],
+                '',
+                [],
+                ['POST'],
+            ],
             // API Entry Points
             "$apiEntryPoint/rate-limit/" => [
                 'CommunityTranslation\Api\EntryPoint::getRateLimit',

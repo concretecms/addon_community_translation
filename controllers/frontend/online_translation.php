@@ -15,6 +15,7 @@ use CommunityTranslation\Repository\Glossary\Entry as GlossaryEntryRepository;
 use CommunityTranslation\Repository\Glossary\Entry\Localized as GlossaryEntryLocalizedRepository;
 use CommunityTranslation\Repository\Locale as LocaleRepository;
 use CommunityTranslation\Repository\Notification as NotificationRepository;
+use CommunityTranslation\Repository\Package as PackageRepository;
 use CommunityTranslation\Repository\Package\Version as PackageVersionRepository;
 use CommunityTranslation\Repository\PackageSubscription as PackageSubscriptionRepository;
 use CommunityTranslation\Repository\PackageVersionSubscription as PackageVersionSubscriptionRepository;
@@ -876,6 +877,78 @@ class OnlineTranslation extends Controller
         $onlineTranslationPath = $config->get('options.onlineTranslationPath');
 
         $this->redirect(\URL::to($onlineTranslationPath, $packageVersionID, $locale->getID()));
+    }
+
+    public function save_notifications($packageID)
+    {
+        $rf = $this->app->make(ResponseFactoryInterface::class);
+        try {
+            $valt = $this->app->make('token');
+            if (!$valt->validate('comtra-save-notifications' . $packageID)) {
+                throw new UserException($valt->getErrorMessage());
+            }
+            $package = $this->app->make(PackageRepository::class)->find($packageID);
+            if ($package === null) {
+                throw new UserException(t('Invalid translated package identifier received'));
+            }
+            /* @var PackageEntity $package */
+            $packageVersions = [];
+            foreach ($package->getVersions() as $pv) {
+                $packageVersions[$pv->getID()] = $pv;
+            }
+            $post = $this->request->request;
+            switch ((string) $post->get('newVersions')) {
+                case '0':
+                    $newVersions = false;
+                    break;
+                case '1':
+                    $newVersions = true;
+                    break;
+                default:
+                    throw new UserException(t('Invalid parameter received (%s)', 'newVersions'));
+            }
+            switch ((string) $post->get('allVersions')) {
+                case 'yes':
+                    $notificationForVersions = array_values($packageVersions);
+                    break;
+                case 'no':
+                    $notificationForVersions = [];
+                    break;
+                case 'custom':
+                    $notificationForVersions = [];
+                    foreach (explode(',', (string) $post->get('versions')) as $v) {
+                        $v = (int) $v;
+                        if (!isset($packageVersions[$v])) {
+                            throw new UserException(t('Invalid parameter received (%s)', 'versions'));
+                        }
+                        $notificationForVersions[] = $packageVersions[$v];
+                    }
+                    break;
+                default:
+                    throw new UserException(t('Invalid parameter received (%s)', 'allVersions'));
+            }
+            $em = $this->getEntityManager();
+            $em->beginTransaction();
+            $ps = $this->getPackageSubscription($package);
+            $ps->setNotifyNewVersions($newVersions);
+            $em->persist($ps);
+            $em->flush($ps);
+            foreach ($this->getPackageVersionSubscriptions($package) as $pvs) {
+                $pvs->setNotifyUpdates(in_array($pvs->getPackageVersion(), $notificationForVersions, true));
+                $em->persist($pvs);
+                $em->flush($pvs);
+            }
+            $em->commit();
+
+            return $rf->json(true);
+        } catch (UserException $x) {
+            return $rf->json(
+                [
+                    'error' => $x->getMessage(),
+                ],
+                400
+            );
+        }
     }
 
     /**
