@@ -33,7 +33,7 @@ class Provider
     /**
      * Register a converter.
      *
-     * @param ConverterInterface
+     * @param ConverterInterface $converter
      */
     public function register(ConverterInterface $converter)
     {
