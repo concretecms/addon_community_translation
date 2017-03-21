@@ -157,7 +157,7 @@ class Translation
     /**
      * Is this the current translation?
      *
-     * @param bool
+     * @param bool $value
      *
      * @return static
      */
