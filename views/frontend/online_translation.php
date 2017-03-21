@@ -60,6 +60,13 @@ $enableTranslationComments = is_object($packageVersion);
                 ?>
                 <li><a href="#" data-toggle="modal" data-target="#comtra_translation-upload" title="<?= t('Upload translations') ?>"><i class="fa fa-cloud-upload"></i></a>
                 <li><a href="#" data-toggle="modal" data-target="#comtra_translation-download" title="<?= t('Download translations') ?>"><i class="fa fa-cloud-download"></i></a>
+                <?php
+                if (is_object($packageVersion)) {
+                    ?>
+                    <li><a href="#" data-toggle="modal" data-target="#comtra_translation-notifications" title="<?= t('Notifications') ?>"><i class="fa fa-bullhorn"></i></a>
+                    <?php
+                }
+                ?>
             </ul>
             <?php
             if (!empty($allVersions) || !empty($allLocales)) {
@@ -383,6 +390,92 @@ if ($canEditGlossary) {
 </div>
 
 <?php
+if (is_object($packageVersion)) {
+    /* @var CommunityTranslation\Entity\PackageSubscription $packageSubscription */
+    /* @var CommunityTranslation\Entity\PackageVersionSubscription[] $packageVersionSubscriptions */
+    $allVersions = null;
+    foreach ($packageVersionSubscriptions as $pvs) {
+        if ($allVersions === null) {
+            $allVersions = $pvs->notifyUpdates() ? 'yes' : 'no';
+        } elseif ($pvs->notifyUpdates()) {
+            if ($allVersions !== 'yes') {
+                $allVersions = 'custom';
+                break;
+            }
+        } else {
+            if ($allVersions !== 'no') {
+                $allVersions = 'custom';
+                break;
+            }
+        }
+    }
+    ?>
+    <div id="comtra_translation-notifications" class="modal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                    <h4 class="modal-title"><?= t('Package notifications') ?></h4>
+                </div>
+                <div class="modal-body">
+                    <form class="form-horizontal">
+                        <div class="form-group">
+                            <label class="col-sm-3 control-label"><?= t('New versions') ?></label>
+                            <div class="checkbox col-sm-9">
+                                <label>
+                                    <input type="checkbox" id="comtra-notify-newversions"<?= $packageSubscription->notifyNewVersions() ? ' checked="checked"' : '' ?> />
+                                    <?= t('Notify me when new versions of this package are available') ?>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="col-sm-3 control-label" for="comtra-notify-existingversions-all"><?= t('Existing versions') ?></label>
+                            <div class="col-sm-9">
+                                <select class="form-control" id="comtra-notify-existingversions-all">
+                                    <option value="yes"<?= $allVersions === 'yes' ? ' selected="selected"' : ''?>><?= t('Alert me when any version changes') ?></option>
+                                    <option value="no"<?= $allVersions === 'no' ? ' selected="selected"' : ''?>><?= t('Never alert me') ?></option>
+                                    <option value="custom"<?= $allVersions === 'custom' ? ' selected="selected"' : ''?>><?= t('Alert me for specific version changes') ?></option>
+                                </select>
+                            </div>
+                        </div>
+                        <div id="comtra-notify-existingversions-lay" style="overflow: auto; overflow-x: hidden<?= $allVersions === 'custom' ? '' : '; display: none"' ?>">
+                            <div class="form-group" >
+                                <label class="col-sm-3 control-label">
+                                    <?= t('Version-specific alerts') ?>
+                                    <div class="text-center">
+                                        <a class="label label-info comtra-notify-existingversions-all" data-checked="yes"><?= t('all') ?></a>
+                                        <a class="label label-info comtra-notify-existingversions-all" data-checked="no"><?= t('none') ?></a>
+                                    </div>
+                                </label>
+                                <div class="checkbox col-sm-9">
+                                    <?php
+                                    foreach ($packageVersionSubscriptions as $pvs) {
+                                        $pv = $pvs->getPackageVersion();
+                                        ?>
+                                        <label>
+                                            <input type="checkbox" value="<?= $pv->getID() ?>" />
+                                            <?= h($pv->getDisplayVersion()) ?>
+                                        </label><br />
+                                        <?php                            
+                                    }
+                                    ?>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal"><?= t('Cancel') ?></button>
+                    <input type="button" class="btn btn-primary" value="<?= t('Save') ?>" />
+                </div>
+            </div>
+        </div>
+    </div>
+    <?php
+}
+?>
+
+<?php
 if (isset($showDialogAtStartup)) {
     ?>
     <div class="modal fade" role="dialog" id="comtra_startup-dialog">
@@ -467,6 +560,11 @@ $params = [
         ],
     ],
 ];
+if (is_object($packageVersion)) {
+    $params['actions']['saveNotifications'] = (string) $this->action('save_notifications', $packageVersion->getID());
+    $params['tokens']['saveNotifications'] = $token->generate('comtra-save-notifications' . $packageVersion->getID());
+}
+
 if ($canEditGlossary) {
     $params['actions'] += [
         'saveGlossaryTerm' => (string) $this->action('save_glossary_term', $locale->getID()),

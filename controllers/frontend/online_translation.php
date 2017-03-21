@@ -4,7 +4,10 @@ namespace Concrete\Package\CommunityTranslation\Controller\Frontend;
 use CommunityTranslation\Entity\Glossary\Entry as GlossaryEntryEntity;
 use CommunityTranslation\Entity\Glossary\Entry\Localized as GlossaryEntryLocalizedEntity;
 use CommunityTranslation\Entity\Locale as LocaleEntity;
+use CommunityTranslation\Entity\Package as PackageEntity;
 use CommunityTranslation\Entity\Package\Version as PackageVersionEntity;
+use CommunityTranslation\Entity\PackageSubscription as PackageSubscriptionEntity;
+use CommunityTranslation\Entity\PackageVersionSubscription as PackageVersionSubscriptionEntity;
 use CommunityTranslation\Entity\Translatable as TranslatableEntity;
 use CommunityTranslation\Entity\Translatable\Comment as TranslatableCommentEntity;
 use CommunityTranslation\Entity\Translation as TranslationEntity;
@@ -13,6 +16,8 @@ use CommunityTranslation\Repository\Glossary\Entry\Localized as GlossaryEntryLoc
 use CommunityTranslation\Repository\Locale as LocaleRepository;
 use CommunityTranslation\Repository\Notification as NotificationRepository;
 use CommunityTranslation\Repository\Package\Version as PackageVersionRepository;
+use CommunityTranslation\Repository\PackageSubscription as PackageSubscriptionRepository;
+use CommunityTranslation\Repository\PackageVersionSubscription as PackageVersionSubscriptionRepository;
 use CommunityTranslation\Repository\Stats as StatsRepository;
 use CommunityTranslation\Repository\Translatable as TranslatableRepository;
 use CommunityTranslation\Repository\Translatable\Comment as TranslatableCommentRepository;
@@ -41,6 +46,40 @@ class OnlineTranslation extends Controller
 {
     const PACKAGEVERSION_UNREVIEWED = 'unreviewed';
 
+    /**
+     * @var Access|null
+     */
+    private $accessHelper = null;
+
+    /**
+     * @return Access
+     */
+    private function getAccessHelper()
+    {
+        if ($this->accessHelper === null) {
+            $this->accessHelper = $this->app->make(Access::class);
+        }
+
+        return $this->accessHelper;
+    }
+
+    /**
+     * @var EntityManager|null
+     */
+    private $entityManager = null;
+
+    /**
+     * @return EntityManager
+     */
+    private function getEntityManager()
+    {
+        if ($this->entityManager === null) {
+            $this->entityManager = $this->app->make(EntityManager::class);
+        }
+
+        return $this->entityManager;
+    }
+
     public function on_start()
     {
         $config = $this->app->make('community_translation/config');
@@ -58,7 +97,7 @@ class OnlineTranslation extends Controller
 
     public function view($packageVersionID, $localeID)
     {
-        $accessHelper = $this->app->make(Access::class);
+        $accessHelper = $this->getAccessHelper();
         if ($accessHelper->isLoggedIn() === false) {
             return $this->app->make(ResponseFactoryInterface::class)->forbidden(
                 $this->request->getUri()
@@ -142,6 +181,8 @@ class OnlineTranslation extends Controller
             if ($access >= Access::ADMIN) {
                 $this->set('showUnreviewedIcon', $this->app->make(Exporter::class)->localeHasPendingApprovals($locale));
             }
+            $this->set('packageSubscription', $this->getPackageSubscription($packageVersion->getPackage()));
+            $this->set('packageVersionSubscriptions', $this->getPackageVersionSubscriptions($packageVersion->getPackage()));
         }
         $translationFormats = [];
         foreach ($this->app->make(TranslationsConverterProvider::class)->getRegisteredConverters() as $tf) {
@@ -172,7 +213,7 @@ class OnlineTranslation extends Controller
             if ($locale === null) {
                 throw new UserException(t('Invalid language identifier received'));
             }
-            $access = $this->app->make(Access::class)->getLocaleAccess($locale);
+            $access = $this->getAccessHelper()->getLocaleAccess($locale);
             if ($access <= Access::NOT_LOGGED_IN) {
                 throw new UserException(t('You need to log-in in order to translate'));
             }
@@ -218,7 +259,7 @@ class OnlineTranslation extends Controller
             if ($locale === null) {
                 throw new UserException(t('Invalid language identifier received'));
             }
-            $accessHelper = $this->app->make(Access::class);
+            $accessHelper = $this->getAccessHelper();
             $access = $accessHelper->getLocaleAccess($locale);
             if ($access <= Access::NOT_LOGGED_IN) {
                 throw new UserException(t('You need to log-in in order to translate'));
@@ -290,7 +331,7 @@ class OnlineTranslation extends Controller
             if ($comment->getText() === '') {
                 throw new UserException(t('Please specify the comment text.'));
             }
-            $em = $this->app->make(EntityManager::class);
+            $em = $this->getEntityManager();
             $em->persist($comment);
             $em->flush();
             $this->app->make(NotificationRepository::class)->translatableCommentSubmitted($comment, $packageVersion, $locale);
@@ -327,7 +368,7 @@ class OnlineTranslation extends Controller
             if ($locale === null) {
                 throw new UserException(t('Invalid language identifier received'));
             }
-            $access = $this->app->make(Access::class)->getLocaleAccess($locale);
+            $access = $this->getAccessHelper()->getLocaleAccess($locale);
             if ($access <= Access::NOT_LOGGED_IN) {
                 throw new UserException(t('You need to log-in in order to translate'));
             }
@@ -342,7 +383,7 @@ class OnlineTranslation extends Controller
             if (count($comment->getChildComments()) > 0) {
                 throw new UserException(t("This comment has some replies, so it can't be deleted."));
             }
-            $em = $this->app->make(EntityManager::class);
+            $em = $this->getEntityManager();
             $em->remove($comment);
             $em->flush();
 
@@ -371,7 +412,7 @@ class OnlineTranslation extends Controller
             if ($locale === null) {
                 throw new UserException(t('Invalid language identifier received'));
             }
-            $access = $this->app->make(Access::class)->getLocaleAccess($locale);
+            $access = $this->getAccessHelper()->getLocaleAccess($locale);
             if ($access <= Access::NOT_LOGGED_IN) {
                 throw new UserException(t('You need to log-in in order to translate'));
             }
@@ -399,7 +440,7 @@ class OnlineTranslation extends Controller
                 throw new UserException(t('The term "%1$s" already exists for the type "%2$s"', $editing->getTerm(), $editing->getType()));
             }
             $editing->setComments($this->post('termComments'));
-            $em = $this->app->make(EntityManager::class);
+            $em = $this->getEntityManager();
             $em->beginTransaction();
             try {
                 $em->persist($editing);
@@ -462,7 +503,7 @@ class OnlineTranslation extends Controller
             if ($locale === null) {
                 throw new UserException(t('Invalid language identifier received'));
             }
-            $access = $this->app->make(Access::class)->getLocaleAccess($locale);
+            $access = $this->getAccessHelper()->getLocaleAccess($locale);
             if ($access <= Access::NOT_LOGGED_IN) {
                 throw new UserException(t('You need to log-in in order to translate'));
             }
@@ -489,7 +530,7 @@ class OnlineTranslation extends Controller
                     throw new UserException(t("It's not possible to delete this entry since it's translated in %d other languages too.", count($otherLocaleNames)));
                 }
             }
-            $em = $this->app->make(EntityManager::class);
+            $em = $this->getEntityManager();
             $em->remove($term);
             $em->flush();
 
@@ -518,7 +559,7 @@ class OnlineTranslation extends Controller
             if ($locale === null) {
                 throw new UserException(t('Invalid language identifier received'));
             }
-            $access = $this->app->make(Access::class)->getLocaleAccess($locale);
+            $access = $this->getAccessHelper()->getLocaleAccess($locale);
             if ($access <= Access::NOT_LOGGED_IN) {
                 throw new UserException(t('You need to log-in in order to translate'));
             }
@@ -585,7 +626,7 @@ class OnlineTranslation extends Controller
             if ($locale === null) {
                 throw new UserException(t('Invalid language identifier received'));
             }
-            $accessHelper = $this->app->make(Access::class);
+            $accessHelper = $this->getAccessHelper();
             $access = $accessHelper->getLocaleAccess($locale);
             if ($access <= Access::NOT_LOGGED_IN) {
                 throw new UserException(t('You need to log-in in order to translate'));
@@ -659,7 +700,7 @@ class OnlineTranslation extends Controller
             if (!$valt->validate('comtra-download-translations' . $localeID)) {
                 throw new UserException($valt->getErrorMessage());
             }
-            $accessHelper = $this->app->make(Access::class);
+            $accessHelper = $this->getAccessHelper();
             if ($accessHelper->isLoggedIn() === false) {
                 throw new UserException(t('You need to be logged in'));
             }
@@ -731,7 +772,7 @@ class OnlineTranslation extends Controller
             if (!$valt->validate('comtra-upload-translations' . $localeID)) {
                 throw new UserException($valt->getErrorMessage());
             }
-            $accessHelper = $this->app->make(Access::class);
+            $accessHelper = $this->getAccessHelper();
             if ($accessHelper->isLoggedIn() === false) {
                 throw new UserException(t('You need to be logged in'));
             }
@@ -859,7 +900,7 @@ class OnlineTranslation extends Controller
         $translations = $this->convertTranslationToGettext($translation, false);
         $importer = $this->app->make(Importer::class);
         $imported = $importer->import($translations, $translation->getLocale(), $user, true);
-        $this->app->make(EntityManager::class)->clear();
+        $this->getEntityManager()->clear();
         $translation = $this->app->make(TranslationRepository::class)->find($translationID);
         $result = $this->app->make(Editor::class)->getTranslations($translation->getLocale(), $translation->getTranslatable());
 
@@ -882,7 +923,7 @@ class OnlineTranslation extends Controller
         if ($translation->isCurrent()) {
             throw new UserException(t('The selected translation is already the current one'));
         }
-        $em = $this->app->make(EntityManager::class);
+        $em = $this->getEntityManager();
         $translation->setIsApproved(false);
         $em->persist($translation);
         $em->flush();
@@ -913,7 +954,7 @@ class OnlineTranslation extends Controller
         $translations = $this->convertTranslationToGettext($translation, $access < Access::ADMIN);
         $importer = $this->app->make(Importer::class);
         $imported = $importer->import($translations, $translation->getLocale(), $user, $access >= Access::ADMIN);
-        $this->app->make(EntityManager::class)->clear();
+        $this->getEntityManager()->clear();
         $translation = $this->app->make(TranslationRepository::class)->find($translationID);
         if ($imported->newApprovalNeeded > 0) {
             $this->app->make(NotificationRepository::class)->translationsNeedApproval(
@@ -983,7 +1024,7 @@ class OnlineTranslation extends Controller
         $translations = $this->convertTranslationToGettext($translation, !$approved);
         $importer = $this->app->make(Importer::class);
         $imported = $importer->import($translations, $locale, $user, $access >= Access::ADMIN);
-        $this->app->make(EntityManager::class)->clear();
+        $this->getEntityManager()->clear();
         $translatable = $this->app->make(TranslatableRepository::class)->find($translatable->getID());
         $locale = $this->app->make(LocaleRepository::class)->find($locale->getID());
         if ($imported->newApprovalNeeded > 0) {
@@ -1021,7 +1062,7 @@ class OnlineTranslation extends Controller
         ]);
         if ($currentTranslation !== null) {
             /* @var TranslationEntity $currentTranslation */
-            $em = $this->app->make(EntityManager::class);
+            $em = $this->getEntityManager();
             if ($currentTranslation->isApproved() && $access < Access::ADMIN) {
                 throw new UserException(t("The current translation is marked as reviewed, so you can't remove it."));
             }
@@ -1060,7 +1101,7 @@ class OnlineTranslation extends Controller
 
     private function getLocalesMenu($packageVersionID, LocaleEntity $locale)
     {
-        $accessHelper = $this->app->make(Access::class);
+        $accessHelper = $this->getAccessHelper();
         $config = $this->app->make('community_translation/config');
         $onlineTranslationPath = $config->get('options.onlineTranslationPath');
         $urlManager = $this->app->make('url/manager');
@@ -1119,5 +1160,61 @@ class OnlineTranslation extends Controller
         }
 
         return $translations;
+    }
+
+    /**
+     * @param PackageEntity $package
+     *
+     * @return PackageSubscriptionEntity
+     */
+    private function getPackageSubscription(PackageEntity $package)
+    {
+        $em = $this->getEntityManager();
+        $me = $this->getAccessHelper()->getUserEntity('current');
+        $repo = $this->app->make(PackageSubscriptionRepository::class);
+        /* @var PackageSubscriptionRepository $repo */
+        $ps = $repo->find(['user' => $me, 'package' => $package]);
+        if ($ps === null) {
+            $ps = PackageSubscriptionEntity::create($me, $package, false);
+            $em->persist($ps);
+            $em->flush($ps);
+        }
+
+        return $ps;
+    }
+
+    /**
+     * @param PackageEntity $package
+     *
+     * @return PackageVersionSubscriptionEntity[]
+     */
+    private function getPackageVersionSubscriptions(PackageEntity $package)
+    {
+        $result = [];
+        $em = $this->getEntityManager();
+        $me = $this->getAccessHelper()->getUserEntity('current');
+        $repo = $this->app->make(PackageVersionSubscriptionRepository::class);
+        /* @var PackageVersionSubscriptionRepository $repo */
+        $pvsList = $repo->createQueryBuilder('s')
+            ->innerJoin(PackageVersionEntity::class, 'pv', 'WITH', 's.packageVersion = pv.id')
+            ->where('s.user = :user')->setParameter('user', $me)
+            ->andWhere('pv.package = :package')->setParameter('package', $package)
+            ->getQuery()
+                ->execute();
+        foreach ($package->getSortedVersions(true) as $packageVersion) {
+            $pvs = null;
+            foreach ($pvsList as $existing) {
+                if ($existing->getPackageVersion() === $packageVersion) {
+                    $pvs = $existing;
+                    break;
+                }
+            }
+            if ($pvs === null) {
+                $pvs = PackageVersionSubscriptionEntity::create($me, $packageVersion, false);
+            }
+            $result[] = $pvs;
+        }
+
+        return $result;
     }
 }

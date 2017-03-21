@@ -50,6 +50,8 @@ class ServiceProvider extends Provider
             'Notification',
             'Package',
             'Package\Version',
+            'PackageSubscription',
+            'PackageVersionSubscription',
             'Stats',
             'Translatable',
             'Translatable\Comment',

@@ -861,6 +861,54 @@ function saveCurrentTranslation(translation, postData, cb)
     processTranslation('save-current', postData, cb);
 }
 
+var Subscriptions = (function() {
+    var $modal;
+    function save() {
+        var data = {
+            newVersions: $('#comtra-notify-newversions').is(':checked') ? 1 : 0,
+            allVersions: $('#comtra-notify-existingversions-all').val()
+        };
+        if (data.allVersions === 'custom') {
+            var versions = [];
+            $('#comtra-notify-existingversions-lay input[type="checkbox"]:checked').each(function() {
+                versions.push(this.value);
+            });
+            data.versions = versions.join(',');
+        }
+        $.ajax({
+            cache: false,
+            data: $.extend({ccm_token: tokens.saveNotifications}, data),
+            dataType: 'json',
+            method: 'POST',
+            url: actions.saveNotifications
+        })
+        .done(function() {
+            $modal.modal('hide');
+        })
+        .fail(function(xhr, textStatus, errorThrown) {
+            window.alert(getAjaxError(arguments));
+        });
+    }
+    return {
+        initialize: function() {
+            $modal = $('#comtra_translation-notifications');
+            $('#comtra_translation-notifications').on('show.bs.modal', function() {
+                $('#comtra-notify-existingversions-lay').css('max-height', Math.max(60, $(window).height() - 350) + 'px');
+            });
+            $('#comtra-notify-existingversions-all').on('change', function() {
+                $('#comtra-notify-existingversions-lay')[this.value === 'custom' ? 'show' : 'hide']('fast');
+            });
+            $modal.find('a.comtra-notify-existingversions-all').on('click', function(e) {
+                e.preventDefault();
+                $('#comtra-notify-existingversions-lay input[type="checkbox"]').prop('checked', $(this).data('checked') === 'yes'); 
+            });
+            $modal.find('.btn-primary').on('click', function() {
+                save();
+            });
+        }
+    };
+})();
+
 // Exported functions
 window.comtraOnlineEditorInitialize = function(options) {
     var height = Math.max(200, $(window).height() - 280);
@@ -971,6 +1019,9 @@ window.comtraOnlineEditorInitialize = function(options) {
             e.preventDefault();
             return false;
         });
+    }
+    if (packageVersionID !== null) {
+        Subscriptions.initialize();
     }
 };
 

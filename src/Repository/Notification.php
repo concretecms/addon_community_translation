@@ -9,6 +9,7 @@ use CommunityTranslation\Notification\Category\NewLocaleApproved;
 use CommunityTranslation\Notification\Category\NewLocaleRejected;
 use CommunityTranslation\Notification\Category\NewLocaleRequested;
 use CommunityTranslation\Notification\Category\NewTeamJoinRequest;
+use CommunityTranslation\Notification\Category\NewTranslatablePackage;
 use CommunityTranslation\Notification\Category\NewTranslatorApproved;
 use CommunityTranslation\Notification\Category\NewTranslatorRejected;
 use CommunityTranslation\Notification\Category\TranslatableComment;
@@ -83,6 +84,7 @@ class Notification extends EntityRepository
         $em = $this->getEntityManager();
         $em->persist($n);
         $em->flush($n);
+        $em->detach($n);
     }
 
     /**
@@ -101,6 +103,7 @@ class Notification extends EntityRepository
         $em = $this->getEntityManager();
         $em->persist($n);
         $em->flush($n);
+        $em->detach($n);
     }
 
     /**
@@ -120,6 +123,7 @@ class Notification extends EntityRepository
         $em = $this->getEntityManager();
         $em->persist($n);
         $em->flush($n);
+        $em->detach($n);
     }
 
     /**
@@ -138,6 +142,7 @@ class Notification extends EntityRepository
         $em = $this->getEntityManager();
         $em->persist($n);
         $em->flush($n);
+        $em->detach($n);
     }
 
     /**
@@ -160,6 +165,7 @@ class Notification extends EntityRepository
         $em = $this->getEntityManager();
         $em->persist($n);
         $em->flush($n);
+        $em->detach($n);
     }
 
     /**
@@ -180,6 +186,7 @@ class Notification extends EntityRepository
         $em = $this->getEntityManager();
         $em->persist($n);
         $em->flush($n);
+        $em->detach($n);
     }
 
     /**
@@ -210,6 +217,7 @@ class Notification extends EntityRepository
                     $existing->setNotificationData($data)->setUpdatedOn(new DateTime());
                     $em->persist($existing);
                     $em->flush($existing);
+                    $em->detach($existing);
                 }
                 break;
             }
@@ -228,6 +236,7 @@ class Notification extends EntityRepository
                     $existing->setNotificationData($data)->setUpdatedOn(new DateTime());
                     $em->persist($existing);
                     $em->flush($existing);
+                    $em->detach($existing);
                     $createNew = false;
                     break;
                 }
@@ -245,6 +254,7 @@ class Notification extends EntityRepository
                 );
                 $em->persist($n);
                 $em->flush($n);
+                $em->detach($n);
             }
         }
     }
@@ -277,6 +287,7 @@ class Notification extends EntityRepository
                 $existing->setNotificationData($data)->setUpdatedOn(new DateTime());
                 $em->persist($existing);
                 $em->flush($existing);
+                $em->detach($existing);
                 $createNew = false;
                 break;
             }
@@ -294,6 +305,45 @@ class Notification extends EntityRepository
             );
             $em->persist($n);
             $em->flush($n);
+            $em->detach($n);
+        }
+    }
+
+    /**
+     * @param int $packageID
+     * @param int $recipientUserID
+     */
+    public function newTranslatablePackage($packageID, $recipientUserID)
+    {
+        $em = $this->getEntityManager();
+        $packageID = (int) $packageID;
+        $recipientUserID = (int) $recipientUserID;
+        $createNew = true;
+        foreach ($this->findBy(['fqnClass' => NewTranslatablePackage::class, 'sentOn' => null]) as $existing) {
+            $data = $existing->getNotificationData();
+            if ($data['userID'] === $recipientUserID) {
+                $data['packageIDs'][] = $packageID;
+                $existing->setNotificationData($data)->setUpdatedOn(new DateTime());
+                $em->persist($existing);
+                $em->flush($existing);
+                $em->detach($existing);
+                $createNew = false;
+                break;
+            }
+        }
+        if ($createNew) {
+            $n = NotificationEntity::create(
+                NewTranslatablePackage::class,
+                [
+                    'userID' => $recipientUserID,
+                    'packageIDs' => [
+                        $packageID,
+                    ],
+                ]
+            );
+            $em->persist($n);
+            $em->flush($n);
+            $em->detach($n);
         }
     }
 }

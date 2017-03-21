@@ -117,6 +117,7 @@ abstract class Category implements CategoryInterface
             'siteName' => $site->getSiteName(),
             'siteUrl' => (string) $site->getSiteCanonicalURL(),
             'recipientName' => $recipient->getUserName(),
+            'recipientAccountUrl' => URL::to('/account/edit_profile'),
             'usersHelper' => $this->app->make(\CommunityTranslation\Service\User::class),
         ];
     }
@@ -126,7 +127,7 @@ abstract class Category implements CategoryInterface
      *
      * @return string
      */
-    protected function getBlockPageURL($blockName, $blockAction = '')
+    protected function getBlockPageURL($blockName, $blockAction = '', $isBlockActionInstanceSpecific = false)
     {
         if (!isset($this->blockPageURLs[$blockName])) {
             $page = null;
@@ -144,7 +145,10 @@ abstract class Category implements CategoryInterface
 
         $url = $this->blockPageURLs[$blockName]['url'];
         if ($blockAction !== '' && $this->blockPageURLs[$blockName]['foundBlockID'] !== null) {
-            $url = rtrim($url, '/') . '/' . trim($blockAction, '/') . '/' . $this->blockPageURLs[$blockName]['foundBlockID'];
+            $url = rtrim($url, '/') . '/' . trim($blockAction, '/');
+            if ($isBlockActionInstanceSpecific) {
+                $url .= '/' . $this->blockPageURLs[$blockName]['foundBlockID'];
+            }
         }
 
         return $url;

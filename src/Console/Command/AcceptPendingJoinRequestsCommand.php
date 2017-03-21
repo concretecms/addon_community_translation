@@ -17,7 +17,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputOption;
 use Throwable;
 
-class AcceptPendingJoinRequests extends Command
+class AcceptPendingJoinRequestsCommand extends Command
 {
     const RETURN_CODE_ON_FAILURE = 3;
 

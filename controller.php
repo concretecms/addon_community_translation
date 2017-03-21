@@ -1,7 +1,8 @@
 <?php
 namespace Concrete\Package\CommunityTranslation;
 
-use CommunityTranslation\Console\Command\AcceptPendingJoinRequests;
+use CommunityTranslation\Console\Command\AcceptPendingJoinRequestsCommand;
+use CommunityTranslation\Console\Command\NotifyPackageVersionsCommand;
 use CommunityTranslation\Console\Command\ProcessGitRepositoriesCommand;
 use CommunityTranslation\Console\Command\RemoveLoggedIPAddressesCommand;
 use CommunityTranslation\Console\Command\SendNotificationsCommand;
@@ -167,9 +168,10 @@ class Controller extends Package
         $console->add(new TransifexTranslationsCommand());
         $console->add(new TransifexGlossaryCommand());
         $console->add(new ProcessGitRepositoriesCommand());
-        $console->add(new AcceptPendingJoinRequests());
+        $console->add(new AcceptPendingJoinRequestsCommand());
         $console->add(new SendNotificationsCommand());
         $console->add(new RemoveLoggedIPAddressesCommand());
+        $console->add(new NotifyPackageVersionsCommand());
     }
 
     /**
