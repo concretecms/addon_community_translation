@@ -429,6 +429,7 @@ class Controller extends BlockController
         } catch (Throwable $x) {
             $message = t('An unspecified error occurred');
         }
+
         return $this->app->make('helper/concrete/ui')->buildErrorResponse(
             t('An unexpected error occurred.'),
             nl2br(h($message))
