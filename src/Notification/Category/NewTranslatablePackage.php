@@ -25,6 +25,7 @@ class NewTranslatablePackage extends Category
     protected function getRecipientIDs(NotificationEntity $notification)
     {
         $notificationData = $notification->getNotificationData();
+
         return [
             $notificationData['userID'],
         ];
@@ -49,7 +50,10 @@ class NewTranslatablePackage extends Category
             foreach ($qb->where($or)->getQuery()->iterate() as $packageRow) {
                 $package = $packageRow[0];
                 $packageURL = $this->getBlockPageURL('CommunityTranslation Search Packages', 'package/' . $package->getHandle());
-                $packages[$packageURL] = $package->getDisplayName();
+                $packages[] = [
+                    'url' => $packageURL,
+                    'name' => $package->getDisplayName(),
+                ];
                 $qb->getEntityManager()->detach($package);
             }
         }

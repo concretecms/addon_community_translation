@@ -14,6 +14,6 @@ foreach ($comments as $comment) {
     $authorHTML = $usersHelper->format($comment['author']);
     $translatableHTML = h($comment['translatable']);
     $bodyHTML .= "<p><b>{$comment['date']} by $authorHTML about string <a href=\"{$comment['link']}\">$translatableHTML</a></b><br />";
-    $bodyHTML.= "<blockquote>{$comment['messageHtml']}</blockquote>";
-    $bodyHTML.= '<br /></p>';
+    $bodyHTML .= "<blockquote>{$comment['messageHtml']}</blockquote>";
+    $bodyHTML .= '<br /></p>';
 }

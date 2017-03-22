@@ -10,10 +10,12 @@ use CommunityTranslation\Notification\Category\NewLocaleRejected;
 use CommunityTranslation\Notification\Category\NewLocaleRequested;
 use CommunityTranslation\Notification\Category\NewTeamJoinRequest;
 use CommunityTranslation\Notification\Category\NewTranslatablePackage;
+use CommunityTranslation\Notification\Category\NewTranslatablePackageVersion;
 use CommunityTranslation\Notification\Category\NewTranslatorApproved;
 use CommunityTranslation\Notification\Category\NewTranslatorRejected;
 use CommunityTranslation\Notification\Category\TranslatableComment;
 use CommunityTranslation\Notification\Category\TranslationsNeedApproval;
+use CommunityTranslation\Notification\Category\UpdatedTranslatablePackageVersion;
 use CommunityTranslation\UserException;
 use Concrete\Core\Entity\User\User as UserEntity;
 use Concrete\Core\User\User;
@@ -341,6 +343,84 @@ class Notification extends EntityRepository
                     ],
                 ]
             );
+            $em->persist($n);
+            $em->flush($n);
+            $em->detach($n);
+        }
+    }
+
+    /**
+     * @param int $packageVersionID
+     * @param int $recipientUserID
+     */
+    public function newTranslatablePackageVersion($packageVersionID, $recipientUserID)
+    {
+        $em = $this->getEntityManager();
+        $packageVersionID = (int) $packageVersionID;
+        $recipientUserID = (int) $recipientUserID;
+        $createNew = true;
+        foreach ($this->findBy(['fqnClass' => NewTranslatablePackageVersion::class, 'sentOn' => null]) as $existing) {
+            $data = $existing->getNotificationData();
+            if ($data['userID'] === $recipientUserID) {
+                $data['packageVersionIDs'][] = $packageVersionID;
+                $existing->setNotificationData($data)->setUpdatedOn(new DateTime());
+                $em->persist($existing);
+                $em->flush($existing);
+                $em->detach($existing);
+                $createNew = false;
+                break;
+            }
+        }
+        if ($createNew) {
+            $n = NotificationEntity::create(
+                NewTranslatablePackageVersion::class,
+                [
+                    'userID' => $recipientUserID,
+                    'packageVersionIDs' => [
+                        $packageVersionID,
+                    ],
+                ]
+                );
+            $em->persist($n);
+            $em->flush($n);
+            $em->detach($n);
+        }
+    }
+
+    /**
+     * @param int $packageVersionID
+     * @param int $recipientUserID
+     */
+    public function updatedTranslatablePackageVersion($packageVersionID, $recipientUserID)
+    {
+        $em = $this->getEntityManager();
+        $packageVersionID = (int) $packageVersionID;
+        $recipientUserID = (int) $recipientUserID;
+        $createNew = true;
+        foreach ($this->findBy(['fqnClass' => UpdatedTranslatablePackageVersion::class, 'sentOn' => null]) as $existing) {
+            $data = $existing->getNotificationData();
+            if ($data['userID'] === $recipientUserID) {
+                if (!in_array($packageVersionID, $data['packageVersionIDs'])) {
+                    $data['packageVersionIDs'][] = $packageVersionID;
+                    $existing->setNotificationData($data)->setUpdatedOn(new DateTime());
+                    $em->persist($existing);
+                    $em->flush($existing);
+                }
+                $em->detach($existing);
+                $createNew = false;
+                break;
+            }
+        }
+        if ($createNew) {
+            $n = NotificationEntity::create(
+                UpdatedTranslatablePackageVersion::class,
+                [
+                    'userID' => $recipientUserID,
+                    'packageVersionIDs' => [
+                        $packageVersionID,
+                    ],
+                ]
+                );
             $em->persist($n);
             $em->flush($n);
             $em->detach($n);
