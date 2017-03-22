@@ -2,6 +2,7 @@
 namespace CommunityTranslation\Console;
 
 use CommunityTranslation\Logging\Handler\ConsoleHandler;
+use CommunityTranslation\Monolog\Handler\TelegramHandler;
 use Concrete\Core\Console\Command as ConcreteCommand;
 use Concrete\Core\Support\Facade\Application;
 use Exception;
@@ -98,6 +99,11 @@ abstract class Command extends ConcreteCommand
                                         $lineFormatter = new LineFormatter('%message%');
                                         $lineFormatter->allowInlineLineBreaks(true);
                                         $handler->setFormatter($lineFormatter);
+                                    }
+                                    break;
+                                case 'telegram':
+                                    if (isset($toConfig['botToken']) && $toConfig['botToken'] && isset($toConfig['chatID']) && $toConfig['chatID']) {
+                                        $handler = new TelegramHandler($toConfig['botToken'], $toConfig['chatID']);
                                     }
                                     break;
                             }
