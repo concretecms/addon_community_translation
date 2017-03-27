@@ -96,6 +96,9 @@ class EntryPoint extends AbstractController
                     $code = Response::HTTP_UNAUTHORIZED;
                 }
             } elseif ($error instanceof UserException) {
+                if ($error->getCode() >= 400) {
+                    $code = $error->getCode();
+                }
                 $error = $error->getMessage();
             } elseif ($error instanceof Exception || $error instanceof Throwable) {
                 $error = t('An unexpected error occurred');
