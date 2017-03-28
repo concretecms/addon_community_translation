@@ -128,7 +128,27 @@ class Package
         if ($this->name !== '') {
             $result = $this->name;
         } else {
-            $result = camelcase($this->handle);
+            $result = '';
+            $string = trim($this->handle, '_-');
+            $segments = preg_split('/[_-]+/', $string);
+            foreach ($segments as $segment) {
+                if ($segment !== '') {
+                    $len = mb_strlen($segment);
+                    if ($len === 1) {
+                        $segment = mb_strtoupper($segment);
+                    } else {
+                        $segment = mb_strtoupper(mb_substr($segment, 0, 1)) . mb_substr($segment, 1);
+                    }
+                    if ($result === '') {
+                        $result = $segment;
+                    } else {
+                        $result .= ' ' . $segment;
+                    }
+                }
+            }
+            if ($result === '') {
+                $result = $this->handle;
+            }
         }
 
         return $result;
