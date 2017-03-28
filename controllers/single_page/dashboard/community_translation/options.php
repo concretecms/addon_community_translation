@@ -66,6 +66,10 @@ class Options extends DashboardPageController
                 'name' => t('Get the translations of a specific package version'),
                 'localeDepentent' => true,
             ],
+            'fillTranslations' => [
+                'name' => t('Fill-in known translations for users usage'),
+                'localeDepentent' => true,
+            ],
             'importPackageVersionTranslatables' => [
                 'name' => t('Set the source strings of a specific package version'),
                 'localeDepentent' => false,

@@ -8,6 +8,7 @@ return [
             'getPackageVersions' => 'everybody',
             'getPackageVersionLocales' => 'everybody',
             'getPackageVersionTranslations' => 'everybody',
+            'fillTranslations' => 'everybody',
             'importPackageVersionTranslatables' => 'globaladmins',
             'importTranslations' => 'translators-own-locales',
             'importTranslations_approve' => 'localeadmins-own-locales',

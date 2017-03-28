@@ -390,6 +390,15 @@ class Controller extends Package
                 [],
                 ['GET'],
             ],
+            "$apiEntryPoint/fill-translations/{formatHandle}/" => [
+                'CommunityTranslation\Api\EntryPoint::fillTranslations',
+                null,
+                ['formatHandle' => $handleRegex],
+                [],
+                '',
+                [],
+                ['POST'],
+            ],
             "$apiEntryPoint/package/{packageHandle}/{packageVersion}/translatables/{formatHandle}/" => [
                 'CommunityTranslation\Api\EntryPoint::importPackageVersionTranslatables',
                 null,

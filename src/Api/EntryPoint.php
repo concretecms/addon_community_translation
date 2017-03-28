@@ -11,6 +11,7 @@ use CommunityTranslation\Repository\Stats as StatsRepository;
 use CommunityTranslation\Service\Access;
 use CommunityTranslation\Service\TranslationsFileExporter;
 use CommunityTranslation\Translatable\Importer as TranslatableImporter;
+use CommunityTranslation\Translation\Exporter as TranslationExporter;
 use CommunityTranslation\Translation\Importer as TranslationImporter;
 use CommunityTranslation\TranslationsConverter\Provider as TranslationsConverterProvider;
 use CommunityTranslation\UserException;
@@ -429,6 +430,70 @@ class EntryPoint extends AbstractController
     }
 
     /**
+     * Fill-in translations that we already know.
+     *
+     * @return Response
+     *
+     * @example POST a file (field name: file) to http://www.example.com/api/fill-translations/po/
+     */
+    public function fillTranslations($formatHandle)
+    {
+        $this->start();
+        try {
+            $this->getUserControl()->checkRateLimit();
+            $this->getUserControl()->checkGenericAccess(__FUNCTION__);
+            $format = $this->app->make(TranslationsConverterProvider::class)->getByHandle($formatHandle);
+            if ($format === null) {
+                throw new UserException(t('Unable to find the specified translations format'), Response::HTTP_NOT_FOUND);
+            }
+            /* @var \CommunityTranslation\TranslationsConverter\ConverterInterface $format */
+            if (!$format->canUnserializeTranslations()) {
+                throw new UserException(t('The specified translations format does not support unserialization'), Response::HTTP_NOT_ACCEPTABLE);
+            }
+            if (!$format->canSerializeTranslations()) {
+                throw new UserException(t('The specified translations format does not support serialization'), Response::HTTP_NOT_ACCEPTABLE);
+            }
+            if (!$format->supportLanguageHeader()) {
+                throw new UserException(t('The specified translations format does not support a language header'), Response::HTTP_NOT_ACCEPTABLE);
+            }
+            $file = $this->request->files->get('file');
+            if ($file === null) {
+                throw new UserException(t('The file with strings to be translated has not been specified'), Response::HTTP_NOT_ACCEPTABLE);
+            }
+            if (!$file->isValid()) {
+                throw new UserException(t('The file with strings to be translated has not been received correctly: %s', $file->getErrorMessage()), Response::HTTP_NOT_ACCEPTABLE);
+            }
+            $translations = $format->loadTranslationsFromFile($file->getPathname());
+            $localeID = (string) $translations->getLanguage();
+            if ($localeID === '') {
+                throw new UserException(t('The file with strings to be translated does not specify a language ID'));
+            }
+            $locale = $this->app->make(LocaleRepository::class)->findApproved($localeID);
+            if ($locale === null) {
+                throw new UserException(t('The file with strings to be translated specifies an unknown language ID (%s)', $localeID));
+            }
+            $translationExporter = $this->app->make(TranslationExporter::class);
+            /* @var TranslationExporter $translationExporter */
+            $translations = $translationExporter->fromPot($translations, $locale);
+            $result = $this->getResponseFactory()->create(
+                $format->convertTranslationsToString($translations),
+                Response::HTTP_OK,
+                [
+                    'Content-Type' => 'application/octet-stream',
+                    'Content-Transfer-Encoding' => 'binary',
+                    'Content-Disposition' => 'attachment; filename="translations.' . $format->getFileExtension() . '"',
+                ]
+                );
+        } catch (Exception $x) {
+            $result = $this->buildErrorResponse($x);
+        } catch (Throwable $x) {
+            $result = $this->buildErrorResponse($x);
+        }
+
+        return $this->finish($result);
+    }
+
+    /**
      * Set the translatable strings of a package version.
      *
      * @return Response
@@ -479,7 +544,7 @@ class EntryPoint extends AbstractController
                 throw new UserException(t('The file with translatable strings has not been specified'), Response::HTTP_NOT_ACCEPTABLE);
             }
             if (!$file->isValid()) {
-                throw new UserException(t('The file with translatable strings has not been received correctly: %s', $archive->getErrorMessage()), Response::HTTP_NOT_ACCEPTABLE);
+                throw new UserException(t('The file with translatable strings has not been received correctly: %s', $file->getErrorMessage()), Response::HTTP_NOT_ACCEPTABLE);
             }
             $translations = $format->loadTranslationsFromFile($file->getPathname());
             if (count($t) < 1) {
@@ -527,7 +592,7 @@ class EntryPoint extends AbstractController
                 throw new UserException(t('The file with translated strings has not been specified'), Response::HTTP_NOT_ACCEPTABLE);
             }
             if (!$file->isValid()) {
-                throw new UserException(t('The file with translated strings has not been received correctly: %s', $archive->getErrorMessage()), Response::HTTP_NOT_ACCEPTABLE);
+                throw new UserException(t('The file with translated strings has not been received correctly: %s', $file->getErrorMessage()), Response::HTTP_NOT_ACCEPTABLE);
             }
             $translations = $format->loadTranslationsFromFile($file->getPathname());
             if (count($translations) < 1) {
