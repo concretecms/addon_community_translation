@@ -68,7 +68,7 @@ if (isset($package)) {
                                 <div class="panel-heading">
                                     <?= t('Translations for %s', h($packageVersion->getDisplayName())) ?>
                                 </div>
-                                <table class="table table-striped comtra-sortable">
+                                <table class="table table-striped comtra-sortable comtra-searchpackages-languages">
                                     <col width="1" />
                                     <col />
                                     <col width="1" />
@@ -77,8 +77,8 @@ if (isset($package)) {
                                             <th><?= t('ID') ?></th>
                                             <th class="comtra-sorted-asc"><?= t('Language') ?></th>
                                             <th></th>
-                                            <th data-sortby-default="desc"><?= t('Updated') ?></th>
-                                            <th data-sortby-default="desc"><?= t('Progress') ?></th>
+                                            <th class="hidden-xs hidden-sm" data-sortby-default="desc"><?= t('Updated') ?></th>
+                                            <th class="hidden-xs" data-sortby-default="desc"><?= t('Progress') ?></th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -119,16 +119,16 @@ if (isset($package)) {
                                                 <tr data-sortsection="<?= $sectionIndex ?>">
                                                     <td data-sortby="<?= h(mb_strtolower($locale->getID())) ?>"><span class="label label-default"><?= h($locale->getID()) ?></span></td>
                                                     <td data-sortby="<?= h(mb_strtolower($locale->getDisplayName())) ?>"><?= $locale->getDisplayName() ?></td>
-                                                    <td>
+                                                    <td class="comtra-locale-actions">
                                                         <?php
                                                         foreach ($localeInfo['downloadFormats'] as $adf) {
-                                                            ?><a class="btn btn-sm btn-info" style="padding: 5px 10px" href="<?= h($controller->getActionURL($view, 'download_translations_file', $packageVersion->getID(), $locale->getID(), $adf->getHandle()) . '?' . $token->getParameter('comtra-download-translations-' . $packageVersion->getID() . '@' . $locale->getID() . '.' . $adf->getHandle())) ?>" title="<?= h(t('Download translations (%s)', $adf->getName())) ?>" style="padding: 5px 10px; white-space:nowrap"><i class="fa fa-cloud-download"></i> <?= h($adf->getFileExtension()) ?></a><?php
+                                                            ?><a class="hidden-xs btn btn-sm btn-info" style="padding: 5px 10px" href="<?= h($controller->getActionURL($view, 'download_translations_file', $packageVersion->getID(), $locale->getID(), $adf->getHandle()) . '?' . $token->getParameter('comtra-download-translations-' . $packageVersion->getID() . '@' . $locale->getID() . '.' . $adf->getHandle())) ?>" title="<?= h(t('Download translations (%s)', $adf->getName())) ?>" style="padding: 5px 10px; white-space:nowrap"><i class="fa fa-cloud-download"></i> <?= h($adf->getFileExtension()) ?></a><?php
                                                         }
                                                         ?>
                                                         <a class="btn btn-sm <?= $translateClass ?>" style="padding: 5px 10px" href="<?= h($translateLink) ?>"<?= $translateOnclick ?>><?= t('Translate') ?></a>
                                                     </td>
-                                                    <td data-sortby="<?= h($localeInfo['updatedOn_sort']) ?>"><?= h($localeInfo['updatedOn']) ?></td>
-                                                    <td data-sortby-kind="numeric" data-sortby="<?= $localeInfo['percSort'] ?>"><div class="progress" style="margin: 0" title="<?= t2('%s untranslated string', '%s untranslated strings', $localeInfo['untranslated']) ?>">
+                                                    <td class="hidden-xs hidden-sm" data-sortby="<?= h($localeInfo['updatedOn_sort']) ?>"><?= h($localeInfo['updatedOn']) ?></td>
+                                                    <td class="hidden-xs" data-sortby-kind="numeric" data-sortby="<?= $localeInfo['percSort'] ?>"><div class="progress" style="margin: 0" title="<?= t2('%s untranslated string', '%s untranslated strings', $localeInfo['untranslated']) ?>">
                                                         <div class="progress-bar <?= $localeInfo['progressBarClass'] ?>" role="progressbar" style="width: <?= $localeInfo['perc'] ?>%">
                                                             <span><?= $localeInfo['perc'] ?></span>
                                                         </div>

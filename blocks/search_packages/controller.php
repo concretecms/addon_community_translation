@@ -154,21 +154,6 @@ class Controller extends BlockController
         }
     }
 
-    public function on_start()
-    {
-        $this->addHeaderItem(<<<EOT
-<style>
-.progress-bar-minwidth1 {
-    min-width: 15px;
-}
-.progress-bar-minwidth2 {
-    min-width: 15px;
-}
-</style>
-EOT
-        );
-    }
-
     /**
      * @return array
      */

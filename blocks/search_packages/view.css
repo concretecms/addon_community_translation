@@ -1,0 +1,10 @@
+table.comtra-searchpackages-languages .progress-bar-minwidth1 {
+    min-width: 15px;
+}
+table.comtra-searchpackages-languages .progress-bar-minwidth2 {
+    min-width: 15px;
+}
+
+table.comtra-searchpackages-languages td.comtra-locale-actions {
+	white-space: nowrap;
+}
