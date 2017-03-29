@@ -195,7 +195,7 @@ class Importer
                 }
                 $insertPlacesParams[] = serialize($locations);
                 // comments
-                $insertPlacesParams[] = serialize($translation->getComments());
+                $insertPlacesParams[] = serialize($translation->getExtractedComments());
                 // sort
                 $insertPlacesParams[] = $importCount;
                 ++$insertPlacesCount;
