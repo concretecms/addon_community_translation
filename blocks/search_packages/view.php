@@ -68,7 +68,7 @@ if (isset($package)) {
                                 <div class="panel-heading">
                                     <?= t('Translations for %s', h($packageVersion->getDisplayName())) ?>
                                 </div>
-                                <table class="table table-striped comtra-sortable comtra-searchpackages-languages">
+                                <table class="table table-striped comtra-sortable comtra-searchpackages-languages" data-comtra-sortable-persister-key="comtra-searchpackages-languages-<?= $bID ?>">
                                     <col width="1" />
                                     <col />
                                     <col width="1" />

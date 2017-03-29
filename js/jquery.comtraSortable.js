@@ -1,6 +1,6 @@
 /* jshint unused:vars, undef:true, jquery:true, browser:true */
 
-(function($) {
+(function($, undefined) {
 'use strict';
 
 var SORTORDERCLASS = {
@@ -8,15 +8,56 @@ var SORTORDERCLASS = {
     DESC: 'comtra-sorted-desc',
 };
 
+var Persister = (function() {
+    var available, ls, js;
+    ls = window.localStorage;
+    js = window.JSON;
+    available = (ls && ls.getItem && ls.setItem && ls.removeItem && js && js.stringify && js.parse) ? true : false;
+    return {
+        get: function(key) {
+            if (!available) {
+                return null;
+            }
+            var value = ls.getItem(key);
+            if (value === null || value === undefined) {
+                return null;
+            }
+            return js.parse(value);
+        },
+        set: function(key, value) {
+            if (!available) {
+                return false;
+            }
+            ls.setItem(key, js.stringify(value));
+            return true;
+        },
+        remove: function(key) {
+            if (available) {
+                ls.removeItem(key);
+            }
+        }
+    };
+})();
+
 function Table(tableElement)
 {
     this.$table = $(tableElement);
     if (this.$table.data('comtra-sortable') instanceof Table) {
         return;
     }
+    this.persisterKey = this.$table.data('comtra-sortable-persister-key');
+    if (this.persisterKey === undefined) {
+        this.persisterKey = null;
+    }
     this.$table.data('comtra-sortable', this);
     this.rebuild();
     this.sortRows();
+    if (this.persisterKey !== null) {
+        var sortIndex = Persister.get(this.persisterKey + '-sortIndex');
+        if (sortIndex !== null) {
+            this.setSortIndex(sortIndex);
+        }
+    }
 }
 Table.prototype = {
     rebuild: function() {
@@ -96,6 +137,13 @@ Table.prototype = {
                 this.$th.addClass(SORTORDERCLASS[sortIndex.desc ? 'DESC' : 'ASC']);
             }
         });
+        if (this.persisterKey !== null) {
+            if (sortIndex === null) {
+                Persister.remove(this.persisterKey + '-sortIndex');
+            } else {
+                Persister.set(this.persisterKey + '-sortIndex', sortIndex);
+            }
+        }
         this.sortRows();
     },
     toggleHeadSort: function(cellIndex) {
