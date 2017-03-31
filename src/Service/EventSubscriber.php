@@ -67,7 +67,7 @@ class EventSubscriber implements EventSubscriberInterface
         $packageIsNew = (bool) $evt->getArgument('packageIsNew');
         $numStringsAdded = (int) $evt->getArgument('numStringsAdded');
         $this->app->make(StatsRepository::class)->resetForPackageVersion($packageVersion);
-        $this->app->make(LocaleStatsRepository::class)->resetForPackageVersion($packageVersion);
+        $this->app->make(LocaleStatsRepository::class)->resetAll();
     }
 
     /**
