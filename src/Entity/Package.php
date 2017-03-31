@@ -1,6 +1,7 @@
 <?php
 namespace CommunityTranslation\Entity;
 
+use CommunityTranslation\Service\VersionComparer;
 use DateTime;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping as ORM;
@@ -261,31 +262,11 @@ class Package
     public function getSortedVersions($descending = false, $developmentVersionsFirst = null)
     {
         if ($developmentVersionsFirst === null) {
-            $result = $this->getVersions()->toArray();
-            usort($result, function (Package\Version $a, Package\Version $b) use ($descending) {
-                $aIsDev = (strpos($a->getVersion(), Package\Version::DEV_PREFIX) === 0);
-                $aVer = $aIsDev ? substr($a->getVersion(), strlen(Package\Version::DEV_PREFIX)) : $a->getVersion();
-                while (preg_match('/^(\.)\.0+$/', $aVer, $m)) {
-                    $aVer = $m[1];
-                }
-                if ($aIsDev) {
-                    $aVer .= str_repeat('.' . PHP_INT_MAX, 5);
-                }
-                $bIsDev = (strpos($b->getVersion(), Package\Version::DEV_PREFIX) === 0);
-                $bVer = $bIsDev ? substr($b->getVersion(), strlen(Package\Version::DEV_PREFIX)) : $b->getVersion();
-                while (preg_match('/^(\.)\.0+$/', $bVer, $m)) {
-                    $bVer = $m[1];
-                }
-                if ($bIsDev) {
-                    $bVer .= str_repeat('.' . PHP_INT_MAX, 5);
-                }
-
-                return version_compare($aVer, $bVer) * ($descending ? -1 : 1);
-            });
+            $versionComparer = new VersionComparer();
+            $result = $versionComparer->sortPackageVersionEntities($this->getVersions()->toArray(), $descending);
         } else {
             $devVersions = $this->getSortedDevelopmentVersions($descending);
             $prodVersions = $this->getSortedProductionVersions($descending);
-
             if ($developmentVersionsFirst) {
                 $result = array_merge($devVersions, $prodVersions);
             } else {
