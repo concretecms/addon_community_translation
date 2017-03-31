@@ -13,7 +13,7 @@ class VersionComparer
      *
      * @return \CommunityTranslation\Entity\Package\Version[]
      */
-    public function sortPackageVersionEntities(array $packageVersions, $descending = false)
+    public function sortPackageVersionEntities($packageVersions, $descending = false)
     {
         $keys = [];
         foreach ($packageVersions as $pv) {
@@ -36,7 +36,7 @@ class VersionComparer
      *
      * @return string[]
      */
-    public function sortPackageVersions(array $packageVersions, $descending = false)
+    public function sortPackageVersions($packageVersions, $descending = false)
     {
         usort($packageVersions, function ($a, $b) use ($descending) {
             $aIsDev = (strpos($a, PackageVersionEntity::DEV_PREFIX) === 0);
@@ -70,7 +70,7 @@ class VersionComparer
      *
      * @return \CommunityTranslation\Entity\Package\Version|null Returns null if $availableVersions is empty, an entity instance otherwise
      */
-    public function matchPackageVersionEntities(array $availableVersions, $wantedVersion)
+    public function matchPackageVersionEntities($availableVersions, $wantedVersion)
     {
         if (empty($availableVersions)) {
             $result = null;
@@ -79,7 +79,7 @@ class VersionComparer
             foreach ($availableVersions as $pv) {
                 $keys[$pv->getVersion()] = $pv;
             }
-            $bestKey = $this->matchVersions(array_keys($keys), $wantedVersion);
+            $bestKey = $this->matchPackageVersions(array_keys($keys), $wantedVersion);
             $result = $keys[$bestKey];
         }
 
@@ -94,7 +94,7 @@ class VersionComparer
      *
      * @return string|null Returns null if $availableVersions is empty, a version otherwise
      */
-    public function matchPackageVersions(array $availableVersions, $wantedVersion)
+    public function matchPackageVersions($availableVersions, $wantedVersion)
     {
         if (preg_match('/^(\d+(?:\.\d+)*)(?:dev|alpha|a|beta|b|rc)/i', $wantedVersion, $m)) {
             $wantedVersionBase = $m[1];

@@ -10,6 +10,7 @@ use CommunityTranslation\Repository\Package\Version as PackageVersionRepository;
 use CommunityTranslation\Repository\Stats as StatsRepository;
 use CommunityTranslation\Service\Access;
 use CommunityTranslation\Service\TranslationsFileExporter;
+use CommunityTranslation\Service\VersionComparer;
 use CommunityTranslation\Translatable\Importer as TranslatableImporter;
 use CommunityTranslation\Translation\Exporter as TranslationExporter;
 use CommunityTranslation\Translation\Importer as TranslationImporter;
@@ -132,6 +133,30 @@ class EntryPoint extends AbstractController
     protected function buildJsonResponse($data)
     {
         return $this->getResponseFactory()->json($data);
+    }
+
+    /**
+     * @param PackageEntity $package
+     * @param string $packageVersionID
+     *
+     * @return \CommunityTranslation\Entity\Package\Version|null
+     */
+    protected function getPackageVersion(PackageEntity $package, $packageVersion)
+    {
+        if ($packageVersion === 'best-match-version') {
+            $result = null;
+            if ($this->request->query->has('v')) {
+                $v = $this->request->query->get('v');
+                if (is_string($v) && $v !== '') {
+                    $versionComparer = new VersionComparer();
+                    $result = $versionComparer->matchPackageVersionEntities($package->getVersions(), $v);
+                }
+            }
+        } else {
+            $result = $this->app->make(PackageVersionRepository::class)->findByHandleAndVersion($package->getHandle(), $packageVersion);
+        }
+
+        return $result;
     }
 
     /**
@@ -325,6 +350,7 @@ class EntryPoint extends AbstractController
      * @return Response
      *
      * @example http://www.example.com/api/package/concrete5/8.2/locales/80/
+     * @example http://www.example.com/api/package/concrete5/best-match-version/locales/80/?v=8.2rc1
      */
     public function getPackageVersionLocales($packageHandle, $packageVersion, $minimumLevel = null)
     {
@@ -332,7 +358,11 @@ class EntryPoint extends AbstractController
         try {
             $this->getUserControl()->checkRateLimit();
             $accessibleLocales = $this->getUserControl()->checkLocaleAccess(__FUNCTION__);
-            $version = $this->app->make(PackageVersionRepository::class)->findByHandleAndVersion($packageHandle, $packageVersion);
+            $package = $this->app->make(PackageRepository::class)->findOneBy(['handle' => $packageHandle]);
+            if ($package === null) {
+                throw new UserException(t('Unable to find the specified package'), Response::HTTP_NOT_FOUND);
+            }
+            $version = $this->getPackageVersion($package, $packageVersion);
             if ($version === null) {
                 throw new UserException(t('Unable to find the specified package version'), Response::HTTP_NOT_FOUND);
             }
@@ -383,6 +413,7 @@ class EntryPoint extends AbstractController
      * @return Response
      *
      * @example http://www.example.com/api/package/concrete5/8.2/translations/it_IT/mo/
+     * @example http://www.example.com/api/package/concrete5/best-match-version/translations/it_IT/mo/?v=8.2rc1
      */
     public function getPackageVersionTranslations($packageHandle, $packageVersion, $localeID, $formatHandle)
     {
@@ -397,7 +428,11 @@ class EntryPoint extends AbstractController
             if (!in_array($locale, $accessibleLocales, true)) {
                 throw AccessDeniedException::create(t('Access denied to the specified locale'));
             }
-            $version = $this->app->make(PackageVersionRepository::class)->findByHandleAndVersion($packageHandle, $packageVersion);
+            $package = $this->app->make(PackageRepository::class)->findOneBy(['handle' => $packageHandle]);
+            if ($package === null) {
+                throw new UserException(t('Unable to find the specified package'), Response::HTTP_NOT_FOUND);
+            }
+            $version = $this->getPackageVersion($package, $packageVersion);
             if ($version === null) {
                 throw new UserException(t('Unable to find the specified package version'), Response::HTTP_NOT_FOUND);
             }
