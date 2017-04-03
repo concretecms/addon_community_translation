@@ -815,7 +815,7 @@ class OnlineTranslation extends Controller
                 $t = $converter->loadTranslationsFromFile($file->getPathname());
                 if (count($t) < 1) {
                     if ($err === null) {
-                        $err = UserException(t('No translations found in uploaded file'));
+                        $err = new UserException(t('No translations found in uploaded file'));
                     }
                     continue;
                 } elseif (!$t->getLanguage()) {
