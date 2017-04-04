@@ -1212,19 +1212,19 @@ class OnlineTranslation extends Controller
         if ($translatable->getPlural() !== '') {
             switch ($locale->getPluralCount()) {
                 case 6:
-                    $t->setPluralTranslation(4, $translation->getText5());
+                    $t->setPluralTranslation($translation->getText5(), 4);
                     /* @noinspection PhpMissingBreakStatementInspection */
                 case 5:
-                    $t->setPluralTranslation(3, $translation->getText4());
+                    $t->setPluralTranslation($translation->getText4(), 3);
                     /* @noinspection PhpMissingBreakStatementInspection */
                 case 4:
-                    $t->setPluralTranslation(2, $translation->getText3());
+                    $t->setPluralTranslation($translation->getText3(), 2);
                     /* @noinspection PhpMissingBreakStatementInspection */
                 case 3:
-                    $t->setPluralTranslation(1, $translation->getText2());
+                    $t->setPluralTranslation($translation->getText2(), 1);
                     /* @noinspection PhpMissingBreakStatementInspection */
                 case 2:
-                    $t->setPluralTranslation(0, $translation->getText1());
+                    $t->setPluralTranslation($translation->getText1(), 0);
                     break;
             }
         }
