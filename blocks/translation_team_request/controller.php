@@ -163,9 +163,12 @@ class Controller extends BlockController
         }
         $this->set('step', 'language');
         $languages = [];
+        $punicLanguages = PunicLanguage::getAll(true, true);
         foreach (GettextLanguage::getAll() as $l) {
             if (strpos($l->id, '_') === false) {
-                $languages[$l->id] = PunicLanguage::getName($l->id);
+                if (isset($punicLanguages[$l->id])) {
+                    $languages[$l->id] = $punicLanguages[$l->id];
+                }
             }
         }
         (new Comparer())->sort($languages, true);
