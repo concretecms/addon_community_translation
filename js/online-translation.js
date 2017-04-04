@@ -252,7 +252,7 @@ var OtherTranslations = (function() {
             if (canApprove) {
                 $td
                     .append($('<button type="button" class="btn btn-success btn-xs" style="width: 100%" />')
-                        .text(i18n.Approve)
+                        .text(i18n.Use_this_and_approve)
                         .on('click', function() {
                             if (!translator.busy) {
                                 processTranslation('approve', {translationID: me.data.id});
@@ -260,7 +260,7 @@ var OtherTranslations = (function() {
                         })
                     )
                     .append($('<button type="button" class="btn btn-danger btn-xs" style="width: 100%; margin-top: 5px" />')
-                        .text(i18n.Deny)
+                        .text(i18n.Ignore)
                         .on('click', function() {
                             if (!translator.busy) {
                                 processTranslation('deny', {translationID: me.data.id});
