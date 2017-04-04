@@ -138,12 +138,14 @@ class EntryPoint extends AbstractController
     /**
      * @param PackageEntity $package
      * @param string $packageVersionID
+     * @param bool $isBastMatch [out]
      *
      * @return \CommunityTranslation\Entity\Package\Version|null
      */
-    protected function getPackageVersion(PackageEntity $package, $packageVersion)
+    protected function getPackageVersion(PackageEntity $package, $packageVersion, &$isBastMatch = null)
     {
         if ($packageVersion === 'best-match-version') {
+            $isBastMatch = true;
             $result = null;
             if ($this->request->query->has('v')) {
                 $v = $this->request->query->get('v');
@@ -153,6 +155,7 @@ class EntryPoint extends AbstractController
                 }
             }
         } else {
+            $isBastMatch = false;
             $result = $this->app->make(PackageVersionRepository::class)->findByHandleAndVersion($package->getHandle(), $packageVersion);
         }
 
@@ -362,7 +365,7 @@ class EntryPoint extends AbstractController
             if ($package === null) {
                 throw new UserException(t('Unable to find the specified package'), Response::HTTP_NOT_FOUND);
             }
-            $version = $this->getPackageVersion($package, $packageVersion);
+            $version = $this->getPackageVersion($package, $packageVersion, $isBestMatch);
             if ($version === null) {
                 throw new UserException(t('Unable to find the specified package version'), Response::HTTP_NOT_FOUND);
             }
@@ -396,6 +399,13 @@ class EntryPoint extends AbstractController
                     return $result;
                 }
             );
+            if ($isBestMatch) {
+                $resultData = [
+                    'versionHandle' => $version->getVersion(),
+                    'versionName' => $version->getDisplayVersion(),
+                    'locales' => $resultData,
+                ];
+            }
 
             $result = $this->buildJsonResponse($resultData);
         } catch (Exception $x) {
