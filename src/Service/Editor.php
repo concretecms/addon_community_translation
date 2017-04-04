@@ -84,6 +84,7 @@ class Editor
      */
     protected function buildInitialTranslations(LocaleEntity $locale, \Concrete\Core\Database\Driver\PDOStatement $rs)
     {
+        $approvedSupport = $this->app->make(Access::class)->getLocaleAccess($locale) >= Access::ADMIN;
         $result = [];
         $numPlurals = $locale->getPluralCount();
         while (($row = $rs->fetch()) !== false) {
@@ -91,6 +92,9 @@ class Editor
                 'id' => (int) $row['id'],
                 'original' => $row['text'],
             ];
+            if ($approvedSupport && $row['approved']) {
+                $item['isApproved'] = true;
+            }
             if ($row['context'] !== '') {
                 $item['context'] = $row['context'];
             }
