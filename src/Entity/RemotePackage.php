@@ -149,7 +149,7 @@ class RemotePackage
      */
     public function isApproved()
     {
-        return $this->name;
+        return $this->approved;
     }
 
     /**
