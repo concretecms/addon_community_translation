@@ -4,6 +4,7 @@ namespace CommunityTranslation\Api;
 use CommunityTranslation\Entity\Locale as LocaleEntity;
 use CommunityTranslation\Entity\Package as PackageEntity;
 use CommunityTranslation\Entity\RemotePackage as RemotePackageEntity;
+use CommunityTranslation\RemotePackage\Importer as RemotePackageImporter;
 use CommunityTranslation\Repository\Locale as LocaleRepository;
 use CommunityTranslation\Repository\Notification as NotificationRepository;
 use CommunityTranslation\Repository\Package as PackageRepository;
@@ -666,7 +667,14 @@ class EntryPoint extends AbstractController
                 throw $x;
             }
             if ($immediate) {
-                throw new UserException('@todo');
+                if ($entity->isApproved()) {
+                    $importer = $this->app->make(RemotePackageImporter::class);
+                    /* @var RemotePackageImporter $importer */
+                    $importer->import($entity);
+                    $result = $this->buildJsonResponse('imported');
+                } else {
+                    $result = $this->buildJsonResponse('skipped');
+                }
             } else {
                 $result = $this->buildJsonResponse('queued');
             }
