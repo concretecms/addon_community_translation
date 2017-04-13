@@ -36,6 +36,9 @@ if (isset($package)) {
                         </div>
                         <?php
                     } else {
+                        if ($package->getUrl() !== '') {
+                            ?><p><?= t('You can get more details on this package <a href="%s" target="_blank">here</a>.', h($package->getUrl())) ?></p><?php
+                        }
                         ?>
                         <form class="form-inline" onsubmit="return false">
                             <div class="form-group">
@@ -180,8 +183,14 @@ if (!empty($foundPackages)) {
             <div class="searchResult">
                 <h3><a href="<?= h($controller->getActionURL($view, 'package', $foundPackage->getHandle())) ?>"><?= h($foundPackage->getDisplayName()) ?></a></h3>
                 <p class="text-muted">
-                    <?= h(t('Package handle: %s', $foundPackage->getHandle())) ?><br />
-                    <?= h(t('Number of available versions: %d', count($foundPackage->getVersions()))) ?>
+                	<?php
+                	echo h(t('Package handle: %s', $foundPackage->getHandle())),
+                	   '<br />',
+                	   h(t('Number of available versions: %d', count($foundPackage->getVersions())));
+                    if ($foundPackage->getUrl() !== '') {
+                        echo '<br />', t('Package is available <a href="%s" target="_blank">here</a>', h($foundPackage->getUrl()));
+                    }
+                    ?>
                 </p>
             </div>
             <?php
