@@ -25,6 +25,8 @@ class Options extends DashboardPageController
                 ApiUserControl::ACCESSOPTION_LOCALEADMINS_ALLLOCALES => t('Language team coordinators (access to all locales)'),
                 ApiUserControl::ACCESSOPTION_LOCALEADMINS_OWNLOCALES => t('Language team coordinators (access to own locales only)'),
                 ApiUserControl::ACCESSOPTION_GLOBALADMINS => t('Global localization administrators'),
+                ApiUserControl::ACCESSOPTION_SITEADMINS => t('Site administrators'),
+                ApiUserControl::ACCESSOPTION_ROOT => t('Site administrator'),
                 ApiUserControl::ACCESSOPTION_NOBODY => t('Nobody'),
             ]
             :
@@ -34,6 +36,8 @@ class Options extends DashboardPageController
                 ApiUserControl::ACCESSOPTION_TRANSLATORS => t('Translators (of any locale)'),
                 ApiUserControl::ACCESSOPTION_LOCALEADMINS => t('Language team coordinators (of any locale)'),
                 ApiUserControl::ACCESSOPTION_GLOBALADMINS => t('Global localization administrators'),
+                ApiUserControl::ACCESSOPTION_SITEADMINS => t('Site administrators'),
+                ApiUserControl::ACCESSOPTION_ROOT => t('Site administrator'),
                 ApiUserControl::ACCESSOPTION_NOBODY => t('Nobody'),
             ]
         ;

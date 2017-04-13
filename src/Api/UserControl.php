@@ -8,6 +8,7 @@ use CommunityTranslation\UserException;
 use Concrete\Core\Application\Application;
 use Concrete\Core\Entity\User\User as UserEntity;
 use Concrete\Core\Http\Request;
+use Concrete\Core\User\Group\Group;
 use Concrete\Core\User\User;
 use Concrete\Core\User\UserList;
 use DateTime;
@@ -24,6 +25,8 @@ class UserControl
     const ACCESSOPTION_LOCALEADMINS_ALLLOCALES = 'localeadmins-all-locales';
     const ACCESSOPTION_LOCALEADMINS_OWNLOCALES = 'localeadmins-own-locales';
     const ACCESSOPTION_GLOBALADMINS = 'globaladmins';
+    const ACCESSOPTION_SITEADMINS = 'siteadmins';
+    const ACCESSOPTION_ROOT = 'root';
     const ACCESSOPTION_NOBODY = 'nobody';
 
     /**
@@ -202,6 +205,23 @@ class UserControl
             case self::ACCESSOPTION_GLOBALADMINS:
                 $requiredLevel = Access::GLOBAL_ADMIN;
                 break;
+            case self::ACCESSOPTION_SITEADMINS:
+                $user = $this->getRequestUser();
+                if ($user->getUserID() != USER_SUPER_ID) {
+                    $admins = Group::getByID(ADMIN_GROUP_ID);
+                    if (!$admins || !$user->inGroup($admins)) {
+                        throw AccessDeniedException::create();
+                    }
+                }
+
+                return;
+            case self::ACCESSOPTION_ROOT:
+                $user = $this->getRequestUser();
+                if ($user->getUserID() != USER_SUPER_ID) {
+                    throw AccessDeniedException::create();
+                }
+
+                return;
             case self::ACCESSOPTION_NOBODY:
             default:
                 throw AccessDeniedException::create();
@@ -259,6 +279,23 @@ class UserControl
                 $requiredLevel = Access::GLOBAL_ADMIN;
                 $ownLocalesOnly = false;
                 break;
+            case self::ACCESSOPTION_SITEADMINS:
+                $user = $this->getRequestUser();
+                if ($user->getUserID() != USER_SUPER_ID) {
+                    $admins = Group::getByID(ADMIN_GROUP_ID);
+                    if (!$admins || !$user->inGroup($admins)) {
+                        throw AccessDeniedException::create();
+                    }
+                }
+
+                return;
+            case self::ACCESSOPTION_ROOT:
+                $user = $this->getRequestUser();
+                if ($user->getUserID() != USER_SUPER_ID) {
+                    throw AccessDeniedException::create();
+                }
+
+                return;
             case self::ACCESSOPTION_NOBODY:
             default:
                 throw AccessDeniedException::create();
