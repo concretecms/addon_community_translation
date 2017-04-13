@@ -4,6 +4,7 @@ namespace Concrete\Package\CommunityTranslation;
 use CommunityTranslation\Console\Command\AcceptPendingJoinRequestsCommand;
 use CommunityTranslation\Console\Command\NotifyPackageVersionsCommand;
 use CommunityTranslation\Console\Command\ProcessGitRepositoriesCommand;
+use CommunityTranslation\Console\Command\ProcessRemotePackagesCommand;
 use CommunityTranslation\Console\Command\RemoveLoggedIPAddressesCommand;
 use CommunityTranslation\Console\Command\SendNotificationsCommand;
 use CommunityTranslation\Console\Command\TransifexGlossaryCommand;
@@ -172,6 +173,7 @@ class Controller extends Package
         $console->add(new SendNotificationsCommand());
         $console->add(new RemoveLoggedIPAddressesCommand());
         $console->add(new NotifyPackageVersionsCommand());
+        $console->add(new ProcessRemotePackagesCommand());
     }
 
     /**
@@ -416,6 +418,15 @@ class Controller extends Package
                 '',
                 [],
                 ['POST'],
+            ],
+            "$apiEntryPoint/import/package/" => [
+                'CommunityTranslation\Api\EntryPoint::importPackage',
+                null,
+                [],
+                [],
+                '',
+                [],
+                ['PUT'],
             ],
             "$apiEntryPoint/{unrecognizedPath}" => [
                 'CommunityTranslation\Api\EntryPoint::unrecognizedCall',

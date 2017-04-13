@@ -52,6 +52,7 @@ class ServiceProvider extends Provider
             'Package\Version',
             'PackageSubscription',
             'PackageVersionSubscription',
+            'RemotePackage',
             'Stats',
             'Translatable',
             'Translatable\Comment',

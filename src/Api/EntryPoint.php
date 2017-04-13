@@ -3,10 +3,12 @@ namespace CommunityTranslation\Api;
 
 use CommunityTranslation\Entity\Locale as LocaleEntity;
 use CommunityTranslation\Entity\Package as PackageEntity;
+use CommunityTranslation\Entity\RemotePackage as RemotePackageEntity;
 use CommunityTranslation\Repository\Locale as LocaleRepository;
 use CommunityTranslation\Repository\Notification as NotificationRepository;
 use CommunityTranslation\Repository\Package as PackageRepository;
 use CommunityTranslation\Repository\Package\Version as PackageVersionRepository;
+use CommunityTranslation\Repository\RemotePackage as RemotePackageRepository;
 use CommunityTranslation\Repository\Stats as StatsRepository;
 use CommunityTranslation\Service\Access;
 use CommunityTranslation\Service\TranslationsFileExporter;
@@ -20,6 +22,7 @@ use Concrete\Core\Controller\AbstractController;
 use Concrete\Core\Http\ResponseFactory;
 use Concrete\Core\Localization\Localization;
 use DateTimeZone;
+use Doctrine\ORM\EntityManager;
 use Exception;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -121,6 +124,27 @@ class EntryPoint extends AbstractController
                 'Content-Type' => 'text/plain; charset=UTF-8',
             ]
         );
+    }
+
+    /**
+     * Check if the request is a JSON request and returns the posted parameters.
+     *
+     * @throws UserException
+     *
+     * @return array
+     */
+    protected function getRequestJson()
+    {
+        if ($this->request->getContentType() !== 'json') {
+            throw new UserException(t('Invalid request Content-Type: %s', $this->request->headers->get('Content-Type', '')), Response::HTTP_NOT_ACCEPTABLE);
+        }
+        $contentBody = $this->request->getContent();
+        $contentJson = @json_decode($contentBody, true);
+        if (!is_array($contentJson)) {
+            throw new UserException(t('Failed to parse the request body as JSON'), Response::HTTP_NOT_ACCEPTABLE);
+        }
+
+        return $contentJson;
     }
 
     /**
@@ -529,6 +553,123 @@ class EntryPoint extends AbstractController
                     'Content-Disposition' => 'attachment; filename="translations.' . $format->getFileExtension() . '"',
                 ]
                 );
+        } catch (Exception $x) {
+            $result = $this->buildErrorResponse($x);
+        } catch (Throwable $x) {
+            $result = $this->buildErrorResponse($x);
+        }
+
+        return $this->finish($result);
+    }
+
+    /**
+     * Accept a package version to be imported and queue it for later processing.
+     *
+     * @return Response
+     *
+     * @example PUT Request to http://www.example.com/api/import/package/ with this JSON data:
+     * {
+     *   "package_handle": "...", // Required
+     *   "package_version": "...",  // Required
+     *   "archive_url": "...", // Required
+     *   "package_name": "...", // Optional
+     *   "package_url": "...", // Optional
+     *   "approved": true/false // Optional
+     *   "immediate": true/false // Optional
+     * }
+     */
+    public function importPackage()
+    {
+        $this->start();
+        try {
+            $this->getUserControl()->checkRateLimit();
+            $this->getUserControl()->checkGenericAccess(__FUNCTION__);
+            $args = $this->getRequestJson();
+            $package_handle = (isset($args['package_handle']) && is_string($args['package_handle'])) ? trim($args['package_handle']) : '';
+            if ($package_handle === '') {
+                throw new UserException(t('Missing argument: %s', 'package_handle'), Response::HTTP_NOT_ACCEPTABLE);
+            }
+            $package_version = (isset($args['package_version']) && is_string($args['package_version'])) ? trim($args['package_version']) : '';
+            if ($package_version === '') {
+                throw new UserException(t('Missing argument: %s', 'package_version'), Response::HTTP_NOT_ACCEPTABLE);
+            }
+            $archive_url = (isset($args['archive_url']) && is_string($args['archive_url'])) ? trim($args['archive_url']) : '';
+            if ($archive_url === '') {
+                throw new UserException(t('Missing argument: %s', 'archive_url'), Response::HTTP_NOT_ACCEPTABLE);
+            }
+
+            $entity = RemotePackageEntity::create($package_handle, $package_version, $archive_url);
+
+            if (isset($args['package_name'])) {
+                if (!is_string($args['package_name'])) {
+                    throw new UserException(t('Invalid type of argument: %s', 'package_name'), Response::HTTP_NOT_ACCEPTABLE);
+                }
+                $entity->setName(trim($args['package_name']));
+            }
+            if (isset($args['package_url'])) {
+                if (!is_string($args['package_url'])) {
+                    throw new UserException(t('Invalid type of argument: %s', 'package_url'), Response::HTTP_NOT_ACCEPTABLE);
+                }
+                $entity->setUrl(trim($args['package_url']));
+            }
+            if (isset($args['approved'])) {
+                if (!is_bool($args['approved'])) {
+                    throw new UserException(t('Invalid type of argument: %s', 'approved'), Response::HTTP_NOT_ACCEPTABLE);
+                }
+                $entity->setIsApproved($args['approved']);
+            }
+            if (isset($args['immediate'])) {
+                if (!is_bool($args['immediate'])) {
+                    throw new UserException(t('Invalid type of argument: %s', 'immediate'), Response::HTTP_NOT_ACCEPTABLE);
+                }
+                $immediate = $args['immediate'];
+            } else {
+                $immediate = false;
+            }
+            $em = $this->app->make(EntityManager::class);
+            /* @var EntityManager $em */
+            $repo = $this->app->make(RemotePackageRepository::class);
+            /* @var RemotePackageRepository $repo */
+            $connection = $em->getConnection();
+            $connection->beginTransaction();
+            try {
+                // Remove duplicated packages still to be processed
+                $qb = $repo->createQueryBuilder('rp');
+                $qb
+                    ->delete()
+                    ->where('rp.handle = :handle')->setParameter('handle', $entity->getHandle())
+                    ->andWhere('rp.version = :version')->setParameter('version', $entity->getVersion())
+                    ->andWhere($qb->expr()->isNull('rp.processedOn'))
+                    ->getQuery()->execute();
+
+                if ($entity->isApproved()) {
+                    // Approve previously queued packages that were'nt approved
+                    $qb = $repo->createQueryBuilder('rp');
+                    $qb
+                        ->update()
+                        ->set('rp.approved', true)
+                        ->where('rp.handle = :handle')->setParameter('handle', $entity->getHandle())
+                        ->andWhere('rp.approved = :approved')->setParameter('approved', false)
+                        ->andWhere($qb->expr()->isNull('rp.processedOn'))
+                        ->getQuery()->execute();
+                }
+                if ($immediate === false) {
+                    $em->persist($entity);
+                    $em->flush($entity);
+                }
+                $connection->commit();
+            } catch (Exception $x) {
+                try {
+                    $connection->rollBack();
+                } catch (Exception $foo) {
+                }
+                throw $x;
+            }
+            if ($immediate) {
+                throw new UserException('@todo');
+            } else {
+                $result = $this->buildJsonResponse('queued');
+            }
         } catch (Exception $x) {
             $result = $this->buildErrorResponse($x);
         } catch (Throwable $x) {

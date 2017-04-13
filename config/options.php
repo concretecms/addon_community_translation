@@ -9,6 +9,7 @@ return [
             'getPackageVersionLocales' => 'everybody',
             'getPackageVersionTranslations' => 'everybody',
             'fillTranslations' => 'everybody',
+            'importPackage' => 'globaladmins',
             'importPackageVersionTranslatables' => 'globaladmins',
             'importTranslations' => 'translators-own-locales',
             'importTranslations_approve' => 'localeadmins-own-locales',

@@ -70,6 +70,10 @@ class Options extends DashboardPageController
                 'name' => t('Fill-in known translations for users usage'),
                 'localeDepentent' => true,
             ],
+            'importPackage' => [
+                'name' => t('Import translatable strings from a a remote package'),
+                'localeDepentent' => false,
+            ],
             'importPackageVersionTranslatables' => [
                 'name' => t('Set the source strings of a specific package version'),
                 'localeDepentent' => false,

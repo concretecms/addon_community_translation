@@ -28,14 +28,16 @@ class Package
     /**
      * @param string $handle
      * @param string $name
+     * @param string $url
      *
      * @return static
      */
-    public static function create($handle, $name = '')
+    public static function create($handle, $name = '', $url = '')
     {
         $result = new static();
         $result->handle = (string) $handle;
         $result->name = (string) $name;
+        $result->url = (string) $url;
         $result->createdOn = new DateTime();
 
         return $result;
@@ -165,6 +167,39 @@ class Package
     public function setName($value)
     {
         $this->name = (string) $value;
+
+        return $this;
+    }
+
+    /**
+     * Package URL.
+     *
+     * @ORM\Column(type="text", length=2000, nullable=false, options={"comment": "Package URL"})
+     *
+     * @var string
+     */
+    protected $url;
+
+    /**
+     * Get the package URL.
+     *
+     * @return string
+     */
+    public function getUrl()
+    {
+        return $this->url;
+    }
+
+    /**
+     * Set the package URL.
+     *
+     * @param string $value
+     *
+     * @return static
+     */
+    public function setUrl($value)
+    {
+        $this->url = (string) $value;
 
         return $this;
     }
