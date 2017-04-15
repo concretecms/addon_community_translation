@@ -32,7 +32,9 @@ class ConsoleHandler extends AbstractProcessingHandler
     protected function getDefaultFormatter()
     {
         $formatter = new LineFormatter("[%datetime%] %level_name%: %message%\n");
-        $formatter->allowInlineLineBreaks(true);
+        if (method_exists($formatter, 'allowInlineLineBreaks')) {
+            $formatter->allowInlineLineBreaks(true);
+        }
 
         return $formatter;
     }

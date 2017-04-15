@@ -97,7 +97,9 @@ abstract class Command extends ConcreteCommand
                                     if (isset($toConfig['apiToken']) && $toConfig['apiToken'] && isset($toConfig['channel']) && $toConfig['channel']) {
                                         $handler = new SlackHandler($toConfig['apiToken'], $toConfig['channel'], 'CommunityTranslation@' . $site);
                                         $lineFormatter = new LineFormatter('%message%');
-                                        $lineFormatter->allowInlineLineBreaks(true);
+                                        if (method_exists($lineFormatter, 'allowInlineLineBreaks')) {
+                                            $lineFormatter->allowInlineLineBreaks(true);
+                                        }
                                         $handler->setFormatter($lineFormatter);
                                     }
                                     break;
