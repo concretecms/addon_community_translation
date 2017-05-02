@@ -109,6 +109,11 @@ class Importer
             'outputstream' => $zipFilename,
         ]);
         $request = new Request();
+        
+        if (($header = (string) getenv('CT_REMOTEPACKAGE_HEADER')) && 
+            $value = (string) getenv('CT_REMOTEPACKAGE_HEADER_VALUE')) {
+            $request->getHeaders()->addHeaderLine($header, $value);
+        }
         $request->setMethod('GET')->setUri($remotePackage->getArchiveUrl());
         $response = $this->httpClient->send($request);
         $this->httpClient->reset();
