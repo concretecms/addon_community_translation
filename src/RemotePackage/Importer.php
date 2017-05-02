@@ -109,7 +109,11 @@ class Importer
             'outputstream' => $zipFilename,
         ]);
         $request = new Request();
-        $request->getHeaders()->addHeaderLine('x-concrete5-token', '' . getenv('CONCRETE5_TOKEN'));
+        
+        if (($header = (string) getenv('CT_REMOTEPACKAGE_HEADER')) && 
+            $value = (string) getenv('CT_REMOTEPACKAGE_HEADER_VALUE')) {
+            $request->getHeaders()->addHeaderLine($header, $value);
+        }
         $request->setMethod('GET')->setUri($remotePackage->getArchiveUrl());
         $response = $this->httpClient->send($request);
         $this->httpClient->reset();
