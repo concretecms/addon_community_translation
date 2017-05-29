@@ -401,7 +401,7 @@ class Controller extends BlockController
             } catch (Exception $x) {
                 try {
                     $zip->close();
-                } catch (Exeption $foo) {
+                } catch (Exception $foo) {
                 }
                 unset($zip);
                 unset($tmp);
