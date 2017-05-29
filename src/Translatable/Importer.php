@@ -3,6 +3,7 @@ namespace CommunityTranslation\Translatable;
 
 use CommunityTranslation\Entity\Package as PackageEntity;
 use CommunityTranslation\Entity\Package\Version as PackageVersionEntity;
+use CommunityTranslation\Entity\Translatable as TranslatableEntity;
 use CommunityTranslation\Parser\ParserInterface;
 use CommunityTranslation\Repository\Package as PackageRepository;
 use CommunityTranslation\UserException;
@@ -225,7 +226,7 @@ class Importer
                 $version->setUpdatedOn(new DateTime());
                 $this->em->persist($version);
                 $this->em->flush($version);
-                $this->em->clear(Translatable::class);
+                $this->em->clear(TranslatableEntity::class);
             }
             $connection->commit();
         } catch (Exception $x) {

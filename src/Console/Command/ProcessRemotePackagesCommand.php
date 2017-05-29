@@ -8,6 +8,8 @@ use CommunityTranslation\Repository\RemotePackage as RemotePackageRepository;
 use DateTime;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManager;
+use Exception;
+use Throwable;
 
 class ProcessRemotePackagesCommand extends Command
 {
