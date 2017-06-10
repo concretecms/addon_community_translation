@@ -109,12 +109,18 @@ class Importer
             'outputstream' => $zipFilename,
         ]);
         $request = new Request();
-        
-        if (($header = (string) getenv('CT_REMOTEPACKAGE_HEADER')) && 
+
+        if (($header = (string) getenv('CT_REMOTEPACKAGE_HEADER')) &&
             $value = (string) getenv('CT_REMOTEPACKAGE_HEADER_VALUE')) {
             $request->getHeaders()->addHeaderLine($header, $value);
         }
-        $request->setMethod('GET')->setUri($remotePackage->getArchiveUrl());
+
+        $url = $remotePackage->getArchiveUrl();
+        if ($token = getenv('CT_REMOTEPACKAGE_DOWNLOAD_TOKEN')) {
+            $url = rtrim($url, '/') . $token;
+        }
+
+        $request->setMethod('GET')->setUri($url);
         $response = $this->httpClient->send($request);
         $this->httpClient->reset();
         $streamHandle = ($response instanceof \Zend\Http\Response\Stream) ? $response->getStream() : null;
