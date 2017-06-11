@@ -198,7 +198,7 @@ EOT
 SELECT DISTINCT
 	ps.user,
 	ps.package,
-	pv1.package AS notifyNewPackageVersion,
+	pv1.id AS notifyNewPackageVersion,
 	pvs.packageVersion AS notifyUpdatedPackageVersion
 FROM
 		CommunityTranslationPackageSubscriptions AS ps
