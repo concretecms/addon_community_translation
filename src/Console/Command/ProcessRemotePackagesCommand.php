@@ -59,7 +59,7 @@ EOT
         ;
         for (; ;) {
             $remotePackage = $repo->matching($criteria)->first();
-            if ($remotePackage === null) {
+            if ($remotePackage === false) {
                 break;
             }
             $this->processRemotePackage($connection, $repo, $importer, $remotePackage);
