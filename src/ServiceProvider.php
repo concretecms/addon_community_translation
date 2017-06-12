@@ -42,6 +42,7 @@ class ServiceProvider extends Provider
     private function registerEntityRepositories(Application $app)
     {
         foreach ([
+            'DownloadStats',
             'GitRepository',
             'Glossary\Entry',
             'Glossary\Entry\Localized',
