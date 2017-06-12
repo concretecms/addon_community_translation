@@ -11,7 +11,7 @@ use ZendQueue\Message;
 abstract class BlockController extends CoreBlockController
 {
     /**
-     * {inheritdoc}
+     * {@inheritdoc}
      *
      * @see CoreBlockController::$supportSavingNullValues
      */

@@ -55,7 +55,7 @@ class Controller extends BlockController
     }
 
     /**
-     * @param string|numeric $size
+     * @param string|int $size
      *
      * @return int|null
      */

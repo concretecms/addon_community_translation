@@ -7,7 +7,6 @@ use CommunityTranslation\RemotePackage\Importer as RemotePackageImporter;
 use CommunityTranslation\Repository\RemotePackage as RemotePackageRepository;
 use DateTime;
 use Doctrine\Common\Collections\Criteria;
-use Doctrine\Common\Collections\ExpressionBuilder;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManager;
 use Exception;

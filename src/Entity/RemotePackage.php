@@ -327,7 +327,7 @@ class RemotePackage
      * @var int
      */
     protected $failCount;
-    
+
     /**
      * Get the umber of process failures.
      *
@@ -337,7 +337,7 @@ class RemotePackage
     {
         return $this->failCount;
     }
-    
+
     /**
      * Set the umber of process failures.
      *
@@ -348,11 +348,10 @@ class RemotePackage
     public function setFailCount($value)
     {
         $this->failCount = (int) $value;
-        
+
         return $this;
     }
 
-    
     /**
      * The last process error.
      *
@@ -361,7 +360,7 @@ class RemotePackage
      * @var string
      */
     protected $lastError;
-    
+
     /**
      * Get the last process error.
      *
@@ -371,7 +370,7 @@ class RemotePackage
     {
         return $this->lastError;
     }
-    
+
     /**
      * Set the last process error.
      *
@@ -382,6 +381,7 @@ class RemotePackage
     public function setLastError($value)
     {
         $this->lastError = (string) $value;
-        
+
         return $this;
-    }}
+    }
+}

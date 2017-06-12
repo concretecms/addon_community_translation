@@ -1,7 +1,6 @@
 <?php
 namespace CommunityTranslation\Service;
 
-use CommunityTranslation\Notification\Category\NewTeamJoinRequest;
 use CommunityTranslation\Repository\LocaleStats as LocaleStatsRepository;
 use CommunityTranslation\Repository\Notification as NotificationRepository;
 use CommunityTranslation\Repository\Stats as StatsRepository;
