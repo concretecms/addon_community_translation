@@ -5,6 +5,7 @@ use CommunityTranslation\Controller\BlockController;
 use CommunityTranslation\Entity\Locale as LocaleEntity;
 use CommunityTranslation\Entity\Package as PackageEntity;
 use CommunityTranslation\Entity\Package\Version as PackageVersionEntity;
+use CommunityTranslation\Repository\DownloadStats as DownloadStatsRepository;
 use CommunityTranslation\Repository\Locale as LocaleRepository;
 use CommunityTranslation\Repository\Package as PackageRepository;
 use CommunityTranslation\Repository\Package\Version as PackageVersionRepository;
@@ -462,6 +463,7 @@ class Controller extends BlockController
             }
             $format = $formats[$formatHandle];
             $serializedTranslationsFile = $this->app->make(TranslationsFileExporter::class)->getSerializedTranslationsFile($packageVersion, $locale, $format);
+            $this->app->make(DownloadStatsRepository::class)->logDownload($locale, $packageVersion);
 
             return BinaryFileResponse::create(
                 // $file
