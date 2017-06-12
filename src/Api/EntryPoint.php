@@ -6,6 +6,7 @@ use CommunityTranslation\Entity\Package as PackageEntity;
 use CommunityTranslation\Entity\Package\Version as PackageVersionEntity;
 use CommunityTranslation\Entity\RemotePackage as RemotePackageEntity;
 use CommunityTranslation\RemotePackage\Importer as RemotePackageImporter;
+use CommunityTranslation\Repository\DownloadStats as DownloadStatsRepository;
 use CommunityTranslation\Repository\Locale as LocaleRepository;
 use CommunityTranslation\Repository\Notification as NotificationRepository;
 use CommunityTranslation\Repository\Package as PackageRepository;
@@ -476,6 +477,7 @@ class EntryPoint extends AbstractController
                 throw new UserException(t('Unable to find the specified translations format'), Response::HTTP_NOT_FOUND);
             }
             $translationsFile = $this->app->make(TranslationsFileExporter::class)->getSerializedTranslationsFile($version, $locale, $format);
+            $this->app->make(DownloadStatsRepository::class)->logDownload($locale, $version);
             $result = BinaryFileResponse::create(
                 // $file
                 $translationsFile,
