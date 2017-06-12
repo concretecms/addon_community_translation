@@ -38,6 +38,8 @@ class RemotePackage
         $result->archiveUrl = (string) $archiveUrl;
         $result->createdOn = new DateTime();
         $result->processedOn = null;
+        $result->failCount = 0;
+        $result->lastError = '';
 
         return $result;
     }
@@ -316,4 +318,70 @@ class RemotePackage
 
         return $this;
     }
-}
+
+    /**
+     * Number of process failures.
+     *
+     * @ORM\Column(type="integer", nullable=false, options={"unsigned": true, "comment": "Number of process failures"})
+     *
+     * @var int
+     */
+    protected $failCount;
+    
+    /**
+     * Get the umber of process failures.
+     *
+     * @return int
+     */
+    public function getFailCount()
+    {
+        return $this->failCount;
+    }
+    
+    /**
+     * Set the umber of process failures.
+     *
+     * @param int $value
+     *
+     * @return static
+     */
+    public function setFailCount($value)
+    {
+        $this->failCount = (int) $value;
+        
+        return $this;
+    }
+
+    
+    /**
+     * The last process error.
+     *
+     * @ORM\Column(type="text", nullable=false, options={"comment": "Last process error"})
+     *
+     * @var string
+     */
+    protected $lastError;
+    
+    /**
+     * Get the last process error.
+     *
+     * @return string
+     */
+    public function getLastError()
+    {
+        return $this->lastError;
+    }
+    
+    /**
+     * Set the last process error.
+     *
+     * @param string $value
+     *
+     * @return static
+     */
+    public function setLastError($value)
+    {
+        $this->lastError = (string) $value;
+        
+        return $this;
+    }}
