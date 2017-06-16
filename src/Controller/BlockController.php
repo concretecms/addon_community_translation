@@ -7,7 +7,6 @@ use Concrete\Core\Block\BlockController as CoreBlockController;
 use Concrete\Core\Block\View\BlockView;
 use Concrete\Core\Url\UrlImmutable;
 use Exception;
-use ZendQueue\Message;
 
 abstract class BlockController extends CoreBlockController
 {

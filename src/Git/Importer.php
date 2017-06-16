@@ -4,7 +4,6 @@ namespace CommunityTranslation\Git;
 
 use CommunityTranslation\Entity\GitRepository as GitRepositoryEntity;
 use CommunityTranslation\Entity\Package as PackageEntity;
-use CommunityTranslation\Entity\Package\Version;
 use CommunityTranslation\Repository\Package as PackageRepository;
 use CommunityTranslation\Translatable\Importer as TranslatableImporter;
 use Concrete\Core\Application\Application;

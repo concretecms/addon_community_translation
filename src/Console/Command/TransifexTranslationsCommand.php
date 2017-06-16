@@ -15,7 +15,6 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Question\Question;
-use Zend\Http\Client;
 
 class TransifexTranslationsCommand extends Command
 {
@@ -191,8 +190,8 @@ EOT
     {
         $client = $this->app->make('http/client');
         $client
-        ->setOptions(['timeout' => 60])
-        ->setAuth($this->transifexUsername, $this->transifexPassword)
+            ->setOptions(['timeout' => 60])
+            ->setAuth($this->transifexUsername, $this->transifexPassword)
         ;
 
         return $client;

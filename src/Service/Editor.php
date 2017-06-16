@@ -14,7 +14,6 @@ use CommunityTranslation\Service\User as UserService;
 use CommunityTranslation\Translation\Exporter as TranslationExporter;
 use Concrete\Core\Application\Application;
 use Doctrine\ORM\EntityManager;
-use Gettext\Translations;
 
 class Editor
 {

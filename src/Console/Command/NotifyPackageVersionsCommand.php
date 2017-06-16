@@ -126,7 +126,7 @@ EOT
     }
 
     /**
-     * @return UserInfo[]|Generator
+     * @return UserInfo[]|\Generator
      */
     private function getUsersForNewPackages()
     {
@@ -142,7 +142,7 @@ EOT
     }
 
     /**
-     * @return UserInfo[]|Generator
+     * @return UserInfo[]|\Generator
      */
     private function getNewPackagesForUser(UserInfo $userInfo)
     {
@@ -181,7 +181,7 @@ EOT
     }
 
     /**
-     * @return array[]|Generator
+     * @return array[]|\Generator
      */
     private function getNotifyPackageVersionsData()
     {

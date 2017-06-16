@@ -3,7 +3,6 @@
 namespace CommunityTranslation\Tests\Api;
 
 use CommunityTranslation\Tests\Helper\ApiClientResponseException;
-use Symfony\Component\HttpFoundation\Request;
 
 class StatsTest extends ApiTest
 {
