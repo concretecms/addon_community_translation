@@ -1,4 +1,5 @@
 <?php
+
 namespace CommunityTranslation\Entity\Translatable;
 
 use CommunityTranslation\Entity\Package\Version;

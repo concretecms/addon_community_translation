@@ -1,4 +1,5 @@
 <?php
+
 namespace CommunityTranslation\Parser;
 
 use C5TL\Parser as C5TLParser;

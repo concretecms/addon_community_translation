@@ -1,4 +1,5 @@
 <?php
+
 namespace CommunityTranslation\Translatable;
 
 use CommunityTranslation\Entity\Package as PackageEntity;

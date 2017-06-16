@@ -1,4 +1,5 @@
 <?php
+
 namespace CommunityTranslation\Translation;
 
 use CommunityTranslation\Entity\Locale as LocaleEntity;
@@ -185,6 +186,7 @@ class Exporter
      *
      * @param PackageVersionEntity $packageVersion
      * @param LocaleEntity $locale
+     * @param bool $excludeUntranslatedStrings
      *
      * @return PDOStatement
      */

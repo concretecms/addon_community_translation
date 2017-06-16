@@ -1,4 +1,5 @@
 <?php
+
 namespace CommunityTranslation\Git;
 
 use CommunityTranslation\Entity\GitRepository;
@@ -285,9 +286,9 @@ EOT
      * @param string $cmd
      * @param bool $setDirectories
      *
-     * @return string[]
-     *
      * @throws UserException
+     *
+     * @return string[]
      */
     private function runGit($cmd, $setDirectories = true)
     {

@@ -1,4 +1,5 @@
 <?php
+
 namespace CommunityTranslation\Entity;
 
 use Concrete\Core\Entity\User\User as UserEntity;
@@ -130,7 +131,7 @@ class PackageSubscription
     /**
      * Subscribe to new package versions?
      *
-     * @param bool
+     * @param bool $value
      *
      * @return static
      */

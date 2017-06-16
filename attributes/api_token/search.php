@@ -1,4 +1,5 @@
 <?php
+
 // Vars
 // @var Concrete\Core\Attribute\View $view */
 

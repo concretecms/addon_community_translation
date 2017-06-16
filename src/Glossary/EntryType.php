@@ -1,4 +1,5 @@
 <?php
+
 namespace CommunityTranslation\Glossary;
 
 use Concrete\Core\Localization\Localization;
@@ -83,32 +84,32 @@ class EntryType
                 self::CONJUNCTION => [
                     'name' => tc('TermType', 'Conjunction'),
                     'short' => tc('TermType_short', 'conj.'),
-                    'description' => t('A word that ​connects words, ​phrases, and ​clauses in a ​sentence (examples: and, but, while, ​although).'),
+                    'description' => t('A word that connects words, phrases, and clauses in a sentence (examples: and, but, while, although).'),
                 ],
                 self::INTERJECTION => [
                     'name' => tc('TermType', 'Interjection'),
                     'short' => tc('TermType_short', 'interj.'),
-                    'description' => t('A word that is used to show a ​short ​sudden ​expression of ​emotion (examples: Bye!, Cheers!, Goodbye!, Hi!, Hooray!).'),
+                    'description' => t('A word that is used to show a short sudden expression of emotion (examples: Bye!, Cheers!, Goodbye!, Hi!, Hooray!).'),
                 ],
                 self::NOUN => [
                     'name' => tc('TermType', 'Noun'),
                     'short' => tc('TermType_short', 'n.'),
-                    'description' => t('A word that refers to a ​person, ​place, thing, ​event, ​substance, or ​quality (examples: Andrew, house, pencil, table).'),
+                    'description' => t('A word that refers to a person, place, thing, event, substance, or quality (examples: Andrew, house, pencil, table).'),
                 ],
                 self::PREPOSITION => [
                     'name' => tc('TermType', 'Preposition'),
                     'short' => tc('TermType_short', 'prep.'),
-                    'description' => t('A word that is used before a ​noun, a ​noun phrase, or a ​pronoun, ​connecting it to another word (examples: at, for, in, on, under).'),
+                    'description' => t('A word that is used before a noun, a noun phrase, or a pronoun, connecting it to another word (examples: at, for, in, on, under).'),
                 ],
                 self::PRONOUN => [
                     'name' => tc('TermType', 'Pronoun'),
                     'short' => tc('TermType_short', 'pron.'),
-                    'description' => t('A word that is used ​instead of a ​noun or a ​noun phrase (examples: I, me, mine, myself).'),
+                    'description' => t('A word that is used instead of a noun or a noun phrase (examples: I, me, mine, myself).'),
                 ],
                 self::VERB => [
                     'name' => tc('TermType', 'Verb'),
                     'short' => tc('TermType_short', 'v.'),
-                    'description' => t('A word or phrase that ​describes an ​action, ​condition, or ​experience (examples: listen, read, write).'),
+                    'description' => t('A word or phrase that describes an action, condition, or experience (examples: listen, read, write).'),
                 ],
             ];
             $comparer = new Comparer($locale);
@@ -123,6 +124,8 @@ class EntryType
 
     /**
      * Check if a term type is valid.
+     *
+     * @param string $type
      *
      * @return bool
      */

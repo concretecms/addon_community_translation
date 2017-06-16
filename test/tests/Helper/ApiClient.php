@@ -1,4 +1,5 @@
 <?php
+
 namespace CommunityTranslation\Tests\Helper;
 
 use Exception;
@@ -257,9 +258,9 @@ class ApiClient
         if (!isset($info['http_code'])) {
             throw new Exception('Failed to get HTTP response code');
         }
-        $responseCode = @intval($info['http_code']);
+        $responseCode = @(int) ($info['http_code']);
         $contentType = isset($info['content_type']) ? (string) $info['content_type'] : '';
-        $contentLength = (isset($info['size_download']) && is_numeric($info['size_download'])) ? @intval($info['size_download']) : null;
+        $contentLength = (isset($info['size_download']) && is_numeric($info['size_download'])) ? @(int) ($info['size_download']) : null;
         if ($responseCode < 200) {
             throw new Exception('Invalid HTTP response code received: ' . $info['http_code']);
         }

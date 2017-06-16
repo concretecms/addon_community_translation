@@ -1,4 +1,5 @@
 <?php
+
 namespace CommunityTranslation\Api;
 
 use CommunityTranslation\Entity\Locale as LocaleEntity;
@@ -165,6 +166,7 @@ class EntryPoint extends AbstractController
      * @param PackageEntity $package
      * @param string $packageVersionID
      * @param bool $isBastMatch [out]
+     * @param string $packageVersion
      *
      * @return \CommunityTranslation\Entity\Package\Version|null
      */
@@ -230,6 +232,8 @@ class EntryPoint extends AbstractController
 
     /**
      * @param LocaleEntity[]|LocaleEntity $locale
+     * @param mixed $locales
+     * @param null|callable $cb
      */
     protected function localesToArray($locales, $cb = null)
     {
@@ -345,6 +349,9 @@ class EntryPoint extends AbstractController
     /**
      * Get the list of versions of a package.
      *
+     *
+     * @param string $packageHandle
+     *
      * @return Response
      *
      * @example http://www.example.com/api/package/concrete5/versions/
@@ -375,6 +382,11 @@ class EntryPoint extends AbstractController
 
     /**
      * Get some stats about the translations of a package version.
+     *
+     *
+     * @param string $packageHandle
+     * @param string $packageVersion
+     * @param null|int $minimumLevel
      *
      * @return Response
      *
@@ -446,6 +458,12 @@ class EntryPoint extends AbstractController
     /**
      * Get the translations of a package version.
      *
+     *
+     * @param string $packageHandle
+     * @param string $packageVersion
+     * @param string $localeID
+     * @param string $formatHandle
+     *
      * @return Response
      *
      * @example http://www.example.com/api/package/concrete5/8.2/translations/it_IT/mo/
@@ -503,6 +521,9 @@ class EntryPoint extends AbstractController
 
     /**
      * Fill-in translations that we already know.
+     *
+     *
+     * @param string $formatHandle
      *
      * @return Response
      *
@@ -692,6 +713,11 @@ class EntryPoint extends AbstractController
     /**
      * Set the translatable strings of a package version.
      *
+     *
+     * @param string $packageHandle
+     * @param string $packageVersion
+     * @param string $formatHandle
+     *
      * @return Response
      *
      * @example http://www.example.com/api/package/concrete5/8.2/translatables/po/
@@ -760,6 +786,10 @@ class EntryPoint extends AbstractController
 
     /**
      * Import the translations for a specific locale.
+     *
+     * @param string $localeID
+     * @param string $formatHandle
+     * @param string|int|bool $approve
      *
      * @return Response
      *

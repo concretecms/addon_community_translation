@@ -1,4 +1,5 @@
 <?php
+
 namespace CommunityTranslation\Translation;
 
 use CommunityTranslation\Entity\Locale as LocaleEntity;

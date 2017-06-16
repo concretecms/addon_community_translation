@@ -1,4 +1,5 @@
 <?php
+
 namespace CommunityTranslation\Logging\Handler;
 
 use Monolog\Formatter\LineFormatter;

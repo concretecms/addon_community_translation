@@ -1,4 +1,5 @@
 <?php
+
 namespace CommunityTranslation\Translation;
 
 class ImportResult

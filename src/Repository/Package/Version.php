@@ -1,4 +1,5 @@
 <?php
+
 namespace CommunityTranslation\Repository\Package;
 
 use CommunityTranslation\Entity\Package;

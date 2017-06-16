@@ -1,4 +1,5 @@
 <?php
+
 namespace CommunityTranslation\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
@@ -292,6 +293,8 @@ class GitRepository
 
     /**
      * Get the repository tag filters.
+     *
+     * @param string $version
      *
      * @return array|null
      */

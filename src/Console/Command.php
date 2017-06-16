@@ -1,4 +1,5 @@
 <?php
+
 namespace CommunityTranslation\Console;
 
 use CommunityTranslation\Logging\Handler\ConsoleHandler;

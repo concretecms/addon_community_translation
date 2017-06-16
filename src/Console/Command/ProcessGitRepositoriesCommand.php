@@ -1,4 +1,5 @@
 <?php
+
 namespace CommunityTranslation\Console\Command;
 
 use CommunityTranslation\Console\Command;

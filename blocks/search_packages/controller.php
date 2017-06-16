@@ -1,4 +1,5 @@
 <?php
+
 namespace Concrete\Package\CommunityTranslation\Block\SearchPackages;
 
 use CommunityTranslation\Controller\BlockController;

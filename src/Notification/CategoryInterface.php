@@ -1,4 +1,5 @@
 <?php
+
 namespace CommunityTranslation\Notification;
 
 use CommunityTranslation\Entity\Notification as NotificationEntity;

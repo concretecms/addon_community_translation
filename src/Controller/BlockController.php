@@ -1,4 +1,5 @@
 <?php
+
 namespace CommunityTranslation\Controller;
 
 use CommunityTranslation\Service\Access;
@@ -36,6 +37,8 @@ abstract class BlockController extends CoreBlockController
 
     /**
      * Ovrride this method to define tasks that are instance-specific.
+     *
+     * @param string $method
      *
      * @return bool
      */

@@ -1,4 +1,5 @@
 <?php
+
 namespace Concrete\Package\CommunityTranslation\Block\FillTranslations;
 
 use CommunityTranslation\Controller\BlockController;
@@ -11,7 +12,6 @@ use CommunityTranslation\Service\VolatileDirectory;
 use CommunityTranslation\Translation\Exporter;
 use CommunityTranslation\UserException;
 use Concrete\Core\Http\ResponseFactoryInterface;
-use Concrete\Core\Support\Facade\Application;
 use DateTime;
 use Exception;
 use Gettext\Generators\Mo as MOGenerator;

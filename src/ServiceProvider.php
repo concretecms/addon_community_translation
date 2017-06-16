@@ -1,4 +1,5 @@
 <?php
+
 namespace CommunityTranslation;
 
 use CommunityTranslation\Repository\Locale as LocaleRepository;

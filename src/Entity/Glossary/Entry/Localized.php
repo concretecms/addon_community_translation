@@ -1,4 +1,5 @@
 <?php
+
 namespace CommunityTranslation\Entity\Glossary\Entry;
 
 use CommunityTranslation\Entity\Glossary\Entry;

@@ -1,4 +1,5 @@
 <?php
+
 defined('C5_EXECUTE') or die('Access Denied.');
 
 $subject = "[$siteName] " . ($specificForLocale === null ? 'New comments about translatable strings' : "New comments about translations for $specificForLocale");

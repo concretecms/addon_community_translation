@@ -1,4 +1,5 @@
 <?php
+
 namespace CommunityTranslation\Parser;
 
 use CommunityTranslation\Service\DecompressedPackage;
@@ -115,6 +116,7 @@ abstract class Parser implements ParserInterface
      * @param string $packageHandle The package handle being parsed
      * @param string $packageVersion The package version being parsed
      * @param string $path
+     * @param string $relDirectory
      *
      * @throws UserException
      *

@@ -1,4 +1,5 @@
 <?php
+
 namespace CommunityTranslation\Entity;
 
 use Doctrine\Common\Collections\ArrayCollection;

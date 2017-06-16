@@ -1,4 +1,5 @@
 <?php
+
 namespace CommunityTranslation\Entity;
 
 use Concrete\Core\Entity\User\User as UserEntity;

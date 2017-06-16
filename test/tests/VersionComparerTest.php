@@ -1,4 +1,5 @@
 <?php
+
 namespace CommunityTranslation\Tests;
 
 use CommunityTranslation\Entity\Package\Version as PackageVersionEntity;
@@ -78,6 +79,9 @@ class VersionComparerTest extends PHPUnit_Framework_TestCase
 
     /**
      * @dataProvider versionBestMatchProvider
+     *
+     * @param string $wanted
+     * @param string $expected
      */
     public function testVersionBestMatch($wanted, $expected)
     {

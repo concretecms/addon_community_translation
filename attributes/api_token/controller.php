@@ -1,4 +1,5 @@
 <?php
+
 namespace Concrete\Package\CommunityTranslation\Attribute\ApiToken;
 
 use CommunityTranslation\Api\Token;

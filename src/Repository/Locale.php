@@ -1,4 +1,5 @@
 <?php
+
 namespace CommunityTranslation\Repository;
 
 use CommunityTranslation\Entity\Locale as LocaleEntity;
@@ -9,6 +10,8 @@ class Locale extends EntityRepository
 {
     /**
      * Search an approved locale given its ID (excluding the source one).
+     *
+     * @param string $localeID
      *
      * @return LocaleEntity|null
      */

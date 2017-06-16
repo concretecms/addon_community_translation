@@ -1,4 +1,5 @@
 <?php
+
 namespace Concrete\Package\CommunityTranslation\Controller\SinglePage\Dashboard\CommunityTranslation\GitRepositories;
 
 use CommunityTranslation\Entity\GitRepository as GitRepositoryEntity;

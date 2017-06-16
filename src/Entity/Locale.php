@@ -1,4 +1,5 @@
 <?php
+
 namespace CommunityTranslation\Entity;
 
 use CommunityTranslation\UserException;
@@ -28,7 +29,7 @@ class Locale
     /**
      * Create a new (unsaved and unapproved) Locale instance given its locale ID.
      *
-     * @var string id
+     * @param string id
      *
      * @return static
      */

@@ -1,4 +1,5 @@
 <?php
+
 namespace CommunityTranslation\Notification;
 
 use CommunityTranslation\Entity\Notification as NotificationEntity;
@@ -124,6 +125,8 @@ abstract class Category implements CategoryInterface
 
     /**
      * @param string $blockName
+     * @param string $blockAction
+     * @param bool $isBlockActionInstanceSpecific
      *
      * @return string
      */

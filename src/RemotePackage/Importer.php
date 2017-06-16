@@ -1,4 +1,5 @@
 <?php
+
 namespace CommunityTranslation\RemotePackage;
 
 use CommunityTranslation\Entity\RemotePackage as RemotePackageEntity;
@@ -63,9 +64,10 @@ class Importer
     /**
      * Import a remote package.
      *
-     * @throws UserException
      *
      * @param RemotePackageEntity $remotePackage
+     *
+     * @throws UserException
      */
     public function import(RemotePackageEntity $remotePackage)
     {

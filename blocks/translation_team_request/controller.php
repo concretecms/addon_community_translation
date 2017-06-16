@@ -1,4 +1,5 @@
 <?php
+
 namespace Concrete\Package\CommunityTranslation\Block\TranslationTeamRequest;
 
 use CommunityTranslation\Controller\BlockController;
@@ -127,6 +128,8 @@ class Controller extends BlockController
     }
 
     /**
+     * @param null|string $checkToken
+     *
      * @return bool
      */
     private function startStep($checkToken = null)

@@ -1,4 +1,5 @@
 <?php
+
 namespace CommunityTranslation\Tests\Api;
 
 use CommunityTranslation\Tests\Helper\ApiClient;

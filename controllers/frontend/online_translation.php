@@ -1,4 +1,5 @@
 <?php
+
 namespace Concrete\Package\CommunityTranslation\Controller\Frontend;
 
 use CommunityTranslation\Entity\Glossary\Entry as GlossaryEntryEntity;
@@ -1198,6 +1199,7 @@ class OnlineTranslation extends Controller
 
     /**
      * @param TranslationEntity $translation
+     * @param bool $markAsFuzzy
      *
      * @return GettextTranslations
      */

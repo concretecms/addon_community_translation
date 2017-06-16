@@ -1,4 +1,5 @@
 <?php
+
 namespace CommunityTranslation\Service;
 
 use Concrete\Core\Application\Application;

@@ -1,4 +1,5 @@
 <?php
+
 namespace CommunityTranslation\TranslationsConverter;
 
 use Gettext\Translations;

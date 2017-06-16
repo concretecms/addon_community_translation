@@ -14,8 +14,7 @@ if (empty($repositories)) {
     <div class="alert alert-info">
         <?= t('No Git Repository has been defined.') ?>
     </div>
-<?php
-
+    <?php
 } else {
     ?>
     <table class="table">
@@ -46,7 +45,6 @@ if (empty($repositories)) {
                         $db = $repository->getDevBranches();
                 if (empty($db)) {
                     ?><i><?= tc('Branch', 'none') ?></i><?php
-
                 } else {
                     foreach ($db as $branch => $version) {
                         echo t('Branch %s &rarr; version %s', '<code>' . h($branch) . '</code>', '<code>' . h($version) . '</code>'), '<br />';
@@ -54,10 +52,9 @@ if (empty($repositories)) {
                 } ?></td>
                 </tr>
                 <?php
-
-            } ?>
+            }
+            ?>
         </tbody>
     </table>
     <?php
-
 }

@@ -16,7 +16,6 @@ if ($gitRepository->getID() !== null) {
         <input type="hidden" name="repositoryID" value="<?= $gitRepository->getID() ?>" />
     </form>
     <?php
-
 }
 
 ?>
@@ -135,7 +134,6 @@ if ($gitRepository->getID() !== null) {
                 <?php
                 if ($gitRepository->getID() !== null) {
                     ?><a href="#" id="comtra-delete-btn" class="btn btn-danger"><?= t('Delete') ?></a><?php
-
                 }
                 ?>
                 <input type="submit" class="btn btn-primary ccm-input-submit" value="<?= ($gitRepository->getID() === null) ? t('Create') : t('Update') ?>">
@@ -165,7 +163,6 @@ if ($gitRepository->getID() !== null) {
         return false;
     });
     <?php
-
                 }
 ?>
 $('input[name="parsetags"],#parsetagsAnd2').on('change', function() {
@@ -203,12 +200,10 @@ $versions = is_array($versions) ? array_values($versions) : [];
 if (!empty($branches) && count($branches) === count($versions)) {
     foreach (array_keys($branches) as $i) {
         ?>addDevBranchPair(<?= json_encode($branches[$i]) ?>, <?= json_encode($versions[$i]) ?>);<?php
-
     }
 } else {
     foreach ($gitRepository->getDevBranches() as $branch => $version) {
         ?>addDevBranchPair(<?= json_encode($branch) ?>, <?= json_encode($version) ?>);<?php
-
     }
 }
 ?>

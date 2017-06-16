@@ -1,9 +1,10 @@
 <?php
+
 namespace CommunityTranslation\Repository;
 
-use Doctrine\ORM\EntityRepository;
 use CommunityTranslation\Entity\Locale as LocaleEntity;
 use CommunityTranslation\Entity\Package\Version as PackageVersionEntity;
+use Doctrine\ORM\EntityRepository;
 
 class DownloadStats extends EntityRepository
 {

@@ -1,4 +1,5 @@
 <?php
+
 namespace CommunityTranslation\Monolog\Handler;
 
 use Monolog\Handler\AbstractProcessingHandler;

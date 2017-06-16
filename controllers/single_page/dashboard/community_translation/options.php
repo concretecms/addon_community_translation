@@ -1,4 +1,5 @@
 <?php
+
 namespace Concrete\Package\CommunityTranslation\Controller\SinglePage\Dashboard\CommunityTranslation;
 
 use CommunityTranslation\Api\UserControl as ApiUserControl;

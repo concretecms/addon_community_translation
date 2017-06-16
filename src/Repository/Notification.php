@@ -1,4 +1,5 @@
 <?php
+
 namespace CommunityTranslation\Repository;
 
 use CommunityTranslation\Entity\Locale as LocaleEntity;
@@ -265,7 +266,7 @@ class Notification extends EntityRepository
      * @param LocaleEntity $locale
      * @param int $numTranslations
      * @param int $translatorUserID
-     * @param int|null $packageVersion
+     * @param int|null $packageVersionID
      */
     public function translationsNeedApproval(LocaleEntity $locale, $numTranslations, $translatorUserID = null, $packageVersionID = null)
     {

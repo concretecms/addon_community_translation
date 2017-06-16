@@ -1,4 +1,5 @@
 <?php
+
 namespace CommunityTranslation\Git;
 
 use CommunityTranslation\Entity\GitRepository as GitRepositoryEntity;

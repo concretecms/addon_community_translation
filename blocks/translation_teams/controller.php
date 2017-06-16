@@ -1,4 +1,5 @@
 <?php
+
 namespace Concrete\Package\CommunityTranslation\Block\TranslationTeams;
 
 use CommunityTranslation\Controller\BlockController;
