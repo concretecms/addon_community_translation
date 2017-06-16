@@ -7,8 +7,8 @@ use CommunityTranslation\Entity\Package\Version as PackageVersionEntity;
 use CommunityTranslation\Repository\Stats as StatsRepository;
 use CommunityTranslation\Translation\Exporter;
 use CommunityTranslation\TranslationsConverter\ConverterInterface as TranslationsConverter;
-use CommunityTranslation\UserException;
 use Concrete\Core\Application\Application;
+use Concrete\Core\Error\UserMessageException;
 use Exception;
 use Illuminate\Filesystem\Filesystem;
 
@@ -96,7 +96,7 @@ class TranslationsFileExporter
         $dir = implode('/', $parts);
         if ($create && !$this->fs->isDirectory($dir)) {
             if ($this->fs->makeDirectory($dir, DIRECTORY_PERMISSIONS_MODE_COMPUTED, true, true) !== true) {
-                throw new UserException(t('Failed to create a cache directory'));
+                throw new UserMessageException(t('Failed to create a cache directory'));
             }
         }
 
@@ -108,7 +108,7 @@ class TranslationsFileExporter
      * @param LocaleEntity $locale
      * @param TranslationsConverter $format
      *
-     * @throws UserException
+     * @throws UserMessageException
      *
      * @return string
      */
@@ -134,7 +134,7 @@ class TranslationsFileExporter
             $serializedTranslations = $format->convertTranslationsToString($translations);
             unset($translations);
             if (@$this->fs->put($file, $serializedTranslations, true) === false) {
-                throw new UserException(t('Failed to create a cache file'));
+                throw new UserMessageException(t('Failed to create a cache file'));
             }
         }
 
@@ -146,7 +146,7 @@ class TranslationsFileExporter
      * @param LocaleEntity $locale
      * @param TranslationsConverter $format
      *
-     * @throws UserException
+     * @throws UserMessageException
      *
      * @return string
      */
@@ -156,7 +156,7 @@ class TranslationsFileExporter
 
         $result = $this->fs->get($file);
         if ($result === false) {
-            throw new UserException(t('Failed to read a cache file'));
+            throw new UserMessageException(t('Failed to read a cache file'));
         }
 
         return $result;

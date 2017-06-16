@@ -5,9 +5,9 @@ namespace CommunityTranslation\Translation;
 use CommunityTranslation\Entity\Locale as LocaleEntity;
 use CommunityTranslation\Entity\Package\Version as PackageVersionEntity;
 use CommunityTranslation\Repository\Package\Version as PackageVersionRepository;
-use CommunityTranslation\UserException;
 use Concrete\Core\Application\Application;
 use Concrete\Core\Database\Driver\PDOStatement;
+use Concrete\Core\Error\UserMessageException;
 use Doctrine\ORM\EntityManager;
 use Gettext\Translations;
 
@@ -233,7 +233,7 @@ class Exporter
             $packageVersion = null;
         }
         if ($packageVersion === null) {
-            throw new UserException(t('Invalid translated package version specified'));
+            throw new UserMessageException(t('Invalid translated package version specified'));
         }
         $rs = $this->getPackageSelectQuery($packageVersion, $locale, $excludeUntranslatedStrings);
 

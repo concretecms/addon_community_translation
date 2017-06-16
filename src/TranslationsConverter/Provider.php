@@ -2,8 +2,8 @@
 
 namespace CommunityTranslation\TranslationsConverter;
 
-use CommunityTranslation\UserException;
 use Concrete\Core\Application\Application;
+use Concrete\Core\Error\UserMessageException;
 use Punic\Comparer;
 
 class Provider
@@ -88,7 +88,7 @@ class Provider
     /**
      * Get the list of registered converters.
      *
-     * @throws UserException
+     * @throws UserMessageException
      *
      * @return ConverterInterface[]
      */

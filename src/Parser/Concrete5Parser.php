@@ -5,7 +5,7 @@ namespace CommunityTranslation\Parser;
 use C5TL\Parser as C5TLParser;
 use CommunityTranslation\Repository\Locale as LocaleRepository;
 use CommunityTranslation\Service\VolatileDirectory;
-use CommunityTranslation\UserException;
+use Concrete\Core\Error\UserMessageException;
 use Exception;
 use Gettext\Translations;
 
@@ -29,7 +29,7 @@ class Concrete5Parser extends Parser
     public function parseDirectory($packageHandle, $packageVersion, $path, $relDirectory = '', $searchDictionaryFiles = self::DICTIONARY_ALL)
     {
         if (!$this->filesystem->isDirectory($path)) {
-            throw new UserException(t('Unable to find the directory %s', $path));
+            throw new UserMessageException(t('Unable to find the directory %s', $path));
         }
         if ('' === (string) $relDirectory && '' !== (string) $packageHandle) {
             switch ($packageHandle) {
@@ -102,7 +102,7 @@ class Concrete5Parser extends Parser
     public function parseDictionaryFile($packageHandle, $packageVersion, $path, $kinds)
     {
         if (!$this->filesystem->isFile($path)) {
-            throw new UserException(t('Unable to find the file %s', $path));
+            throw new UserMessageException(t('Unable to find the file %s', $path));
         }
         $translations = null;
         if ($kinds & (self::DICTIONARY_SOURCE | self::DICTIONARY_LOCALIZED_SOURCE)) {
@@ -160,13 +160,13 @@ class Concrete5Parser extends Parser
     public function parseSourceFile($packageHandle, $packageVersion, $path, $relDirectory = '')
     {
         if (!$this->filesystem->isFile($path)) {
-            throw new UserException(t('Unable to find the file %s', $path));
+            throw new UserMessageException(t('Unable to find the file %s', $path));
         }
         $tmp = $this->app->make(VolatileDirectory::class);
         $workDir = $tmp->getPath();
         if (!@$this->filesystem->copy($path, $workDir . '/' . basename($path))) {
             unset($tmp);
-            throw new UserException(t('Failed to copy a temporary file'));
+            throw new UserMessageException(t('Failed to copy a temporary file'));
         }
         $result = $this->parseDirectory($packageHandle, $packageVersion, $workDir, $relDirectory, '');
         unset($tmp);

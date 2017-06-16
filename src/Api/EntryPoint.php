@@ -20,8 +20,8 @@ use CommunityTranslation\Translatable\Importer as TranslatableImporter;
 use CommunityTranslation\Translation\Exporter as TranslationExporter;
 use CommunityTranslation\Translation\Importer as TranslationImporter;
 use CommunityTranslation\TranslationsConverter\Provider as TranslationsConverterProvider;
-use CommunityTranslation\UserException;
 use Concrete\Core\Controller\AbstractController;
+use Concrete\Core\Error\UserMessageException;
 use Concrete\Core\Http\ResponseFactory;
 use Concrete\Core\Localization\Localization;
 use DateTimeZone;
@@ -103,7 +103,7 @@ class EntryPoint extends AbstractController
                 if ($code === null) {
                     $code = Response::HTTP_UNAUTHORIZED;
                 }
-            } elseif ($error instanceof UserException) {
+            } elseif ($error instanceof UserMessageException) {
                 if ($error->getCode() >= 400) {
                     $code = $error->getCode();
                 }
@@ -132,19 +132,19 @@ class EntryPoint extends AbstractController
     /**
      * Check if the request is a JSON request and returns the posted parameters.
      *
-     * @throws UserException
+     * @throws UserMessageException
      *
      * @return array
      */
     protected function getRequestJson()
     {
         if ($this->request->getContentType() !== 'json') {
-            throw new UserException(t('Invalid request Content-Type: %s', $this->request->headers->get('Content-Type', '')), Response::HTTP_NOT_ACCEPTABLE);
+            throw new UserMessageException(t('Invalid request Content-Type: %s', $this->request->headers->get('Content-Type', '')), Response::HTTP_NOT_ACCEPTABLE);
         }
         $contentBody = $this->request->getContent();
         $contentJson = @json_decode($contentBody, true);
         if (!is_array($contentJson)) {
-            throw new UserException(t('Failed to parse the request body as JSON'), Response::HTTP_NOT_ACCEPTABLE);
+            throw new UserMessageException(t('Failed to parse the request body as JSON'), Response::HTTP_NOT_ACCEPTABLE);
         }
 
         return $contentJson;
@@ -364,7 +364,7 @@ class EntryPoint extends AbstractController
             $this->getUserControl()->checkGenericAccess(__FUNCTION__);
             $package = $this->app->make(PackageRepository::class)->findOneBy(['handle' => $packageHandle]);
             if ($package === null) {
-                throw new UserException(t('Unable to find the specified package'), Response::HTTP_NOT_FOUND);
+                throw new UserMessageException(t('Unable to find the specified package'), Response::HTTP_NOT_FOUND);
             }
             $versions = [];
             foreach ($package->getSortedVersions(true, null) as $packageVersion) {
@@ -401,11 +401,11 @@ class EntryPoint extends AbstractController
             $accessibleLocales = $this->getUserControl()->checkLocaleAccess(__FUNCTION__);
             $package = $this->app->make(PackageRepository::class)->findOneBy(['handle' => $packageHandle]);
             if ($package === null) {
-                throw new UserException(t('Unable to find the specified package'), Response::HTTP_NOT_FOUND);
+                throw new UserMessageException(t('Unable to find the specified package'), Response::HTTP_NOT_FOUND);
             }
             $version = $this->getPackageVersion($package, $packageVersion, $isBestMatch);
             if ($version === null) {
-                throw new UserException(t('Unable to find the specified package version'), Response::HTTP_NOT_FOUND);
+                throw new UserMessageException(t('Unable to find the specified package version'), Response::HTTP_NOT_FOUND);
             }
             $minimumLevel = (int) $minimumLevel;
             $stats = $this->app->make(StatsRepository::class)->get($version, $accessibleLocales);
@@ -477,22 +477,22 @@ class EntryPoint extends AbstractController
             $accessibleLocales = $this->getUserControl()->checkLocaleAccess(__FUNCTION__);
             $locale = $this->app->make(LocaleRepository::class)->findApproved($localeID);
             if ($locale === null) {
-                throw new UserException(t('Unable to find the specified locale'), Response::HTTP_NOT_FOUND);
+                throw new UserMessageException(t('Unable to find the specified locale'), Response::HTTP_NOT_FOUND);
             }
             if (!in_array($locale, $accessibleLocales, true)) {
                 throw AccessDeniedException::create(t('Access denied to the specified locale'));
             }
             $package = $this->app->make(PackageRepository::class)->findOneBy(['handle' => $packageHandle]);
             if ($package === null) {
-                throw new UserException(t('Unable to find the specified package'), Response::HTTP_NOT_FOUND);
+                throw new UserMessageException(t('Unable to find the specified package'), Response::HTTP_NOT_FOUND);
             }
             $version = $this->getPackageVersion($package, $packageVersion);
             if ($version === null) {
-                throw new UserException(t('Unable to find the specified package version'), Response::HTTP_NOT_FOUND);
+                throw new UserMessageException(t('Unable to find the specified package version'), Response::HTTP_NOT_FOUND);
             }
             $format = $this->app->make(TranslationsConverterProvider::class)->getByHandle($formatHandle);
             if ($format === null) {
-                throw new UserException(t('Unable to find the specified translations format'), Response::HTTP_NOT_FOUND);
+                throw new UserMessageException(t('Unable to find the specified translations format'), Response::HTTP_NOT_FOUND);
             }
             $translationsFile = $this->app->make(TranslationsFileExporter::class)->getSerializedTranslationsFile($version, $locale, $format);
             $this->app->make(DownloadStatsRepository::class)->logDownload($locale, $version);
@@ -537,33 +537,33 @@ class EntryPoint extends AbstractController
             $this->getUserControl()->checkGenericAccess(__FUNCTION__);
             $format = $this->app->make(TranslationsConverterProvider::class)->getByHandle($formatHandle);
             if ($format === null) {
-                throw new UserException(t('Unable to find the specified translations format'), Response::HTTP_NOT_FOUND);
+                throw new UserMessageException(t('Unable to find the specified translations format'), Response::HTTP_NOT_FOUND);
             }
             /* @var \CommunityTranslation\TranslationsConverter\ConverterInterface $format */
             if (!$format->canUnserializeTranslations()) {
-                throw new UserException(t('The specified translations format does not support unserialization'), Response::HTTP_NOT_ACCEPTABLE);
+                throw new UserMessageException(t('The specified translations format does not support unserialization'), Response::HTTP_NOT_ACCEPTABLE);
             }
             if (!$format->canSerializeTranslations()) {
-                throw new UserException(t('The specified translations format does not support serialization'), Response::HTTP_NOT_ACCEPTABLE);
+                throw new UserMessageException(t('The specified translations format does not support serialization'), Response::HTTP_NOT_ACCEPTABLE);
             }
             if (!$format->supportLanguageHeader()) {
-                throw new UserException(t('The specified translations format does not support a language header'), Response::HTTP_NOT_ACCEPTABLE);
+                throw new UserMessageException(t('The specified translations format does not support a language header'), Response::HTTP_NOT_ACCEPTABLE);
             }
             $file = $this->request->files->get('file');
             if ($file === null) {
-                throw new UserException(t('The file with strings to be translated has not been specified'), Response::HTTP_NOT_ACCEPTABLE);
+                throw new UserMessageException(t('The file with strings to be translated has not been specified'), Response::HTTP_NOT_ACCEPTABLE);
             }
             if (!$file->isValid()) {
-                throw new UserException(t('The file with strings to be translated has not been received correctly: %s', $file->getErrorMessage()), Response::HTTP_NOT_ACCEPTABLE);
+                throw new UserMessageException(t('The file with strings to be translated has not been received correctly: %s', $file->getErrorMessage()), Response::HTTP_NOT_ACCEPTABLE);
             }
             $translations = $format->loadTranslationsFromFile($file->getPathname());
             $localeID = (string) $translations->getLanguage();
             if ($localeID === '') {
-                throw new UserException(t('The file with strings to be translated does not specify a language ID'));
+                throw new UserMessageException(t('The file with strings to be translated does not specify a language ID'));
             }
             $locale = $this->app->make(LocaleRepository::class)->findApproved($localeID);
             if ($locale === null) {
-                throw new UserException(t('The file with strings to be translated specifies an unknown language ID (%s)', $localeID));
+                throw new UserMessageException(t('The file with strings to be translated specifies an unknown language ID (%s)', $localeID));
             }
             $translationExporter = $this->app->make(TranslationExporter::class);
             /* @var TranslationExporter $translationExporter */
@@ -611,40 +611,40 @@ class EntryPoint extends AbstractController
             $args = $this->getRequestJson();
             $package_handle = (isset($args['package_handle']) && is_string($args['package_handle'])) ? trim($args['package_handle']) : '';
             if ($package_handle === '') {
-                throw new UserException(t('Missing argument: %s', 'package_handle'), Response::HTTP_NOT_ACCEPTABLE);
+                throw new UserMessageException(t('Missing argument: %s', 'package_handle'), Response::HTTP_NOT_ACCEPTABLE);
             }
             $package_version = (isset($args['package_version']) && is_string($args['package_version'])) ? trim($args['package_version']) : '';
             if ($package_version === '') {
-                throw new UserException(t('Missing argument: %s', 'package_version'), Response::HTTP_NOT_ACCEPTABLE);
+                throw new UserMessageException(t('Missing argument: %s', 'package_version'), Response::HTTP_NOT_ACCEPTABLE);
             }
             $archive_url = (isset($args['archive_url']) && is_string($args['archive_url'])) ? trim($args['archive_url']) : '';
             if ($archive_url === '') {
-                throw new UserException(t('Missing argument: %s', 'archive_url'), Response::HTTP_NOT_ACCEPTABLE);
+                throw new UserMessageException(t('Missing argument: %s', 'archive_url'), Response::HTTP_NOT_ACCEPTABLE);
             }
 
             $entity = RemotePackageEntity::create($package_handle, $package_version, $archive_url);
 
             if (isset($args['package_name'])) {
                 if (!is_string($args['package_name'])) {
-                    throw new UserException(t('Invalid type of argument: %s', 'package_name'), Response::HTTP_NOT_ACCEPTABLE);
+                    throw new UserMessageException(t('Invalid type of argument: %s', 'package_name'), Response::HTTP_NOT_ACCEPTABLE);
                 }
                 $entity->setName(trim($args['package_name']));
             }
             if (isset($args['package_url'])) {
                 if (!is_string($args['package_url'])) {
-                    throw new UserException(t('Invalid type of argument: %s', 'package_url'), Response::HTTP_NOT_ACCEPTABLE);
+                    throw new UserMessageException(t('Invalid type of argument: %s', 'package_url'), Response::HTTP_NOT_ACCEPTABLE);
                 }
                 $entity->setUrl(trim($args['package_url']));
             }
             if (isset($args['approved'])) {
                 if (!is_bool($args['approved'])) {
-                    throw new UserException(t('Invalid type of argument: %s', 'approved'), Response::HTTP_NOT_ACCEPTABLE);
+                    throw new UserMessageException(t('Invalid type of argument: %s', 'approved'), Response::HTTP_NOT_ACCEPTABLE);
                 }
                 $entity->setIsApproved($args['approved']);
             }
             if (isset($args['immediate'])) {
                 if (!is_bool($args['immediate'])) {
-                    throw new UserException(t('Invalid type of argument: %s', 'immediate'), Response::HTTP_NOT_ACCEPTABLE);
+                    throw new UserMessageException(t('Invalid type of argument: %s', 'immediate'), Response::HTTP_NOT_ACCEPTABLE);
                 }
                 $immediate = $args['immediate'];
             } else {
@@ -736,11 +736,11 @@ class EntryPoint extends AbstractController
             }
             $packageVersion = is_string($packageVersion) ? trim($packageVersion) : '';
             if ($packageVersion === '') {
-                throw new UserException(t('Package version not specified'), Response::HTTP_NOT_ACCEPTABLE);
+                throw new UserMessageException(t('Package version not specified'), Response::HTTP_NOT_ACCEPTABLE);
             }
             $format = $this->app->make(TranslationsConverterProvider::class)->getByHandle($formatHandle);
             if ($format === null) {
-                throw new UserException(t('Unable to find the specified translations format'), 404);
+                throw new UserMessageException(t('Unable to find the specified translations format'), 404);
             }
             $package = $this->app->make(PackageRepository::class)->findOneBy(['handle' => $packageHandle]);
             if ($package === null) {
@@ -763,14 +763,14 @@ class EntryPoint extends AbstractController
             }
             $file = $this->request->files->get('file');
             if ($file === null) {
-                throw new UserException(t('The file with translatable strings has not been specified'), Response::HTTP_NOT_ACCEPTABLE);
+                throw new UserMessageException(t('The file with translatable strings has not been specified'), Response::HTTP_NOT_ACCEPTABLE);
             }
             if (!$file->isValid()) {
-                throw new UserException(t('The file with translatable strings has not been received correctly: %s', $file->getErrorMessage()), Response::HTTP_NOT_ACCEPTABLE);
+                throw new UserMessageException(t('The file with translatable strings has not been received correctly: %s', $file->getErrorMessage()), Response::HTTP_NOT_ACCEPTABLE);
             }
             $translations = $format->loadTranslationsFromFile($file->getPathname());
             if (count($t) < 1) {
-                throw new UserException(t('No translatable strings found in uploaded file'));
+                throw new UserMessageException(t('No translatable strings found in uploaded file'));
             }
             $importer = $this->app->make(TranslatableImporter::class);
             $changed = $importer->importTranslations($translations, $package->getHandle(), $packageVersion->getVersion());
@@ -804,38 +804,38 @@ class EntryPoint extends AbstractController
             $accessibleLocales = $this->getUserControl()->checkLocaleAccess(__FUNCTION__ . ($approve ? '_approve' : ''));
             $locale = $this->app->make(LocaleRepository::class)->findApproved($localeID);
             if ($locale === null) {
-                throw new UserException(t('Unable to find the specified locale'), Response::HTTP_NOT_FOUND);
+                throw new UserMessageException(t('Unable to find the specified locale'), Response::HTTP_NOT_FOUND);
             }
             if (!in_array($locale, $accessibleLocales, true)) {
                 throw AccessDeniedException::create(t('Access denied to the specified locale'));
             }
             $format = $this->app->make(TranslationsConverterProvider::class)->getByHandle($formatHandle);
             if ($format === null) {
-                throw new UserException(t('Unable to find the specified translations format'), 404);
+                throw new UserMessageException(t('Unable to find the specified translations format'), 404);
             }
             $file = $this->request->files->get('file');
             if ($file === null) {
-                throw new UserException(t('The file with translated strings has not been specified'), Response::HTTP_NOT_ACCEPTABLE);
+                throw new UserMessageException(t('The file with translated strings has not been specified'), Response::HTTP_NOT_ACCEPTABLE);
             }
             if (!$file->isValid()) {
-                throw new UserException(t('The file with translated strings has not been received correctly: %s', $file->getErrorMessage()), Response::HTTP_NOT_ACCEPTABLE);
+                throw new UserMessageException(t('The file with translated strings has not been received correctly: %s', $file->getErrorMessage()), Response::HTTP_NOT_ACCEPTABLE);
             }
             $translations = $format->loadTranslationsFromFile($file->getPathname());
             if (count($translations) < 1) {
-                throw new UserException(t('No translations found in uploaded file'));
+                throw new UserMessageException(t('No translations found in uploaded file'));
             }
             if (!$translations->getLanguage()) {
-                throw new UserException(t('The translation file does not contain a language header'));
+                throw new UserMessageException(t('The translation file does not contain a language header'));
             }
             if (strcasecmp($translations->getLanguage(), $locale->getID()) !== 0) {
-                throw new UserException(t("The translation file is for the '%1\$s' language, not for '%2\$s'", $translations->getLanguage(), $locale->getID()));
+                throw new UserMessageException(t("The translation file is for the '%1\$s' language, not for '%2\$s'", $translations->getLanguage(), $locale->getID()));
             }
             $pf = $t->getPluralForms();
             if ($pf === null) {
-                throw new UserException(t('The translation file does not define the plural rules'));
+                throw new UserMessageException(t('The translation file does not define the plural rules'));
             }
             if ($pf[0] !== $locale->getPluralCount()) {
-                throw new UserException(t('The translation file defines %1$s plural forms instead of %2$s', $pf[0], $locale->getPluralCount()));
+                throw new UserMessageException(t('The translation file defines %1$s plural forms instead of %2$s', $pf[0], $locale->getPluralCount()));
             }
             $importer = $this->app->make(TranslationImporter::class);
             $me = $this->getUserControl()->getAssociatedUserEntity();

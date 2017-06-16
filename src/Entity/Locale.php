@@ -2,8 +2,8 @@
 
 namespace CommunityTranslation\Entity;
 
-use CommunityTranslation\UserException;
 use Concrete\Core\Entity\User\User;
+use Concrete\Core\Error\UserMessageException;
 use DateTime;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping as ORM;
@@ -37,7 +37,7 @@ class Locale
     {
         $language = GettextLanguage::getById($id);
         if ($language === null) {
-            throw new UserException(t('Unknown locale identifier: %s', $id));
+            throw new UserMessageException(t('Unknown locale identifier: %s', $id));
         }
         $pluralForms = [];
         foreach ($language->categories as $category) {

@@ -4,8 +4,8 @@ namespace CommunityTranslation\Service;
 
 use CommunityTranslation\Entity\Locale as LocaleEntity;
 use CommunityTranslation\Repository\Locale as LocaleRepository;
-use CommunityTranslation\UserException;
 use Concrete\Core\Application\Application;
+use Concrete\Core\Error\UserMessageException;
 use Concrete\Core\Package\PackageService;
 use Concrete\Core\User\Group\Group;
 
@@ -96,9 +96,9 @@ class Groups
             $result = \Group::add($name, '', $parent, $this->getPackage());
             if (!$result) {
                 if ($parent) {
-                    throw new UserException(t("Failed to create a user group with name '%1\$s' as a child of '%2\$s'", $name, $parent->getGroupName()));
+                    throw new UserMessageException(t("Failed to create a user group with name '%1\$s' as a child of '%2\$s'", $name, $parent->getGroupName()));
                 } else {
-                    throw new UserException(t("Failed to create a user group with name '%s'", $name));
+                    throw new UserMessageException(t("Failed to create a user group with name '%s'", $name));
                 }
             }
         }
@@ -122,7 +122,7 @@ class Groups
         if (!($locale instanceof LocaleEntity)) {
             $l = $this->app->make(LocaleRepository::class)->findApproved($locale);
             if ($l === null) {
-                throw new UserException(t("The locale identifier '%s' is not valid", $locale));
+                throw new UserMessageException(t("The locale identifier '%s' is not valid", $locale));
             }
             $locale = $l;
         }

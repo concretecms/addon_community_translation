@@ -10,7 +10,7 @@ use CommunityTranslation\Service\IPControlLog;
 use CommunityTranslation\Service\RateLimit;
 use CommunityTranslation\Service\VolatileDirectory;
 use CommunityTranslation\Translation\Exporter;
-use CommunityTranslation\UserException;
+use Concrete\Core\Error\UserMessageException;
 use Concrete\Core\Http\ResponseFactoryInterface;
 use DateTime;
 use Exception;
@@ -148,7 +148,7 @@ class Controller extends BlockController
         try {
             /* @var \CommunityTranslation\Service\RateLimit $rateLimitHelper */
             list($normalized['rateLimit_maxRequests'], $normalized['rateLimit_timeWindow']) = $this->app->make(RateLimit::class)->fromWidgetHtml('rateLimit', $this->rateLimit_timeWindow ?: 3600);
-        } catch (UserException $x) {
+        } catch (UserMessageException $x) {
             $error->add($x->getMessage());
         }
 
@@ -251,7 +251,7 @@ class Controller extends BlockController
     }
 
     /**
-     * @throws UserException
+     * @throws UserMessageException
      *
      * $return \Symfony\Component\HttpFoundation\File\UploadedFile
      */
@@ -259,15 +259,15 @@ class Controller extends BlockController
     {
         $file = $this->request->files->get('file');
         if ($file === null) {
-            throw new UserException(t('Please specify the file to be analyzed'));
+            throw new UserMessageException(t('Please specify the file to be analyzed'));
         }
         if (!$file->isValid()) {
-            throw new UserException($file->getErrorMessage());
+            throw new UserMessageException($file->getErrorMessage());
         }
         if ($this->maxFileSize) {
             $filesize = @filesize($file->getPathname());
             if ($filesize !== false && $filesize > $this->maxFileSize) {
-                throw new UserException(t('The uploaded file is too big'));
+                throw new UserMessageException(t('The uploaded file is too big'));
             }
         }
 
@@ -275,7 +275,7 @@ class Controller extends BlockController
     }
 
     /**
-     * @throws UserException
+     * @throws UserMessageException
      *
      * $return \CommunityTranslation\Entity\Locale[]
      */
@@ -301,17 +301,17 @@ class Controller extends BlockController
 
         $count = count($result);
         if ($count === 0) {
-            throw new UserException(t('Please specify the languages of the .po/.mo files to generate'));
+            throw new UserMessageException(t('Please specify the languages of the .po/.mo files to generate'));
         }
         if ($this->maxLocalesCount && $count > (int) $this->maxLocalesCount) {
-            throw new UserException(t('Please specify up to %s languages (you requested %2$s languages)', $this->maxLocalesCount, $count));
+            throw new UserMessageException(t('Please specify up to %s languages (you requested %2$s languages)', $this->maxLocalesCount, $count));
         }
 
         return $result;
     }
 
     /**
-     * @throws UserException
+     * @throws UserMessageException
      */
     private function checkRateLimit()
     {
@@ -323,7 +323,7 @@ class Controller extends BlockController
                 /* @var IPControlLog $ipControlLog */
                 $visits = $ipControlLog->countVisits('fill-trans', new DateTime("-$timeWindow seconds"));
                 if ($visits >= $maxRequests) {
-                    throw new UserException(t('You reached the rate limit (%1$s requests every %2$s seconds)', $maxRequests, $timeWindow));
+                    throw new UserMessageException(t('You reached the rate limit (%1$s requests every %2$s seconds)', $maxRequests, $timeWindow));
                 }
                 $ipControlLog->addVisit('fill-trans');
             }
@@ -337,7 +337,7 @@ class Controller extends BlockController
         try {
             $valt = $this->app->make('helper/validation/token');
             if (!$valt->validate('comtra-fill-translations')) {
-                throw new UserException($valt->getErrorMessage());
+                throw new UserMessageException($valt->getErrorMessage());
             }
 
             $file = $this->getPostedFile();
@@ -346,7 +346,7 @@ class Controller extends BlockController
             $writePO = (bool) $this->post('include-po');
             $writeMO = (bool) $this->post('include-mo');
             if (!($writePOT || $writePO || $writeMO)) {
-                throw new UserException(t('You need to specify at least one kind of file to generate'));
+                throw new UserMessageException(t('You need to specify at least one kind of file to generate'));
             }
 
             $locales = ($writePO || $writeMO) ? $this->getPostedLocales() : [];
@@ -355,7 +355,7 @@ class Controller extends BlockController
 
             $parsed = $this->app->make(ParserInterface::class)->parseFile('', '', $file->getPathname());
             if ($parsed === null) {
-                throw new UserException(t('No translatable string found in the uploaded file'));
+                throw new UserMessageException(t('No translatable string found in the uploaded file'));
             }
 
             /* @var \CommunityTranslation\Parser\Parsed $parsed */
@@ -363,7 +363,7 @@ class Controller extends BlockController
             if ($this->maxStringsCount) {
                 $n = count($parsed->getSourceStrings(true));
                 if ($n > (int) $this->maxStringsCount) {
-                    throw new UserException(t('Please specify up to %1$s strings (your file contains %2$s strings)', $this->maxStringsCount, $n));
+                    throw new UserMessageException(t('Please specify up to %1$s strings (your file contains %2$s strings)', $this->maxStringsCount, $n));
                 }
             }
             $tmp = $this->app->make(VolatileDirectory::class);
@@ -371,7 +371,7 @@ class Controller extends BlockController
             $zip = new ZipArchive();
             try {
                 if ($zip->open($zipName, ZipArchive::CREATE) !== true) {
-                    throw new UserException(t('Failed to create destination ZIP file'));
+                    throw new UserMessageException(t('Failed to create destination ZIP file'));
                 }
                 $zip->addEmptyDir('languages');
                 if ($writePOT) {
@@ -422,7 +422,7 @@ class Controller extends BlockController
                     'Expires' => '0',
                 ]
             );
-        } catch (UserException $x) {
+        } catch (UserMessageException $x) {
             $message = $x->getMessage();
         } catch (Exception $x) {
             $message = t('An unspecified error occurred');

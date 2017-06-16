@@ -2,7 +2,7 @@
 
 namespace CommunityTranslation\TranslationsConverter;
 
-use CommunityTranslation\UserException;
+use Concrete\Core\Error\UserMessageException;
 use Gettext\Translations;
 use Illuminate\Filesystem\Filesystem;
 
@@ -49,11 +49,11 @@ abstract class BaseConverter implements ConverterInterface
     public function saveTranslationsToFile(Translations $translations, $filename)
     {
         if (!$this->canSerializeTranslations()) {
-            throw new UserException(t('The "%s" converter is not able to serialize translations', $this->getName()));
+            throw new UserMessageException(t('The "%s" converter is not able to serialize translations', $this->getName()));
         }
         $serialized = $this->convertTranslationsToString($translations);
         if (@$this->fs->put($filename, $serialized) === false) {
-            throw new UserException(t('Failed to save translations to file'));
+            throw new UserMessageException(t('Failed to save translations to file'));
         }
     }
 
@@ -65,16 +65,16 @@ abstract class BaseConverter implements ConverterInterface
     public function loadTranslationsFromFile($filename)
     {
         if (!$this->canSerializeTranslations()) {
-            throw new UserException(t('The "%s" converter is not able to unserialize translations', $this->getName()));
+            throw new UserMessageException(t('The "%s" converter is not able to unserialize translations', $this->getName()));
         }
 
         if (!$this->fs->isFile($filename)) {
-            throw new UserException(t('File not found'));
+            throw new UserMessageException(t('File not found'));
         }
 
         $contents = @$this->fs->get($filename);
         if ($contents === false) {
-            throw new UserException(t('Unable to read a file'));
+            throw new UserMessageException(t('Unable to read a file'));
         }
 
         return $this->convertStringToTranslations($contents);

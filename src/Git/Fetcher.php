@@ -3,8 +3,8 @@
 namespace CommunityTranslation\Git;
 
 use CommunityTranslation\Entity\GitRepository;
-use CommunityTranslation\UserException;
 use Concrete\Core\Application\Application;
+use Concrete\Core\Error\UserMessageException;
 use Exception;
 use Illuminate\Filesystem\Filesystem;
 
@@ -83,7 +83,7 @@ class Fetcher
     /**
      * Get the working tree directory.
      *
-     * @throws UserException
+     * @throws UserMessageException
      *
      * @return string
      */
@@ -98,7 +98,7 @@ class Fetcher
                 $dir = $fh->getTemporaryDirectory();
                 $dir = is_string($dir) ? rtrim(str_replace(DIRECTORY_SEPARATOR, '/', $dir), '/') : '';
                 if ($dir === '') {
-                    throw new UserException(t('Unable to retrieve the temporary directory.'));
+                    throw new UserMessageException(t('Unable to retrieve the temporary directory.'));
                 }
             }
             $fs = $this->getFilesystem();
@@ -106,13 +106,13 @@ class Fetcher
             if (!@$fs->isDirectory($dir)) {
                 @$fs->makeDirectory($dir, DIRECTORY_PERMISSIONS_MODE_COMPUTED, true);
                 if (!@$fs->isDirectory($dir)) {
-                    throw new UserException(t('Unable to create a temporary directory.'));
+                    throw new UserMessageException(t('Unable to create a temporary directory.'));
                 }
             }
             $file = $dir . '/index.html';
             if (!$fs->isFile($file)) {
                 if (@$fs->put($file, '') === false) {
-                    throw new UserException(t('Error initializing a temporary directory.'));
+                    throw new UserMessageException(t('Error initializing a temporary directory.'));
                 }
             }
             $file = $dir . '/.htaccess';
@@ -123,7 +123,7 @@ Deny from all
 php_flag engine off
 EOT
                     ) === false) {
-                    throw new UserException(t('Error initializing a temporary directory.'));
+                    throw new UserMessageException(t('Error initializing a temporary directory.'));
                 }
             }
             $handle = strtolower($this->gitRepository->getURL());
@@ -139,7 +139,7 @@ EOT
     /**
      * Get the git directory.
      *
-     * @throws UserException
+     * @throws UserMessageException
      *
      * @return string
      */
@@ -155,7 +155,7 @@ EOT
     /**
      * Return the directory containing the files to be parsed.
      *
-     * @throws UserException
+     * @throws UserMessageException
      *
      * @return string
      */
@@ -173,7 +173,7 @@ EOT
     /**
      * Initializes the git repository (if the local directory exists it will be erased).
      *
-     * @throws UserException
+     * @throws UserMessageException
      */
     public function initialize()
     {
@@ -182,11 +182,11 @@ EOT
         if (@$fs->isDirectory($directory)) {
             @$fs->cleanDirectory($directory);
             if (count($fs->files($directory)) > 0 || count($fs->directories($directory)) > 0) {
-                throw new UserException(t('Failed to empty directory %s', $directory));
+                throw new UserMessageException(t('Failed to empty directory %s', $directory));
             }
         } else {
             if (@$fs->makeDirectory($directory, DIRECTORY_PERMISSIONS_MODE_COMPUTED) !== true) {
-                throw new UserException(t('Failed to create directory %s', $directory));
+                throw new UserMessageException(t('Failed to create directory %s', $directory));
             }
         }
         try {
@@ -205,7 +205,7 @@ EOT
     /**
      * Initializes or update the git repository.
      *
-     * @throws UserException
+     * @throws UserMessageException
      */
     public function update()
     {
@@ -222,7 +222,7 @@ EOT
      *
      * @param string $name
      *
-     * @throws UserException
+     * @throws UserMessageException
      */
     public function switchToBranch($name)
     {
@@ -234,7 +234,7 @@ EOT
      *
      * @param string $tag
      *
-     * @throws UserException
+     * @throws UserMessageException
      */
     public function switchToTag($tag)
     {
@@ -244,7 +244,7 @@ EOT
     /**
      * Returns the list of tags and their associated versions (keys are the tags, values are the versions).
      *
-     * @throws UserException
+     * @throws UserMessageException
      *
      * @return array Keys: tag, values: version
      */
@@ -257,7 +257,7 @@ EOT
             foreach ($this->runGit('tag --list') as $tag) {
                 $matchResult = @preg_match($this->gitRepository->getTagToVersionRegexp(), $tag, $matches);
                 if ($matchResult === false) {
-                    throw new UserException(t('Invalid regular expression for git repository %s', $this->gitRepository->getName()));
+                    throw new UserMessageException(t('Invalid regular expression for git repository %s', $this->gitRepository->getName()));
                 }
                 if ($matchResult > 0) {
                     $version = $matches[1];
@@ -286,7 +286,7 @@ EOT
      * @param string $cmd
      * @param bool $setDirectories
      *
-     * @throws UserException
+     * @throws UserMessageException
      *
      * @return string[]
      */
@@ -296,13 +296,13 @@ EOT
         if (!isset($execAvailable)) {
             $safeMode = @ini_get('safe_mode');
             if (!empty($safeMode)) {
-                throw new UserException(t("Safe-mode can't be on"));
+                throw new UserMessageException(t("Safe-mode can't be on"));
             }
             if (!function_exists('exec')) {
-                throw new UserException(t('exec() function is missing'));
+                throw new UserMessageException(t('exec() function is missing'));
             }
             if (in_array('exec', array_map('trim', explode(',', strtolower(@ini_get('disable_functions')))))) {
-                throw new UserException(t('exec() function is disabled'));
+                throw new UserMessageException(t('exec() function is disabled'));
             }
             $execAvailable = true;
         }
@@ -315,7 +315,7 @@ EOT
         $output = [];
         @exec($line, $output, $rc);
         if ($rc !== 0) {
-            throw new UserException(t('Command failed with return code %1$s: %2$s', $rc, implode("\n", $output)));
+            throw new UserMessageException(t('Command failed with return code %1$s: %2$s', $rc, implode("\n", $output)));
         }
 
         return $output;

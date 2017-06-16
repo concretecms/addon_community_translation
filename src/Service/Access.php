@@ -4,9 +4,9 @@ namespace CommunityTranslation\Service;
 
 use CommunityTranslation\Entity\Locale as LocaleEntity;
 use CommunityTranslation\Repository\Locale as LocaleRepository;
-use CommunityTranslation\UserException;
 use Concrete\Core\Application\Application;
 use Concrete\Core\Entity\User\User as UserEntity;
+use Concrete\Core\Error\UserMessageException;
 use Concrete\Core\User\User as UserService;
 use Doctrine\ORM\EntityManager;
 
@@ -202,11 +202,11 @@ class Access
     {
         $user = $this->getUser($wantedUser);
         if ($user === null) {
-            throw new UserException(t('Invalid user'));
+            throw new UserMessageException(t('Invalid user'));
         }
         $locale = $this->getLocale($wantedLocale);
         if ($locale === null) {
-            throw new UserException(t("The locale identifier '%s' is not valid", $locale));
+            throw new UserMessageException(t("The locale identifier '%s' is not valid", $locale));
         }
         if ($user->getUserID() === USER_SUPER_ID) {
             return;
@@ -217,7 +217,7 @@ class Access
         } else {
             $oldAccess = $this->getLocaleAccess($locale, $user);
             if ($oldAccess === self::GLOBAL_ADMIN && $access !== self::NONE) {
-                throw new UserException(t('User is a global locale administrator'));
+                throw new UserMessageException(t('User is a global locale administrator'));
             }
             switch ($access) {
                 case self::ADMIN:
@@ -233,7 +233,7 @@ class Access
                     $newGroup = null;
                     break;
                 default:
-                    throw new UserException(t('Invalid access level specified'));
+                    throw new UserMessageException(t('Invalid access level specified'));
             }
             if ($newGroup !== null) {
                 $user->enterGroup($newGroup);
@@ -273,7 +273,7 @@ class Access
     {
         $user = $this->getUser($user);
         if ($user === null) {
-            throw new UserException(t('Invalid user'));
+            throw new UserMessageException(t('Invalid user'));
         }
         if ($user->getUserID() === USER_SUPER_ID) {
             return;

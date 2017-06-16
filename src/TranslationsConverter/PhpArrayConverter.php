@@ -2,7 +2,7 @@
 
 namespace CommunityTranslation\TranslationsConverter;
 
-use CommunityTranslation\UserException;
+use Concrete\Core\Error\UserMessageException;
 use Gettext\Translations;
 
 class PhpArrayConverter extends BaseConverter implements ConverterInterface
@@ -94,6 +94,6 @@ class PhpArrayConverter extends BaseConverter implements ConverterInterface
      */
     public function convertStringToTranslations($string)
     {
-        throw new UserException(t('The "%s" converter is not able to unserialize translations', $this->getName()));
+        throw new UserMessageException(t('The "%s" converter is not able to unserialize translations', $this->getName()));
     }
 }

@@ -2,8 +2,8 @@
 
 namespace CommunityTranslation\Service;
 
-use CommunityTranslation\UserException;
 use Concrete\Core\Application\Application;
+use Concrete\Core\Error\UserMessageException;
 
 class DecompressedPackage
 {
@@ -76,7 +76,7 @@ class DecompressedPackage
     /**
      * Extract the archive (if not already done).
      *
-     * @throws UserException
+     * @throws UserMessageException
      */
     public function extract()
     {
@@ -84,14 +84,14 @@ class DecompressedPackage
             return;
         }
         if (!is_file($this->packageArchive)) {
-            throw new UserException(t('Archive not found: %s', $this->packageArchive));
+            throw new UserMessageException(t('Archive not found: %s', $this->packageArchive));
         }
         try {
             $workDir = $this->getVolatileDirectory()->getPath();
             try {
                 $this->app->make('helper/zip')->unzip($this->packageArchive, $workDir);
             } catch (\Exception $x) {
-                throw new UserException($x->getMessage());
+                throw new UserMessageException($x->getMessage());
             }
             $fs = $this->getVolatileDirectory()->getFilesystem();
             $dirs = array_filter($fs->directories($workDir), function ($dn) {
@@ -119,7 +119,7 @@ class DecompressedPackage
     /**
      * Get the working directory contaning the extracted package (we'll extract it if not already done).
      *
-     * @throws UserException
+     * @throws UserMessageException
      *
      * @return string
      */
@@ -135,7 +135,7 @@ class DecompressedPackage
     /**
      * Re-create the source archive with the contents of the extracted directory.
      *
-     * @throws UserException
+     * @throws UserMessageException
      */
     public function repack()
     {
@@ -143,7 +143,7 @@ class DecompressedPackage
         try {
             $this->app->make('helper/zip')->zip($this->getVolatileDirectory()->getPath(), $this->packageArchive, ['includeDotFiles' => true]);
         } catch (\Exception $x) {
-            throw new UserException($x->getMessage());
+            throw new UserMessageException($x->getMessage());
         }
     }
 }

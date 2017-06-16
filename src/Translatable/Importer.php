@@ -7,8 +7,8 @@ use CommunityTranslation\Entity\Package\Version as PackageVersionEntity;
 use CommunityTranslation\Entity\Translatable as TranslatableEntity;
 use CommunityTranslation\Parser\ParserInterface;
 use CommunityTranslation\Repository\Package as PackageRepository;
-use CommunityTranslation\UserException;
 use Concrete\Core\Application\Application;
+use Concrete\Core\Error\UserMessageException;
 use DateTime;
 use Doctrine\ORM\EntityManager;
 use Exception;
@@ -68,7 +68,7 @@ class Importer
      * @param string $packageVersion
      * @param string $basePlacesDirectory
      *
-     * @throws UserException
+     * @throws UserMessageException
      *
      * @return bool returns true if some translatable strings changed, false otherwise
      */
@@ -111,7 +111,7 @@ class Importer
      * @param string $packageHandle The package handle
      * @param string $packageVersion The package version
      *
-     * @throws UserException
+     * @throws UserMessageException
      *
      * @return bool returns true if some translatable strings changed, false otherwise
      */

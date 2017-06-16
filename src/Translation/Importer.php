@@ -3,10 +3,10 @@
 namespace CommunityTranslation\Translation;
 
 use CommunityTranslation\Entity\Locale as LocaleEntity;
-use CommunityTranslation\UserException;
 use Concrete\Core\Application\Application;
 use Concrete\Core\Database\Connection\Connection;
 use Concrete\Core\Entity\User\User as UserEntity;
+use Concrete\Core\Error\UserMessageException;
 use DateTime;
 use Doctrine\ORM\EntityManager;
 use Exception;
@@ -64,7 +64,7 @@ class Importer
      * @param UserEntity $user The user to which new translations should be associated
      * @param bool $reviewerRole Is the current user able to review the translations for this locale?
      *
-     * @throws UserException
+     * @throws UserMessageException
      *
      * @return ImportResult
      */
@@ -139,7 +139,7 @@ where
 
                 $s = strpbrk($allTranslations, $invalidChars);
                 if ($s !== false) {
-                    throw new UserException(
+                    throw new UserMessageException(
                         t('The translation for the string \'%1$s\' contains the invalid character \'%2$s\'.', $translation->getOriginal(), $invalidCharsMap[$s[0]])
                         . "\n" .
                         t('Translations can not contain these characters: %s', "'" . implode("', '", array_values($invalidCharsMap)) . "'")

@@ -2,7 +2,7 @@
 
 namespace CommunityTranslation\TranslationsConverter;
 
-use CommunityTranslation\UserException;
+use Concrete\Core\Error\UserMessageException;
 use Gettext\Translations;
 
 interface ConverterInterface
@@ -68,7 +68,7 @@ interface ConverterInterface
      *
      * @param Translations $translations
      *
-     * @throws UserException
+     * @throws UserMessageException
      *
      * @return string
      */
@@ -79,7 +79,7 @@ interface ConverterInterface
      *
      * @param string $string
      *
-     * @throws UserException
+     * @throws UserMessageException
      *
      * @return Translations
      */
@@ -91,7 +91,7 @@ interface ConverterInterface
      * @param Translations $translations
      * @param string $filename
      *
-     * @throws UserException
+     * @throws UserMessageException
      *
      * @return string
      */
@@ -102,7 +102,7 @@ interface ConverterInterface
      *
      * @param string $filename
      *
-     * @throws UserException
+     * @throws UserMessageException
      *
      * @return Translations
      */

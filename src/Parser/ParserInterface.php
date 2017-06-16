@@ -2,7 +2,7 @@
 
 namespace CommunityTranslation\Parser;
 
-use CommunityTranslation\UserException;
+use Concrete\Core\Error\UserMessageException;
 
 interface ParserInterface
 {
@@ -57,7 +57,7 @@ interface ParserInterface
      * @param string $relDirectory The relative path to be used in translation comments
      * @param int $searchDictionaryFiles One or more of the ParserInterface::DICTIONARY_... constants
      *
-     * @throws UserException
+     * @throws UserMessageException
      *
      * @return Parsed|null Returns null if no string has been found
      */
@@ -72,7 +72,7 @@ interface ParserInterface
      * @param string $relDirectory The relative path to be used in translation comments
      * @param int $searchDictionaryFiles One or more of the ParserInterface::DICTIONARY_... constants
      *
-     * @throws UserException
+     * @throws UserMessageException
      *
      * @return Parsed|null Returns null if no string has been found
      */
@@ -87,7 +87,7 @@ interface ParserInterface
      * @param string $relDirectory The relative path to be used in translation comments
      * @param int $searchDictionaryFiles One or more of the ParserInterface::DICTIONARY_... constants
      *
-     * @throws UserException
+     * @throws UserMessageException
      *
      * @return Parsed|null Returns null if no string has been found
      */
@@ -103,7 +103,7 @@ interface ParserInterface
      * @param string $relDirectory The relative path to be used in translation comments
      * @param int $searchDictionaryFiles One or more of the ParserInterface::DICTIONARY_... constants
      *
-     * @throws UserException
+     * @throws UserMessageException
      *
      * @return Parsed|null Returns null if no string has been found
      */

@@ -10,7 +10,7 @@ use CommunityTranslation\Entity\Translation as TranslationEntity;
 use CommunityTranslation\Repository\Locale as LocaleRepository;
 use CommunityTranslation\Repository\Package\Version as PackageVersionRepository;
 use CommunityTranslation\Repository\Translatable\Place as TranslatablePlaceRepository;
-use CommunityTranslation\UserException;
+use Concrete\Core\Error\UserMessageException;
 use Concrete\Core\Support\Facade\Application;
 use DateTime;
 use Doctrine\ORM\EntityRepository;
@@ -36,7 +36,7 @@ class Stats extends EntityRepository
                     $obj['version']
                 );
                 if ($pv === null) {
-                    throw new UserException(t('Invalid translated package specified'));
+                    throw new UserMessageException(t('Invalid translated package specified'));
                 }
                 $result[] = $pv;
             } elseif (isset($obj[0]) && is_string($obj[1]) && isset($obj[1]) && is_string($obj[1])) {
@@ -45,7 +45,7 @@ class Stats extends EntityRepository
                     $obj[1]
                 );
                 if ($pv === null) {
-                    throw new UserException(t('Invalid translated package specified'));
+                    throw new UserMessageException(t('Invalid translated package specified'));
                 }
                 $result[] = $p;
             } else {
@@ -55,7 +55,7 @@ class Stats extends EntityRepository
             }
         }
         if (empty($result)) {
-            throw new UserException(t('Invalid translated package specified'));
+            throw new UserMessageException(t('Invalid translated package specified'));
         }
 
         return $result;
@@ -75,7 +75,7 @@ class Stats extends EntityRepository
             $app = Application::getFacadeApplication();
             $l = $app->make(LocaleRepository::class)->findApproved($obj);
             if ($l === null) {
-                throw new UserException(t('Invalid locale specified'));
+                throw new UserMessageException(t('Invalid locale specified'));
             }
             $result[] = $l;
         } elseif (is_array($obj)) {
@@ -84,7 +84,7 @@ class Stats extends EntityRepository
             }
         }
         if (empty($result)) {
-            throw new UserException(t('Invalid locale specified'));
+            throw new UserMessageException(t('Invalid locale specified'));
         }
 
         return $result;
@@ -201,7 +201,7 @@ class Stats extends EntityRepository
      * @param LocaleEntity $locale
      * @param TranslatableEntity|int|TranslatableEntity[]|int[] $translatables
      *
-     * @throws UserException
+     * @throws UserMessageException
      */
     public function resetForLocaleTranslatables(LocaleEntity $locale, $translatables)
     {
@@ -219,13 +219,13 @@ class Stats extends EntityRepository
                     } elseif (is_int($translatable)) {
                         $translatableIDs[] = $translatable;
                     } else {
-                        throw new UserException(t('Invalid translatable string specified'));
+                        throw new UserMessageException(t('Invalid translatable string specified'));
                     }
                 }
             }
         }
         if (empty($translatableIDs)) {
-            throw new UserException(t('Invalid translatable string specified'));
+            throw new UserMessageException(t('Invalid translatable string specified'));
         }
         $this->getEntityManager()->getConnection()->executeQuery(
             '

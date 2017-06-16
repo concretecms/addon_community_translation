@@ -223,7 +223,7 @@ class ApiClient
                 $fields = $this->postFields;
                 if (class_exists('CURLFile')) {
                     foreach ($this->postFiles as $fieldName => $path) {
-                        $fields[$fieldName] = new CURLFile($path);
+                        $fields[$fieldName] = new \CURLFile($path);
                     }
                 } else {
                     if (defined('CURLOPT_SAFE_UPLOAD')) {

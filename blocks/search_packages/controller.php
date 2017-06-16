@@ -14,7 +14,7 @@ use CommunityTranslation\Repository\Stats as StatsRepository;
 use CommunityTranslation\Service\Access;
 use CommunityTranslation\Service\TranslationsFileExporter;
 use CommunityTranslation\TranslationsConverter\Provider as TranslationsConverterProvider;
-use CommunityTranslation\UserException;
+use Concrete\Core\Error\UserMessageException;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -371,24 +371,24 @@ class Controller extends BlockController
             $text = $this->request->request->get('text');
             $text = is_string($text) ? trim($text) : '';
             if ($text === '') {
-                throw new UserException(t('Please specify the search criteria'));
+                throw new UserMessageException(t('Please specify the search criteria'));
             }
             $token = $this->app->make('token');
             if (!$token->validate('comtra_search_packages-search')) {
-                throw new UserException($token->getErrorMessage());
+                throw new UserMessageException($token->getErrorMessage());
             }
 
             $words = is_string($text) ? $this->getSearchWords($text) : [];
             if (count($words) > 0) {
                 $this->set('searchText', $text);
                 if ($this->mimimumSearchLength && mb_strlen(implode('', $words)) < $this->mimimumSearchLength) {
-                    throw new UserException(t('Please be more specific with your search'));
+                    throw new UserMessageException(t('Please be more specific with your search'));
                 }
                 $qb = $this->buildSearchQuery($words);
                 $packages = $qb->getQuery()->execute();
                 switch (count($packages)) {
                     case 0:
-                        throw new UserException(t('No results found'));
+                        throw new UserMessageException(t('No results found'));
                     case 1:
                         $this->action_package($packages[0]->getHandle());
                         break;
@@ -397,7 +397,7 @@ class Controller extends BlockController
                         break;
                 }
             }
-        } catch (UserException $x) {
+        } catch (UserMessageException $x) {
             $this->set('searchError', h($x->getMessage()));
         }
 
@@ -448,19 +448,19 @@ class Controller extends BlockController
         try {
             $token = $this->app->make('token');
             if (!$token->validate('comtra-download-translations-' . $packageVersionID . '@' . $localeID . '.' . $formatHandle)) {
-                throw new UserException($token->getErrorMessage());
+                throw new UserMessageException($token->getErrorMessage());
             }
             $packageVersion = $this->app->make(PackageVersionRepository::class)->find((int) $packageVersionID);
             if ($packageVersion === null) {
-                throw new UserException(t('Unable to find the specified package'));
+                throw new UserMessageException(t('Unable to find the specified package'));
             }
             $locale = $this->app->make(LocaleRepository::class)->findApproved((string) $localeID);
             if ($locale === null) {
-                throw new UserException(t('Unable to find the specified language'));
+                throw new UserMessageException(t('Unable to find the specified language'));
             }
             $formats = $this->getAllowedDownloadFormats($locale);
             if (!array_key_exists($formatHandle, $formats)) {
-                throw new UserException(t('Unable to find the specified translations file format'));
+                throw new UserMessageException(t('Unable to find the specified translations file format'));
             }
             $format = $formats[$formatHandle];
             $serializedTranslationsFile = $this->app->make(TranslationsFileExporter::class)->getSerializedTranslationsFile($packageVersion, $locale, $format);
@@ -480,7 +480,7 @@ class Controller extends BlockController
                 'attachment',
                 'translations-' . $locale->getID() . '.' . $format->getFileExtension()
             );
-        } catch (UserException $x) {
+        } catch (UserMessageException $x) {
             return $this->app->make('helper/concrete/ui')->buildErrorResponse(
                 t('Error'),
                 h($x->getMessage())

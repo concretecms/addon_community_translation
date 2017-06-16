@@ -6,8 +6,8 @@ use CommunityTranslation\Entity\RemotePackage as RemotePackageEntity;
 use CommunityTranslation\Repository\Package as PackageRepository;
 use CommunityTranslation\Service\VolatileDirectory;
 use CommunityTranslation\Translatable\Importer as TranslatableImporter;
-use CommunityTranslation\UserException;
 use Concrete\Core\Application\Application;
+use Concrete\Core\Error\UserMessageException;
 use Concrete\Core\File\Service\Zip as ZipHelper;
 use Concrete\Core\Http\Client\Client as HttpClient;
 use Zend\Http\Request;
@@ -67,7 +67,7 @@ class Importer
      *
      * @param RemotePackageEntity $remotePackage
      *
-     * @throws UserException
+     * @throws UserMessageException
      */
     public function import(RemotePackageEntity $remotePackage)
     {
@@ -96,7 +96,7 @@ class Importer
     /**
      * @param RemotePackageEntity $remotePackage
      *
-     * @throws UserException
+     * @throws UserMessageException
      *
      * @return VolatileDirectory
      */
@@ -126,7 +126,7 @@ class Importer
                 fclose($streamHandle);
             }
             unset($temp);
-            throw new UserException($error);
+            throw new UserMessageException($error);
         }
         fclose($streamHandle);
         $temp->getFilesystem()->makeDirectory($temp->getPath() . '/unzipped');

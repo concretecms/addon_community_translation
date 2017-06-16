@@ -2,8 +2,8 @@
 
 namespace CommunityTranslation\Parser;
 
-use CommunityTranslation\UserException;
 use Concrete\Core\Application\Application;
+use Concrete\Core\Error\UserMessageException;
 
 class Provider
 {
@@ -52,7 +52,7 @@ class Provider
     /**
      * Get the list of registered parsers.
      *
-     * @throws UserException
+     * @throws UserMessageException
      *
      * @return ParserInterface[]
      */
@@ -66,7 +66,7 @@ class Provider
                 } else {
                     $instance = $this->app->make($parser);
                     if (!($instance instanceof ParserInterface)) {
-                        throw new UserException(t(/*i18n: %1$s is the name of a PHP class, %2$s is the name of a PHP interface*/'%1$s does not implement %2$s', $parser, ParserInterface::class));
+                        throw new UserMessageException(t(/*i18n: %1$s is the name of a PHP class, %2$s is the name of a PHP interface*/'%1$s does not implement %2$s', $parser, ParserInterface::class));
                     }
                     $result[] = $instance;
                 }

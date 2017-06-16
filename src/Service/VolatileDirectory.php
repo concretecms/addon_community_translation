@@ -2,8 +2,8 @@
 
 namespace CommunityTranslation\Service;
 
-use CommunityTranslation\UserException;
 use Concrete\Core\Application\Application;
+use Concrete\Core\Error\UserMessageException;
 use Illuminate\Filesystem\Filesystem;
 
 class VolatileDirectory
@@ -36,7 +36,7 @@ class VolatileDirectory
      * @param Filesystem $filesystem the Filesystem instance to use (we'll create a new instance if not set)
      * @param string|null $parentDirectory the parent directory that will contain this volatile directory (if not set we'll detect it)
      *
-     * @throws UserException
+     * @throws UserMessageException
      */
     public function __construct(Application $app, Filesystem $filesystem, $parentDirectory = null)
     {
@@ -55,16 +55,16 @@ class VolatileDirectory
             }
         }
         if ($parentDirectory === '') {
-            throw new UserException(t('Unable to retrieve the temporary directory.'));
+            throw new UserMessageException(t('Unable to retrieve the temporary directory.'));
         }
         if (!$this->filesystem->isWritable($parentDirectory)) {
-            throw new UserException(t('The temporary directory is not writable.'));
+            throw new UserMessageException(t('The temporary directory is not writable.'));
         }
         $path = @tempnam($parentDirectory, 'VD');
         @$this->filesystem->delete([$path]);
         @$this->filesystem->makeDirectory($path);
         if (!$this->filesystem->isDirectory($path)) {
-            throw new UserException(t('Unable to create a temporary directory.'));
+            throw new UserMessageException(t('Unable to create a temporary directory.'));
         }
         $this->path = $path;
     }

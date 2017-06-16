@@ -2,9 +2,9 @@
 
 namespace CommunityTranslation\Service;
 
-use CommunityTranslation\UserException;
 use Concrete\Core\Application\Application;
 use Concrete\Core\Error\ErrorList\Error\Error;
+use Concrete\Core\Error\UserMessageException;
 use Concrete\Core\Http\Request;
 use Punic\Unit;
 
@@ -80,7 +80,7 @@ class RateLimit
      * @param int|mixed $unit
      * @param bool $required
      *
-     * @throws UserException
+     * @throws UserMessageException
      *
      * @return int|null|Error
      */
@@ -95,11 +95,11 @@ class RateLimit
         }
         if ($v === null) {
             if ($required) {
-                throw new UserException(t('The value of the time window is missing'));
+                throw new UserMessageException(t('The value of the time window is missing'));
             }
             $result = null;
         } elseif ($v <= 0) {
-            throw new UserException(t('The value of the time window must be greater than zero'));
+            throw new UserMessageException(t('The value of the time window must be greater than zero'));
         } else {
             if (is_int($unit)) {
                 $u = $unit;
@@ -109,11 +109,11 @@ class RateLimit
                 $u = null;
             }
             if ($u === null || !array_key_exists($u, $this->getTimeWindowUnits())) {
-                throw new UserException(t('The value of the time window units is not valid'));
+                throw new UserMessageException(t('The value of the time window units is not valid'));
             }
             $result = $u * $v;
             if (!is_int($result)) {
-                throw new UserException(t('The value of the time window units is too big'));
+                throw new UserMessageException(t('The value of the time window units is too big'));
             }
         }
 
@@ -181,7 +181,7 @@ EOT
      * @param string $name
      * @param int $defaultTimeWindow the value of the time window if the max requests is empty and the received time window is invalid
      *
-     * @throws UserException
+     * @throws UserMessageException
      *
      * @return array
      */
@@ -192,11 +192,11 @@ EOT
         $s = $post->get($name . '_maxRequests');
         $maxRequests = (is_scalar($s) && is_numeric($s)) ? (int) $s : null;
         if ($maxRequests !== null && $maxRequests <= 0) {
-            throw new UserException(t('Please specify a positive integer for the maximum number of requests (or leave it empty)'));
+            throw new UserMessageException(t('Please specify a positive integer for the maximum number of requests (or leave it empty)'));
         }
         try {
             $timeWindow = $this->joinTimeWindow($post->get($name . '_timeWindow_value'), $post->get($name . '_timeWindow_unit'), true);
-        } catch (UserException $x) {
+        } catch (UserMessageException $x) {
             if ($maxRequests === null) {
                 $timeWindow = $defaultTimeWindow;
             } else {

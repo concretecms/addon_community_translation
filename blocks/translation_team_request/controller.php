@@ -7,7 +7,7 @@ use CommunityTranslation\Entity\Locale as LocaleEntity;
 use CommunityTranslation\Repository\Locale as LocaleRepository;
 use CommunityTranslation\Repository\Notification as NotificationRepository;
 use CommunityTranslation\Service\Access;
-use CommunityTranslation\UserException;
+use Concrete\Core\Error\UserMessageException;
 use DateTime;
 use Doctrine\ORM\EntityManager;
 use Gettext\Languages\Language as GettextLanguage;
@@ -360,7 +360,7 @@ class Controller extends BlockController
         }
         try {
             $locale = $this->createLocale($localeID, $notes, $approve);
-        } catch (UserException $x) {
+        } catch (UserMessageException $x) {
             $this->set('showError', $err);
             $this->action_language();
 

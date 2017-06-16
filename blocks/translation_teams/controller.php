@@ -9,7 +9,7 @@ use CommunityTranslation\Repository\Notification as NotificationRepository;
 use CommunityTranslation\Service\Access;
 use CommunityTranslation\Service\Groups;
 use CommunityTranslation\Service\User as UserService;
-use CommunityTranslation\UserException;
+use Concrete\Core\Error\UserMessageException;
 use Concrete\Core\User\Group\Group;
 use Concrete\Core\User\User as CoreUser;
 use Doctrine\ORM\EntityManager;
@@ -163,7 +163,7 @@ class Controller extends BlockController
             }
             $locale = (is_string($localeID) && $localeID !== '') ? $this->app->make(LocaleRepository::class)->find($localeID) : null;
             if ($locale === null || $locale->isApproved() || $locale->isSource()) {
-                throw new UserException(t("The locale identifier '%s' is not valid", $localeID));
+                throw new UserMessageException(t("The locale identifier '%s' is not valid", $localeID));
             }
             $access = $this->app->make(Access::class)->getLocaleAccess($locale);
             switch ($access) {
@@ -172,7 +172,7 @@ class Controller extends BlockController
                 default:
                     $me = new CoreUser();
                     if (!$me->isRegistered() || !$locale->getRequestedBy() || $me->getUserID() != $locale->getRequestedBy()->getUserID()) {
-                        throw new UserException(t('Invalid user rights'));
+                        throw new UserMessageException(t('Invalid user rights'));
                     }
                     break;
             }
@@ -181,7 +181,7 @@ class Controller extends BlockController
             $em->flush();
             $this->app->make(NotificationRepository::class)->newLocaleRequestRejected($locale, (new CoreUser())->getUserID());
             $this->redirectWithMessage(t("The request to create the '%s' translation group has been canceled", $locale->getDisplayName()), false, '');
-        } catch (UserException $x) {
+        } catch (UserMessageException $x) {
             $this->redirectWithMessage($x->getMessage(), true, '');
         }
     }
@@ -191,18 +191,18 @@ class Controller extends BlockController
         try {
             $token = $this->app->make('token');
             if (!$token->validate('comtra_approve_new_locale_request' . $localeID)) {
-                throw new UserException($token->getErrorMessage());
+                throw new UserMessageException($token->getErrorMessage());
             }
             $locale = (is_string($localeID) && $localeID !== '') ? $this->app->make(LocaleRepository::class)->find($localeID) : null;
             if ($locale === null || $locale->isApproved() || $locale->isSource()) {
-                throw new UserException(t("The locale identifier '%s' is not valid", $localeID));
+                throw new UserMessageException(t("The locale identifier '%s' is not valid", $localeID));
             }
             $access = $this->app->make(Access::class)->getLocaleAccess($locale);
             switch ($access) {
                 case Access::GLOBAL_ADMIN:
                     break;
                 default:
-                    throw new UserException(t('Invalid user rights'));
+                    throw new UserMessageException(t('Invalid user rights'));
             }
             $locale->setIsApproved(true);
             $em = $this->app->make(EntityManager::class);
@@ -224,7 +224,7 @@ class Controller extends BlockController
             }
             $this->app->make(NotificationRepository::class)->newLocaleRequestApproved($locale, (new CoreUser())->getUserID());
             $this->redirectWithMessage(t("The language team for '%s' has been approved", $locale->getDisplayName()), false, '');
-        } catch (UserException $x) {
+        } catch (UserMessageException $x) {
             $this->redirectWithMessage($x->getMessage(), true, '');
         }
     }
@@ -235,21 +235,21 @@ class Controller extends BlockController
         try {
             $token = $this->app->make('token');
             if (!$token->validate('comtra_join_translation_group' . $localeID)) {
-                throw new UserException($token->getErrorMessage());
+                throw new UserMessageException($token->getErrorMessage());
             }
             $locale = (is_string($localeID) && $localeID !== '') ? $this->app->make(LocaleRepository::class)->findApproved($localeID) : null;
             if ($locale === null) {
-                throw new UserException(t("The locale identifier '%s' is not valid", $localeID));
+                throw new UserMessageException(t("The locale identifier '%s' is not valid", $localeID));
             }
             $gotoLocale = $locale;
             $accessHelper = $this->app->make(Access::class);
             $access = $accessHelper->getLocaleAccess($locale);
             if ($access !== Access::NONE) {
-                throw new UserException(t('Invalid user rights'));
+                throw new UserMessageException(t('Invalid user rights'));
             }
             $accessHelper->setLocaleAccess($locale, Access::ASPRIRING);
             $this->redirectWithMessage(t('Your request to join the %s translation group has been submitted. Thank you!', $locale->getDisplayName()), false, 'details', $locale->getID());
-        } catch (UserException $x) {
+        } catch (UserMessageException $x) {
             if ($gotoLocale === null) {
                 $this->redirectWithMessage($x->getMessage(), true, '');
             } else {
@@ -263,11 +263,11 @@ class Controller extends BlockController
         try {
             $token = $this->app->make('token');
             if (!$token->validate('comtra_leave_translation_group' . $localeID)) {
-                throw new UserException($token->getErrorMessage());
+                throw new UserMessageException($token->getErrorMessage());
             }
             $locale = (is_string($localeID) && $localeID !== '') ? $this->app->make(LocaleRepository::class)->findApproved($localeID) : null;
             if ($locale === null) {
-                throw new UserException(t("The locale identifier '%s' is not valid", $localeID));
+                throw new UserMessageException(t("The locale identifier '%s' is not valid", $localeID));
             }
             $accessHelper = $this->app->make(Access::class);
             $access = $accessHelper->getLocaleAccess($locale);
@@ -280,11 +280,11 @@ class Controller extends BlockController
                     $message = t("You left the '%s' translation group.", $locale->getDisplayName());
                     break;
                 default:
-                    throw new UserException(t('Invalid user rights'));
+                    throw new UserMessageException(t('Invalid user rights'));
             }
             $accessHelper->setLocaleAccess($locale, Access::NONE);
             $this->redirectWithMessage($message, false, '');
-        } catch (UserException $x) {
+        } catch (UserMessageException $x) {
             $this->redirectWithMessage($x->getMessage(), true, '');
         }
     }
@@ -295,11 +295,11 @@ class Controller extends BlockController
         try {
             $token = $this->app->make('token');
             if (!$token->validate('comtra_answer_join_request' . $localeID . '#' . $userID . ':' . $approve)) {
-                throw new UserException($token->getErrorMessage());
+                throw new UserMessageException($token->getErrorMessage());
             }
             $locale = $this->app->make(LocaleRepository::class)->findApproved($localeID);
             if ($locale === null) {
-                throw new UserException(t("The locale identifier '%s' is not valid", $localeID));
+                throw new UserMessageException(t("The locale identifier '%s' is not valid", $localeID));
             }
             $gotoLocale = $locale;
             $accessHelper = $this->app->make(Access::class);
@@ -309,7 +309,7 @@ class Controller extends BlockController
                 case Access::GLOBAL_ADMIN:
                     break;
                 default:
-                    throw new UserException(t('Invalid user rights'));
+                    throw new UserMessageException(t('Invalid user rights'));
             }
             $user = CoreUser::getByUserID($userID);
             if ($user) {
@@ -318,7 +318,7 @@ class Controller extends BlockController
                 }
             }
             if (!$user) {
-                throw new UserException(t('Invalid user'));
+                throw new UserMessageException(t('Invalid user'));
             }
             if ($approve) {
                 $accessHelper->setLocaleAccess($locale, Access::TRANSLATE, $user);
@@ -330,7 +330,7 @@ class Controller extends BlockController
                 $message = t('The request by %s has been refused', $user->getUserName());
             }
             $this->redirectWithMessage($message, false, 'details', $locale->getID());
-        } catch (UserException $x) {
+        } catch (UserMessageException $x) {
             if ($gotoLocale === null) {
                 $this->redirectWithMessage($x->getMessage(), true, '');
             } else {
@@ -345,16 +345,16 @@ class Controller extends BlockController
         try {
             $token = $this->app->make('helper/validation/token');
             if (!$token->validate('comtra_change_access' . $localeID . '#' . $userID . ':' . $newAccess)) {
-                throw new UserException($token->getErrorMessage());
+                throw new UserMessageException($token->getErrorMessage());
             }
             $locale = $this->app->make(LocaleRepository::class)->findApproved($localeID);
             if ($locale === null) {
-                throw new UserException(t("The locale identifier '%s' is not valid", $localeID));
+                throw new UserMessageException(t("The locale identifier '%s' is not valid", $localeID));
             }
             $gotoLocale = $locale;
             $user = CoreUser::getByUserID($userID);
             if (!$user) {
-                throw new UserException(t('Invalid user'));
+                throw new UserMessageException(t('Invalid user'));
             }
             $accessHelper = $this->app->make(Access::class);
             $myAccess = $accessHelper->getLocaleAccess($locale);
@@ -367,11 +367,11 @@ class Controller extends BlockController
                 || $newAccess < Access::NONE || $newAccess > Access::ADMIN
                 || $newAccess === $oldAccess
                 ) {
-                throw new UserException(t('Invalid user rights'));
+                throw new UserMessageException(t('Invalid user rights'));
             }
             $accessHelper->setLocaleAccess($locale, $newAccess, $user);
             $this->redirectWithMessage(t('The role of %s has been updated', $user->getUserName()), false, 'details', $locale->getID());
-        } catch (UserException $x) {
+        } catch (UserMessageException $x) {
             if ($gotoLocale === null) {
                 $this->redirectWithMessage($x->getMessage(), true, '');
             } else {
@@ -386,24 +386,24 @@ class Controller extends BlockController
         try {
             $locale = $this->app->make(LocaleRepository::class)->findApproved($localeID);
             if ($locale === null) {
-                throw new UserException(t("The locale identifier '%s' is not valid", $localeID));
+                throw new UserMessageException(t("The locale identifier '%s' is not valid", $localeID));
             }
             $gotoLocale = $locale;
             $token = $this->app->make('helper/validation/token');
             if (!$token->validate('comtra_delete_translation_group' . $localeID)) {
-                throw new UserException($token->getErrorMessage());
+                throw new UserMessageException($token->getErrorMessage());
             }
             $accessHelper = $this->app->make(Access::class);
             $myAccess = $accessHelper->getLocaleAccess($locale);
             if ($myAccess < Access::GLOBAL_ADMIN) {
-                throw new UserException(t('Invalid user rights'));
+                throw new UserMessageException(t('Invalid user rights'));
             }
             $em = $this->app->make(EntityManager::class);
             $em->remove($locale);
             $em->flush($locale);
             $this->app->make(Groups::class)->deleteLocaleGroups($locale->getID());
             $this->redirectWithMessage(t('The language team for %s has been deleted', $locale->getDisplayName()), false, '');
-        } catch (UserException $x) {
+        } catch (UserMessageException $x) {
             if ($gotoLocale === null) {
                 $this->redirectWithMessage($x->getMessage(), true, '');
             } else {

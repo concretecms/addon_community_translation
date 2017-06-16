@@ -17,8 +17,8 @@ use CommunityTranslation\Notification\Category\NewTranslatorRejected;
 use CommunityTranslation\Notification\Category\TranslatableComment;
 use CommunityTranslation\Notification\Category\TranslationsNeedApproval;
 use CommunityTranslation\Notification\Category\UpdatedTranslatablePackageVersion;
-use CommunityTranslation\UserException;
 use Concrete\Core\Entity\User\User as UserEntity;
+use Concrete\Core\Error\UserMessageException;
 use Concrete\Core\User\User;
 use DateTime;
 use Doctrine\ORM\EntityRepository;
@@ -44,7 +44,7 @@ class Notification extends EntityRepository
         }
 
         if ($result === null && $required) {
-            throw new UserException(t('No logged in user'));
+            throw new UserMessageException(t('No logged in user'));
         }
 
         return $result;
@@ -64,7 +64,7 @@ class Notification extends EntityRepository
         }
 
         if ($result === null && $required) {
-            throw new UserException(t('No logged in user'));
+            throw new UserMessageException(t('No logged in user'));
         }
 
         return $result;

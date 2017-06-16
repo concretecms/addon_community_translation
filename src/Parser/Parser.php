@@ -3,8 +3,8 @@
 namespace CommunityTranslation\Parser;
 
 use CommunityTranslation\Service\DecompressedPackage;
-use CommunityTranslation\UserException;
 use Concrete\Core\Application\Application;
+use Concrete\Core\Error\UserMessageException;
 use Illuminate\Filesystem\Filesystem;
 
 abstract class Parser implements ParserInterface
@@ -47,7 +47,7 @@ abstract class Parser implements ParserInterface
         } elseif ($this->filesystem->isDirectory($path)) {
             $result = $this->parseDirectory($packageHandle, $packageVersion, $path, $relDirectory, $searchDictionaryFiles);
         } else {
-            throw new UserException(t('Unable to find the file/directory %s', $path));
+            throw new UserMessageException(t('Unable to find the file/directory %s', $path));
         }
 
         return $result;
@@ -63,7 +63,7 @@ abstract class Parser implements ParserInterface
         $zip = $this->app->make(DecompressedPackage::class, ['packageArchive' => $path, 'volatileDirectory' => null]);
         try {
             $zip->extract();
-        } catch (UserException $foo) {
+        } catch (UserMessageException $foo) {
             $zip = null;
         }
         if ($zip !== null) {
@@ -104,7 +104,7 @@ abstract class Parser implements ParserInterface
      * @param string $path
      * @param int $kinds One or more of self::DICTIONARY_SOURCE, self::DICTIONARY_LOCALIZED_SOURCE, self::DICTIONARY_LOCALIZED_COMPILED
      *
-     * @throws UserException
+     * @throws UserMessageException
      *
      * @return Parsed|null
      */
@@ -118,7 +118,7 @@ abstract class Parser implements ParserInterface
      * @param string $path
      * @param string $relDirectory
      *
-     * @throws UserException
+     * @throws UserMessageException
      *
      * @return Parsed|null
      */

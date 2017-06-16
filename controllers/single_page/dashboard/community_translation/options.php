@@ -7,7 +7,7 @@ use CommunityTranslation\Entity\Locale as LocaleEntity;
 use CommunityTranslation\Parser\Provider as ParserProvider;
 use CommunityTranslation\Repository\Locale as LocaleRepository;
 use CommunityTranslation\Service\RateLimit;
-use CommunityTranslation\UserException;
+use Concrete\Core\Error\UserMessageException;
 use Concrete\Core\Page\Controller\DashboardPageController;
 use Exception;
 use Illuminate\Filesystem\Filesystem;
@@ -200,7 +200,7 @@ class Options extends DashboardPageController
         }
         try {
             list($apiRateLimitMaxRequests, $apiRateLimitTimeWindow) = $this->app->make(RateLimit::class)->fromWidgetHtml('apiRateLimit', (int) $config->get('options.api.rateLimit.timeWindow') ?: 3600);
-        } catch (UserException $x) {
+        } catch (UserMessageException $x) {
             $this->error->add($x->getMessage());
         }
         $apiAccessControlAllowOrigin = $this->post('apiAccessControlAllowOrigin');

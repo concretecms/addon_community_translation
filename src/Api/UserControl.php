@@ -5,9 +5,9 @@ namespace CommunityTranslation\Api;
 use CommunityTranslation\Repository\Locale as LocaleRepository;
 use CommunityTranslation\Service\Access;
 use CommunityTranslation\Service\IPControlLog;
-use CommunityTranslation\UserException;
 use Concrete\Core\Application\Application;
 use Concrete\Core\Entity\User\User as UserEntity;
+use Concrete\Core\Error\UserMessageException;
 use Concrete\Core\Http\Request;
 use Concrete\Core\User\Group\Group;
 use Concrete\Core\User\User;
@@ -358,7 +358,7 @@ class UserControl
     /**
      * Check if the API Rate limit has been reached.
      *
-     * @throws UserException
+     * @throws UserMessageException
      */
     public function checkRateLimit()
     {
@@ -367,7 +367,7 @@ class UserControl
             list($maxRequests, $timeWindow) = $rateLimit;
             $visits = $this->getVisitsCountFromCurrentIP($timeWindow);
             if ($visits >= $maxRequests) {
-                throw new UserException(t('You reached the API rate limit (%1$s requests every %2$s seconds)', $maxRequests, $timeWindow));
+                throw new UserMessageException(t('You reached the API rate limit (%1$s requests every %2$s seconds)', $maxRequests, $timeWindow));
             }
             $this->app->make(IPControlLog::class)->addVisit('api');
         }
