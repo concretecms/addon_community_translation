@@ -29,7 +29,7 @@ class Locale
     /**
      * Create a new (unsaved and unapproved) Locale instance given its locale ID.
      *
-     * @param string id
+     * @param string $id
      *
      * @return static
      */
