@@ -21,11 +21,14 @@
         <field name="maxFileSize" type="integer">
             <unsigned/>
         </field>
-            <field name="maxLocalesCount" type="integer">
+        <field name="maxLocalesCount" type="integer">
             <unsigned/>
         </field>
         <field name="maxStringsCount" type="integer">
             <unsigned/>
+        </field>
+        <field name="statsFromPackage" type="string" size="64">
+        	<notnull/>
         </field>
     </table>
 

@@ -14,6 +14,7 @@ $form = $app->make('helper/form');
 /* @var string $maxFileSizeUnit */
 /* @var int|null $maxLocalesCount */
 /* @var int|null $maxStringsCount */
+/* @var string $statsFromPackage */
 ?>
 
 <fieldset>
@@ -60,4 +61,8 @@ $form = $app->make('helper/form');
         <?= $form->number('maxStringsCount', $maxStringsCount, ['min' => 1, 'placeholder' => t('Empty for no limit')]) ?>
     </div>
 
+    <div class="form-group">
+        <?= $form->label('statsFromPackage', t('Calculate "translated" languages inspecting package')) ?>
+        <?= $form->text('statsFromPackage', $statsFromPackage, ['placeholder' => t('Empty to use every package')]) ?>
+    </div>
 </fieldset>

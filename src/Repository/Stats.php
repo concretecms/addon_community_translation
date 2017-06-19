@@ -111,7 +111,7 @@ class Stats extends EntityRepository
      * @param PackageVersionEntity|PackageVersionEntity[]|array|array[array] $wantedPackageVersions
      * @param LocaleEntity|LocaleEntity[]|string|string[] $wantedLocales
      *
-     * @return Stats[]
+     * @return StatsEntity[]
      */
     public function get($wantedPackageVersions, $wantedLocales)
     {
@@ -141,7 +141,7 @@ class Stats extends EntityRepository
         }
 
         $result = $qb->getQuery()->getResult();
-        /* @var \CommunityTranslation\Entity\Stats[] $result */
+        /* @var StatsEntity[] $result */
         $missingLocalesForPackageVersions = [];
         foreach ($packageVersions as $packageVersion) {
             foreach ($locales as $locale) {

@@ -4,8 +4,10 @@ namespace Concrete\Package\CommunityTranslation\Block\FillTranslations;
 
 use CommunityTranslation\Controller\BlockController;
 use CommunityTranslation\Parser\ParserInterface;
-use CommunityTranslation\Repository\Locale;
-use CommunityTranslation\Repository\LocaleStats;
+use CommunityTranslation\Repository\Locale as LocaleRepository;
+use CommunityTranslation\Repository\LocaleStats as LocaleStatsRepository;
+use CommunityTranslation\Repository\Package as PackageRepository;
+use CommunityTranslation\Repository\Stats as StatsRepository;
 use CommunityTranslation\Service\IPControlLog;
 use CommunityTranslation\Service\RateLimit;
 use CommunityTranslation\Service\VolatileDirectory;
@@ -43,6 +45,7 @@ class Controller extends BlockController
     public $maxFileSize;
     public $maxLocalesCount;
     public $maxStringsCount;
+    public $statsFromPackage;
 
     public function getBlockTypeName()
     {
@@ -103,6 +106,7 @@ class Controller extends BlockController
         $this->set('rateLimitHelper', $this->app->make(RateLimit::class));
         $this->set('rateLimit_maxRequests', $this->rateLimit_maxRequests);
         $this->set('rateLimit_timeWindow', $this->rateLimit_timeWindow);
+        $this->set('statsFromPackage', (string) $this->statsFromPackage);
         $postLimit = $this->getPostLimit();
         if ($postLimit === null) {
             $s = '';
@@ -142,6 +146,9 @@ class Controller extends BlockController
      */
     protected function normalizeArgs(array $args)
     {
+        $args += [
+            'statsFromPackage' => '',
+        ];
         $error = $this->app->make('helper/validation/error');
         $normalized = [];
 
@@ -192,6 +199,18 @@ class Controller extends BlockController
                 $normalized['maxStringsCount'] = $i;
             }
         }
+        $normalized['statsFromPackage'] = '';
+        if (is_string($args['statsFromPackage'])) {
+            $normalized['statsFromPackage'] = trim($args['statsFromPackage']);
+            if ($normalized['statsFromPackage'] !== '') {
+                $package = $this->app->make(PackageRepository::class)->findOneBy(['handle' => $normalized['statsFromPackage']]);
+                if ($package === null) {
+                    $error->add(t('Unable to find a package with handle "%s"', $normalized['statsFromPackage']));
+                } elseif ($package->getLatestVersion() === null) {
+                    $error->add(t('The package with handle "%s" does not have a latest version', $normalized['statsFromPackage']));
+                }
+            }
+        }
 
         return $error->has() ? $error : $normalized;
     }
@@ -199,16 +218,47 @@ class Controller extends BlockController
     public function view()
     {
         $this->set('token', $this->app->make('helper/validation/token'));
-        $locales = $this->app->make(Locale::class)->getApprovedLocales();
+        $locales = $this->app->make(LocaleRepository::class)->getApprovedLocales();
         $translatedLocales = [];
         $untranslatedLocales = [];
         $threshold = (int) $this->app->make('community_translation/config')->get('options.translatedThreshold', 90);
-        $statsRepo = $this->app->make(LocaleStats::class);
-        foreach ($locales as $locale) {
-            if ($statsRepo->getByLocale($locale)->getPercentage() >= $threshold) {
-                $translatedLocales[] = $locale;
-            } else {
-                $untranslatedLocales[] = $locale;
+
+        $statsForVersion = null;
+        if ('' !== (string) $this->statsFromPackage) {
+            $package = $this->app->make(PackageRepository::class)->findOneBy(['handle' => $this->statsFromPackage]);
+            if ($package !== null) {
+                $statsForVersion = $package->getLatestVersion();
+            }
+        }
+        if ($statsForVersion === null) {
+            $localeStatsRepo = $this->app->make(LocaleStatsRepository::class);
+            /* @var LocaleStatsRepository $localeStatsRepo */
+            foreach ($locales as $locale) {
+                if ($localeStatsRepo->getByLocale($locale)->getPercentage() >= $threshold) {
+                    $translatedLocales[] = $locale;
+                } else {
+                    $untranslatedLocales[] = $locale;
+                }
+            }
+        } else {
+            $statsRepo = $this->app->make(StatsRepository::class);
+            /* @var StatsRepository $statsRepo */
+            $stats = $statsRepo->get($statsForVersion, $locales);
+            foreach ($locales as $locale) {
+                $isTranslated = false;
+                foreach ($stats as $stat) {
+                    if ($stat->getLocale() === $locale) {
+                        if ($stat->getPercentage() >= $threshold) {
+                            $isTranslated = true;
+                        }
+                        break;
+                    }
+                }
+                if ($isTranslated === true) {
+                    $translatedLocales[] = $locale;
+                } else {
+                    $untranslatedLocales[] = $locale;
+                }
             }
         }
         if (empty($translatedLocales) || empty($untranslatedLocales)) {
@@ -290,7 +340,7 @@ class Controller extends BlockController
         if (is_array($list)) {
             $localeIDs = array_merge($localeIDs, $list);
         }
-        $repo = $this->app->make(Locale::class);
+        $repo = $this->app->make(LocaleRepository::class);
         $locales = $repo->getApprovedLocales();
         $result = [];
         foreach ($locales as $locale) {
