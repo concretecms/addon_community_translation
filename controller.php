@@ -1,4 +1,5 @@
 <?php
+
 namespace Concrete\Package\CommunityTranslation;
 
 use CommunityTranslation\Console\Command\AcceptPendingJoinRequestsCommand;
@@ -13,6 +14,8 @@ use CommunityTranslation\Entity\Locale as LocaleEntity;
 use CommunityTranslation\Parser\Concrete5Parser;
 use CommunityTranslation\Parser\Provider as ParserProvider;
 use CommunityTranslation\Repository\Locale as LocaleRepository;
+use CommunityTranslation\Repository\Package as PackageRepository;
+use CommunityTranslation\Service\EntitiesEventSubscriber;
 use CommunityTranslation\Service\EventSubscriber;
 use CommunityTranslation\ServiceProvider;
 use Concrete\Core\Asset\AssetList;
@@ -47,7 +50,7 @@ class Controller extends Package
      *
      * @var string
      */
-    protected $pkgVersion = '0.3.0';
+    protected $pkgVersion = '0.4.0';
 
     /**
      * The mapping between RelativeDirectory <-> Namespace to autoload package classes.
@@ -89,6 +92,7 @@ class Controller extends Package
         $this->installXml();
         $this->registerServiceProvider();
         $this->configureSourceLocale();
+        $this->refreshLatestPackageVersions();
     }
 
     /**
@@ -98,8 +102,12 @@ class Controller extends Package
      */
     public function upgrade()
     {
+        $fromVersion = $this->getPackageVersion();
         parent::upgrade();
         $this->installXml();
+        if (version_compare('0.4.0', $fromVersion) < 0) {
+            $this->refreshLatestPackageVersions();
+        }
     }
 
     /**
@@ -127,6 +135,19 @@ class Controller extends Package
             ;
             $em->persist($locale);
             $em->flush($locale);
+        }
+    }
+
+    private function refreshLatestPackageVersions()
+    {
+        $ees = $this->app->make(EntitiesEventSubscriber::class);
+        /* @var EntitiesEventSubscriber $ees */
+        $packageRepo = $this->app->make(PackageRepository::class);
+        /* @var PackageRepository $packageRepo */
+        $em = $this->app->make(EntityManager::class);
+        /* @var EntityManager $em */
+        foreach ($packageRepo->findAll() as $package) {
+            $ees->refreshPackageLatestVersion($em, $package);
         }
     }
 

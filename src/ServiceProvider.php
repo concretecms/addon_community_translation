@@ -3,6 +3,7 @@
 namespace CommunityTranslation;
 
 use CommunityTranslation\Repository\Locale as LocaleRepository;
+use CommunityTranslation\Service\EntitiesEventSubscriber;
 use Concrete\Core\Application\Application;
 use Concrete\Core\Foundation\Service\Provider;
 use Doctrine\ORM\EntityManager;
@@ -16,6 +17,7 @@ class ServiceProvider extends Provider
         $this->registerConfiguration($this->app);
         $this->registerInterfaces($this->app);
         $this->registerTranslationConverters($this->app);
+        $this->registerEventSubscribers($this->app);
     }
 
     /**
@@ -86,6 +88,9 @@ class ServiceProvider extends Provider
         });
     }
 
+    /**
+     * @param Application $app
+     */
     private function registerInterfaces(Application $app)
     {
         $app->singleton(\CommunityTranslation\Parser\ParserInterface::class, function () use ($app) {
@@ -110,5 +115,15 @@ class ServiceProvider extends Provider
 
             return $provider;
         });
+    }
+
+    /**
+     * @param Application $app
+     */
+    private function registerEventSubscribers(Application $app)
+    {
+        $em = $app->make(EntityManager::class);
+        /* @var EntityManager $em */
+        $em->getEventManager()->addEventSubscriber($app->make(EntitiesEventSubscriber::class));
     }
 }

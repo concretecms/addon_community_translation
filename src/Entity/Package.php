@@ -2,6 +2,7 @@
 
 namespace CommunityTranslation\Entity;
 
+use CommunityTranslation\Entity\Package\Version;
 use CommunityTranslation\Service\VersionComparer;
 use DateTime;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -39,6 +40,7 @@ class Package
         $result->handle = (string) $handle;
         $result->name = (string) $name;
         $result->url = (string) $url;
+        $result->latestVersion = null;
         $result->createdOn = new DateTime();
 
         return $result;
@@ -222,6 +224,40 @@ class Package
     public function getCreatedOn()
     {
         return $this->createdOn;
+    }
+
+    /**
+     * Latest package version.
+     *
+     * @ORM\ManyToOne(targetEntity="CommunityTranslation\Entity\Package\Version", inversedBy="package")
+     * @ORM\JoinColumn(name="latestVersion", referencedColumnName="id", nullable=true, onDelete="SET NULL")
+     *
+     * @var Version|null
+     */
+    protected $latestVersion;
+
+    /**
+     * Get the latest package version.
+     *
+     * @return Version|null
+     */
+    public function getLatestVersion()
+    {
+        return $this->latestVersion;
+    }
+
+    /**
+     * Set the latest package version.
+     *
+     * @param Version|null $value
+     *
+     * @return static
+     */
+    public function setLatestVersion(Version $value = null)
+    {
+        $this->latestVersion = $value;
+
+        return $this;
     }
 
     /**
