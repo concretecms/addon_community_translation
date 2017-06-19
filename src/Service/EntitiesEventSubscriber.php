@@ -82,7 +82,6 @@ class EntitiesEventSubscriber implements EventSubscriber
         $latestVersion = empty($versions) ? null : array_pop($versions);
         if ($package->getLatestVersion() !== $latestVersion) {
             $package->setLatestVersion($latestVersion);
-            $em->persist($package);
             $em->flush($package);
         }
     }
