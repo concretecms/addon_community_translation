@@ -105,7 +105,7 @@ class Controller extends Package
         $fromVersion = $this->getPackageVersion();
         parent::upgrade();
         $this->installXml();
-        if (version_compare('0.4.0', $fromVersion) < 0) {
+        if (version_compare($fromVersion, '0.4.0') < 0) {
             $this->refreshLatestPackageVersions();
         }
     }

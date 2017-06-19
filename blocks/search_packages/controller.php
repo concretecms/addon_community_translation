@@ -15,6 +15,7 @@ use CommunityTranslation\Service\Access;
 use CommunityTranslation\Service\TranslationsFileExporter;
 use CommunityTranslation\TranslationsConverter\Provider as TranslationsConverterProvider;
 use Concrete\Core\Error\UserMessageException;
+use Concrete\Package\CommunityTranslation\Controller\Search\Packages as SearchController;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -46,9 +47,7 @@ class Controller extends BlockController
     protected $btSupportsInlineEdit = false;
     protected $btSupportsInlineAdd = false;
 
-    public $preloadPackageHandle;
-    public $mimimumSearchLength;
-    public $maximumSearchResults;
+    public $resultsPerPage;
     public $allowedDownloadFormats;
     public $allowedDownloadFor;
 
@@ -69,9 +68,7 @@ class Controller extends BlockController
 
     public function edit()
     {
-        $this->set('preloadPackageHandle', (string) $this->preloadPackageHandle);
-        $this->set('mimimumSearchLength', $this->mimimumSearchLength ? (int) $this->mimimumSearchLength : null);
-        $this->set('maximumSearchResults', $this->maximumSearchResults ? (int) $this->maximumSearchResults : null);
+        $this->set('resultsPerPage', $this->resultsPerPage ? (int) $this->resultsPerPage : 10);
         $this->set('allowedDownloadFor', $this->allowedDownloadFor ?: static::ALLOWDOWNLOADFOR_NOBODY);
         $this->set('allowedDownloadForList', $this->getDownloadAccessLevels());
         $this->set('allowedDownloadFormats', $this->allowedDownloadFormats ? explode(',', $this->allowedDownloadFormats) : []);
@@ -91,32 +88,22 @@ class Controller extends BlockController
      */
     protected function normalizeArgs(array $args)
     {
+        $args += [
+            'resultsPerPage' => null,
+            'allowedDownloadFormats' => null,
+        ];
+        $normalized = [];
         $error = $this->app->make('helper/validation/error');
-        $normalized['preloadPackageHandle'] = '';
-        if (isset($args['preloadPackageHandle']) && is_string($args['preloadPackageHandle']) && $args['preloadPackageHandle'] !== '') {
-            $package = $this->app->make(PackageRepository::class)->findOneBy(['handle' => $args['preloadPackageHandle']]);
-            if ($package === null) {
-                $error->add(t('No package with handle "%s"', h($args['preloadPackageHandle'])));
-            } else {
-                $normalized['preloadPackageHandle'] = $package->getHandle();
-            }
-        }
-        $normalized['mimimumSearchLength'] = null;
-        if (isset($args['mimimumSearchLength']) && ((is_string($args['mimimumSearchLength']) && is_numeric($args['mimimumSearchLength'])) || is_int($args['mimimumSearchLength']))) {
-            $i = (int) $args['mimimumSearchLength'];
-            if ($i > 0) {
-                $normalized['mimimumSearchLength'] = $i;
-            }
-        }
-        $normalized['maximumSearchResults'] = null;
-        if (isset($args['maximumSearchResults']) && ((is_string($args['maximumSearchResults']) && is_numeric($args['maximumSearchResults'])) || is_int($args['maximumSearchResults']))) {
-            $i = (int) $args['maximumSearchResults'];
-            if ($i > 0) {
-                $normalized['maximumSearchResults'] = $i;
-            }
+        /* @var \Concrete\Core\Error\ErrorList\ErrorList $error */
+        $valn = $this->app->make('helper/validation/numbers');
+        /* @var \Concrete\Core\Utility\Service\Validation\Numbers $valn */
+        if ($valn->integer($args['resultsPerPage'], 1)) {
+            $normalized['resultsPerPage'] = (int) $args['resultsPerPage'];
+        } else {
+            $error->add(t('Please specify the number of search results per page.'));
         }
         $allowedDownloadFormats = [];
-        if (isset($args['allowedDownloadFormats']) && is_array($args['allowedDownloadFormats'])) {
+        if (is_array($args['allowedDownloadFormats'])) {
             $tcProvider = $this->app->make(TranslationsConverterProvider::class);
             foreach (array_unique($args['allowedDownloadFormats']) as $adf) {
                 if ($tcProvider->isRegistered($adf) === false) {
@@ -175,7 +162,46 @@ class Controller extends BlockController
 
     private function setCommonSets()
     {
-        $this->requireAsset('jquery/comtraSortable');
+        $allLocales = $this->app->make(LocaleRepository::class)->getApprovedLocales();
+        $myLocales = [];
+        $accessHelper = $this->getAccess();
+        if ($accessHelper->isLoggedIn()) {
+            foreach ($allLocales as $locale) {
+                if ($accessHelper->getLocaleAccess($locale, 'current') >= Access::TRANSLATE) {
+                    $myLocales[] = $locale;
+                }
+            }
+        }
+        $numMyLocales = count($myLocales);
+        if (0 < $numMyLocales && $numMyLocales < count($allLocales)) {
+            $suggestedLocales = $myLocales;
+        } else {
+            $suggestedLocales = [];
+            $browserLocales = [];
+            foreach (array_keys(\Punic\Misc::getBrowserLocales()) as $bl) {
+                $plChunks = explode('-', $bl);
+                $browserLocales[] = $plChunks[0];
+                if (isset($plChunks[1])) {
+                    $browserLocales[] = $plChunks[0] . '_' . $plChunks[1];
+                }
+            }
+            foreach ($allLocales as $locale) {
+                $add = in_array($locale->getID(), $browserLocales);
+                if ($add === false) {
+                    $plChunks = explode('_', $locale->getID());
+                    $add = isset($plChunks[1]) && in_array($plChunks[0], $browserLocales);
+                }
+                if ($add) {
+                    $suggestedLocales[] = $locale;
+                }
+            }
+            if (count($suggestedLocales) === count($allLocales)) {
+                $suggestedLocales = [];
+            }
+        }
+        $this->set('allLocales', $allLocales);
+        $this->set('suggestedLocales', $suggestedLocales);
+        $this->set('myLocales', $myLocales);
         $this->set('token', $this->app->make('token'));
     }
 
@@ -266,13 +292,34 @@ class Controller extends BlockController
     }
 
     /**
+     * @var int|null
+     */
+    private $translatedThreshold;
+
+    /**
+     * @return int
+     */
+    private function getTranslatedThreshold()
+    {
+        if (!isset($this->translatedThreshold)) {
+            $config = $this->app->make('community_translation/config');
+            $this->translatedThreshold = (int) $config->get('options.translatedThreshold', 90);
+        }
+
+        return $this->translatedThreshold;
+    }
+
+    /**
      * @param int $perc
-     * @param int $translatedThreshold
+     * @param int|null $translatedThreshold
      *
      * @return string
      */
-    private function percToProgressbarClass($perc, $translatedThreshold)
+    public function percToProgressbarClass($perc, $translatedThreshold = null)
     {
+        if ($translatedThreshold === null) {
+            $translatedThreshold = $this->getTranslatedThreshold();
+        }
         if ($perc >= 100) {
             $percClass = 'progress-bar-success';
         } elseif ($perc >= $translatedThreshold) {
@@ -294,20 +341,10 @@ class Controller extends BlockController
     private function setPackageVersionSets(PackageVersionEntity $packageVersion)
     {
         $dh = $this->app->make('date');
-        $config = $this->app->make('community_translation/config');
-        $translatedThreshold = (int) $config->get('options.translatedThreshold', 90);
+        $translatedThreshold = $this->getTranslatedThreshold();
 
         $approvedLocales = $this->app->make(LocaleRepository::class)->getApprovedLocales();
-        $myLocales = [];
         $accessHelper = $this->getAccess();
-        /* @var Access $accessHelper */
-        if ($accessHelper->isLoggedIn()) {
-            foreach ($approvedLocales as $locale) {
-                if ($accessHelper->getLocaleAccess($locale, 'current') >= Access::TRANSLATE) {
-                    $myLocales[] = $locale;
-                }
-            }
-        }
         $me = $accessHelper->getUser('current');
         $stats = $this->app->make(StatsRepository::class)->get($packageVersion, $approvedLocales);
         $localeInfos = [];
@@ -330,8 +367,7 @@ class Controller extends BlockController
                 'downloadFormats' => $this->getAllowedDownloadFormats($locale, $me, $approvedLocales),
             ];
         }
-        $this->set('allLocales', $approvedLocales);
-        $this->set('myLocales', $myLocales);
+        $this->requireAsset('jquery/comtraSortable');
         $this->set('localeInfos', $localeInfos);
         $this->set('showLoginMessage', !$accessHelper->isLoggedIn());
         $config = $this->app->make('community_translation/config');
@@ -340,106 +376,88 @@ class Controller extends BlockController
 
     public function view()
     {
-        $package = null;
-        if ($this->preloadPackageHandle === '') {
-            $package = null;
-        } else {
-            $package = $this->app->make(PackageRepository::class)->findOneBy(['handle' => $this->preloadPackageHandle]);
-        }
-        if ($package === null) {
-            $packageVersions = null;
-        } else {
-            $packageVersions = $package->getSortedVersions(true);
-        }
-        if (empty($packageVersions)) {
-            $packageVersion = null;
-        } else {
-            $packageVersion = current($packageVersions);
-        }
-        $this->setCommonSets();
-        $this->set('package', $package);
-        $this->set('packageVersions', $packageVersions);
-        $this->set('packageVersion', $packageVersion);
-        if ($packageVersion !== null) {
-            $this->setPackageVersionSets($packageVersion);
-        }
+        $this->action_search();
     }
 
     public function action_search()
     {
-        try {
-            $text = $this->request->request->get('text');
-            $text = is_string($text) ? trim($text) : '';
-            if ($text === '') {
-                throw new UserMessageException(t('Please specify the search criteria'));
-            }
+        $resetSearch = false;
+        if ($this->request->isPost()) {
             $token = $this->app->make('token');
-            if (!$token->validate('comtra_search_packages-search')) {
-                throw new UserMessageException($token->getErrorMessage());
+            if (!$token->validate('communitytranslations-search_packages-' . $this->bID)) {
+                $this->set('showWarning', $token->getErrorMessage());
+            } else {
+                $resetSearch = true;
             }
-
-            $words = is_string($text) ? $this->getSearchWords($text) : [];
-            if (count($words) > 0) {
-                $this->set('searchText', $text);
-                if ($this->mimimumSearchLength && mb_strlen(implode('', $words)) < $this->mimimumSearchLength) {
-                    throw new UserMessageException(t('Please be more specific with your search'));
-                }
-                $qb = $this->buildSearchQuery($words);
-                $packages = $qb->getQuery()->execute();
-                switch (count($packages)) {
-                    case 0:
-                        throw new UserMessageException(t('No results found'));
-                    case 1:
-                        $this->action_package($packages[0]->getHandle());
-                        break;
-                    default:
-                        $this->set('foundPackages', $packages);
-                        break;
-                }
-            }
-        } catch (UserMessageException $x) {
-            $this->set('searchError', h($x->getMessage()));
         }
-
+        $post = $this->request->request;
+        $searchController = $this->app->make(SearchController::class);
+        /* @var SearchController $searchController */
+        $searchController->getSearchList()->setItemsPerPage((int) $this->resultsPerPage ?: 10);
+        $searchController->search($resetSearch);
+        $result = $searchController->getSearchResultObject();
+        $this->set('sticky', $searchController->getStickyRequest()->getSearchRequest());
+        $this->set('result', $result);
         $this->setCommonSets();
+        $this->addHeaderItem(<<<EOT
+<style>
+.community_translation-only-package {
+    display: none;
+}
+</style>
+EOT
+        );
     }
 
     public function action_package($handle = '', $version = '')
     {
+        if (!is_string($handle) || $handle === '') {
+            return $this->redirect($this->action(''));
+        }
         $package = null;
         $packageVersions = null;
         $packageVersion = null;
-        if (is_string($handle) && $handle !== '') {
-            $package = $this->app->make(PackageRepository::class)->findOneBy(['handle' => $handle]);
-            if ($package === null) {
-                $this->set('showWarning', h(t('Unable to find a package with handle "%s"', $handle)));
+        $package = $this->app->make(PackageRepository::class)->findOneBy(['handle' => $handle]);
+        if ($package === null) {
+            $this->set('showWarning', h(t('Unable to find a package with handle "%s"', $handle)));
+        } else {
+            /* @var PackageEntity $package */
+            $packageVersions = $package->getSortedVersions(true);
+            if (empty($packageVersions)) {
+                $this->set('showWarning', h(t('The package "%s" does not have any versions.', $package->getDisplayName())));
             } else {
-                $packageVersions = $package->getSortedVersions(true);
-                if (!empty($packageVersions)) {
-                    if (is_string($version) && $version !== '') {
-                        foreach ($packageVersions as $pv) {
-                            if ($pv->getVersion() === $version) {
-                                $packageVersion = $pv;
-                                break;
-                            }
+                if (is_string($version) && $version !== '') {
+                    foreach ($packageVersions as $pv) {
+                        if ($pv->getVersion() === $version) {
+                            $packageVersion = $pv;
+                            break;
                         }
-                        if ($packageVersion === null) {
-                            $this->set('showWarning', h(t('The package "%1$s" does not have a version "%2$s"', $package->getDisplayName(), $version)));
-                        }
-                    } else {
-                        $packageVersion = current($packageVersions);
+                    }
+                    if ($packageVersion === null) {
+                        $this->set('showWarning', h(t('The package "%1$s" does not have a version "%2$s"', $package->getDisplayName(), $version)));
                     }
                 }
+                if ($packageVersion === null) {
+                    $packageVersion = current($packageVersions);
+                }
             }
-        } else {
-            $package = null;
         }
-        $this->setCommonSets();
-        $this->set('package', $package);
-        $this->set('packageVersions', $packageVersions);
-        $this->set('packageVersion', $packageVersion);
-        if ($packageVersion !== null) {
+        if ($packageVersion === null) {
+            $this->action_search();
+        } else {
+            $this->set('package', $package);
+            $this->set('packageVersions', $packageVersions);
+            $this->set('packageVersion', $packageVersion);
+            $this->setCommonSets();
             $this->setPackageVersionSets($packageVersion);
+            $this->addHeaderItem(<<<EOT
+<style>
+.community_translation-only-search {
+    display: none;
+}
+</style>
+EOT
+            );
         }
     }
 

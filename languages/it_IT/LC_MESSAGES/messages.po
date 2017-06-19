@@ -7,8 +7,8 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2017-06-19T14:26:26+02:00\n"
-"PO-Revision-Date: 2017-06-19T14:26:27+02:00\n"
+"POT-Creation-Date: 2017-06-19T16:08:29+02:00\n"
+"PO-Revision-Date: 2017-06-19T16:08:30+02:00\n"
 "Language: it_IT\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
 
@@ -246,7 +246,8 @@ msgid "Select none"
 msgstr "Seleziona nessuna"
 
 #: packages/community_translation/blocks/fill_translations/view.php:80
-#: packages/community_translation/blocks/search_packages/view.php:90
+#: packages/community_translation/blocks/search_packages/view.php:91
+#: packages/community_translation/blocks/search_packages/view.php:194
 msgid "Other languages"
 msgstr "Altre lingue"
 
@@ -277,9 +278,7 @@ msgstr "Specificare chi può scaricare le traduzioni"
 
 #: packages/community_translation/blocks/search_packages/controller.php:123
 msgid "If you specify that some user can download the translations, you should specify the allowed download formats"
-msgstr ""
-"Se si specifica che qualche utente può scaricare le traduzioni, si dovrebbe "
-"specificare i formati di scaricamento permessi"
+msgstr "Se si specifica che qualche utente può scaricare le traduzioni, si dovrebbe specificare i formati di scaricamento permessi"
 
 #: packages/community_translation/blocks/search_packages/controller.php:152
 msgid "Everybody"
@@ -315,38 +314,38 @@ msgstr "Amministratori globali delle lingue"
 msgid "Nobody"
 msgstr "Nessuno"
 
-#: packages/community_translation/blocks/search_packages/controller.php:365
+#: packages/community_translation/blocks/search_packages/controller.php:413
 #, php-format
 msgid "Unable to find a package with handle \"%s\""
 msgstr "Non è stato possibile trovare un pacchetto con handle “%s”"
 
-#: packages/community_translation/blocks/search_packages/controller.php:370
+#: packages/community_translation/blocks/search_packages/controller.php:418
 #, php-format
 msgid "The package \"%s\" does not have any versions."
 msgstr "Il pacchetto “%s” non ha alcuna versione."
 
-#: packages/community_translation/blocks/search_packages/controller.php:380
+#: packages/community_translation/blocks/search_packages/controller.php:428
 #, php-format
 msgid "The package \"%1$s\" does not have a version \"%2$s\""
 msgstr "Il pacchetto “%1$s” non ha la versione “%2$s”"
 
-#: packages/community_translation/blocks/search_packages/controller.php:408
+#: packages/community_translation/blocks/search_packages/controller.php:456
 #: packages/community_translation/src/Api/EntryPoint.php:367
 #: packages/community_translation/src/Api/EntryPoint.php:404
 #: packages/community_translation/src/Api/EntryPoint.php:487
 msgid "Unable to find the specified package"
 msgstr "Non è stato possibile trovare il pacchetto specificato"
 
-#: packages/community_translation/blocks/search_packages/controller.php:412
+#: packages/community_translation/blocks/search_packages/controller.php:460
 #: packages/community_translation/blocks/translation_teams/controller.php:149
 msgid "Unable to find the specified language"
 msgstr "Non è stato possibile trovare la lingua specificata"
 
-#: packages/community_translation/blocks/search_packages/controller.php:416
+#: packages/community_translation/blocks/search_packages/controller.php:464
 msgid "Unable to find the specified translations file format"
 msgstr "Non è stato possibile trovare il formato di file delle traduzioni specificato"
 
-#: packages/community_translation/blocks/search_packages/controller.php:438
+#: packages/community_translation/blocks/search_packages/controller.php:486
 msgid "Error"
 msgstr "Errore"
 
@@ -362,48 +361,48 @@ msgstr "Permetti lo scaricamento delle traduzioni a"
 msgid "Allowed download formats"
 msgstr "Formati di scaricamento permessi"
 
-#: packages/community_translation/blocks/search_packages/view.php:45
+#: packages/community_translation/blocks/search_packages/view.php:46
 #, php-format
 msgid "Translations for %s"
 msgstr "Traduzioni per %s"
 
-#: packages/community_translation/blocks/search_packages/view.php:46
+#: packages/community_translation/blocks/search_packages/view.php:47
 msgid "Search other packages"
 msgstr "Cerca altri pacchetti"
 
-#: packages/community_translation/blocks/search_packages/view.php:51
+#: packages/community_translation/blocks/search_packages/view.php:52
 #, php-format
 msgid "You can get more details on this package <a href=\"%s\" target=\"_blank\">here</a>."
-msgstr ""
-"È possibile ottenere ulteriori dettagli su questo pacchetto <a href=\"%s\" "
-"target=\"_blank\">qui</a>."
+msgstr "È possibile ottenere ulteriori dettagli su questo pacchetto <a href=\"%s\" target=\"_blank\">qui</a>."
 
-#: packages/community_translation/blocks/search_packages/view.php:56
+#: packages/community_translation/blocks/search_packages/view.php:57
 msgid "Package version"
 msgstr "Versione del pacchetto"
 
-#: packages/community_translation/blocks/search_packages/view.php:76
+#: packages/community_translation/blocks/search_packages/view.php:77
 msgid "ID"
 msgstr "ID"
 
-#: packages/community_translation/blocks/search_packages/view.php:77
+#: packages/community_translation/blocks/search_packages/view.php:78
 #: packages/community_translation/blocks/translation_team_request/view.php:44
 msgid "Language"
 msgstr "Lingua"
 
-#: packages/community_translation/blocks/search_packages/view.php:79
+#: packages/community_translation/blocks/search_packages/view.php:80
 msgid "Updated"
 msgstr "Aggiornato"
 
-#: packages/community_translation/blocks/search_packages/view.php:80
+#: packages/community_translation/blocks/search_packages/view.php:81
+#: packages/community_translation/blocks/search_packages/view.php:228
 msgid "Progress"
 msgstr "Avanzamento"
 
-#: packages/community_translation/blocks/search_packages/view.php:89
+#: packages/community_translation/blocks/search_packages/view.php:90
+#: packages/community_translation/blocks/search_packages/view.php:187
 msgid "My languages"
 msgstr "Le mie lingue"
 
-#: packages/community_translation/blocks/search_packages/view.php:103
+#: packages/community_translation/blocks/search_packages/view.php:104
 #: packages/community_translation/controllers/frontend/online_translation.php:219
 #: packages/community_translation/controllers/frontend/online_translation.php:266
 #: packages/community_translation/controllers/frontend/online_translation.php:374
@@ -414,52 +413,76 @@ msgstr "Le mie lingue"
 msgid "You need to log-in in order to translate"
 msgstr "È necessario accedere per poter tradurre"
 
-#: packages/community_translation/blocks/search_packages/view.php:105
+#: packages/community_translation/blocks/search_packages/view.php:106
 msgid "You don't belong to this translation group"
 msgstr "Non fai parte di questo gruppo di traduzioni"
 
-#: packages/community_translation/blocks/search_packages/view.php:124
+#: packages/community_translation/blocks/search_packages/view.php:125
 #, php-format
 msgid "Download translations (%s)"
 msgstr "Scarica traduzioni (%s)"
 
-#: packages/community_translation/blocks/search_packages/view.php:127
+#: packages/community_translation/blocks/search_packages/view.php:128
 msgid "Translate"
 msgstr "Traduci"
 
-#: packages/community_translation/blocks/search_packages/view.php:130
+#: packages/community_translation/blocks/search_packages/view.php:131
 #, php-format
 msgid "%s untranslated string"
 msgid_plural "%s untranslated strings"
 msgstr[0] "%s stringa non tradotta"
 msgstr[1] "%s stringhe non tradotte"
 
-#: packages/community_translation/blocks/search_packages/view.php:154
+#: packages/community_translation/blocks/search_packages/view.php:156
+msgid "Search translatable packages"
+msgstr "Cerca pacchetti traducibili"
+
+#: packages/community_translation/blocks/search_packages/view.php:162
 msgid "Search package"
 msgstr "Cerca pacchetto"
 
-#: packages/community_translation/blocks/search_packages/view.php:155
+#: packages/community_translation/blocks/search_packages/view.php:163
 msgid "Search by handle or name"
 msgstr "Cerca per handle o per nome"
 
-#: packages/community_translation/blocks/search_packages/view.php:165
+#: packages/community_translation/blocks/search_packages/view.php:166
+#: packages/community_translation/blocks/search_packages/view.php:179
+msgctxt "Language"
+msgid "Show progress for"
+msgstr "Mostra avanzamento per"
+
+#: packages/community_translation/blocks/search_packages/view.php:214
 msgid "No package satisfy the search criteria"
 msgstr "Nessun pacchetto soddisfa i criteri di ricerca"
 
-#: packages/community_translation/blocks/search_packages/view.php:179
-#, php-format
-msgid "Package handle: %s"
-msgstr "Handle del pacchetto: %s"
+#: packages/community_translation/blocks/search_packages/view.php:223
+msgid "Package Name"
+msgstr "Nome pacchetto"
 
-#: packages/community_translation/blocks/search_packages/view.php:181
-#, php-format
-msgid "Number of available versions: %d"
-msgstr "Numero di versioni disponibili: %d"
+#: packages/community_translation/blocks/search_packages/view.php:224
+msgid "Latest version"
+msgstr "Ultima versione"
 
-#: packages/community_translation/blocks/search_packages/view.php:183
+#: packages/community_translation/blocks/search_packages/view.php:225
+msgid "Handle"
+msgstr "Handle"
+
+#: packages/community_translation/blocks/search_packages/view.php:243
+msgid "more details"
+msgstr "ulteriori dettagli"
+
+#: packages/community_translation/blocks/search_packages/view.php:261
+msgid "No progress stats available (does the package have at least one version?)"
+msgstr ""
+"Nessuna informazione statistica disponibile (il pacchetto ha almeno una "
+"versione?)"
+
+#: packages/community_translation/blocks/search_packages/view.php:264
 #, php-format
-msgid "Package is available <a href=\"%s\" target=\"_blank\">here</a>"
-msgstr "Il pacchetto è disponibile <a href=\"%s\" target=\"_blank\">qui</a>"
+msgid "%1s out of %2$s untranslated string"
+msgid_plural "%1s out of %2$s untranslated strings"
+msgstr[0] "%1s di %2$s stringa non tradotta"
+msgstr[1] "%1s di %2$s stringhe non tradotte"
 
 #: packages/community_translation/blocks/translation_teams/controller.php:45
 msgid "Translation teams list and details"
@@ -1465,8 +1488,7 @@ msgstr "e"
 
 #: packages/community_translation/single_pages/dashboard/community_translation/git_repositories/details.php:116
 msgid "A regular expression whose first match against the tags should be the version"
-msgstr ""
-"Un’espressione regolare il cui primo match dei tag dovrebbe essere la versione"
+msgstr "Un’espressione regolare il cui primo match dei tag dovrebbe essere la versione"
 
 #: packages/community_translation/single_pages/dashboard/community_translation/git_repositories/details.php:116
 msgid "Tag-to-filter regular expression"
@@ -1668,8 +1690,7 @@ msgstr "Non è stato possibile trovare il formato di traduzioni specificato"
 
 #: packages/community_translation/src/Api/EntryPoint.php:544
 msgid "The specified translations format does not support unserialization"
-msgstr ""
-"Il formato delle traduzioni specificato non supporta la deserializzazione"
+msgstr "Il formato delle traduzioni specificato non supporta la deserializzazione"
 
 #: packages/community_translation/src/Api/EntryPoint.php:547
 msgid "The specified translations format does not support serialization"
@@ -1677,9 +1698,7 @@ msgstr "Il formato delle traduzioni specificato non supporta la serializzazione"
 
 #: packages/community_translation/src/Api/EntryPoint.php:550
 msgid "The specified translations format does not support a language header"
-msgstr ""
-"Il formato delle traduzioni specificato non supporta un’intestazione per la "
-"lingua"
+msgstr "Il formato delle traduzioni specificato non supporta un’intestazione per la lingua"
 
 #: packages/community_translation/src/Api/EntryPoint.php:554
 msgid "The file with strings to be translated has not been specified"
@@ -1688,8 +1707,7 @@ msgstr "Non è stato specificato il file con le stringhe da tradurre"
 #: packages/community_translation/src/Api/EntryPoint.php:557
 #, php-format
 msgid "The file with strings to be translated has not been received correctly: %s"
-msgstr ""
-"Il file con le stringhe da tradurre non è stato ricevuto correttamente: %s"
+msgstr "Il file con le stringhe da tradurre non è stato ricevuto correttamente: %s"
 
 #: packages/community_translation/src/Api/EntryPoint.php:562
 msgid "The file with strings to be translated does not specify a language ID"
@@ -1698,8 +1716,7 @@ msgstr "Il file con le stringhe da tradurre non indica un ID della lingua"
 #: packages/community_translation/src/Api/EntryPoint.php:566
 #, php-format
 msgid "The file with strings to be translated specifies an unknown language ID (%s)"
-msgstr ""
-"Il file con le stringhe da tradurre indica un ID della lingua sconosciuto (%s)"
+msgstr "Il file con le stringhe da tradurre indica un ID della lingua sconosciuto (%s)"
 
 #: packages/community_translation/src/Api/EntryPoint.php:614
 #: packages/community_translation/src/Api/EntryPoint.php:618
@@ -1763,8 +1780,7 @@ msgstr "Token di accesso delle API non valido"
 #: packages/community_translation/src/Api/UserControl.php:370
 #, php-format
 msgid "You reached the API rate limit (%1$s requests every %2$s seconds)"
-msgstr ""
-"È stata raggiunta la frequenza massima (%1$s richieste ogni %2$s secondi)"
+msgstr "È stata raggiunta la frequenza massima (%1$s richieste ogni %2$s secondi)"
 
 #: packages/community_translation/src/Console/Command.php:184
 #: packages/community_translation/src/Git/Fetcher.php:101
@@ -1905,9 +1921,7 @@ msgstr "cong."
 
 #: packages/community_translation/src/Glossary/EntryType.php:87
 msgid "A word that connects words, phrases, and clauses in a sentence (examples: and, but, while, although)."
-msgstr ""
-"Una parola che connette parole, frasi e proposizioni in una frase (esempi: e, "
-"ma, mentre, sebbene)."
+msgstr "Una parola che connette parole, frasi e proposizioni in una frase (esempi: e, ma, mentre, sebbene)."
 
 #: packages/community_translation/src/Glossary/EntryType.php:90
 msgctxt "TermType"
@@ -1921,9 +1935,7 @@ msgstr "escl."
 
 #: packages/community_translation/src/Glossary/EntryType.php:92
 msgid "A word that is used to show a short sudden expression of emotion (examples: Bye!, Cheers!, Goodbye!, Hi!, Hooray!)."
-msgstr ""
-"Una parola che viene usata per mostrare una concisa espressione emotiva "
-"(esempi: Ciao!, Salute!, Arrivederci!, Evviva!)."
+msgstr "Una parola che viene usata per mostrare una concisa espressione emotiva (esempi: Ciao!, Salute!, Arrivederci!, Evviva!)."
 
 #: packages/community_translation/src/Glossary/EntryType.php:95
 msgctxt "TermType"
@@ -1937,9 +1949,7 @@ msgstr "n."
 
 #: packages/community_translation/src/Glossary/EntryType.php:97
 msgid "A word that refers to a person, place, thing, event, substance, or quality (examples: Andrew, house, pencil, table)."
-msgstr ""
-"Una parola che si riferisce a persone, luoghi, cose, eventi, sostanze o "
-"qualità (esempi: Andrea, casa, penna, tavolo)."
+msgstr "Una parola che si riferisce a persone, luoghi, cose, eventi, sostanze o qualità (esempi: Andrea, casa, penna, tavolo)."
 
 #: packages/community_translation/src/Glossary/EntryType.php:100
 msgctxt "TermType"
@@ -1953,9 +1963,7 @@ msgstr "prep."
 
 #: packages/community_translation/src/Glossary/EntryType.php:102
 msgid "A word that is used before a noun, a noun phrase, or a pronoun, connecting it to another word (examples: at, for, in, on, under)."
-msgstr ""
-"Una parola usata prima di un nome, una frase nominale o un pronome, per "
-"connetterla con un’altra parola (esempi: a, per, in, su, sotto)."
+msgstr "Una parola usata prima di un nome, una frase nominale o un pronome, per connetterla con un’altra parola (esempi: a, per, in, su, sotto)."
 
 #: packages/community_translation/src/Glossary/EntryType.php:105
 msgctxt "TermType"
@@ -1969,9 +1977,7 @@ msgstr "pron."
 
 #: packages/community_translation/src/Glossary/EntryType.php:107
 msgid "A word that is used instead of a noun or a noun phrase (examples: I, me, mine, myself)."
-msgstr ""
-"Una parola usata in vece di un nome o di una frase nominale (esempi: io, a "
-"me, mio)."
+msgstr "Una parola usata in vece di un nome o di una frase nominale (esempi: io, a me, mio)."
 
 #: packages/community_translation/src/Glossary/EntryType.php:110
 msgctxt "TermType"
@@ -1985,9 +1991,7 @@ msgstr "v."
 
 #: packages/community_translation/src/Glossary/EntryType.php:112
 msgid "A word or phrase that describes an action, condition, or experience (examples: listen, read, write)."
-msgstr ""
-"Una parola o una frase che descrive un’azione, una condizione o un’esperienza "
-"(esempi: ascoltare, scrivere, leggere)."
+msgstr "Una parola o una frase che descrive un’azione, una condizione o un’esperienza (esempi: ascoltare, scrivere, leggere)."
 
 #: packages/community_translation/src/Notification/Category/NewLocaleApproved.php:33
 #: packages/community_translation/src/Notification/Category/NewLocaleApproved.php:54

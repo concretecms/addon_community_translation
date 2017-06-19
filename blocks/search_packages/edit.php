@@ -9,9 +9,7 @@ $form = $app->make('helper/form');
 
 /* @var Concrete\Package\CommunityTranslation\Block\SearchPackages\Controller $controller */
 
-/* @var string $preloadPackageHandle */
-/* @var int|null $mimimumSearchLength */
-/* @var int|null $maximumSearchResults */
+/* @var int resultsPerPage */
 /* @var string $allowedDownloadFor */
 /* @var array $allowedDownloadForList */
 /* @var string[] $allowedDownloadFormats */
@@ -24,18 +22,8 @@ $form = $app->make('helper/form');
     <legend><?= t('Options') ?></legend>
 
     <div class="form-group">
-        <?= $form->label('preloadPackageHandle', t('Preload package')) ?>
-        <?= $form->text('preloadPackageHandle', $preloadPackageHandle) ?>
-    </div>
-
-    <div class="form-group">
-        <?= $form->label('mimimumSearchLength', t('Minimum search length')) ?>
-        <?= $form->number('mimimumSearchLength', $preloadPackageHandle, ['min' => 1, 'placeholder' => t('Leave empty for no limit')]) ?>
-    </div>
-
-    <div class="form-group">
-        <?= $form->label('maximumSearchResults', t('Maximum search results')) ?>
-        <?= $form->number('maximumSearchResults', $preloadPackageHandle, ['min' => 1, 'placeholder' => t('Leave empty for no limit')]) ?>
+        <?= $form->label('resultsPerPage', t('Number of results per page')) ?>
+        <?= $form->number('resultsPerPage', $resultsPerPage, ['min' => '1', 'required' => 'required']) ?>
     </div>
 
     <div class="form-group">

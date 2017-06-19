@@ -7,8 +7,8 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2017-06-19T14:26:26+02:00\n"
-"PO-Revision-Date: 2017-06-19T14:26:26+02:00\n"
+"POT-Creation-Date: 2017-06-19T16:08:29+02:00\n"
+"PO-Revision-Date: 2017-06-19T16:08:29+02:00\n"
 "Language: en_US\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
 
@@ -246,7 +246,8 @@ msgid "Select none"
 msgstr ""
 
 #: packages/community_translation/blocks/fill_translations/view.php:80
-#: packages/community_translation/blocks/search_packages/view.php:90
+#: packages/community_translation/blocks/search_packages/view.php:91
+#: packages/community_translation/blocks/search_packages/view.php:194
 msgid "Other languages"
 msgstr ""
 
@@ -313,38 +314,38 @@ msgstr ""
 msgid "Nobody"
 msgstr ""
 
-#: packages/community_translation/blocks/search_packages/controller.php:365
+#: packages/community_translation/blocks/search_packages/controller.php:413
 #, php-format
 msgid "Unable to find a package with handle \"%s\""
 msgstr ""
 
-#: packages/community_translation/blocks/search_packages/controller.php:370
+#: packages/community_translation/blocks/search_packages/controller.php:418
 #, php-format
 msgid "The package \"%s\" does not have any versions."
 msgstr ""
 
-#: packages/community_translation/blocks/search_packages/controller.php:380
+#: packages/community_translation/blocks/search_packages/controller.php:428
 #, php-format
 msgid "The package \"%1$s\" does not have a version \"%2$s\""
 msgstr ""
 
-#: packages/community_translation/blocks/search_packages/controller.php:408
+#: packages/community_translation/blocks/search_packages/controller.php:456
 #: packages/community_translation/src/Api/EntryPoint.php:367
 #: packages/community_translation/src/Api/EntryPoint.php:404
 #: packages/community_translation/src/Api/EntryPoint.php:487
 msgid "Unable to find the specified package"
 msgstr ""
 
-#: packages/community_translation/blocks/search_packages/controller.php:412
+#: packages/community_translation/blocks/search_packages/controller.php:460
 #: packages/community_translation/blocks/translation_teams/controller.php:149
 msgid "Unable to find the specified language"
 msgstr ""
 
-#: packages/community_translation/blocks/search_packages/controller.php:416
+#: packages/community_translation/blocks/search_packages/controller.php:464
 msgid "Unable to find the specified translations file format"
 msgstr ""
 
-#: packages/community_translation/blocks/search_packages/controller.php:438
+#: packages/community_translation/blocks/search_packages/controller.php:486
 msgid "Error"
 msgstr ""
 
@@ -360,46 +361,48 @@ msgstr ""
 msgid "Allowed download formats"
 msgstr ""
 
-#: packages/community_translation/blocks/search_packages/view.php:45
+#: packages/community_translation/blocks/search_packages/view.php:46
 #, php-format
 msgid "Translations for %s"
 msgstr ""
 
-#: packages/community_translation/blocks/search_packages/view.php:46
+#: packages/community_translation/blocks/search_packages/view.php:47
 msgid "Search other packages"
 msgstr ""
 
-#: packages/community_translation/blocks/search_packages/view.php:51
+#: packages/community_translation/blocks/search_packages/view.php:52
 #, php-format
 msgid "You can get more details on this package <a href=\"%s\" target=\"_blank\">here</a>."
 msgstr ""
 
-#: packages/community_translation/blocks/search_packages/view.php:56
+#: packages/community_translation/blocks/search_packages/view.php:57
 msgid "Package version"
 msgstr ""
 
-#: packages/community_translation/blocks/search_packages/view.php:76
+#: packages/community_translation/blocks/search_packages/view.php:77
 msgid "ID"
 msgstr ""
 
-#: packages/community_translation/blocks/search_packages/view.php:77
+#: packages/community_translation/blocks/search_packages/view.php:78
 #: packages/community_translation/blocks/translation_team_request/view.php:44
 msgid "Language"
 msgstr ""
 
-#: packages/community_translation/blocks/search_packages/view.php:79
+#: packages/community_translation/blocks/search_packages/view.php:80
 msgid "Updated"
 msgstr ""
 
-#: packages/community_translation/blocks/search_packages/view.php:80
+#: packages/community_translation/blocks/search_packages/view.php:81
+#: packages/community_translation/blocks/search_packages/view.php:228
 msgid "Progress"
 msgstr ""
 
-#: packages/community_translation/blocks/search_packages/view.php:89
+#: packages/community_translation/blocks/search_packages/view.php:90
+#: packages/community_translation/blocks/search_packages/view.php:187
 msgid "My languages"
 msgstr ""
 
-#: packages/community_translation/blocks/search_packages/view.php:103
+#: packages/community_translation/blocks/search_packages/view.php:104
 #: packages/community_translation/controllers/frontend/online_translation.php:219
 #: packages/community_translation/controllers/frontend/online_translation.php:266
 #: packages/community_translation/controllers/frontend/online_translation.php:374
@@ -410,52 +413,74 @@ msgstr ""
 msgid "You need to log-in in order to translate"
 msgstr ""
 
-#: packages/community_translation/blocks/search_packages/view.php:105
+#: packages/community_translation/blocks/search_packages/view.php:106
 msgid "You don't belong to this translation group"
 msgstr ""
 
-#: packages/community_translation/blocks/search_packages/view.php:124
+#: packages/community_translation/blocks/search_packages/view.php:125
 #, php-format
 msgid "Download translations (%s)"
 msgstr ""
 
-#: packages/community_translation/blocks/search_packages/view.php:127
+#: packages/community_translation/blocks/search_packages/view.php:128
 msgid "Translate"
 msgstr ""
 
-#: packages/community_translation/blocks/search_packages/view.php:130
+#: packages/community_translation/blocks/search_packages/view.php:131
 #, php-format
 msgid "%s untranslated string"
 msgid_plural "%s untranslated strings"
 msgstr[0] ""
 msgstr[1] ""
 
-#: packages/community_translation/blocks/search_packages/view.php:154
+#: packages/community_translation/blocks/search_packages/view.php:156
+msgid "Search translatable packages"
+msgstr ""
+
+#: packages/community_translation/blocks/search_packages/view.php:162
 msgid "Search package"
 msgstr ""
 
-#: packages/community_translation/blocks/search_packages/view.php:155
+#: packages/community_translation/blocks/search_packages/view.php:163
 msgid "Search by handle or name"
 msgstr ""
 
-#: packages/community_translation/blocks/search_packages/view.php:165
+#: packages/community_translation/blocks/search_packages/view.php:166
+#: packages/community_translation/blocks/search_packages/view.php:179
+msgctxt "Language"
+msgid "Show progress for"
+msgstr ""
+
+#: packages/community_translation/blocks/search_packages/view.php:214
 msgid "No package satisfy the search criteria"
 msgstr ""
 
-#: packages/community_translation/blocks/search_packages/view.php:179
-#, php-format
-msgid "Package handle: %s"
+#: packages/community_translation/blocks/search_packages/view.php:223
+msgid "Package Name"
 msgstr ""
 
-#: packages/community_translation/blocks/search_packages/view.php:181
-#, php-format
-msgid "Number of available versions: %d"
+#: packages/community_translation/blocks/search_packages/view.php:224
+msgid "Latest version"
 msgstr ""
 
-#: packages/community_translation/blocks/search_packages/view.php:183
-#, php-format
-msgid "Package is available <a href=\"%s\" target=\"_blank\">here</a>"
+#: packages/community_translation/blocks/search_packages/view.php:225
+msgid "Handle"
 msgstr ""
+
+#: packages/community_translation/blocks/search_packages/view.php:243
+msgid "more details"
+msgstr ""
+
+#: packages/community_translation/blocks/search_packages/view.php:261
+msgid "No progress stats available (does the package have at least one version?)"
+msgstr ""
+
+#: packages/community_translation/blocks/search_packages/view.php:264
+#, php-format
+msgid "%1s out of %2$s untranslated string"
+msgid_plural "%1s out of %2$s untranslated strings"
+msgstr[0] ""
+msgstr[1] ""
 
 #: packages/community_translation/blocks/translation_teams/controller.php:45
 msgid "Translation teams list and details"

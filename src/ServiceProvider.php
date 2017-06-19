@@ -7,6 +7,7 @@ use CommunityTranslation\Service\EntitiesEventSubscriber;
 use Concrete\Core\Application\Application;
 use Concrete\Core\Foundation\Service\Provider;
 use Doctrine\ORM\EntityManager;
+use CommunityTranslation\Database\Query\LikeBuilder;
 
 class ServiceProvider extends Provider
 {
@@ -18,6 +19,7 @@ class ServiceProvider extends Provider
         $this->registerInterfaces($this->app);
         $this->registerTranslationConverters($this->app);
         $this->registerEventSubscribers($this->app);
+        $this->registerLikeBuilder($this->app);
     }
 
     /**
@@ -125,5 +127,22 @@ class ServiceProvider extends Provider
         $em = $app->make(EntityManager::class);
         /* @var EntityManager $em */
         $em->getEventManager()->addEventSubscriber($app->make(EntitiesEventSubscriber::class));
+    }
+
+    /**
+     * @param Application $app
+     */
+    private function registerLikeBuilder(Application $app)
+    {
+        $app->bind(LikeBuilder::class, function (Application $app) {
+            $otherWildcards = [];
+            if ($app->bound('Concrete\Core\Database\Connection\Connection')) {
+                $connection = $app->make('Concrete\Core\Database\Connection\Connection');
+                $platform = $connection->getDatabasePlatform();
+                $platformWildcards = $platform->getWildcards();
+                $otherWildcards = array_values(array_diff($platformWildcards, [LikeBuilder::DEFAULT_ANYCHARACTER_WILDCARD, LikeBuilder::DEFAULT_ONECHARACTER_WILDCARD]));
+            }
+            return $app->build(LikeBuilder::class, ['otherWildcards' => $otherWildcards]);
+        });
     }
 }
