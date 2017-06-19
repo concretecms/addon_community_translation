@@ -95,6 +95,22 @@ class Controller extends Package
         $this->refreshLatestPackageVersions();
     }
 
+    private $upgradingFromVersion = null;
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Package\Package::upgradeCoreData()
+     */
+    public function upgradeCoreData()
+    {
+        $e = $this->getPackageEntity();
+        if ($e !== null) {
+            $this->upgradingFromVersion = $e->getPackageVersion();
+        }
+        parent::upgradeCoreData();
+    }
+
     /**
      * {@inheritdoc}
      *
@@ -102,10 +118,9 @@ class Controller extends Package
      */
     public function upgrade()
     {
-        $fromVersion = $this->getPackageVersion();
         parent::upgrade();
         $this->installXml();
-        if (version_compare($fromVersion, '0.4.0') < 0) {
+        if ($this->upgradingFromVersion !== null && version_compare($this->upgradingFromVersion, '0.4.0') < 0) {
             $this->refreshLatestPackageVersions();
         }
     }
