@@ -78,6 +78,7 @@ class EntitiesEventSubscriber implements EventSubscriber
      */
     public function refreshPackageLatestVersion(EntityManager $em, PackageEntity $package)
     {
+        $em->refresh($package);
         $versions = $package->getSortedVersions();
         $latestVersion = empty($versions) ? null : array_pop($versions);
         if ($package->getLatestVersion() !== $latestVersion) {
