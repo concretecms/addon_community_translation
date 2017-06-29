@@ -12,6 +12,13 @@ use Monolog\Logger;
 class TelegramHandler extends AbstractProcessingHandler
 {
     /**
+     * Maximum length of Telegram messages (up to 4096).
+     *
+     * @var int
+     */
+    const MAX_MESSAGE_LENGTH = 4096;
+
+    /**
      * Telegram bot token.
      *
      * @var string
@@ -47,6 +54,31 @@ class TelegramHandler extends AbstractProcessingHandler
     }
 
     /**
+     * @param string $channel
+     * @param string $message
+     * @param int $maxLength
+     *
+     * @return string
+     */
+    private function buildMessageText($channel, $message, $maxLength = self::MAX_MESSAGE_LENGTH)
+    {
+        for (; ;) {
+            $message = trim((string) $message);
+            $result = '<b>' . $this->safeHTML($channel) . '</b>' . "\n" . '<pre>' . $this->safeHTML($message) . '</pre>';
+            if ($message === '') {
+                break;
+            }
+            $delta = mb_strlen($result) - $maxLength;
+            if ($delta <= 0) {
+                break;
+            }
+            $message = mb_substr($message, 0, max(0, mb_strlen($message) - $delta));
+        }
+
+        return $result;
+    }
+
+    /**
      * {@inheritdoc}
      */
     protected function write(array $record)
@@ -60,7 +92,7 @@ class TelegramHandler extends AbstractProcessingHandler
             'chat_id' => $this->chatID,
             'disable_web_page_preview' => true,
             'parse_mode' => 'HTML',
-            'text' => '<b>' . $this->safeHTML($record['channel']) . '</b>' . "\n" . '<pre>' . $this->safeHTML($record['message']) . '</pre>',
+            'text' => $this->buildMessageText($record['channel'], $record['message']),
         ];
 
         $ch = curl_init($url);
