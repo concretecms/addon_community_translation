@@ -16,7 +16,7 @@ class TelegramHandler extends AbstractProcessingHandler
      *
      * @var int
      */
-    const MAX_MESSAGE_LENGTH = 4096;
+    const MAX_MESSAGE_LENGTH = 3000;
 
     /**
      * Telegram bot token.
