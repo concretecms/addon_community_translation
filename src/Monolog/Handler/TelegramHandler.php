@@ -16,7 +16,7 @@ class TelegramHandler extends AbstractProcessingHandler
      *
      * @var int
      */
-    const MAX_MESSAGE_LENGTH = 3000;
+    const MAX_MESSAGE_LENGTH = 4095;
 
     /**
      * Telegram bot token.
@@ -54,28 +54,25 @@ class TelegramHandler extends AbstractProcessingHandler
     }
 
     /**
+     * @param array $data
      * @param string $channel
      * @param string $message
      * @param int $maxLength
-     *
-     * @return string
      */
-    private function buildMessageText($channel, $message, $maxLength = self::MAX_MESSAGE_LENGTH)
+    private function buildMessageText(array &$data, $channel, $message, $maxLength = self::MAX_MESSAGE_LENGTH)
     {
         for (; ;) {
             $message = trim((string) $message);
-            $result = '<b>' . $this->safeHTML($channel) . '</b>' . "\n" . '<pre>' . $this->safeHTML($message) . '</pre>';
+            $data['text'] = '<b>' . $this->safeHTML($channel) . '</b>' . "\n" . '<pre>' . $this->safeHTML($message) . '</pre>';
             if ($message === '') {
                 break;
             }
-            $delta = mb_strlen($result) - $maxLength;
+            $delta = strlen(json_encode($data)) - $maxLength;
             if ($delta <= 0) {
                 break;
             }
             $message = mb_substr($message, 0, max(0, mb_strlen($message) - $delta));
         }
-
-        return $result;
     }
 
     /**
@@ -92,8 +89,8 @@ class TelegramHandler extends AbstractProcessingHandler
             'chat_id' => $this->chatID,
             'disable_web_page_preview' => true,
             'parse_mode' => 'HTML',
-            'text' => $this->buildMessageText($record['channel'], $record['message']),
         ];
+        $this->buildMessageText($data, $record['channel'], $record['message'] . $record['message'] . $record['message']);
 
         $ch = curl_init($url);
         curl_setopt($ch, CURLOPT_URL, $url);
