@@ -30,6 +30,7 @@ use CommunityTranslation\Service\TranslationsFileExporter;
 use CommunityTranslation\Service\User as UserService;
 use CommunityTranslation\Translation\Exporter;
 use CommunityTranslation\Translation\Importer;
+use CommunityTranslation\Translation\ImportOptions;
 use CommunityTranslation\TranslationsConverter\Provider as TranslationsConverterProvider;
 use Concrete\Core\Entity\User\User as UserEntity;
 use Concrete\Core\Error\UserMessageException;
@@ -845,7 +846,15 @@ class OnlineTranslation extends Controller
             $importer = $this->app->make(Importer::class);
             $me = $accessHelper->getUserEntity('current');
             /* @var Importer $importer */
-            $imported = $importer->import($translations, $locale, $me, $access >= Access::ADMIN);
+            if ($access >= Access::ADMIN) {
+                $importOptions = new ImportOptions(
+                    $this->request->request->get('all-fuzzy'),
+                    $this->request->request->get('fuzzy-unapprove')
+                );
+            } else {
+                $importOptions = ImportOptions::forTranslators();
+            }
+            $imported = $importer->import($translations, $locale, $me, $importOptions);
             if ($imported->newApprovalNeeded > 0) {
                 $this->app->make(NotificationRepository::class)->translationsNeedApproval(
                     $locale,
@@ -973,7 +982,7 @@ class OnlineTranslation extends Controller
         $translationID = $translation->getID();
         $translations = $this->convertTranslationToGettext($translation, false);
         $importer = $this->app->make(Importer::class);
-        $imported = $importer->import($translations, $translation->getLocale(), $user, true);
+        $imported = $importer->import($translations, $translation->getLocale(), $user, ImportOptions::forAdministrators());
         $this->getEntityManager()->clear();
         $translation = $this->app->make(TranslationRepository::class)->find($translationID);
         $result = $this->app->make(Editor::class)->getTranslations($translation->getLocale(), $translation->getTranslatable());
@@ -1027,7 +1036,7 @@ class OnlineTranslation extends Controller
         $translationID = $translation->getID();
         $translations = $this->convertTranslationToGettext($translation, $access < Access::ADMIN);
         $importer = $this->app->make(Importer::class);
-        $imported = $importer->import($translations, $translation->getLocale(), $user, $access >= Access::ADMIN);
+        $imported = $importer->import($translations, $translation->getLocale(), $user, ($access >= Access::ADMIN) ? ImportOptions::forAdministrators() : ImportOptions::forTranslators());
         $this->getEntityManager()->clear();
         $translation = $this->app->make(TranslationRepository::class)->find($translationID);
         if ($imported->newApprovalNeeded > 0) {
@@ -1097,7 +1106,7 @@ class OnlineTranslation extends Controller
 
         $translations = $this->convertTranslationToGettext($translation, !$approved);
         $importer = $this->app->make(Importer::class);
-        $imported = $importer->import($translations, $locale, $user, $access >= Access::ADMIN);
+        $imported = $importer->import($translations, $locale, $user, ($access >= Access::ADMIN) ? ImportOptions::forAdministrators() : ImportOptions::forTranslators());
         $this->getEntityManager()->clear();
         $translatable = $this->app->make(TranslatableRepository::class)->find($translatable->getID());
         $locale = $this->app->make(LocaleRepository::class)->find($locale->getID());

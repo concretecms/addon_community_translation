@@ -62,14 +62,19 @@ class Importer
      * @param Translations $translations The translations to be imported
      * @param LocaleEntity $locale The locale of the translations
      * @param UserEntity $user The user to which new translations should be associated
-     * @param bool $reviewerRole Is the current user able to review the translations for this locale?
+     * @param ImportOptions $options Import options (if not specified: we assume regular translator options)
      *
      * @throws UserMessageException
      *
      * @return ImportResult
      */
-    public function import(Translations $translations, LocaleEntity $locale, UserEntity $user, $reviewerRole = false)
+    public function import(Translations $translations, LocaleEntity $locale, UserEntity $user, ImportOptions $options = null)
     {
+        if ($options === null) {
+            $options = ImportOptions::forTranslators();
+        }
+        $allFuzzy = $options->getAllFuzzy();
+        $unapproveFuzzy = $options->getUnapproveFuzzy();
         $pluralCount = $locale->getPluralCount();
         $connection = $this->em->getConnection();
         $nowExpression = $connection->getDatabasePlatform()->getNowExpression();
@@ -174,10 +179,10 @@ where
                 }
 
                 // Check if the new translation is approved or not
-                if ($reviewerRole) {
-                    $isFuzzy = in_array('fuzzy', $translation->getFlags(), true);
-                } else {
+                if ($allFuzzy) {
                     $isFuzzy = true;
+                } else {
+                    $isFuzzy = in_array('fuzzy', $translation->getFlags(), true);
                 }
 
                 if ($sameTranslation === null) {
@@ -253,7 +258,7 @@ where
                         // Let's mark the translation as approved
                         $querySetCurrentTranslation->execute([1, $sameTranslation['id']]);
                         ++$result->existingCurrentApproved;
-                    } elseif ($isFuzzy === true && $sameTranslation['approved'] && $reviewerRole) {
+                    } elseif ($isFuzzy === true && $sameTranslation['approved'] && $unapproveFuzzy) {
                         $querySetCurrentTranslation->execute([0, $sameTranslation['id']]);
                         ++$result->existingCurrentUnapproved;
                     } else {

@@ -19,6 +19,7 @@ use CommunityTranslation\Service\VersionComparer;
 use CommunityTranslation\Translatable\Importer as TranslatableImporter;
 use CommunityTranslation\Translation\Exporter as TranslationExporter;
 use CommunityTranslation\Translation\Importer as TranslationImporter;
+use CommunityTranslation\Translation\ImportOptions as TranslationImportOptions;
 use CommunityTranslation\TranslationsConverter\Provider as TranslationsConverterProvider;
 use Concrete\Core\Controller\AbstractController;
 use Concrete\Core\Error\UserMessageException;
@@ -839,7 +840,7 @@ class EntryPoint extends AbstractController
             }
             $importer = $this->app->make(TranslationImporter::class);
             $me = $this->getUserControl()->getAssociatedUserEntity();
-            $imported = $importer->import($translations, $locale, $me, $approve);
+            $imported = $importer->import($translations, $locale, $me, $approve ? TranslationImportOptions::forAdministrators() : TranslationImportOptions::forTranslators());
             if ($imported->newApprovalNeeded > 0) {
                 $this->app->make(NotificationRepository::class)->translationsNeedApproval(
                     $locale,

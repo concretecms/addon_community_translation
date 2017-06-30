@@ -343,6 +343,24 @@ if ($canEditGlossary) {
                         <label class="control-label" for="comtra_upload-translations-file"><?= t('File to be imported') ?></label>
                         <input class="form-control" type="file" name="file" id="comtra_upload-translations-file" required="required" />
                     </div>
+                    <?php
+                    if ($canApprove) {
+                        ?>
+                        <div class="checkbox">
+                            <label>
+                                <input type="checkbox" name="all-fuzzy" value="1" checked="checked" />
+                                <abbr  title="<?= t('If checked, all the translations will be considered as fuzzy (that is: not approved).') ?>" onclick="window.alert(this.title)"><?= t('Consider all the translations as fuzzy') ?></abbr>
+                            </label>
+                        </div>
+                        <div class="checkbox">
+                            <label title="<?= t('') ?>">
+                                <input type="checkbox" name="fuzzy-unapprove" value="1" />
+                                <abbr  title="<?= t('If checked, fuzzy translations will mark currently approved strings as not approved.') ?>" onclick="window.alert(this.title)"><?= t('Unapprove fuzzy translations') ?></abbr>
+                            </label>
+                        </div>
+                        <?php
+                    }
+                    ?>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-default" data-dismiss="modal"><?= t('Cancel') ?></button>

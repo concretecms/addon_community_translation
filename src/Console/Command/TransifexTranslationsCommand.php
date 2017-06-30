@@ -6,6 +6,7 @@ use CommunityTranslation\Console\Command;
 use CommunityTranslation\Entity\Locale as LocaleEntity;
 use CommunityTranslation\Repository\Locale as LocaleRepository;
 use CommunityTranslation\Translation\Importer;
+use CommunityTranslation\Translation\ImportOptions;
 use Concrete\Core\Entity\User\User as UserEntity;
 use Doctrine\ORM\EntityManager;
 use Exception;
@@ -131,7 +132,7 @@ EOT
                 }
 
                 $output->write('   > saving... ');
-                $details = $translationsImporter->import($translations, $locale, $user, $approveTranslations);
+                $details = $translationsImporter->import($translations, $locale, $user, $approveTranslations ? ImportOptions::forAdministrators() : ImportOptions::forTranslators());
                 $output->writeln('<info>done</info>');
                 $output->writeln('   > details:');
                 $output->writeln('      - strings not translated           : ' . $details->emptyTranslations);
