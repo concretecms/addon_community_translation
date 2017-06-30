@@ -2,12 +2,12 @@
 
 namespace CommunityTranslation\Search\Lists;
 
-use CommunityTranslation\Database\Query\LikeBuilder;
 use CommunityTranslation\Entity\Locale as LocaleEntity;
 use CommunityTranslation\Entity\Package as PackageEntity;
 use CommunityTranslation\Repository\Stats as StatsRepository;
 use Concrete\Core\Application\Application;
 use Concrete\Core\Application\ApplicationAwareInterface;
+use Concrete\Core\Database\Query\LikeBuilder;
 use Concrete\Core\Search\ItemList\Database\ItemList;
 use Concrete\Core\Search\Pagination\Pagination;
 use Doctrine\ORM\EntityManager;
@@ -98,7 +98,7 @@ class Packages extends ItemList implements ApplicationAwareInterface
     {
         $likeBuilder = $this->app->make(LikeBuilder::class);
         /* @var LikeBuilder $likeBuilder */
-        $likes = $likeBuilder->splitKeywordsForLike($name, '[\W_]');
+        $likes = $likeBuilder->splitKeywordsForLike($name, '\W_');
         if (!empty($likes)) {
             $expr = $this->query->expr();
             $orFields = $expr->orX();
