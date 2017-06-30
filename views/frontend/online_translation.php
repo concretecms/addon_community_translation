@@ -349,13 +349,13 @@ if ($canEditGlossary) {
                         <div class="checkbox">
                             <label>
                                 <input type="checkbox" name="all-fuzzy" value="1" checked="checked" />
-                                <abbr  title="<?= t('If checked, all the translations will be considered as fuzzy (that is: not approved).') ?>" onclick="window.alert(this.title)"><?= t('Consider all the translations as fuzzy') ?></abbr>
+                                <abbr  title="<?= t('If checked, all the translations will be considered as fuzzy (that is: not approved).') ?>"><?= t('Consider all the translations as fuzzy') ?></abbr>
                             </label>
                         </div>
                         <div class="checkbox">
                             <label title="<?= t('') ?>">
                                 <input type="checkbox" name="fuzzy-unapprove" value="1" />
-                                <abbr  title="<?= t('If checked, fuzzy translations will mark currently approved strings as not approved.') ?>" onclick="window.alert(this.title)"><?= t('Unapprove fuzzy translations') ?></abbr>
+                                <abbr  title="<?= t('If checked, fuzzy translations will mark currently approved strings as not approved.') ?>"><?= t('Unapprove fuzzy translations') ?></abbr>
                             </label>
                         </div>
                         <?php
