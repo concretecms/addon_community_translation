@@ -19,7 +19,7 @@ use CommunityTranslation\Glossary\EntryType as GlossaryEntryType;
 /* @var string $onlineTranslationPath */
 /* @var CommunityTranslation\TranslationsConverter\ConverterInterface[] $translationFormats */
 /* @var string|null $showDialogAtStartup */
-
+/* @var Concrete\Core\Url\UrlImmutable $exitURL */
 $enableTranslationComments = is_object($packageVersion);
 
 ?><!DOCTYPE html>
@@ -49,7 +49,7 @@ $enableTranslationComments = is_object($packageVersion);
                 <span class="icon-bar"></span>
                 <span class="icon-bar"></span>
             </button>
-            <a class="navbar-brand" href="<?= URL::to('/') ?>"><span class="hidden-xs hidden-sm hidden-md"><?= h($pageTitle) ?></span><span class="hidden-lg"><?= h($pageTitleShort) ?></span></a>
+            <a class="navbar-brand" href="<?= $exitURL ?>"><span class="hidden-xs hidden-sm hidden-md"><?= h($pageTitle) ?></span><span class="hidden-lg"><?= h($pageTitleShort) ?></span></a>
         </div>
         <div id="navbar" class="collapse navbar-collapse">
             <ul class="nav navbar-nav navbar-right">

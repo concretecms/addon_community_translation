@@ -32,6 +32,7 @@ use CommunityTranslation\Translation\Exporter;
 use CommunityTranslation\Translation\Importer;
 use CommunityTranslation\Translation\ImportOptions;
 use CommunityTranslation\TranslationsConverter\Provider as TranslationsConverterProvider;
+use Concrete\Core\Block\Block;
 use Concrete\Core\Entity\User\User as UserEntity;
 use Concrete\Core\Error\UserMessageException;
 use Concrete\Core\Http\ResponseAssetGroup;
@@ -201,6 +202,19 @@ class OnlineTranslation extends Controller
             $session->remove('comtraShowDialogAtStartup');
         }
         $this->set('showDialogAtStartup', $showDialogAtStartup);
+        $url = ['/'];
+        $block = Block::getByName('CommunityTranslation Search Packages');
+        if ($block && $block->getBlockID()) {
+            $page = $block->getOriginalCollection();
+            if ($page !== null) {
+                $url = [$page];
+                if ($packageVersion instanceof PackageVersionEntity) {
+                    $url[] = 'package/' . $packageVersion->getPackage()->getHandle() . '/' . $packageVersion->getVersion();
+                }
+            }
+        }
+        $urlManager = $this->app->make('url/manager');
+        $this->set('exitURL', $urlManager->resolve($url));
     }
 
     public function load_translation($localeID)
