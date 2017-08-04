@@ -36,7 +36,7 @@ class Controller extends Package
      *
      * @var string
      */
-    protected $appVersionRequired = '8.2.0RC2';
+    protected $appVersionRequired = '8.2.0';
 
     /**
      * The package unique handle.
@@ -50,7 +50,7 @@ class Controller extends Package
      *
      * @var string
      */
-    protected $pkgVersion = '0.5.3';
+    protected $pkgVersion = '0.5.4';
 
     /**
      * The mapping between RelativeDirectory <-> Namespace to autoload package classes.
