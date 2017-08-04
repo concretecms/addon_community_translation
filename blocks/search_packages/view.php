@@ -21,7 +21,7 @@ defined('C5_EXECUTE') or die('Access Denied.');
 /* @var CommunityTranslation\Entity\Package $package */
 /* @var CommunityTranslation\Entity\Package\Version[] $packageVersions */
 /* @var CommunityTranslation\Entity\Package\Version $packageVersion */
-/* @var bool $showLoginMessage */
+/* @var bool $userIsLoggedIn */
 /* @var array $localeInfos */
 /* @var string $onlineTranslationPath */
 
@@ -97,10 +97,8 @@ if (isset($package)) {
                         foreach ($locales as $locale) {
                             $localeInfo = $localeInfos[$locale->getID()];
                             $whyNotTranslatable = null;
-                            if (!in_array($locale, $myLocales, true)) {
-                                if ($showLoginMessage) {
-                                    $whyNotTranslatable = t('You need to log-in in order to translate');
-                                } else {
+                            if ($userIsLoggedIn) {
+                                if (!in_array($locale, $myLocales, true)) {
                                     $whyNotTranslatable = t('You don\'t belong to this translation group');
                                 }
                             }

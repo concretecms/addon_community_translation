@@ -369,7 +369,7 @@ class Controller extends BlockController
         }
         $this->requireAsset('jquery/comtraSortable');
         $this->set('localeInfos', $localeInfos);
-        $this->set('showLoginMessage', !$accessHelper->isLoggedIn());
+        $this->set('userIsLoggedIn', $accessHelper->isLoggedIn() ? true : false);
         $config = $this->app->make('community_translation/config');
         $this->set('onlineTranslationPath', $config->get('options.onlineTranslationPath'));
     }
