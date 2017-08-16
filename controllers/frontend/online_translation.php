@@ -1091,7 +1091,12 @@ class OnlineTranslation extends Controller
             $strings = array_values($strings);
             if (count($strings) === $numStrings) {
                 foreach ($strings as $index => $string) {
-                    if (!is_string($string) || trim($string) === '') {
+                    if (is_string($string)) {
+                        $string = str_replace("\r", "\n", str_replace("\r\n", "\n", $string));
+                    } else {
+                        $string = '';
+                    }
+                    if (trim($string) === '') {
                         $translation = null;
                         break;
                     }
