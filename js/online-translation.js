@@ -66,7 +66,7 @@ var markdownToHtml = (function() {
         if (md === null) {
             md = window.markdownit({
                 html: false, // Disable HTML tags in source
-                xhtmlOut: true, //  Use '/' to close single tags (<br />)
+                xhtmlOut: true, // Use '/' to close single tags (<br />)
                 breaks: true, // Convert '\n' in paragraphs into <br>
                 linkify: true, // Autoconvert URL-like text to links
                 typographer: true // Enable some language-neutral replacement + quotes beautification
@@ -787,6 +787,64 @@ var Glossary = (function() {
     };
 })();
 
+var Hasher = (function() {
+    function getDictionary() {
+        var result = {};
+        var hash = window.location.hash;
+        if (hash && hash !== '' && hash !== '#') {
+            if (hash.charAt(0) === '#') {
+                hash = hash.substr(1);
+            }
+            var chunks = hash.split('|');
+            for (var p, n = 0; n < chunks.length; n++) {
+                p = chunks[n].indexOf(':');
+                if (p > 0) {
+                    result[chunks[n].substr(0, p)] = window.decodeURIComponent(chunks[n].substr(p + 1));
+                }
+            }
+        }
+        return result;
+    }
+    function setDictionary(dictionary) {
+        var h = [];
+        if (dictionary) {
+            for (var key in dictionary) {
+                if (dictionary.hasOwnProperty(key) && dictionary[key] !== undefined && dictionary[key] !== null) {
+                    h.push(key + ':' + window.encodeURIComponent(dictionary[key].toString()));
+                }
+            }
+        }
+        window.location.hash = h.join('|');
+    }
+    return {
+        getTranslationID: function() {
+            var result = null;
+            var dictionary = getDictionary();
+            if (dictionary.hasOwnProperty('tid')) {
+                var tid = parseInt(dictionary.tid, 10);
+                if (tid && tid > 0) {
+                    result = tid;
+                }
+            }
+            return result;
+        },
+        setTranslationID: function(id) {
+            var dictionary = getDictionary();
+            if (id) {
+                if (!dictionary.hasOwnProperty('tid') || dictionary.tid !== id.toString()) {
+                    dictionary.tid = id.toString();
+                    setDictionary(dictionary);
+                }
+            } else {
+                if (dictionary.hasOwnProperty('tid')) {
+                    delete dictionary.tid;
+                    setDictionary(dictionary);
+                }
+            }
+        }
+    };
+})();
+
 // Translator customizations
 function initializeUI()
 {
@@ -838,9 +896,11 @@ function showFullTranslation(foo)
     if (!translator.currentTranslationView) {
         currentTranslation = null;
         $extra.css('visibility', 'hidden');
+        Hasher.setTranslationID(null);
         return;
     }
     currentTranslation = translator.currentTranslationView.translation;
+    Hasher.setTranslationID(currentTranslation.id);
     var extra = currentTranslation._extra;
     delete currentTranslation._extra;
     OtherTranslations.initialize(extra.otherTranslations);
@@ -900,7 +960,7 @@ var Subscriptions = (function() {
             });
             $modal.find('a.comtra-notify-existingversions-all').on('click', function(e) {
                 e.preventDefault();
-                $('#comtra-notify-existingversions-lay input[type="checkbox"]').prop('checked', $(this).data('checked') === 'yes'); 
+                $('#comtra-notify-existingversions-lay input[type="checkbox"]').prop('checked', $(this).data('checked') === 'yes');
             });
             $modal.find('.btn-primary').on('click', function() {
                 save();
@@ -933,16 +993,13 @@ window.comtraOnlineEditorInitialize = function(options) {
         onBeforeActivatingTranslation: loadFullTranslation,
         onCurrentTranslationChanged: showFullTranslation,
         getInitialTranslationIndex: function() {
-            var initialTranslationIndex = 0, hash = window.location.hash;
-            if (hash) {
-                var matches = /(^|#|\|)tid:(\d+)/.exec(hash);
-                if (matches) {
-                    var initialTranslationID = parseInt(matches[2]);
-                    for (var n = this.translations.length, i = 0; i < n; i++) {
-                        if (this.translations[i].id === initialTranslationID) {
-                            initialTranslationIndex = i;
-                            break;
-                        }
+            var initialTranslationIndex = 0;
+            var initialTranslationID = Hasher.getTranslationID();
+            if (initialTranslationID !== null) {
+                for (var n = this.translations.length, i = 0; i < n; i++) {
+                    if (this.translations[i].id === initialTranslationID) {
+                        initialTranslationIndex = i;
+                        break;
                     }
                 }
             }
