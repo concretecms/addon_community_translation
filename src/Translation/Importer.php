@@ -120,6 +120,10 @@ where
                 'UPDATE CommunityTranslationTranslations SET current = 1, currentSince = ' . $nowExpression . ', approved = ? WHERE id = ? LIMIT 1'
             )->getWrappedStatement();
 
+            $queryResubmitTranslation = $connection->prepare(
+                'UPDATE CommunityTranslationTranslations SET approved = NULL, createdBy = ' . $user->getUserID() . ' WHERE id = ? LIMIT 1'
+            )->getWrappedStatement();
+
             // Check every strings to be imported
             foreach ($translations as $translationKey => $translation) {
                 /* @var GettextTranslation $translation */
@@ -251,7 +255,7 @@ where
                         }
                     }
                     $translatablesChanged[] = $translatableID;
-                    $result->addedAsCurrent;
+                    ++$result->addedAsCurrent;
                 } elseif ($sameTranslation['current'] === '1') {
                     // This translation is already present and it's the current one
                     if ($isFuzzy === false && !$sameTranslation['approved']) {
@@ -277,7 +281,15 @@ where
                         $translatablesChanged[] = $translatableID;
                         ++$result->existingActivated;
                     } else {
-                        ++$result->existingNotCurrentUntouched;
+                        // The new translation already exists, it is fuzzy (not approved) and the current translation is approved
+                        if ($sameTranslation['approved'] !== null) {
+                            // Let's re-submit the existing translation for approval, as if it's a new translation
+                            $queryResubmitTranslation->execute([$sameTranslation['id']]);
+                            ++$result->addedNotAsCurrent;
+                            ++$result->newApprovalNeeded;
+                        } else {
+                            ++$result->existingNotCurrentUntouched;
+                        }
                     }
                 }
             }
