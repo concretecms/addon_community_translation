@@ -9,6 +9,7 @@ use CommunityTranslation\Repository\Notification as NotificationRepository;
 use CommunityTranslation\Service\Access;
 use CommunityTranslation\Service\Groups;
 use CommunityTranslation\Service\User as UserService;
+use Concrete\Core\Database\Connection\Connection;
 use Concrete\Core\Error\UserMessageException;
 use Concrete\Core\User\Group\Group;
 use Concrete\Core\User\User as CoreUser;
@@ -474,10 +475,24 @@ class Controller extends BlockController
         $this->set('userService', $this->app->make(UserService::class));
         $this->set('access', $this->app->make(Access::class)->getLocaleAccess($locale));
         $g = $this->app->make(Groups::class);
-        $this->set('globalAdmins', $this->getGroupMembers($g->getGlobalAdministrators()));
-        $this->set('admins', $this->getGroupMembers($g->getAdministrators($locale)));
-        $this->set('translators', $this->getGroupMembers($g->getTranslators($locale)));
-        $this->set('aspiring', $this->getGroupMembers($g->getAspiringTranslators($locale)));
+        $globalAdmins = $this->getGroupMembers($g->getGlobalAdministrators());
+        $admins = $this->getGroupMembers($g->getAdministrators($locale));
+        $translators = $this->getGroupMembers($g->getTranslators($locale));
+        $aspiring = $this->getGroupMembers($g->getAspiringTranslators($locale));
+        list($translationsCount, $otherTranslators) = $this->getTranslationCount($locale, array_merge($admins, $translators, $aspiring));
+        $admins = $this->addGlobalAdminsToAdmins($globalAdmins, $otherTranslators, $admins);
+        $globalAdmins = $this->applyTranslationCount([], $globalAdmins);
+        $admins = $this->applyTranslationCount($translationsCount, $admins);
+        $translators = $this->applyTranslationCount($translationsCount, $translators);
+        $aspiring = $this->applyTranslationCount([], $aspiring);
+        $globalAdmins = $this->sortMembers($globalAdmins);
+        $admins = $this->sortMembers($admins);
+        $translators = $this->sortMembers($translators);
+        $aspiring = $this->sortMembers($aspiring);
+        $this->set('globalAdmins', $globalAdmins);
+        $this->set('admins', $admins);
+        $this->set('translators', $translators);
+        $this->set('aspiring', $aspiring);
     }
 
     private function getGroupMembers(Group $group)
@@ -486,11 +501,108 @@ class Controller extends BlockController
         foreach ($group->getGroupMembers() as $m) {
             $result[] = ['ui' => $m, 'since' => $group->getGroupDateTimeEntered($m)];
         }
-        $comparer = new Comparer();
-        usort($result, function ($a, $b) use ($comparer) {
-            return $comparer->compare($a['ui']->getUserName(), $b['ui']->getUserName());
-        });
 
         return $result;
+    }
+
+    private function sortMembers(array $members)
+    {
+        $comparer = new Comparer();
+        usort($members, function ($a, $b) use ($comparer) {
+            $delta = $b['totalTranslations'] - $a['totalTranslations'];
+            if ($delta === 0) {
+                $delta = $b['approvedTranslations'] - $a['approvedTranslations'];
+                if ($delta === 0) {
+                    $delta = $comparer->compare($a['ui']->getUserName(), $b['ui']->getUserName());
+                }
+            }
+
+            return $delta;
+        });
+
+        return $members;
+    }
+
+    private function getTranslationCount(LocaleEntity $locale, array $definedUsers)
+    {
+        $db = $this->app->make(Connection::class);
+        $translationsCount = [];
+        $rs = $db->executeQuery('
+select
+    CommunityTranslationTranslations.createdBy as uID,
+    count(*) as numTranslations,
+    CommunityTranslationTranslations.currentSince is null as notCurrent
+from
+    CommunityTranslationTranslations
+where
+    CommunityTranslationTranslations.locale = ?
+    and CommunityTranslationTranslations.createdBy <> ?
+group by
+    CommunityTranslationTranslations.createdBy,
+    CommunityTranslationTranslations.currentSince is null
+',
+            [$locale->getID(), USER_SUPER_ID]
+        );
+        while (($row = $rs->fetch(\PDO::FETCH_ASSOC)) !== false) {
+            $uID = $row['uID'];
+            if (!isset($uID)) {
+                $translationsCount[$uID] = [
+                    'total' => 0,
+                    'current' => 0,
+                ];
+            }
+            if ($row['notCurrent']) {
+                $translationsCount[$uID]['notCurrent'] = (int) $row['numTranslations'];
+            } else {
+                $translationsCount[$uID]['current'] = (int) $row['numTranslations'];
+            }
+        }
+        $otherTranslators = [];
+        foreach (array_keys($translationsCount) as $uID) {
+            $already = false;
+            foreach ($definedUsers as $definedUser) {
+                if ($definedUser['ui']->getUserID() == $uID) {
+                    $already = true;
+                    break;
+                }
+            }
+            if ($already === false) {
+                $otherTranslators[] = (int) $uID;
+            }
+        }
+        $otherTranslators = $this->sortMembers($otherTranslators);
+
+        return [$translationsCount, $otherTranslators];
+    }
+
+    private function addGlobalAdminsToAdmins(array $globalAdmins, array $otherTranslators, array $admins)
+    {
+        foreach ($otherTranslators as $uID) {
+            foreach ($globalAdmins as $globalAdmin) {
+                if ($globalAdmin['ui']->getUserID() == $uID) {
+                    $globalAdmin['actuallyGlobalAdmin'] = true;
+                    $admins[] = $globalAdmin;
+                    break;
+                }
+            }
+        }
+
+        return $admins;
+    }
+
+    private function applyTranslationCount(array $translationsCount, array $members)
+    {
+        foreach (array_keys($members) as $index) {
+            $members[$index]['approvedTranslations'] = 0;
+            $uID = $members[$index]['ui']->getUserID();
+            if (isset($translationsCount[$uID])) {
+                $members[$index]['totalTranslations'] = $translationsCount[$uID]['notCurrent'] + $translationsCount[$uID]['current'];
+                $members[$index]['approvedTranslations'] = $translationsCount[$uID]['current'];
+            } else {
+                $members[$index]['approvedTranslations'] = $members[$index]['totalTranslations'] = 0;
+            }
+        }
+
+        return $members;
     }
 }

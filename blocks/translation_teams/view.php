@@ -257,7 +257,7 @@ switch ($step) {
                             ?>
                             <li class="list-group-item">
                                 <?php
-                                if ($access >= Access::GLOBAL_ADMIN) {
+                                if ($access >= Access::GLOBAL_ADMIN && empty($u['actuallyGlobalAdmin'])) {
                                     ?>
                                     <div class="pull-right">
                                         <form style="display: inline" method="POST" action="<?= h($controller->getActionURL($view, 'change_access', $locale->getID(), $u['ui']->getUserID(), Access::TRANSLATE)) ?>">
@@ -273,7 +273,8 @@ switch ($step) {
                                 }
                                 ?>
                                 <?= $userService->format($u['ui']) ?>
-                                <div class="text-muted"><?= t('Coordinator since: %s', $dh->formatPrettyDateTime($u['since'], true)) ?></div>
+                                <div class="text-muted small"><?= t('Contributions to %1$s translations: %2$s (currently approved: %3$s)', $locale->getDisplayName(), $u['totalTranslations'], $u['approvedTranslations']) ?></div>
+                                <div class="text-muted small"><?= t('Coordinator since: %s', $dh->formatPrettyDateTime($u['since'], true)) ?></div>
                             </li>
                             <?php
                         }
@@ -314,7 +315,8 @@ switch ($step) {
                                 }
                                 ?>
                                 <?= $userService->format($u['ui']) ?>
-                                <div class="text-muted"><?= t('Translator since: %s', $dh->formatPrettyDateTime($u['since'], true)) ?></div>
+                                <div class="text-muted small"><?= t('Contributions to %1$s translations: %2$s (currently approved: %3$s)', $locale->getDisplayName(), $u['totalTranslations'], $u['approvedTranslations']) ?></div>
+                                <div class="text-muted small"><?= t('Translator since: %s', $dh->formatPrettyDateTime($u['since'], true)) ?></div>
                             </li>
                             <?php
                         }
