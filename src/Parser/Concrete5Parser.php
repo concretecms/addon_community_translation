@@ -3,6 +3,7 @@
 namespace CommunityTranslation\Parser;
 
 use C5TL\Parser as C5TLParser;
+use CommunityTranslation\Entity\Package\Version;
 use CommunityTranslation\Repository\Locale as LocaleRepository;
 use CommunityTranslation\Service\VolatileDirectory;
 use Concrete\Core\Error\UserMessageException;
@@ -45,10 +46,15 @@ class Concrete5Parser extends Parser
         $pot = new Translations();
         $pot->setLanguage($this->app->make('community_translation/sourceLocale'));
         C5TLParser::clearCache();
+        if (preg_match('/^' . preg_quote(Version::DEV_PREFIX, '/') . '(\d+(?:\.\d+)*)/', $packageVersion, $m)) {
+            $checkVersion = $m[1] . '.99.99';
+        } else {
+            $checkVersion = $packageVersion;
+        }
         foreach (C5TLParser::getAllParsers() as $parser) {
             /* @var C5TLParser $parser */
             if ($parser->canParseDirectory()) {
-                if ($packageHandle !== 'concrete5' || $parser->canParseConcreteVersion($packageVersion)) {
+                if ($packageHandle !== 'concrete5' || $parser->canParseConcreteVersion($checkVersion)) {
                     $parser->parseDirectory($path, $relDirectory, $pot);
                 }
             }
