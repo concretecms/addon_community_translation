@@ -545,9 +545,9 @@ group by
         );
         while (($row = $rs->fetch(\PDO::FETCH_ASSOC)) !== false) {
             $uID = $row['uID'];
-            if (!isset($uID)) {
+            if (!isset($translationsCount[$uID])) {
                 $translationsCount[$uID] = [
-                    'total' => 0,
+                    'notCurrent' => 0,
                     'current' => 0,
                 ];
             }
