@@ -4,6 +4,7 @@ namespace CommunityTranslation\Console\Command;
 
 use CommunityTranslation\Console\Command;
 use CommunityTranslation\Entity\RemotePackage as RemotePackageEntity;
+use CommunityTranslation\RemotePackage\DownloadException;
 use CommunityTranslation\RemotePackage\Importer as RemotePackageImporter;
 use CommunityTranslation\Repository\RemotePackage as RemotePackageRepository;
 use DateTime;
@@ -153,7 +154,11 @@ EOT
             }
             $em->persist($remotePackage);
             $em->flush($remotePackage);
-            throw $error;
+            if ($x instanceof DownloadException && $x->getHttpCode() === 404) {
+                $this->logger->debug(sprintf('  NOT FOUND!'));
+            } else {
+                throw $error;
+            }
         }
     }
 
