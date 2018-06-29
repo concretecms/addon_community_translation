@@ -13,6 +13,7 @@
         <blocktype package="community_translation" handle="translation_team_request" />
         <blocktype package="community_translation" handle="search_packages" />
         <blocktype package="community_translation" handle="fill_translations" />
+        <blocktype package="community_translation" handle="top_translators" />
     </blocktypes>
 
     <blocktypesets>
@@ -21,6 +22,7 @@
             <blocktype handle="translation_team_request" />
             <blocktype handle="search_packages" />
             <blocktype handle="fill_translations" />
+            <blocktype handle="top_translators" />
         </blocktypeset>
     </blocktypesets>
 

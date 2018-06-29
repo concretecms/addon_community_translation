@@ -17,6 +17,9 @@ use Doctrine\ORM\Mapping as ORM;
  *     uniqueConstraints={
  *         @ORM\UniqueConstraint(name="IDX_CTTranslationLocaleTranslatableCurrent", columns={"locale", "translatable", "current"})
  *     },
+ *     indexes={
+ *         @ORM\Index(name="IDX_CTTranslationCreatorSince", columns={"currentSince", "createdBy"})
+ *     },
  *     options={"comment": "Translated strings"}
  * )
  */
