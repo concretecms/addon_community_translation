@@ -37,7 +37,7 @@ switch ($step) {
         /* @var string $language */
         /* @var array $languages */
         ?>
-        <form class="form-stacked" method="POST" action="<?= $controller->getActionURL($view, 'language_set') ?>">
+        <form class="form-stacked" method="POST" action="<?= $controller->getBlockActionURL($view, 'language_set') ?>">
             <?php $token->output('comtra-ttr-language_set') ?>
             <p><?= t('Please specify the new language you would like to translate') ?>
             <div class="form-group">
@@ -77,7 +77,7 @@ switch ($step) {
             <?php
         }
         ?>
-        <form class="form-stacked" method="POST" action="<?= $controller->getActionURL($view, 'territory_set') ?>" id="<?= $id ?>_create"<?= empty($existingLocales) ? '' : ' style="display: none"' ?>>
+        <form class="form-stacked" method="POST" action="<?= $controller->getBlockActionURL($view, 'territory_set') ?>" id="<?= $id ?>_create"<?= empty($existingLocales) ? '' : ' style="display: none"' ?>>
             <?php $token->output('comtra-ttr-territory_set') ?>
             <?= $form->hidden('language', $language) ?>
             <div class="form-group">
@@ -145,7 +145,7 @@ switch ($step) {
         /* @var bool $askApprove */
         /* @var bool $askWhyNoCountry */
         ?>
-        <form class="form-stacked" method="POST" action="<?= $controller->getActionURL($view, 'submit') ?>">
+        <form class="form-stacked" method="POST" action="<?= $controller->getBlockActionURL($view, 'submit') ?>">
             <?php $token->output('comtra-ttr-submit') ?>
             <?= $form->hidden('language', $language) ?>
             <?= $form->hidden('territory', $territory) ?>

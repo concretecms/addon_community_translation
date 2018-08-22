@@ -97,7 +97,7 @@ switch ($step) {
                             foreach ($approved as $l) {
                                 ?>
                                 <tr data-locale-id="<?= h($l['id']) ?>" data-locale-name="<?= h(strtolower($l['name'])) ?>">
-                                    <td><a href="<?= h($controller->getActionURL($view, 'details', $l['id'])) ?>"><?= h($l['name']) ?></a></td>
+                                    <td><a href="<?= h($controller->getBlockActionURL($view, 'details', $l['id'])) ?>"><?= h($l['name']) ?></a></td>
                                     <td class="visible-xs-block"><?= ($l['admins'] || $l['translators']) ? ('<span class="label label-success">' . ($l['admins'] + $l['translators']) . '</span>') : '<span class="label label-default">0</span>' ?></td>
                                     <td class="hidden-xs"><?= $l['admins'] ? ('<span class="label label-success">' . $l['admins'] . '</span>') : '<span class="label label-default">0</span>' ?></td>
                                     <td class="hidden-xs"><?= $l['translators'] ? ('<span class="label label-success">' . $l['translators'] . '</span>') : '<span class="label label-default">0</span>' ?></td>
@@ -108,13 +108,13 @@ switch ($step) {
                                                 break;
                                             case Access::ADMIN:
                                             case Access::TRANSLATE:
-                                                ?><form method="POST" action="<?= h($controller->getActionURL($view, 'leave_translation_group', $l['id'])) ?>" data-comtra-warning="<?= h(t('Are you sure you want to leave this translation group?'))?>" onsubmit="comtraConfirmPost(this); return false">
+                                                ?><form method="POST" action="<?= h($controller->getBlockActionURL($view, 'leave_translation_group', $l['id'])) ?>" data-comtra-warning="<?= h(t('Are you sure you want to leave this translation group?'))?>" onsubmit="comtraConfirmPost(this); return false">
                                                     <?php $token->output('comtra_leave_translation_group' . $l['id']) ?>
                                                     <input type="submit" class="btn btn-sm btn-danger pull-right" value="<?= h(t('Leave')) ?>" />
                                                 </form><?php
                                                 break;
                                             case Access::ASPRIRING:
-                                                ?><form method="POST" action="<?= h($controller->getActionURL($view, 'leave_translation_group', $l['id'])) ?>" data-comtra-warning="<?= h(t('Are you sure you want to cancel your join request?'))?>" onsubmit="comtraConfirmPost(this); return false">
+                                                ?><form method="POST" action="<?= h($controller->getBlockActionURL($view, 'leave_translation_group', $l['id'])) ?>" data-comtra-warning="<?= h(t('Are you sure you want to cancel your join request?'))?>" onsubmit="comtraConfirmPost(this); return false">
                                                     <?php $token->output('comtra_leave_translation_group' . $l['id']) ?>
                                                     <input type="submit" class="btn btn-sm btn-warning pull-right" value="<?= h(t('Cancel request')) ?>" />
                                                 </form><?php
@@ -151,13 +151,13 @@ switch ($step) {
                                     </td>
                                     <td><?php
                                         if ($l['canApprove']) {
-                                            ?><form method="POST" action="<?= h($controller->getActionURL($view, 'approve_new_locale_request', $l['id'])) ?>" data-comtra-warning="<?= h(t('Are you sure you want to approve this new translation group?'))?>" onsubmit="comtraConfirmPost(this); return false">
+                                            ?><form method="POST" action="<?= h($controller->getBlockActionURL($view, 'approve_new_locale_request', $l['id'])) ?>" data-comtra-warning="<?= h(t('Are you sure you want to approve this new translation group?'))?>" onsubmit="comtraConfirmPost(this); return false">
                                                 <?php $token->output('comtra_approve_new_locale_request' . $l['id']) ?>
                                                 <input type="submit" class="btn btn-sm btn-success pull-right" value="<?= h(t('Approve')) ?>" />
                                             </form><?php
                                         }
                                         if ($l['canCancel']) {
-                                            ?><form method="POST" action="<?= h($controller->getActionURL($view, 'cancel_new_locale_request', $l['id'])) ?>" data-comtra-warning="<?= h(t('Are you sure you want to cancel this request?'))?>" onsubmit="comtraConfirmPost(this); return false">
+                                            ?><form method="POST" action="<?= h($controller->getBlockActionURL($view, 'cancel_new_locale_request', $l['id'])) ?>" data-comtra-warning="<?= h(t('Are you sure you want to cancel this request?'))?>" onsubmit="comtraConfirmPost(this); return false">
                                                 <?php $token->output('comtra_cancel_locale_request' . $l['id']) ?>
                                                 <input type="submit" class="btn btn-sm btn-danger pull-right" value="<?= h($l['canApprove'] ? t('Reject') : t('Cancel')) ?>" />
                                             </form><?php
@@ -260,11 +260,11 @@ switch ($step) {
                                 if ($access >= Access::GLOBAL_ADMIN && empty($u['actuallyGlobalAdmin'])) {
                                     ?>
                                     <div class="pull-right">
-                                        <form style="display: inline" method="POST" action="<?= h($controller->getActionURL($view, 'change_access', $locale->getID(), $u['ui']->getUserID(), Access::TRANSLATE)) ?>">
+                                        <form style="display: inline" method="POST" action="<?= h($controller->getBlockActionURL($view, 'change_access', $locale->getID(), $u['ui']->getUserID(), Access::TRANSLATE)) ?>">
                                             <?php $token->output('comtra_change_access' . $locale->getID() . '#' . $u['ui']->getUserID() . ':' . Access::TRANSLATE) ?>
                                             <input type="submit" class="btn btn-info" value="<?= t('Set as translator') ?>" />
                                         </form>
-                                        <form style="display: inline" method="POST" action="<?= h($controller->getActionURL($view, 'change_access', $locale->getID(), $u['ui']->getUserID(), Access::NONE)) ?>">
+                                        <form style="display: inline" method="POST" action="<?= h($controller->getBlockActionURL($view, 'change_access', $locale->getID(), $u['ui']->getUserID(), Access::NONE)) ?>">
                                             <?php $token->output('comtra_change_access' . $locale->getID() . '#' . $u['ui']->getUserID() . ':' . Access::NONE) ?>
                                             <input type="submit" class="btn btn-info" value="<?= t('Expel') ?>" />
                                         </form>
@@ -302,11 +302,11 @@ switch ($step) {
                                 if ($access >= Access::ADMIN) {
                                     ?>
                                     <div class="pull-right">
-                                        <form style="display: inline" method="POST" action="<?= h($controller->getActionURL($view, 'change_access', $locale->getID(), $u['ui']->getUserID(), Access::ADMIN)) ?>">
+                                        <form style="display: inline" method="POST" action="<?= h($controller->getBlockActionURL($view, 'change_access', $locale->getID(), $u['ui']->getUserID(), Access::ADMIN)) ?>">
                                             <?php $token->output('comtra_change_access' . $locale->getID() . '#' . $u['ui']->getUserID() . ':' . Access::ADMIN) ?>
                                             <input type="submit" class="btn btn-info" value="<?= t('Set as coordinator') ?>" />
                                         </form>
-                                        <form style="display: inline" method="POST" action="<?= h($controller->getActionURL($view, 'change_access', $locale->getID(), $u['ui']->getUserID(), Access::NONE)) ?>">
+                                        <form style="display: inline" method="POST" action="<?= h($controller->getBlockActionURL($view, 'change_access', $locale->getID(), $u['ui']->getUserID(), Access::NONE)) ?>">
                                             <?php $token->output('comtra_change_access' . $locale->getID() . '#' . $u['ui']->getUserID() . ':' . Access::NONE) ?>
                                             <input type="submit" class="btn btn-info" value="<?= t('Expel') ?>" />
                                         </form>
@@ -342,11 +342,11 @@ switch ($step) {
                                 if ($access >= Access::ADMIN) {
                                     ?>
                                     <div class="pull-right">
-                                        <form style="display: inline" method="POST" action="<?= h($controller->getActionURL($view, 'answer_join_request', $locale->getID(), $u['ui']->getUserID(), 1)) ?>">
+                                        <form style="display: inline" method="POST" action="<?= h($controller->getBlockActionURL($view, 'answer_join_request', $locale->getID(), $u['ui']->getUserID(), 1)) ?>">
                                             <?php $token->output('comtra_answer_join_request' . $locale->getID() . '#' . $u['ui']->getUserID() . ':1') ?>
                                             <input type="submit" class="btn btn-info" value="<?= t('Approve') ?>" />
                                         </form>
-                                        <form style="display: inline" method="POST" action="<?= h($controller->getActionURL($view, 'answer_join_request', $locale->getID(), $u['ui']->getUserID(), 0)) ?>">
+                                        <form style="display: inline" method="POST" action="<?= h($controller->getBlockActionURL($view, 'answer_join_request', $locale->getID(), $u['ui']->getUserID(), 0)) ?>">
                                             <?php $token->output('comtra_answer_join_request' . $locale->getID() . '#' . $u['ui']->getUserID() . ':0') ?>
                                             <input type="submit" class="btn btn-danger" value="<?= t('Deny') ?>" />
                                         </form>
@@ -374,7 +374,7 @@ switch ($step) {
                     break;
                 case Access::NONE:
                     ?>
-                    <form style="display: inline" method="POST" action="<?= h($controller->getActionURL($view, 'join_translation_group', $locale->getID())) ?>">
+                    <form style="display: inline" method="POST" action="<?= h($controller->getBlockActionURL($view, 'join_translation_group', $locale->getID())) ?>">
                         <?php $token->output('comtra_join_translation_group' . $locale->getID()) ?>
                         <input type="submit" class="btn btn-info" value="<?= t('Join this team') ?>" />
                     </form>
@@ -382,7 +382,7 @@ switch ($step) {
                     break;
                 case Access::ASPRIRING:
                     ?>
-                    <form style="display: inline" method="POST" action="<?= h($controller->getActionURL($view, 'leave_translation_group', $locale->getID())) ?>">
+                    <form style="display: inline" method="POST" action="<?= h($controller->getBlockActionURL($view, 'leave_translation_group', $locale->getID())) ?>">
                         <?php $token->output('comtra_leave_translation_group' . $locale->getID()) ?>
                         <input type="submit" class="btn btn-danger" value="<?= t('Cancel join request') ?>" />
                     </form>
@@ -391,7 +391,7 @@ switch ($step) {
                 case Access::TRANSLATE:
                 case Access::ADMIN:
                     ?>
-                    <form style="display: inline" method="POST" action="<?= h($controller->getActionURL($view, 'leave_translation_group', $locale->getID())) ?>">
+                    <form style="display: inline" method="POST" action="<?= h($controller->getBlockActionURL($view, 'leave_translation_group', $locale->getID())) ?>">
                         <?php $token->output('comtra_leave_translation_group' . $locale->getID()) ?>
                         <input type="submit" class="btn btn-danger" value="<?= t('Leave this group') ?>" />
                     </form>
@@ -400,7 +400,7 @@ switch ($step) {
             }
             if ($access >= Access::GLOBAL_ADMIN) {
                 ?>
-                <form style="display: inline" method="POST" action="<?= h($controller->getActionURL($view, 'delete_translation_group', $locale->getID())) ?>" data-comtra-warning="<?= h(t('Are you sure you want to PERMANENTLY DELETE this translation group?<br /><br />WARNING! THIS OPERATION CAN\'T BE UNDONE!'))?>" onsubmit="comtraConfirmPost(this); return false">
+                <form style="display: inline" method="POST" action="<?= h($controller->getBlockActionURL($view, 'delete_translation_group', $locale->getID())) ?>" data-comtra-warning="<?= h(t('Are you sure you want to PERMANENTLY DELETE this translation group?<br /><br />WARNING! THIS OPERATION CAN\'T BE UNDONE!'))?>" onsubmit="comtraConfirmPost(this); return false">
                     <?php $token->output('comtra_delete_translation_group' . $locale->getID()) ?>
                     <input type="submit" class="btn btn-danger" value="<?= t('Delete') ?>" />
                 </form>

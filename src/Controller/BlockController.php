@@ -73,14 +73,14 @@ abstract class BlockController extends CoreBlockController
     /**
      * Creates a URL that can be posted or navigated to that, when done so, will automatically run the corresponding method inside the block's controller.
      * <code>
-     *     <a href="<?= $controller->getActionURL($view, 'get_results') ?>">Get the results</a>
+     *     <a href="<?= $controller->getBlockActionURL($view, 'get_results') ?>">Get the results</a>
      * </code>.
      *
      * @param string $task
      *
      * @return string $url
      */
-    public function getActionURL(BlockView $view, $task)
+    public function getBlockActionURL(BlockView $view, $task)
     {
         $actionArguments = func_get_args();
         array_shift($actionArguments);
@@ -144,7 +144,7 @@ abstract class BlockController extends CoreBlockController
             array_shift($args);
             array_shift($args);
             array_unshift($args, new BlockView($this->getBlockObject()));
-            $this->redirect(call_user_func_array([$this, 'getActionURL'], $args));
+            $this->redirect(call_user_func_array([$this, 'getBlockActionURL'], $args));
         } else {
             $this->redirect(\Page::getCurrentPage());
         }

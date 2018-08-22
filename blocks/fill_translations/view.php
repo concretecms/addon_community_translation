@@ -18,7 +18,7 @@ $id = 'comtra-fill-translations-' . uniqid();
     <p><?= t('Here you can upload a ZIP file containing a package, or a dictionary file.') ?></p>
     <p><?= t("You'll get back a ZIP file containing all the translatable strings found (.pot file) and the translated strings we already know for the languages that you specify (as source .po files or as compiled .mo files).") ?></p>
 
-    <form method="POST" action="<?= $controller->getActionURL($view, 'fill_in') ?>" enctype="multipart/form-data" target="_blank">
+    <form method="POST" action="<?= $controller->getBlockActionURL($view, 'fill_in') ?>" enctype="multipart/form-data" target="_blank">
 
         <?php $token->output('comtra-fill-translations') ?>
 

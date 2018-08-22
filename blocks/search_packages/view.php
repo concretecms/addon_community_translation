@@ -7,7 +7,7 @@ defined('C5_EXECUTE') or die('Access Denied.');
 /* @var Concrete\Core\Entity\Block\BlockType\BlockType $bt */
 /* @var Concrete\Core\Area\Area $a */
 
-/* @var Concrete\Package\AlboPretorio\Block\AlboPretorio\Controller $controller */
+/* @var Concrete\Package\CommunityTranslation\Block\SearchPackages\Controller $controller */
 
 /* @var Concrete\Core\Validation\CSRF\Token $token */
 /* @var CommunityTranslation\Entity\Locale[] $suggestedLocales */
@@ -42,7 +42,7 @@ if (isset($package)) {
     <div class="panel panel-primary" style="margin-top: 20px">
         <div class="panel-heading">
             <?= t('Translations for %s', h($packageVersion->getDisplayName())) ?>
-            <div class="pull-right"><a class="btn btn-xs btn-info" href="<?= h($controller->getActionURL($view, 'search')) ?>"><?= t('Search other packages') ?></a></div>
+            <div class="pull-right"><a class="btn btn-xs btn-info" href="<?= h($controller->getBlockActionURL($view, 'search')) ?>"><?= t('Search other packages') ?></a></div>
         </div>
         <div class="panel-body">
             <?php
@@ -59,7 +59,7 @@ if (isset($package)) {
                             if ($pv === $packageVersion) {
                                 ?><option value="" selected="selected"><?= h($pv->getDisplayVersion()) ?></option><?php
                             } else {
-                                ?><option value="<?= h($controller->getActionURL($view, 'package', $package->getHandle(), $pv->getVersion())) ?>"><?= h($pv->getDisplayVersion()) ?></option><?php
+                                ?><option value="<?= h($controller->getBlockActionURL($view, 'package', $package->getHandle(), $pv->getVersion())) ?>"><?= h($pv->getDisplayVersion()) ?></option><?php
                             }
                         }
                         ?>
@@ -118,7 +118,7 @@ if (isset($package)) {
                                 <td class="comtra-locale-actions">
                                     <?php
                                     foreach ($localeInfo['downloadFormats'] as $adf) {
-                                        ?><a class="hidden-xs btn btn-sm btn-info" style="padding: 5px 10px" href="<?= h($controller->getActionURL($view, 'download_translations_file', $packageVersion->getID(), $locale->getID(), $adf->getHandle()) . '?' . $token->getParameter('comtra-download-translations-' . $packageVersion->getID() . '@' . $locale->getID() . '.' . $adf->getHandle())) ?>" title="<?= h(t('Download translations (%s)', $adf->getName())) ?>" style="padding: 5px 10px; white-space:nowrap"><i class="fa fa-cloud-download"></i> <?= h($adf->getFileExtension()) ?></a><?php
+                                        ?><a class="hidden-xs btn btn-sm btn-info" style="padding: 5px 10px" href="<?= h($controller->getBlockActionURL($view, 'download_translations_file', $packageVersion->getID(), $locale->getID(), $adf->getHandle()) . '?' . $token->getParameter('comtra-download-translations-' . $packageVersion->getID() . '@' . $locale->getID() . '.' . $adf->getHandle())) ?>" title="<?= h(t('Download translations (%s)', $adf->getName())) ?>" style="padding: 5px 10px; white-space:nowrap"><i class="fa fa-cloud-download"></i> <?= h($adf->getFileExtension()) ?></a><?php
                                     }
                                     ?>
                                     <a class="btn btn-sm <?= $translateClass ?>" style="padding: 5px 10px" href="<?= h($translateLink) ?>"<?= $translateOnclick ?>><?= t('Translate') ?></a>
@@ -148,7 +148,7 @@ if (isset($package)) {
         <?= t('Search translatable packages') ?>
     </div>
     <div class="panel-body">
-        <form class="form-inline" action="<?= $controller->getActionURL($view, 'search') ?>" method="POST">
+        <form class="form-inline" action="<?= $controller->getBlockActionURL($view, 'search') ?>" method="POST">
             <?php $token->output('communitytranslations-search_packages-' . $bID) ?>
             <div class="form-group">
                 <label class="sr-only" for="comtra_search_packages-search-text-<?= $bID ?>"><?= t('Search package') ?></label>
@@ -229,7 +229,7 @@ if (isset($package)) {
                         ?>
                         <tr>
                             <td>
-                                <a href="<?= h($controller->getActionURL($view, 'package', $package->getHandle())) ?>"><?= h($package->getDisplayName()) ?></a>
+                                <a href="<?= h($controller->getBlockActionURL($view, 'package', $package->getHandle())) ?>"><?= h($package->getDisplayName()) ?></a>
                                 <?php
                                 if ($package->getUrl()) {
                                     ?><small><br />(<a href="<?= h($package->getUrl()) ?>" target="_blank"><?= t('more details') ?></a>)</small><?php
