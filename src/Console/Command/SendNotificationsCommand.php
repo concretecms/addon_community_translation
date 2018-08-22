@@ -228,9 +228,9 @@ EOT
                     $error = $x;
                 }
                 if ($error !== null) {
-                    $this->categories[$fqnClass] = sprintf('Failed to initialize category class %1$s: $2$s', $fqnClass, $error->getMessage());
+                    $this->categories[$fqnClass] = sprintf('Failed to initialize category class %1$s: %2$s', $fqnClass, $error->getMessage());
                 } elseif (!($obj instanceof CategoryInterface)) {
-                    $this->categories[$fqnClass] = sprintf('The class %1$s does not implement $2$s', $fqnClass, CategoryInterface::class);
+                    $this->categories[$fqnClass] = sprintf('The class %1$s does not implement %2$s', $fqnClass, CategoryInterface::class);
                 } else {
                     $this->categories[$fqnClass] = $obj;
                 }

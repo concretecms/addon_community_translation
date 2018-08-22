@@ -122,7 +122,7 @@ class Importer
         $this->httpClient->reset();
         $streamHandle = ($response instanceof \Zend\Http\Response\Stream) ? $response->getStream() : null;
         if ($response->getStatusCode() > 200) {
-            $error = t('Failed to download package archive $s v%s: %s (%d)', $remotePackage->getHandle(), $remotePackage->getVersion(), $response->getReasonPhrase(), $response->getStatusCode());
+            $error = t('Failed to download package archive %s v%s: %s (%d)', $remotePackage->getHandle(), $remotePackage->getVersion(), $response->getReasonPhrase(), $response->getStatusCode());
             if (is_resource($streamHandle)) {
                 fclose($streamHandle);
             }
