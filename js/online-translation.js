@@ -911,8 +911,10 @@ function showFullTranslation(foo)
     Suggestions.initialize(extra.suggestions);
     Glossary.initialize(extra.glossary);
     if (extra.currentTranslationInfo && extra.currentTranslationInfo.createdBy && extra.currentTranslationInfo.createdBy && extra.currentTranslationInfo.createdOn) {
-        translator.UI.$translation.find('.form-group').filter(':last').append(
-            $('<div class="text-muted small pull-right" />')
+        translator.UI.$translation.find('.form-group').filter(':last')
+            .addClass('clearfix')
+            .append(
+                $('<div class="text-muted small pull-right" />')
                 .html(i18n.TranslatedByOn.replace(/%1\$s/g, extra.currentTranslationInfo.createdBy).replace(/%2\$s/g, extra.currentTranslationInfo.createdOn))
                 .find('a.comtra-user')
                     .attr('target', '_blank')
