@@ -189,7 +189,7 @@ class Editor
         $dh = $this->app->make('helper/date');
         $uh = $this->app->make(UserService::class);
         foreach ($translations as $translation) {
-            /* @var \CommunityTranslation\Translation\Translation $translation */
+            /* @var \CommunityTranslation\Entity\Translation $translation */
             $texts = [];
             switch (($translatable->getPlural() === '') ? 1 : $numPlurals) {
                 case 6:
