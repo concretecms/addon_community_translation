@@ -568,6 +568,7 @@ $params = [
         'Use_this' => tc('Translation', 'Use this'),
         'Comments' => t('Comments'),
         'References' => t('References'),
+        'TranslatedByOn' => t('Translated by %1$s on %2$s'),
         'Unused_string' => t('This string is not used in any package.'),
         'Waiting_approval' => t('Waiting approval'),
         'pluralRuleNames' => [

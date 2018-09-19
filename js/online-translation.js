@@ -850,10 +850,9 @@ function initializeUI()
 {
     var $translationsCol = translator.UI.$container.find('.ccm-translator-col-translations'),
         $midCell = $('<div class="col-md-3" />'),
-        $midRow = $('<div class="row" />');
-    var $extraTabs = $('#comtra_extra-tabs').tab();
-    var $references = $('#comtra_extra-references');
-
+        $midRow = $('<div class="row" />'),
+        $extraTabs = $('#comtra_extra-tabs').tab(),
+        $references = $('#comtra_extra-references');
     $translationsCol.before($midCell);
     $midCell.append($midRow);
     $midRow.append($translationsCol);
@@ -881,6 +880,7 @@ function loadFullTranslation(foo, translation, cb)
         patchCoreTranslation(translation, data.translations.current);
         translation._extra = data;
         translation._extra.otherTranslations = data.translations.others;
+        translation._extra.currentTranslationInfo = data.translations.current;
         delete translation._extra.translations;
     })
     .fail(function(xhr, textStatus, errorThrown) {
@@ -910,6 +910,15 @@ function showFullTranslation(foo)
     References.initialize(extra.references);
     Suggestions.initialize(extra.suggestions);
     Glossary.initialize(extra.glossary);
+    if (extra.currentTranslationInfo && extra.currentTranslationInfo.createdBy && extra.currentTranslationInfo.createdBy && extra.currentTranslationInfo.createdOn) {
+        translator.UI.$translation.find('.form-group').filter(':last').append(
+            $('<div class="text-muted small pull-right" />')
+                .html(i18n.TranslatedByOn.replace(/%1\$s/g, extra.currentTranslationInfo.createdBy).replace(/%2\$s/g, extra.currentTranslationInfo.createdOn))
+                .find('a.comtra-user')
+                    .attr('target', '_blank')
+                .end()
+        );
+    }
     $extra.css('visibility', 'visible');
 }
 function saveCurrentTranslation(translation, postData, cb)
