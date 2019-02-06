@@ -570,7 +570,6 @@ group by
                 $otherTranslators[] = (int) $uID;
             }
         }
-        $otherTranslators = $this->sortMembers($otherTranslators);
 
         return [$translationsCount, $otherTranslators];
     }
