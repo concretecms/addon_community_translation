@@ -121,15 +121,14 @@ class Importer
         $response = $this->httpClient->send($request);
         $this->httpClient->reset();
         $streamHandle = ($response instanceof \Zend\Http\Response\Stream) ? $response->getStream() : null;
+        if (is_resource($streamHandle)) {
+            fclose($streamHandle);
+        }
         if ($response->getStatusCode() > 200) {
             $error = t('Failed to download package archive %s v%s: %s (%d)', $remotePackage->getHandle(), $remotePackage->getVersion(), $response->getReasonPhrase(), $response->getStatusCode());
-            if (is_resource($streamHandle)) {
-                fclose($streamHandle);
-            }
             unset($temp);
             throw new DownloadException($error, $response->getStatusCode());
         }
-        fclose($streamHandle);
 
         $contentEncodingHeader = $response->getHeaders()->get('Content-Encoding');
         if (!empty($contentEncodingHeader)) {
