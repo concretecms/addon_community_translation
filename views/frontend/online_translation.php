@@ -1,6 +1,7 @@
 <?php
 use CommunityTranslation\Glossary\EntryType as GlossaryEntryType;
 
+/* @var Concrete\Core\View\View $this */
 /* @var Concrete\Core\View\View $view */
 /* @var Concrete\Package\CommunityTranslation\Controller\Frontend\OnlineTranslation $controllers */
 
@@ -20,6 +21,7 @@ use CommunityTranslation\Glossary\EntryType as GlossaryEntryType;
 /* @var CommunityTranslation\TranslationsConverter\ConverterInterface[] $translationFormats */
 /* @var string|null $showDialogAtStartup */
 /* @var Concrete\Core\Url\UrlImmutable $exitURL */
+/* @var bool|null $showUnreviewedIcon */
 $enableTranslationComments = is_object($packageVersion);
 
 ?><!DOCTYPE html>

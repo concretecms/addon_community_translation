@@ -33,7 +33,7 @@ class LocaleStats extends EntityRepository
                 $numTranslatable = 0;
             }
             if ($numTranslatable === 0) {
-                $numTranslations = 0;
+                $numApprovedTranslations = 0;
             } else {
                 try {
                     $numApprovedTranslations = (int) $app->make(TranslationRepository::class)

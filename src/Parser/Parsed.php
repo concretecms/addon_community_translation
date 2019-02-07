@@ -44,7 +44,6 @@ class Parsed
         if ($result === null && $buildIfNotSet) {
             $result = new Translations();
             $result->setLanguage($this->app->make('community_translation/sourceLocale'));
-            $mergeMethod = Translations::MERGE_ADD | Translations::MERGE_PLURAL;
             foreach ($this->translations as $translations) {
                 foreach ($translations[1] as $key => $translation) {
                     if (!$result->offsetExists($key)) {

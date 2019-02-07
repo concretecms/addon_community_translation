@@ -8,6 +8,9 @@ use CommunityTranslation\Service\Access;
 /* @var int $bID */
 
 /* @var string $step */
+/* @var string|null $showError */
+/* @var string|null $showSuccess */
+/* @var string|null $highlightLocale */
 
 $id = 'comtra-translation-teams-' . uniqid();
 

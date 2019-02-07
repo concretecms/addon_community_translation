@@ -2,6 +2,15 @@
 
 defined('C5_EXECUTE') or die('Access Denied.');
 
+/* @var string $siteName */
+/* @var string $siteUrl */
+/* @var string $recipientName */
+/* @var League\URL\URLInterface $recipientAccountUrl */
+/* @var CommunityTranslation\Service\User $usersHelper */
+
+/* @var string|null $specificForLocale */
+/* @var array $comments */
+
 $subject = "[$siteName] " . ($specificForLocale === null ? 'New comments about translatable strings' : "New comments about translations for $specificForLocale");
 
 $bodyHTML = <<<EOT

@@ -1,4 +1,9 @@
 <?php
+
+/* @var string $value */
+/* @var string $valueHash */
+/* @var Concrete\Core\Attribute\View $view */
+
 $id = preg_replace('/\W/', '_', $view->field('operation'));
 ?>
 <div class="checkbox">

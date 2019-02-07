@@ -10,6 +10,7 @@ defined('C5_EXECUTE') or die('Access Denied.');
 /* @var Concrete\Core\Form\Service\Form $form */
 
 /* @var string $step */
+/* @var string|null $showError */
 
 $id = 'comtra-translation-team-request-' . uniqid();
 

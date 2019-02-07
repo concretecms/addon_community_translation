@@ -2,6 +2,17 @@
 
 defined('C5_EXECUTE') or die('Access Denied.');
 
+/* @var string $siteName */
+/* @var string $siteUrl */
+/* @var string $recipientName */
+/* @var League\URL\URLInterface $recipientAccountUrl */
+/* @var CommunityTranslation\Service\User $usersHelper */
+
+/* @var string $localeName */
+/* @var Concrete\Core\Entity\User\User|null $approvedBy */
+/* @var Concrete\Core\Entity\User\User|null $requestedBy */
+/* @var string $teamsUrl */
+
 $subject = "[$siteName] New locale approved: $localeName";
 
 $approvedByHTML = $usersHelper->format($approvedBy);

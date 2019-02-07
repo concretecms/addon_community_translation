@@ -76,8 +76,6 @@ class Packages extends AbstractController
         }
         $req = $stickyRequest->getSearchRequest();
 
-        $valn = $this->app->make('helper/validation/numbers');
-        /* @var \Concrete\Core\Utility\Service\Validation\Numbers $valn */
         $req = $stickyRequest->getSearchRequest();
 
         if (isset($req['keywords']) && $req['keywords'] !== '') {

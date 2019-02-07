@@ -66,6 +66,7 @@ class Controller extends BlockController
     {
         $result = null;
         $size = (string) $size;
+        $matches = null;
         if (preg_match('/^\s*(\d+(?:\.\d*)?)\s*(?:([bkmgtpezy])b?)?\s*/i', $size, $matches)) {
             $value = (float) $matches[1];
             $unit = empty($matches[2]) ? 'b' : strtolower($matches[2]);
@@ -103,6 +104,7 @@ class Controller extends BlockController
 
     public function edit()
     {
+        $this->set('form', $this->app->make('helper/form'));
         $this->set('rateLimitHelper', $this->app->make(RateLimit::class));
         $this->set('rateLimit_maxRequests', $this->rateLimit_maxRequests);
         $this->set('rateLimit_timeWindow', $this->rateLimit_timeWindow);
@@ -383,7 +385,7 @@ class Controller extends BlockController
     public function action_fill_in()
     {
         $responseFactory = $this->app->make(ResponseFactoryInterface::class);
-        /* @var ResponseFactoryInterface $responseFactory */
+        $message = '';
         try {
             $valt = $this->app->make('helper/validation/token');
             if (!$valt->validate('comtra-fill-translations')) {

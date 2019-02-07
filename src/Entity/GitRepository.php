@@ -395,6 +395,7 @@ class GitRepository
             $result = null;
         } else {
             $result = [];
+            $m = null;
             foreach ($tagFilters as $tagFilter) {
                 if (preg_match('/^\s*([<>=]+)\s*(\d+(?:\.\d+)?)\s*$/', $tagFilter, $m)) {
                     switch ($m[1]) {

@@ -47,7 +47,7 @@ class Stats extends EntityRepository
                 if ($pv === null) {
                     throw new UserMessageException(t('Invalid translated package specified'));
                 }
-                $result[] = $p;
+                $result[] = $pv;
             } else {
                 foreach ($obj as $item) {
                     $result = array_merge($result, $this->getPackageVersions($item));

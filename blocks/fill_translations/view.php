@@ -8,6 +8,7 @@ defined('C5_EXECUTE') or die('Access Denied.');
 /* @var Concrete\Core\Validation\CSRF\Token $token */
 /* @var CommunityTranslation\Entity\Locale[] $translatedLocales */
 /* @var CommunityTranslation\Entity\Locale[] $untranslatedLocales */
+/* @var array $displayLimits */
 
 $id = 'comtra-fill-translations-' . uniqid();
 ?>

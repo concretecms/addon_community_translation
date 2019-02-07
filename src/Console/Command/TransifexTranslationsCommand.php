@@ -116,6 +116,7 @@ EOT
                 $output->writeln('<info>found</info>');
             }
 
+            $translationsPluralCount = null;
             foreach ($transifexResources as $transifexResource) {
                 $output->write('   > retrieving strings for resource ' . $transifexResource . '... ');
                 $translationsData = $this->fetchTransifexTranslations($input->getArgument('project'), $transifexResource, $transifexLocale);
@@ -223,6 +224,7 @@ EOT
         }
         $sourceLocale = $this->app->make('community_translation/sourceLocale');
         $sourceVariants = [strtolower($sourceLocale)];
+        $m = null;
         if (preg_match('/^(.+?)[\-_]/', $sourceLocale, $m)) {
             $sourceVariants[] = strtolower($m[1]);
         }

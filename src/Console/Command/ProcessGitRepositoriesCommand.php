@@ -5,7 +5,6 @@ namespace CommunityTranslation\Console\Command;
 use CommunityTranslation\Console\Command;
 use CommunityTranslation\Git\Importer;
 use CommunityTranslation\Repository\GitRepository as GitRepositoryRepository;
-use Doctrine\ORM\EntityManager;
 use Exception;
 use Symfony\Component\Console\Input\InputOption;
 use Throwable;
@@ -31,8 +30,6 @@ EOT
 
     protected function executeWithLogger()
     {
-        $em = $this->app->make(EntityManager::class);
-        /* @var EntityManager $em */
         $gitRepositories = $this->getGitRepositories($this->input->getOption('repository'));
         $importer = $this->app->make(Importer::class);
         /* @var Importer $importer */
@@ -68,7 +65,6 @@ EOT
     }
 
     /**
-     * @param EntityManager $em
      * @param string[] $filter
      *
      * @throws Exception

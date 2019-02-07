@@ -60,7 +60,6 @@ EOT
         $importer = $this->app->make(RemotePackageImporter::class);
         /* @var RemotePackageImporter $importer */
         $n = 0;
-        $expr = $em->getExpressionBuilder();
         $criteria = new Criteria();
         $criteria
             ->andWhere($criteria->expr()->eq('approved', true))
@@ -154,7 +153,7 @@ EOT
             }
             $em->persist($remotePackage);
             $em->flush($remotePackage);
-            if ($x instanceof DownloadException && $x->getHttpCode() === 404) {
+            if ($error instanceof DownloadException && $error->getHttpCode() === 404) {
                 $this->logger->debug(sprintf('  NOT FOUND!'));
             } else {
                 throw $error;

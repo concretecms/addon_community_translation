@@ -2,6 +2,16 @@
 
 defined('C5_EXECUTE') or die('Access Denied.');
 
+/* @var string $siteName */
+/* @var string $siteUrl */
+/* @var string $recipientName */
+/* @var League\URL\URLInterface $recipientAccountUrl */
+/* @var CommunityTranslation\Service\User $usersHelper */
+
+/* @var string $localeName */
+/* @var Concrete\Core\User\UserInfo|null $applicant */
+/* @var string $teamsUrl */
+
 $subject = "[$siteName] User requested to join the team for $localeName";
 
 $applicantHTML = $usersHelper->format($applicant);

@@ -9,7 +9,7 @@ $form = $app->make('helper/form');
 
 /* @var Concrete\Package\CommunityTranslation\Block\SearchPackages\Controller $controller */
 
-/* @var int resultsPerPage */
+/* @var int $resultsPerPage */
 /* @var string $allowedDownloadFor */
 /* @var array $allowedDownloadForList */
 /* @var string[] $allowedDownloadFormats */

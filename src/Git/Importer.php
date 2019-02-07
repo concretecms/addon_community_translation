@@ -77,7 +77,6 @@ class Importer
             $this->logger->debug(t('Listing tags'));
         }
         $taggedVersions = $fetcher->getTaggedVersions();
-        $skippedTags = [];
         foreach ($taggedVersions as $tag => $version) {
             if ($gitRepository->getDetectedVersion($version) === null) {
                 $gitRepository->addDetectedVersion($version, 'tag', $tag);

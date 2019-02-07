@@ -254,6 +254,7 @@ EOT
 
         $taggedVersions = [];
         if ($tagFilters !== null) {
+            $matches = null;
             foreach ($this->runGit('tag --list') as $tag) {
                 $matchResult = @preg_match($this->gitRepository->getTagToVersionRegexp(), $tag, $matches);
                 if ($matchResult === false) {

@@ -204,6 +204,7 @@ class Groups
     public function decodeAspiringTranslatorsGroup(Group $group)
     {
         $result = null;
+        $match = null;
         if (preg_match('/^\/' . preg_quote(self::GROUPNAME_ASPIRING_TRANSLATORS, '/') . '\/(.+)$/', $group->getGroupPath(), $match)) {
             $result = $this->app->make(LocaleRepository::class)->findApproved($match[1]);
         }

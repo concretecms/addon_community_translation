@@ -1,13 +1,7 @@
 <?php
 
-use Concrete\Core\Support\Facade\Application;
-
-$app = Application::getFacadeApplication();
-
-$form = $app->make('helper/form');
 /* @var Concrete\Core\Form\Service\Form $form */
 /* @var CommunityTranslation\Service\RateLimit $rateLimitHelper */
-
 /* @var int|null $rateLimit_maxRequests */
 /* @var int $rateLimit_timeWindow */
 /* @var int|null $maxFileSizeValue */
@@ -15,11 +9,10 @@ $form = $app->make('helper/form');
 /* @var int|null $maxLocalesCount */
 /* @var int|null $maxStringsCount */
 /* @var string $statsFromPackage */
+/* @var string $postLimit */
 ?>
 
 <fieldset>
-
-    <legend><?= t('Options') ?></legend>
 
     <div class="form-group">
         <?= $form->label('', t('Rate limit')) ?>

@@ -171,7 +171,7 @@ abstract class Command extends ConcreteCommand
         if ($lockHandle === '') {
             $myClass = new ReflectionClass($this);
             $myFilename = $myClass->getFileName();
-            $lockHandle = $myClass->getShortName() . '-' . sha1($myClass->getFileName() . DIR_APPLICATION);
+            $lockHandle = $myClass->getShortName() . '-' . sha1($myFilename . DIR_APPLICATION);
         }
         $config = $this->app->make('community_translation/config');
         $tempDir = $config->get('options.tempDir');

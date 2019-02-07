@@ -49,8 +49,6 @@ EOT
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $em = $this->app->make(EntityManager::class);
-        /* @var EntityManager $em */
         $fs = $this->app->make(Filesystem::class);
         /* @var Filesystem $fs */
         $glossaryFile = $input->getArgument('file');
@@ -157,6 +155,7 @@ EOT
         $testLocales = [];
         $numFields = 0;
         $sourceFieldsFound = 0;
+        $m = null;
         foreach ($line as $index => $field) {
             if ($index !== $numFields) {
                 throw new Exception('Invalid field index: ' . $index);

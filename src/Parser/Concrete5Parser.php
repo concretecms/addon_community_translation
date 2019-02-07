@@ -46,6 +46,7 @@ class Concrete5Parser extends Parser
         $pot = new Translations();
         $pot->setLanguage($this->app->make('community_translation/sourceLocale'));
         C5TLParser::clearCache();
+        $m = null;
         if (preg_match('/^' . preg_quote(Version::DEV_PREFIX, '/') . '(\d+(?:\.\d+)*)/', $packageVersion, $m)) {
             $checkVersion = $m[1] . '.99.99';
         } else {

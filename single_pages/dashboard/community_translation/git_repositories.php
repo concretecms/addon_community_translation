@@ -1,7 +1,7 @@
 <?php
 defined('C5_EXECUTE') or die('Access Denied.');
 
-/* @var CommunityTranslation\Git\Repository[] $repositories */
+/* @var CommunityTranslation\Entity\GitRepository[] $repositories */
 
 ?>
 <div class="ccm-dashboard-header-buttons">

@@ -42,6 +42,7 @@ class VersionComparer
         usort($packageVersions, function ($a, $b) use ($descending) {
             $aIsDev = (strpos($a, PackageVersionEntity::DEV_PREFIX) === 0);
             $aVer = $aIsDev ? substr($a, strlen(PackageVersionEntity::DEV_PREFIX)) : $a;
+            $m = null;
             while (preg_match('/^(\.)\.0+$/', $aVer, $m)) {
                 $aVer = $m[1];
             }
@@ -97,6 +98,7 @@ class VersionComparer
      */
     public function matchPackageVersions($availableVersions, $wantedVersion)
     {
+        $m = null;
         if (preg_match('/^(\d+(?:\.\d+)*)(?:dev|alpha|a|beta|b|rc)/i', $wantedVersion, $m)) {
             $wantedVersionBase = $m[1];
         } else {

@@ -64,8 +64,8 @@ class EventSubscriber implements EventSubscriberInterface
     {
         $packageVersion = $evt->getSubject();
         /* @var \CommunityTranslation\Entity\Package\Version $packageVersion */
-        $packageIsNew = (bool) $evt->getArgument('packageIsNew');
-        $numStringsAdded = (int) $evt->getArgument('numStringsAdded');
+        //$packageIsNew = (bool) $evt->getArgument('packageIsNew');
+        //$numStringsAdded = (int) $evt->getArgument('numStringsAdded');
         $this->app->make(StatsRepository::class)->resetForPackageVersion($packageVersion);
         $this->app->make(LocaleStatsRepository::class)->resetAll();
     }
@@ -87,8 +87,8 @@ class EventSubscriber implements EventSubscriberInterface
      */
     public function newApprovalNeeded(GenericEvent $evt)
     {
-        $locale = $evt->getSubject();
+        //$locale = $evt->getSubject();
         /* @var \CommunityTranslation\Entity\Locale $locale */
-        $number = $evt->getArgument('number');
+        //$number = $evt->getArgument('number');
     }
 }

@@ -2,6 +2,14 @@
 
 defined('C5_EXECUTE') or die('Access Denied.');
 
+/* @var string $siteName */
+/* @var string $siteUrl */
+/* @var string $recipientName */
+/* @var League\URL\URLInterface $recipientAccountUrl */
+/* @var CommunityTranslation\Service\User $usersHelper */
+
+/* @var array $packageVersions */
+
 $subject = "[$siteName] Updated translatable packages";
 
 $bodyHTML = '<p>Hi ' . $recipientName . ',</p>';
@@ -16,4 +24,4 @@ if (count($packageVersions) === 1) {
     $bodyHTML .= '</ul>';
 }
 
-$bodyHTML .= '<p>You can disable notifications about new translatable package versions in the online editor.</p>';
+$bodyHTML .= '<p>You can disable notifications about new translatable package versions in the online editor.</p';

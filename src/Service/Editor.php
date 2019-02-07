@@ -411,6 +411,7 @@ class Editor
         $pattern = null;
         $lineFormat = null;
         if ($applicableRepository !== null) {
+            $matches = null;
             switch (true) {
                 case 1 == preg_match('/^(?:\w+:\/\/|\w+@)github.com[:\/]([a-z0-9_.\-]+\/[a-z0-9_.\-]+)\.git$/i', $applicableRepository->getURL(), $matches):
                     switch ($foundVersionData['kind']) {
@@ -436,6 +437,7 @@ class Editor
             if ($stripSuffix !== '') {
                 $stripSuffix .= '/';
             }
+            $m = null;
             foreach ($result as $index => $reference) {
                 if (!preg_match('/^\w*:\/\//', $reference)) {
                     if (preg_match('/^(.+):(\d+)$/', $reference, $m)) {

@@ -404,6 +404,7 @@ class EntryPoint extends AbstractController
             if ($package === null) {
                 throw new UserMessageException(t('Unable to find the specified package'), Response::HTTP_NOT_FOUND);
             }
+            $isBestMatch = null;
             $version = $this->getPackageVersion($package, $packageVersion, $isBestMatch);
             if ($version === null) {
                 throw new UserMessageException(t('Unable to find the specified package version'), Response::HTTP_NOT_FOUND);
@@ -770,7 +771,7 @@ class EntryPoint extends AbstractController
                 throw new UserMessageException(t('The file with translatable strings has not been received correctly: %s', $file->getErrorMessage()), Response::HTTP_NOT_ACCEPTABLE);
             }
             $translations = $format->loadTranslationsFromFile($file->getPathname());
-            if (count($t) < 1) {
+            if (count($translations) < 1) {
                 throw new UserMessageException(t('No translatable strings found in uploaded file'));
             }
             $importer = $this->app->make(TranslatableImporter::class);
@@ -831,7 +832,7 @@ class EntryPoint extends AbstractController
             if (strcasecmp($translations->getLanguage(), $locale->getID()) !== 0) {
                 throw new UserMessageException(t("The translation file is for the '%1\$s' language, not for '%2\$s'", $translations->getLanguage(), $locale->getID()));
             }
-            $pf = $t->getPluralForms();
+            $pf = $translations->getPluralForms();
             if ($pf === null) {
                 throw new UserMessageException(t('The translation file does not define the plural rules'));
             }

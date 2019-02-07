@@ -88,7 +88,7 @@ class Controller extends Package
      */
     public function install()
     {
-        $pkg = parent::install();
+        parent::install();
         $this->installXml();
         $this->registerServiceProvider();
         $this->configureSourceLocale();

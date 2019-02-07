@@ -17,16 +17,8 @@ $pageSelector = $app->make('helper/form/page_selector');
 
 <fieldset>
 
-    <legend><?= t('Options') ?></legend>
-
     <div class="form-group">
         <?php
-        $options = [
-            0 => t('No link'),
-            1 => t('Another Page'),
-            2 => t('External URL'),
-        ];
-
         echo $form->label('askNewTeamLinkType', t('Show link to ask creation of a new translation team'));
         echo $form->select('askNewTeamLinkType', [
             'none' => t('No'),

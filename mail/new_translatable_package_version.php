@@ -2,6 +2,14 @@
 
 defined('C5_EXECUTE') or die('Access Denied.');
 
+/* @var string $siteName */
+/* @var string $siteUrl */
+/* @var string $recipientName */
+/* @var League\URL\URLInterface $recipientAccountUrl */
+/* @var CommunityTranslation\Service\User $usersHelper */
+
+/* @var array $packageVersions */
+
 $subject = "[$siteName] New versions of translatable packages";
 
 $bodyHTML = '<p>Hi ' . $recipientName . ',</p>';

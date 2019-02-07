@@ -4,6 +4,7 @@ use CommunityTranslation\Entity\Package\Version;
 defined('C5_EXECUTE') or die('Access Denied.');
 
 /* @var Concrete\Core\Page\View\PageView $this */
+/* @var Concrete\Core\Page\View\PageView $view */
 /* @var Concrete\Core\Validation\CSRF\Token $token */
 /* @var Concrete\Core\Form\Service\Form $form */
 

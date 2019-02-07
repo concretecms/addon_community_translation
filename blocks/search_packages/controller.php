@@ -390,7 +390,6 @@ class Controller extends BlockController
                 $resetSearch = true;
             }
         }
-        $post = $this->request->request;
         $searchController = $this->app->make(SearchController::class);
         /* @var SearchController $searchController */
         $searchController->getSearchList()->setItemsPerPage((int) $this->resultsPerPage ?: 10);
@@ -568,8 +567,7 @@ EOT
         $qb = $this->app->make(PackageRepository::class)->createQueryBuilder('p');
         $expr = $qb->expr();
         $orFields = $expr->orX();
-        $counter = 0;
-        foreach (['p.handle', 'p.name'] as $fieldIndex => $fieldName) {
+        foreach (['p.handle', 'p.name'] as $fieldName) {
             $and = $expr->andX();
             foreach ($words as $word) {
                 $and->add($expr->like($fieldName, $expr->literal('%' . $word . '%')));

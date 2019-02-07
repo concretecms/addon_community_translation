@@ -2,7 +2,7 @@
 defined('C5_EXECUTE') or die('Access Denied.');
 
 // Arguments
-/* @var Pages[] $pages */
+/* @var array[] $pages */
 
 ?>
 <div class="col-md-4 ccm-dashboard-section-menu">

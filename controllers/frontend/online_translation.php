@@ -782,7 +782,6 @@ class OnlineTranslation extends Controller
 
     public function upload($localeID)
     {
-        $rf = $this->app->make(ResponseFactoryInterface::class);
         try {
             $valt = $this->app->make('token');
             if (!$valt->validate('comtra-upload-translations' . $localeID)) {
@@ -996,7 +995,7 @@ class OnlineTranslation extends Controller
         $translationID = $translation->getID();
         $translations = $this->convertTranslationToGettext($translation, false);
         $importer = $this->app->make(Importer::class);
-        $imported = $importer->import($translations, $translation->getLocale(), $user, ImportOptions::forAdministrators());
+        $importer->import($translations, $translation->getLocale(), $user, ImportOptions::forAdministrators());
         $this->getEntityManager()->clear();
         $translation = $this->app->make(TranslationRepository::class)->find($translationID);
         $result = $this->app->make(Editor::class)->getTranslations($translation->getLocale(), $translation->getTranslatable());
@@ -1294,7 +1293,6 @@ class OnlineTranslation extends Controller
     private function getPackageVersionSubscriptions(PackageEntity $package)
     {
         $result = [];
-        $em = $this->getEntityManager();
         $me = $this->getAccessHelper()->getUserEntity('current');
         $repo = $this->app->make(PackageVersionSubscriptionRepository::class);
         /* @var PackageVersionSubscriptionRepository $repo */

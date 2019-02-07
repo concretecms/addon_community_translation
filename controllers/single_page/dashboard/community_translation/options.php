@@ -143,15 +143,18 @@ class Options extends DashboardPageController
         }
         if ($newSourceLocale === null) {
             $this->error->add(t('Please specify a valid source locale'));
-        } elseif ($this->app->make('community_translation/sourceLocale') === $newSourceLocale->getID()) {
-            $newSourceLocale = null;
-        } elseif ($newSourceLocale->getPluralCount() !== 2) {
-            $this->error->add(t('Because of the gettext specifications, the source locale must have exactly 2 plural forms'));
         } else {
-            $repo = $this->app->make(LocaleRepository::class);
-            $existingLocale = $repo->find($newSourceLocale->getID());
-            if ($existingLocale !== null) {
-                $this->error->add(t("There's already an existing locale with code %s that's not the current source locale", $newSourceLocale->getID()));
+            $oldSourceLocaleID = $this->app->make('community_translation/sourceLocale');
+            if ($oldSourceLocaleID === $newSourceLocale->getID()) {
+                $newSourceLocale = null;
+            } elseif ($newSourceLocale->getPluralCount() !== 2) {
+                $this->error->add(t('Because of the gettext specifications, the source locale must have exactly 2 plural forms'));
+            } else {
+                $repo = $this->app->make(LocaleRepository::class);
+                $existingLocale = $repo->find($newSourceLocale->getID());
+                if ($existingLocale !== null) {
+                    $this->error->add(t("There's already an existing locale with code %s that's not the current source locale", $newSourceLocale->getID()));
+                }
             }
         }
 
@@ -222,9 +225,12 @@ class Options extends DashboardPageController
         if (!$this->error->has()) {
             if ($newSourceLocale !== null) {
                 $this->entityManager->beginTransaction();
-                if ($oldSourceLocale !== null) {
-                    $this->entityManager->remove($oldSourceLocale);
-                    $this->entityManager->flush($oldSourceLocale);
+                if ($oldSourceLocaleID) {
+                    $oldSourceLocale = $this->entityManager->find(LocaleEntity::class, $oldSourceLocaleID);
+                    if ($oldSourceLocale !== null) {
+                        $this->entityManager->remove($oldSourceLocale);
+                        $this->entityManager->flush($oldSourceLocale);
+                    }
                 }
                 $newSourceLocale->setIsSource(true)->setIsApproved(true);
                 $this->entityManager->persist($newSourceLocale);
