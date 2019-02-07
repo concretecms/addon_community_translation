@@ -124,7 +124,7 @@ class Importer
         if (is_resource($streamHandle)) {
             fclose($streamHandle);
         }
-        if ($response->getStatusCode() > 200) {
+        if ($response->getStatusCode() != 200) {
             $error = t('Failed to download package archive %s v%s: %s (%d)', $remotePackage->getHandle(), $remotePackage->getVersion(), $response->getReasonPhrase(), $response->getStatusCode());
             unset($temp);
             throw new DownloadException($error, $response->getStatusCode());
