@@ -7,6 +7,7 @@ use Concrete\Core\Entity\User\User as ConcreteUserEntity;
 use Concrete\Core\User\User as ConcreteUser;
 use Concrete\Core\User\UserInfo;
 use Concrete\Core\User\UserInfoRepository;
+use Doctrine\ORM\EntityNotFoundException;
 
 class User
 {
@@ -39,16 +40,20 @@ class User
             if (is_int($user) || (is_string($user) && is_numeric($user))) {
                 $user = \User::getByUserID($user);
             }
-            if ($user instanceof ConcreteUser && $user->getUserID() && $user->isRegistered()) {
-                $id = (int) $user->getUserID();
-                $name = $user->getUserName();
-            } elseif ($user instanceof UserInfo && $user->getUserID()) {
-                $id = (int) $user->getUserID();
-                $name = $user->getUserName();
-                $userInfo = $user;
-            } elseif ($user instanceof ConcreteUserEntity && $user->getUserID()) {
-                $id = (int) $user->getUserID();
-                $name = $user->getUserName();
+            try {
+                if ($user instanceof ConcreteUser && $user->getUserID() && $user->isRegistered()) {
+                    $id = (int) $user->getUserID();
+                    $name = $user->getUserName();
+                } elseif ($user instanceof UserInfo && $user->getUserID()) {
+                    $id = (int) $user->getUserID();
+                    $name = $user->getUserName();
+                    $userInfo = $user;
+                } elseif ($user instanceof ConcreteUserEntity && $user->getUserID()) {
+                    $id = (int) $user->getUserID();
+                    $name = $user->getUserName();
+                }
+            } catch (EntityNotFoundException $x) {
+                $id = null;
             }
         }
         if ($id === null) {
