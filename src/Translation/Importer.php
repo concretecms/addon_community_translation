@@ -454,9 +454,11 @@ where
             $sourceText .= "\n" . $translation->getPlural();
             $translatedText .= "\n" . implode("\n", $translation->getPluralTranslation());
         }
-        if (strpos($sourceText, '<') === false) {
-            if (strpos($translatedText, '<') !== false) {
-                throw new UserMessageException(t('The translation for the string \'%1$s\' can\'t contain the character \'%2$s\'.', $translation->getOriginal(), '<'));
+        foreach (['<', '=', '"'] as $char) {
+            if (strpos($sourceText, $char) === false) {
+                if (strpos($translatedText, $char) !== false) {
+                    throw new UserMessageException(t('The translation for the string \'%1$s\' can\'t contain the character \'%2$s\'.', $translation->getOriginal(), $char));
+                }
             }
         }
         $m = null;
@@ -469,10 +471,9 @@ where
             case 1:
                 throw new UserMessageException(t('The translation for the string \'%1$s\' can\'t contain the string \'%2$s\'.', $translation->getOriginal(), current($extraTags)));
             default:
-                $error = t('The translation for the string \'%1$s\' can\'t contain these strings:', $translation->getOriginal()) . "\n";
-                $error .= '- ' . implode("\n- ", $extraTags);
+                $error = t('The translation for the string \'%1$s\' can\'t contain these strings:', $translation->getOriginal());
+                $error .= "\n- " . implode("\n- ", $extraTags);
                 throw new UserMessageException($error);
-                break;
         }
     }
 }
