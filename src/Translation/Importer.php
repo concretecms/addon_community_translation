@@ -154,6 +154,9 @@ where
                         t('Translations can not contain these characters: %s', "'" . implode("', '", array_values($invalidCharsMap)) . "'")
                     );
                 }
+
+                $this->checkXSS($translation);
+
                 // Let's look for the current translation and for an existing translation exactly the same as the one we're importing
                 $translatableID = null;
                 $currentTranslation = null;
@@ -434,5 +437,42 @@ where
         }
 
         return $same;
+    }
+
+    /**
+     * Check that translated text doesn't contain potentially harmful code.
+     *
+     * @param \Gettext\Translation $translation
+     *
+     * @throws \Concrete\Core\Error\UserMessageException
+     */
+    private function checkXSS(GettextTranslation $translation)
+    {
+        $sourceText = $translation->getOriginal();
+        $translatedText = $translation->getTranslation();
+        if ($translation->hasPlural()) {
+            $sourceText .= "\n" . $translation->getPlural();
+            $translatedText .= "\n" . implode("\n", $translation->getPluralTranslation());
+        }
+        if (strpos($sourceText, '<') === false) {
+            if (strpos($translatedText, '<') !== false) {
+                throw new UserMessageException(t('The translation for the string \'%1$s\' can\'t contain the character \'%2$s\'.', $translation->getOriginal(), '<'));
+            }
+        }
+        $m = null;
+        $sourceTags = preg_match_all('/<\\w+/', $sourceText, $m) ? array_unique($m[0]) : [];
+        $translatedTags = preg_match_all('/<\\w+/', $translatedText, $m) ? array_unique($m[0]) : [];
+        $extraTags = array_diff($translatedTags, $sourceTags);
+        switch (count($extraTags)) {
+            case 0:
+                break;
+            case 1:
+                throw new UserMessageException(t('The translation for the string \'%1$s\' can\'t contain the string \'%2$s\'.', $translation->getOriginal(), current($extraTags)));
+            default:
+                $error = t('The translation for the string \'%1$s\' can\'t contain these strings:', $translation->getOriginal()) . "\n";
+                $error .= '- ' . implode("\n- ", $extraTags);
+                throw new UserMessageException($error);
+                break;
+        }
     }
 }
