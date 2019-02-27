@@ -454,26 +454,33 @@ where
             $sourceText .= "\n" . $translation->getPlural();
             $translatedText .= "\n" . implode("\n", $translation->getPluralTranslation());
         }
+        $checkTags = false;
         foreach (['<', '=', '"'] as $char) {
             if (strpos($sourceText, $char) === false) {
                 if (strpos($translatedText, $char) !== false) {
                     throw new UserMessageException(t('The translation for the string \'%1$s\' can\'t contain the character \'%2$s\'.', $translation->getOriginal(), $char));
                 }
+            } else {
+                if ($char === '<') {
+                    $checkTags = true;
+                }
             }
         }
-        $m = null;
-        $sourceTags = preg_match_all('/<\\w+/', $sourceText, $m) ? array_unique($m[0]) : [];
-        $translatedTags = preg_match_all('/<\\w+/', $translatedText, $m) ? array_unique($m[0]) : [];
-        $extraTags = array_diff($translatedTags, $sourceTags);
-        switch (count($extraTags)) {
-            case 0:
-                break;
-            case 1:
-                throw new UserMessageException(t('The translation for the string \'%1$s\' can\'t contain the string \'%2$s\'.', $translation->getOriginal(), current($extraTags)));
-            default:
-                $error = t('The translation for the string \'%1$s\' can\'t contain these strings:', $translation->getOriginal());
-                $error .= "\n- " . implode("\n- ", $extraTags);
-                throw new UserMessageException($error);
+        if ($checkTags) {
+            $m = null;
+            $sourceTags = preg_match_all('/<\\w+/', $sourceText, $m) ? array_unique($m[0]) : [];
+            $translatedTags = preg_match_all('/<\\w+/', $translatedText, $m) ? array_unique($m[0]) : [];
+            $extraTags = array_diff($translatedTags, $sourceTags);
+            switch (count($extraTags)) {
+                case 0:
+                    break;
+                case 1:
+                    throw new UserMessageException(t('The translation for the string \'%1$s\' can\'t contain the string \'%2$s\'.', $translation->getOriginal(), current($extraTags)));
+                default:
+                    $error = t('The translation for the string \'%1$s\' can\'t contain these strings:', $translation->getOriginal());
+                    $error .= "\n- " . implode("\n- ", $extraTags);
+                    throw new UserMessageException($error);
+            }
         }
     }
 }
