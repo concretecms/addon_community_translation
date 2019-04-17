@@ -156,6 +156,7 @@ where
                 }
 
                 $this->checkXSS($translation);
+                $this->checkFormat($translation);
 
                 // Let's look for the current translation and for an existing translation exactly the same as the one we're importing
                 $translatableID = null;
@@ -480,6 +481,64 @@ where
                     $error = t('The translation for the string \'%1$s\' can\'t contain these strings:', $translation->getOriginal());
                     $error .= "\n- " . implode("\n- ", $extraTags);
                     throw new UserMessageException($error);
+            }
+        }
+    }
+
+    /**
+     * Check that translated text doesn't contain potentially harmful code.
+     *
+     * @param \Gettext\Translation $translation
+     *
+     * @throws \Concrete\Core\Error\UserMessageException
+     */
+    private function checkFormat(GettextTranslation $translation)
+    {
+        // placeholder := %[position][flags][width][.precision]specifier
+        // position := \d+$
+        // flags := ([\-+ 0]|('.))*
+        // width := \d*
+        // precision := (\.\d*)?
+        // specifier := [bcdeEfFgGosuxX]
+        // $placeholdersRX = %(?:\d+\$)?(?:[\-+ 0]|('.))*\d*(?:\.\d*)?[bcdeEfFgGosuxX]
+        $placeholdersRX = "/%(?:\\d+\\$)?(?:[\\-+ 0]|(?:'.))*\\d*(?:\\.\\d*)?[bcdeEfFgGosuxX]/";
+        $matches = null;
+        preg_match_all($placeholdersRX, $translation->getOriginal(), $matches);
+        sort($matches[0]);
+        $sourcePlaceholdersList = ['singular' => $matches[0]];
+        if ($translation->hasPlural()) {
+            preg_match_all($placeholdersRX, $translation->getPlural(), $matches);
+            sort($matches[0]);
+            $sourcePlaceholdersList['plural'] = $matches[0];
+        }
+        $translatedTexts = [$translation->getTranslation()];
+        if ($translation->hasPlural()) {
+            $translatedTexts = array_merge($translatedTexts, $translation->getPluralTranslation());
+        }
+        foreach ($translatedTexts as $translatedText) {
+            preg_match_all($placeholdersRX, $translatedText, $matches);
+            sort($matches[0]);
+            $translatedPlaceholders = $matches[0];
+            foreach ($sourcePlaceholdersList as $sourcePlaceholders) {
+                if ($translatedPlaceholders !== $sourcePlaceholders) {
+                    if (count($sourcePlaceholders) === 0) {
+                        throw new UserMessageException(t(
+                            'The translation should not contain any placeholder, but it contains %s',
+                            '"' . implode('", "', $translatedPlaceholders) . '"'
+                        ));
+                    }
+                    if (count($translatedPlaceholders) === 0) {
+                        throw new UserMessageException(t(
+                            'The translation does not contain any placeholder, but it should contain %s',
+                            '"' . implode('", "', $sourcePlaceholders) . '"'
+                        ));
+                    }
+                    throw new UserMessageException(t(
+                        'The translation should contain %1$s, but it contains %2$s',
+                        '"' . implode('", "', $sourcePlaceholders) . '"',
+                        '"' . implode('", "', $translatedPlaceholders) . '"'
+                    ));
+                }
             }
         }
     }
