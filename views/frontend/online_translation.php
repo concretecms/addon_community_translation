@@ -22,6 +22,8 @@ use CommunityTranslation\Glossary\EntryType as GlossaryEntryType;
 /* @var string|null $showDialogAtStartup */
 /* @var Concrete\Core\Url\UrlImmutable $exitURL */
 /* @var bool|null $showUnreviewedIcon */
+/* @var string $textDirection */
+
 $enableTranslationComments = is_object($packageVersion);
 
 ?><!DOCTYPE html>
@@ -542,6 +544,7 @@ $params = [
     'plurals' => $pluralCases,
     'translations' => $translations,
     'canEditGlossary' => $canEditGlossary,
+    'textDirection' => $textDirection,
     'actions' => [
         'saveComment' => (string) $this->action('save_comment', $locale->getID()),
         'deleteComment' => (string) $this->action('delete_comment', $locale->getID()),

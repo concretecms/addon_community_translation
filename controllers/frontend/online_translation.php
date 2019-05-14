@@ -41,6 +41,7 @@ use Controller;
 use Doctrine\ORM\EntityManager;
 use Exception;
 use Gettext\Translations as GettextTranslations;
+use Punic\Misc;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Response;
 use View;
@@ -215,6 +216,7 @@ class OnlineTranslation extends Controller
         }
         $urlManager = $this->app->make('url/manager');
         $this->set('exitURL', $urlManager->resolve($url));
+        $this->set('textDirection', Misc::getCharacterOrder($locale->getID()) === 'right-to-left' ? 'rtl' : 'ltr');
     }
 
     public function load_translation($localeID)

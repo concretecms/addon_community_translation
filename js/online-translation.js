@@ -998,6 +998,7 @@ window.comtraOnlineEditorInitialize = function(options) {
         plurals: options.plurals,
         translations: options.translations,
         approvalSupport: true,
+        textDirection: options.textDirection,
         canModifyApproved: canApprove,
         saveAction: saveCurrentTranslation,
         onUILaunched: initializeUI,
