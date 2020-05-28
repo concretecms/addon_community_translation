@@ -12,6 +12,7 @@ use Doctrine\ORM\EntityManager;
 use Exception;
 use Gettext\Translation as GettextTranslation;
 use Gettext\Translations;
+use Punic\Misc;
 use Symfony\Component\EventDispatcher\GenericEvent;
 use Throwable;
 
@@ -494,6 +495,100 @@ where
      */
     private function checkFormat(GettextTranslation $translation)
     {
+        $sourcePlaceholdersList = $this->extractSourcePlaceholders($translation);
+        $translatedTexts = [$translation->getTranslation()];
+        if ($translation->hasPlural()) {
+            $translatedTexts = array_merge($translatedTexts, $translation->getPluralTranslation());
+        }
+        foreach ($translatedTexts as $translatedText) {
+            $translatedPlaceholders = $this->extractPlaceholders($translatedText);
+            $someMatch = false;
+            foreach ($sourcePlaceholdersList as $sourcePlaceholders) {
+                if ($translatedPlaceholders === $sourcePlaceholders) {
+                    $someMatch = true;
+                    break;
+                }
+            }
+            if ($someMatch) {
+                continue;
+            }
+            $sourcePlaceholderDescriptions = [];
+            foreach ($sourcePlaceholdersList as $sourcePlaceholders) {
+                $sourcePlaceholders = array_map(function($placeholder) { return '"' . $placeholder . '"'; }, $sourcePlaceholders);                
+                switch (count($sourcePlaceholders)) {
+                    case 0:
+                        $sourcePlaceholderDescriptions[] = t('no placeholders');
+                        break;
+                    case 1:
+                        $sourcePlaceholderDescriptions[] = t('the placeholder %s', $sourcePlaceholders[0]);
+                        break;
+                    default:
+                        $sourcePlaceholderDescriptions[] = t('all these placeholders: %s', Misc::joinAnd($sourcePlaceholders));
+                        break;
+                }
+            }
+            if (isset($sourcePlaceholderDescriptions[1])) {
+                $sourcePlaceholderDescription = "\n- " . implode("\n- ", $sourcePlaceholderDescriptions);
+            } else {
+                $sourcePlaceholderDescription = (string) array_pop($sourcePlaceholderDescriptions);
+            }
+            if ($translatedPlaceholders === []) {
+                throw new UserMessageException(t(
+                    'The translation does not contain any placeholder, but it should contain %s',
+                    $sourcePlaceholderDescription
+                ));
+            }
+            $translatedPlaceholderDescription = Misc::joinAnd(array_map(function($placeholder) { return '"' . $placeholder . '"'; }, $translatedPlaceholders));
+            if ($sourcePlaceholderDescription === t('no placeholders')) {
+                throw new UserMessageException(t(
+                    'The translation should not contain any placeholder, but it contains %s',
+                    $translatedPlaceholderDescription
+                ));
+            }
+            throw new UserMessageException(t(
+                'The translation contains %1$s, but it should contain %2$s',
+                $translatedPlaceholderDescription,
+                $sourcePlaceholderDescription
+            ));
+        }
+    }
+
+    private function extractSourcePlaceholders(GettextTranslation $translation)
+    {
+        $placeholdersList = [$this->extractPlaceholders($translation->getOriginal())];
+        if (!$translation->hasPlural()) {
+            return $placeholdersList;
+        }
+        $pluralPlaceholders = $this->extractPlaceholders($translation->getPlural());
+        if ($placeholdersList[0] !== $pluralPlaceholders) {
+            $placeholdersList[] = $pluralPlaceholders;
+        }
+        foreach ($placeholdersList as $placeholders) {
+            $index = array_search('%s', $placeholders, true);
+            if ($index === false) {
+                $index = array_search('%1$s', $placeholders, true);
+                if ($index === false) {
+                    continue;
+                }
+            }
+            array_splice($placeholders, $index, 1);
+            if (!in_array($placeholders, $placeholdersList, true)) {
+                $placeholdersList[] = $placeholders;
+            }
+        }
+
+        return $placeholdersList;
+    }
+
+    /**
+     * Extract the placeholders from a string.
+     *
+     * @param string $text
+     *
+     * @return string[] sorted list of placeholders found
+     */
+    private function extractPlaceholders($text)
+    {
         // placeholder := %[position][flags][width][.precision]specifier
         // position := \d+$
         // flags := ([\-+ 0]|('.))*
@@ -503,43 +598,9 @@ where
         // $placeholdersRX = %(?:\d+\$)?(?:[\-+ 0]|('.))*\d*(?:\.\d*)?[bcdeEfFgGosuxX]
         $placeholdersRX = "/%(?:\\d+\\$)?(?:[\\-+ 0]|(?:'.))*\\d*(?:\\.\\d*)?[bcdeEfFgGosuxX]/";
         $matches = null;
-        preg_match_all($placeholdersRX, $translation->getOriginal(), $matches);
+        preg_match_all($placeholdersRX, $text, $matches);
         sort($matches[0]);
-        $sourcePlaceholdersList = ['singular' => $matches[0]];
-        if ($translation->hasPlural()) {
-            preg_match_all($placeholdersRX, $translation->getPlural(), $matches);
-            sort($matches[0]);
-            $sourcePlaceholdersList['plural'] = $matches[0];
-        }
-        $translatedTexts = [$translation->getTranslation()];
-        if ($translation->hasPlural()) {
-            $translatedTexts = array_merge($translatedTexts, $translation->getPluralTranslation());
-        }
-        foreach ($translatedTexts as $translatedText) {
-            preg_match_all($placeholdersRX, $translatedText, $matches);
-            sort($matches[0]);
-            $translatedPlaceholders = $matches[0];
-            foreach ($sourcePlaceholdersList as $sourcePlaceholders) {
-                if ($translatedPlaceholders !== $sourcePlaceholders) {
-                    if (count($sourcePlaceholders) === 0) {
-                        throw new UserMessageException(t(
-                            'The translation should not contain any placeholder, but it contains %s',
-                            '"' . implode('", "', $translatedPlaceholders) . '"'
-                        ));
-                    }
-                    if (count($translatedPlaceholders) === 0) {
-                        throw new UserMessageException(t(
-                            'The translation does not contain any placeholder, but it should contain %s',
-                            '"' . implode('", "', $sourcePlaceholders) . '"'
-                        ));
-                    }
-                    throw new UserMessageException(t(
-                        'The translation should contain %1$s, but it contains %2$s',
-                        '"' . implode('", "', $sourcePlaceholders) . '"',
-                        '"' . implode('", "', $translatedPlaceholders) . '"'
-                    ));
-                }
-            }
-        }
+
+        return $matches[0];
     }
 }
