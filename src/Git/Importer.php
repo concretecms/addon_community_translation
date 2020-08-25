@@ -77,12 +77,15 @@ class Importer
             $this->logger->debug(t('Listing tags'));
         }
         $taggedVersions = $fetcher->getTaggedVersions();
+        $gitRepository->resetDetectedVersions();
         foreach ($taggedVersions as $tag => $version) {
             if ($gitRepository->getDetectedVersion($version) === null) {
                 $gitRepository->addDetectedVersion($version, 'tag', $tag);
-                $this->em->persist($gitRepository);
-                $this->em->flush($gitRepository);
             }
+        }
+        $this->em->persist($gitRepository);
+        $this->em->flush($gitRepository);
+        foreach ($taggedVersions as $tag => $version) {
             $packageVersion = null;
             foreach ($package->getVersions() as $pv) {
                 if ($pv->getVersion() === $version) {

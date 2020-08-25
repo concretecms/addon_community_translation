@@ -273,6 +273,18 @@ class GitRepository
     protected $detectedVersions;
 
     /**
+     * Reset the detected versions
+     *
+     * @return $this
+     */
+    public function resetDetectedVersions()
+    {
+        $this->detectedVersions = [];
+
+        return $this;
+    }
+
+    /**
      * Add a repository detected version.
      *
      * @param string $version
