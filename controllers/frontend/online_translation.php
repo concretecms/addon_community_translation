@@ -151,7 +151,7 @@ class OnlineTranslation extends Controller
         $this->requireAsset('javascript', 'picturefill');
         $this->requireAsset('javascript-conditional', 'html5-shiv');
         $this->requireAsset('javascript-conditional', 'respond');
-        $this->requireAsset('javascript', 'jquery');
+        $this->requireAsset('core/cms');
         $this->requireAsset('core/translator');
         $this->requireAsset('community_translation/online_translation');
         $allVersions = null;

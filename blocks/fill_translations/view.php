@@ -48,18 +48,27 @@ $id = 'comtra-fill-translations-' . uniqid();
 
         <div class="form-group">
             <label class="control-label"><?= t('File to be generated') ?></label>
-            <br />
-            <label style="font-weight: normal"><input type="checkbox" name="include-pot" value="1" /> <?= t('Include list of found translatable strings (.pot file)') ?></label>
-            <br />
-            <label style="font-weight: normal"><input type="checkbox" name="include-po" value="1" checked="checked" /> <?= t('Include source translations (.po files)') ?></label>
-            <br />
-            <label style="font-weight: normal"><input type="checkbox" name="include-mo" value="1" checked="checked" /> <?= t('Include compiled translations (.mo files)') ?></label>
+
+            <div class="form-check">
+                <input type="checkbox" name="include-pot" value="1" id="includePot" class="form-check-input"/>
+                <label for="includePot" class="form-check-label"><?= t('Include list of found translatable strings (.pot file)') ?></label>
+            </div>
+
+            <div class="form-check">
+                <input type="checkbox" name="include-po" value="1" id="includePo" class="form-check-input"/>
+                <label for="includePo" class="form-check-label"><?= t('Include source translations (.po files)') ?></label>
+            </div>
+
+            <div class="form-check">
+                <input type="checkbox" name="include-mo" value="1" id="includeMo" class="form-check-input"/>
+                <label for="includeMo" class="form-check-label"><?= t('Include compiled translations (.mo files)') ?></label>
+            </div>
         </div>
 
         <div class="form-group">
             <div class="control-label">
                 <label for="<?= $id ?>_translatedLocales"><?= t('Main languages') ?></label>
-                <div class="pull-right">
+                <div class="float-right">
                     <a href="#" onclick="$('#<?= $id ?>_translatedLocales option').prop('selected', true); return false"><?= tc('Languages', 'Select all') ?></a>
                     |
                     <a href="#" onclick="$('#<?= $id ?>_translatedLocales option').prop('selected', false); return false"><?= tc('Languages', 'Select none') ?></a>
@@ -79,7 +88,7 @@ $id = 'comtra-fill-translations-' . uniqid();
             <div class="form-group">
                 <div class="control-label">
                     <label for="<?= $id ?>_untranslatedLocales"><?= t('Other languages') ?></label>
-                    <div class="pull-right">
+                    <div class="float-right">
                         <a href="#" onclick="$('#<?= $id ?>_untranslatedLocales option').prop('selected', true); return false"><?= tc('Languages', 'Select all') ?></a>
                         |
                         <a href="#" onclick="$('#<?= $id ?>_untranslatedLocales option').prop('selected', false); return false"><?= tc('Languages', 'Select none') ?></a>

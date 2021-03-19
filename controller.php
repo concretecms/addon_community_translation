@@ -20,7 +20,9 @@ use CommunityTranslation\Service\EventSubscriber;
 use CommunityTranslation\ServiceProvider;
 use Concrete\Core\Asset\AssetList;
 use Concrete\Core\Backup\ContentImporter;
+use Concrete\Core\Entity\Package as PackageEntity;
 use Concrete\Core\Package\Package;
+use Concrete\Core\Package\PackageService;
 use Concrete\Core\Routing\Router;
 use Doctrine\ORM\EntityManager;
 
@@ -61,6 +63,8 @@ class Controller extends Package
         'src' => 'CommunityTranslation',
     ];
 
+    protected $pkgAllowsFullContentSwap = true;
+
     /**
      * {@inheritdoc}
      *
@@ -89,7 +93,6 @@ class Controller extends Package
     public function install()
     {
         parent::install();
-        $this->installXml();
         $this->registerServiceProvider();
         $this->configureSourceLocale();
         $this->refreshLatestPackageVersions();
@@ -119,19 +122,9 @@ class Controller extends Package
     public function upgrade()
     {
         parent::upgrade();
-        $this->installXml();
         if ($this->upgradingFromVersion !== null && version_compare($this->upgradingFromVersion, '0.4.0') < 0) {
             $this->refreshLatestPackageVersions();
         }
-    }
-
-    /**
-     * Install/refresh stuff from the XML installation file.
-     */
-    private function installXml()
-    {
-        $contentImporter = $this->app->make(ContentImporter::class);
-        $contentImporter->importContentFile($this->getPackagePath() . '/install.xml');
     }
 
     /**
@@ -221,9 +214,6 @@ class Controller extends Package
         $al->registerMultiple([
             'jquery/scroll-to' => [
                 ['javascript', 'js/jquery.scrollTo.min.js', ['minify' => true, 'combine' => true, 'version' => '2.1.2'], $this],
-            ],
-            'community_translation/online_translation/bootstrap' => [
-                ['javascript', 'js/bootstrap.min.js', ['minify' => false, 'combine' => true], $this],
             ],
             'community_translation/online_translation/markdown-it' => [
                 ['javascript', 'js/markdown-it.min.js', ['minify' => false, 'combine' => true], $this],
@@ -473,5 +463,25 @@ class Controller extends Package
                 'CommunityTranslation\Api\EntryPoint::unrecognizedCall',
             ],
         ]);
+    }
+
+    public function on_after_swap_content()
+    {
+        /** @var PackageService $packageService */
+        $packageService = $this->app->make(PackageService::class);
+        $pkgEntity = $packageService->getByHandle("concrete_cms_theme");
+
+        if ($pkgEntity instanceof PackageEntity) {
+            /** @var \Concrete\Package\ConcreteCmsTheme\Controller $pkg */
+            $pkg = $pkgEntity->getController();
+            $pkg->on_after_swap_content();
+        }
+
+        $site = $this->app->make('site')->getActiveSiteForEditing();
+        $siteConfig = $site->getConfigRepository();
+
+        $siteConfig->save("concrete_cms_theme.elements_package_handle", "community_translation");
+        $siteConfig->save("concrete_cms_theme.override_sub_nav", true);
+        $siteConfig->save("concrete_cms_theme.enable_dark_mode", true);
     }
 }

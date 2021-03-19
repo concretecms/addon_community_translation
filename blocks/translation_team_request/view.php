@@ -15,9 +15,10 @@ defined('C5_EXECUTE') or die('Access Denied.');
 $id = 'comtra-translation-team-request-' . uniqid();
 
 ?>
-<div class="panel panel-default comtra-translation-team-request">
-    <div class="panel-heading"><h3><?= t('New Translators Team') ?></h3></div>
-    <div class="panel-body">
+<div class="card card-default comtra-translation-team-request">
+    <div class="card-header"><h3><?= t('New Translators Team') ?></h3></div>
+    <div class="card-body">
+        <div class="card-text">
         <?php
 
 if (isset($showError) && $showError !== '') {
@@ -71,8 +72,8 @@ switch ($step) {
                 </ul>
                 <p><?= t('Are you sure you want to create another team for %s?', h($languageName)) ?></p>
                 <div class="form-actions">
-                    <a href="<?= URL::to('/') ?>" class="btn btn-default"><?= t("Don't create a new team") ?></a>
-                    <a href="#" class="btn btn-default" onclick="$('#<?= $id ?>_warning').hide();$('#<?= $id ?>_create').show(); return false"><?= t('Create a new team anyway') ?></a>
+                    <a href="<?= URL::to('/') ?>" class="btn btn-secondary"><?= t("Don't create a new team") ?></a>
+                    <a href="#" class="btn btn-secondary" onclick="$('#<?= $id ?>_warning').hide();$('#<?= $id ?>_create').show(); return false"><?= t('Create a new team anyway') ?></a>
                 </div>
             </form>
             <?php
@@ -112,8 +113,10 @@ switch ($step) {
             if ($allowNoTerrory) {
                 ?>
                 <div class="form-group">
-                    <?= $form->checkbox('noTerritory', '1', true) ?>
-                    <?= $form->label('noTerritory', t('%s is not Country-specific', $languageName)) ?>
+                    <div class="form-check">
+                        <?= $form->checkbox('noTerritory', '1', true, ["class" => "form-check-control"]) ?>
+                        <?= $form->label('noTerritory', t('%s is not Country-specific', $languageName), ["class" => "form-check-label"]) ?>
+                    </div>
                 </div>
                 <script>
                 $(document).ready(function() {
@@ -154,8 +157,10 @@ switch ($step) {
             if ($askApprove) {
                 ?>
                 <div class="form-group">
-                    <?= $form->checkbox('approve', '1', true) ?>
-                    <?= $form->label('approve', t("Approve immediately the locale '%s' (%s)", h($localeName), $localeID)) ?>
+                    <div class="form-check">
+                        <?= $form->checkbox('approve', '1', true, ["class" => "form-check-control"]) ?>
+                        <?= $form->label('approve', t("Approve immediately the locale '%s' (%s)", h($localeName), $localeID), ["class" => "form-check-label"]) ?>
+                    </div>
                 </div>
                 <?php
             } else {
@@ -196,7 +201,7 @@ switch ($step) {
             }
             ?>
             <div class="form-actions">
-                <a href="<?= URL::to('/') ?>" class="btn btn-default"><?= t('Return to the homepage') ?></a>
+                <a href="<?= URL::to('/') ?>" class="btn btn-secondary"><?= t('Return to the homepage') ?></a>
             </div>
         </form>
         <?php
@@ -204,5 +209,6 @@ switch ($step) {
 }
 
         ?>
+        </div>
     </div>
 </div>

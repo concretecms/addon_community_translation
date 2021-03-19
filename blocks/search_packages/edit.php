@@ -36,11 +36,9 @@ $form = $app->make('helper/form');
         <?php
         foreach ($downloadFormats as $df) {
             ?>
-            <div class="checkbox">
-                <label>
-                    <?= $form->checkbox('allowedDownloadFormats[]', $df->getHandle(), in_array($df->getHandle(), $allowedDownloadFormats)) ?>
-                    <?= h($df->getName()) ?>
-                </label>
+            <div class="form-check">
+                <?= $form->checkbox('allowedDownloadFormats[]', $df->getHandle(), in_array($df->getHandle(), $allowedDownloadFormats), ["class" => "form-check-control", "id" => "allowedDownloadFormat_" . $df->getHandle()]) ?>
+                <?= $form->label("allowedDownloadFormat_" . $df->getHandle(), $df->getName(), ["class" => "form-check-label"]) ?>
             </div>
             <?php
         }

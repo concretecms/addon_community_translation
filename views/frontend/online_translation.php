@@ -350,15 +350,15 @@ if ($canEditGlossary) {
                     <?php
                     if ($canApprove) {
                         ?>
-                        <div class="checkbox">
-                            <label>
-                                <input type="checkbox" name="all-fuzzy" value="1" checked="checked" />
+                        <div class="form-check">
+                            <input type="checkbox" name="all-fuzzy" value="1" checked="checked" id="allFuzzy" class="form-check-input"/>
+                            <label for="allFuzzy" class="form-check-label">
                                 <abbr  title="<?= t('If checked, all the translations will be considered as fuzzy (that is: not approved).') ?>"><?= t('Consider all the translations as fuzzy') ?></abbr>
                             </label>
                         </div>
-                        <div class="checkbox">
-                            <label title="<?= t('') ?>">
-                                <input type="checkbox" name="fuzzy-unapprove" value="1" />
+                        <div class="form-check">
+                            <input type="checkbox" name="fuzzy-unapprove" value="1" id="fuzzyUnapprove" class="form-check-input" />
+                            <label for="fuzzyUnapprove" class="form-check-label">
                                 <abbr  title="<?= t('If checked, fuzzy translations will mark currently approved strings as not approved.') ?>"><?= t('Unapprove fuzzy translations') ?></abbr>
                             </label>
                         </div>
@@ -443,9 +443,9 @@ if (is_object($packageVersion)) {
                     <form class="form-horizontal">
                         <div class="form-group">
                             <label class="col-sm-3 control-label"><?= t('New versions') ?></label>
-                            <div class="checkbox col-sm-9">
-                                <label>
-                                    <input type="checkbox" id="comtra-notify-newversions"<?= $packageSubscription->notifyNewVersions() ? ' checked="checked"' : '' ?> />
+                            <div class="form-check col-sm-9">
+                                <input type="checkbox" id="comtra-notify-newversions"<?= $packageSubscription->notifyNewVersions() ? ' checked="checked"' : '' ?>  class="form-check-input"/>
+                                <label class="form-check-control" for="comtra-notify-newversions">
                                     <?= t('Notify me when new versions of this package are available') ?>
                                 </label>
                             </div>
@@ -469,13 +469,13 @@ if (is_object($packageVersion)) {
                                         <a class="label label-info comtra-notify-existingversions-all" data-checked="no"><?= t('none') ?></a>
                                     </div>
                                 </label>
-                                <div class="checkbox col-sm-9">
+                                <div class="form-check col-sm-9">
                                     <?php
                                     foreach ($packageVersionSubscriptions as $pvs) {
                                         $pv = $pvs->getPackageVersion();
                                         ?>
-                                        <label>
-                                            <input type="checkbox" value="<?= $pv->getID() ?>"<?= $pvs->notifyUpdates() ? ' checked="checked"' : '' ?> />
+                                        <input type="checkbox" value="<?= $pv->getID() ?>"<?= $pvs->notifyUpdates() ? ' checked="checked"' : '' ?> id="pvs<?= $pv->getID() ?>" class="form-check-input" />
+                                        <label class="form-check-label" for="pvs<?= $pv->getID() ?>">
                                             <?= h($pv->getDisplayVersion()) ?>
                                         </label><br />
                                         <?php                            
