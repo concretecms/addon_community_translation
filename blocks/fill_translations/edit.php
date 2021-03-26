@@ -23,7 +23,7 @@
         <?= $form->label('maxFileSizeValue', t('Max size of uploaded files')) ?>
         <div class="input-group" style="white-space: nowrap">
             <?= $form->number('maxFileSizeValue', $maxFileSizeValue, ['min' => 1, 'placeholder' => t('Empty for no limit')]) ?>
-            <span class="input-group-addon">
+            <span class="input-group-append">
                 <?= $form->select(
                     'maxFileSizeUnit',
                     [

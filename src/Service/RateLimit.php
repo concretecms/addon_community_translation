@@ -134,20 +134,20 @@ class RateLimit
         list($timeWindowValue, $timeWindowUnit) = $this->splitTimeWindow($timeWindow);
         $html = '<div class="input-group" id="' . $name . '_container">';
         $html .= $this->form->number($name . '_maxRequests', $maxRequests, ['min' => '1']);
-        $html .= '<span class="input-group-addon">' . tc('TimeInterval', 'requests every') . '</span>';
+        $html .= '<div class="input-group-append"><span class="input-group-text">' . tc('TimeInterval', 'requests every') . '</span></div>';
         $html .= $this->form->number($name . '_timeWindow_value', $timeWindowValue, ['min' => '1']);
-        $html .= '<div class="input-group-btn">';
+        $html .= '<div class="input-group-append">';
         $timeWindowUnits = $this->getTimeWindowUnits();
         $u = $this->form->getRequestValue($name . '_timeWindow_unit');
         if (isset($timeWindowUnits[$u])) {
             $timeWindowUnit = $u;
         }
-        $html .= '<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span id="' . $name . '_timeWindow_unitlabel">' . h($timeWindowUnits[$timeWindowUnit]) . '</span> <span class="caret"></span></button>';
-        $html .= '<ul class="dropdown-menu dropdown-menu-right">';
+        $html .= '<button type="button" class="btn btn-outline-secondary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span id="' . $name . '_timeWindow_unitlabel">' . h($timeWindowUnits[$timeWindowUnit]) . '</span> <span class="caret"></span></button>';
+        $html .= '<div class="dropdown-menu dropdown-menu-right">';
         foreach ($timeWindowUnits as $unitValue => $unitName) {
-            $html .= '<li><a href="#" data-unit-value="' . $unitValue . '" data-max-value="' . floor(PHP_INT_MAX / $unitValue) . '">' . h($unitName) . '</a></li>';
+            $html .= '<a href="#" data-unit-value="' . $unitValue . '" data-max-value="' . floor(PHP_INT_MAX / $unitValue) . '" class="dropdown-item">' . h($unitName) . '</a>';
         }
-        $html .= '</ul>';
+        $html .= '</div>';
         $html .= '</div>';
         $html .= $this->form->hidden($name . '_timeWindow_unit', $timeWindowUnit);
         $html .= '</div>';

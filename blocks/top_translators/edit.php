@@ -21,16 +21,14 @@ defined('C5_EXECUTE') or die('Access denied.');
 </div>
 <div class="form-group">
     <?= $form->label('allTranslations', t('Translations count')) ?>
-    <div class="radio">
-        <label>
-            <?= $form->radio('allTranslations', 0, $allTranslations ? 1 : 0) ?>
-            <?= t('count only the approved translations') ?>
-        </label>
+
+    <div class="form-check">
+        <?= $form->radio('allTranslations', 0, $allTranslations ? 1 : 0, ["id" => "allTranslations0", "class" => "form-check-input"]) ?>
+        <?= $form->label("allTranslations0", t('count only the approved translations'), ["class" => "form-check-label"]) ?>
     </div>
-    <div class="radio">
-        <label>
-            <?= $form->radio('allTranslations', 1, $allTranslations ? 1 : 0) ?>
-            <?= t('count any translation') ?>
-        </label>
+
+    <div class="form-check">
+        <?= $form->radio('allTranslations', 1, $allTranslations ? 1 : 0, ["id" => "allTranslations1", "class" => "form-check-input"]) ?>
+        <?= $form->label("allTranslations1", t('count any translation'), ["class" => "form-check-label"]) ?>
     </div>
 </div>

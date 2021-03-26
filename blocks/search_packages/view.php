@@ -32,19 +32,20 @@ defined('C5_EXECUTE') or die('Access Denied.');
 if (isset($showWarning) && $showWarning !== '') {
     ?>
     <div class="alert alert-danger" role="alert">
-        <p><?= $showWarning ?></p>
+        <?= $showWarning ?>
     </div>
     <?php
 }
 
 if (isset($package)) {
     ?>
-    <div class="panel panel-primary" style="margin-top: 20px">
-        <div class="panel-heading">
+    <div class="card card-primary" style="margin-top: 20px">
+        <div class="card-header">
             <?= t('Translations for %s', h($packageVersion->getDisplayName())) ?>
-            <div class="pull-right"><a class="btn btn-xs btn-info" href="<?= h($controller->getBlockActionURL($view, 'search')) ?>"><?= t('Search other packages') ?></a></div>
+            <div class="float-right"><a class="btn btn-sm btn-info" href="<?= h($controller->getBlockActionURL($view, 'search')) ?>"><?= t('Search other packages') ?></a></div>
         </div>
-        <div class="panel-body">
+        <div class="card-body">
+            <div class="card-text">
             <?php
             if ($package->getUrl() !== '') {
                 ?><p><?= t('You can get more details on this package <a href="%s" target="_blank">here</a>.', h($package->getUrl())) ?></p><?php
@@ -109,11 +110,11 @@ if (isset($package)) {
                             } else {
                                 $translateLink = '#';
                                 $translateOnclick = ' onclick="' . h('window.alert(' . json_encode($whyNotTranslatable) . '); return false') . '"';
-                                $translateClass = 'btn-default';
+                                $translateClass = 'btn-secondary';
                             }
                             ?>
                             <tr data-sortsection="<?= $sectionIndex ?>">
-                                <td data-sortby="<?= h(mb_strtolower($locale->getID())) ?>"><span class="label label-default"><?= h($locale->getID()) ?></span></td>
+                                <td data-sortby="<?= h(mb_strtolower($locale->getID())) ?>"><span class="badge badge-default"><?= h($locale->getID()) ?></span></td>
                                 <td data-sortby="<?= h(mb_strtolower($locale->getDisplayName())) ?>"><?= $locale->getDisplayName() ?></td>
                                 <td class="comtra-locale-actions">
                                     <?php
@@ -137,65 +138,71 @@ if (isset($package)) {
                     ?>
                 </tbody>
             </table>
+            </div>
         </div>
     </div>
     <?php
     return;
 }
 ?>
-<div class="panel panel-info" style="margin-top: 20px">
-    <div class="panel-heading">
+<div class="card card-info" style="margin-top: 20px">
+    <div class="card-header">
         <?= t('Search translatable packages') ?>
     </div>
-    <div class="panel-body">
-        <form class="form-inline" action="<?= $controller->getBlockActionURL($view, 'search') ?>" method="POST">
-            <?php $token->output('communitytranslations-search_packages-' . $bID) ?>
-            <div class="form-group">
-                <label class="sr-only" for="comtra_search_packages-search-text-<?= $bID ?>"><?= t('Search package') ?></label>
-                <input id="comtra_search_packages-search-text-<?= $bID ?>" type="search" name="keywords" class="form-control" value="<?= isset($sticky['keywords']) && is_string($sticky['keywords']) ? h($sticky['keywords']) : ''?>" placeholder="<?= t('Search by handle or name') ?>" />
-            </div>
-            <div class="form-group">
-                <label class="sr-only" for="comtra_search_packages-search-locale-<?= $bID ?>"><?= tc('Language', 'Show progress for') ?></label>
-                <?php
-                $searchLocale = '';
-                if (isset($sticky['locale']) && is_string($sticky['locale']) && $sticky['locale'] !== '') {
-                    foreach ($allLocales as $locale) {
-                        if ($locale->getID() === $sticky['locale']) {
-                            $searchLocale = $sticky['locale'];
-                            break;
-                        }
-                    }
-                }
-                ?>
-                <select id="comtra_search_packages-search-locale-<?= $bID ?>" name="locale" class="form-control">
-                    <option value=""<?= $searchLocale === '' ? ' selected="selected"' : ''?>>** <?= tc('Language', 'Show progress for') ?></option>
+    <div class="card-body">
+        <div class="card-text">
+        <form class="form-inline" action="<?= $controller->getBlockActionURL($view, 'search') ?>" method="POST" style="margin-bottom: 15px">
+            <div class="input-group">
+                <?php $token->output('communitytranslations-search_packages-' . $bID) ?>
+                <div class="form-group">
+                    <label class="sr-only" for="comtra_search_packages-search-text-<?= $bID ?>"><?= t('Search package') ?></label>
+                    <input id="comtra_search_packages-search-text-<?= $bID ?>" type="search" name="keywords" class="form-control" value="<?= isset($sticky['keywords']) && is_string($sticky['keywords']) ? h($sticky['keywords']) : ''?>" placeholder="<?= t('Search by handle or name') ?>" />
+                </div>
+                <div class="form-group">
+                    <label class="sr-only" for="comtra_search_packages-search-locale-<?= $bID ?>"><?= tc('Language', 'Show progress for') ?></label>
                     <?php
-                    if (empty($suggestedLocales)) {
+                    $searchLocale = '';
+                    if (isset($sticky['locale']) && is_string($sticky['locale']) && $sticky['locale'] !== '') {
                         foreach ($allLocales as $locale) {
-                            ?><option value="<?= h($locale->getID()) ?>"<?= $searchLocale === $locale->getID() ? ' selected="selected"' : ''?>><?= h($locale->getDisplayName()) ?></option><?php
+                            if ($locale->getID() === $sticky['locale']) {
+                                $searchLocale = $sticky['locale'];
+                                break;
+                            }
                         }
-                    } else {
-                        ?>
-                        <optgroup label="<?= t('My languages') ?>">
-                            <?php
-                            foreach ($suggestedLocales as $locale) {
-                                ?><option value="<?= h($locale->getID()) ?>"<?= $searchLocale === $locale->getID() ? ' selected="selected"' : ''?>><?= h($locale->getDisplayName()) ?></option><?php
-                            }
-                            ?>
-                        </optgroup>
-                        <optgroup label="<?= t('Other languages') ?>">
-                            <?php
-                            foreach (array_diff($allLocales, $suggestedLocales) as $locale) {
-                                ?><option value="<?= h($locale->getID()) ?>"<?= $searchLocale === $locale->getID() ? ' selected="selected"' : ''?>><?= h($locale->getDisplayName()) ?></option><?php
-                            }
-                            ?>
-                        </optgroup>
-                        <?php
                     }
                     ?>
-                </select>
+                    <select id="comtra_search_packages-search-locale-<?= $bID ?>" name="locale" class="form-control">
+                        <option value=""<?= $searchLocale === '' ? ' selected="selected"' : ''?>>** <?= tc('Language', 'Show progress for') ?></option>
+                        <?php
+                        if (empty($suggestedLocales)) {
+                            foreach ($allLocales as $locale) {
+                                ?><option value="<?= h($locale->getID()) ?>"<?= $searchLocale === $locale->getID() ? ' selected="selected"' : ''?>><?= h($locale->getDisplayName()) ?></option><?php
+                            }
+                        } else {
+                            ?>
+                            <optgroup label="<?= t('My languages') ?>">
+                                <?php
+                                foreach ($suggestedLocales as $locale) {
+                                    ?><option value="<?= h($locale->getID()) ?>"<?= $searchLocale === $locale->getID() ? ' selected="selected"' : ''?>><?= h($locale->getDisplayName()) ?></option><?php
+                                }
+                                ?>
+                            </optgroup>
+                            <optgroup label="<?= t('Other languages') ?>">
+                                <?php
+                                foreach (array_diff($allLocales, $suggestedLocales) as $locale) {
+                                    ?><option value="<?= h($locale->getID()) ?>"<?= $searchLocale === $locale->getID() ? ' selected="selected"' : ''?>><?= h($locale->getDisplayName()) ?></option><?php
+                                }
+                                ?>
+                            </optgroup>
+                            <?php
+                        }
+                        ?>
+                    </select>
+                    <div class="input-group-append">
+                        <button type="submit" class="btn btn-outline-primary"><i class="fa fa-search"></i></button>
+                    </div>
+                </div>
             </div>
-            <button type="submit" class="btn btn-primary"><i class="fa fa-search"></i></button>
         </form>
         <?php
         $foundResults = $result->getItems();
@@ -203,7 +210,7 @@ if (isset($package)) {
         if (empty($foundResults)) {
             ?>
             <div class="alert alert-warning" role="alert">
-                <p><?= t('No package satisfy the search criteria') ?></p>
+                <?= t('No package satisfy the search criteria') ?>
             </div>
             <?php
         } else {
@@ -280,5 +287,6 @@ if (isset($package)) {
             }
         }
         ?>
+        </div>
     </div>
 </div>
