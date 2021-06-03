@@ -3,9 +3,13 @@
 	"type" : "concrete5-package",
 	"description" : "concrete5 translation package",
 	"license" : "MIT",
+	"minimum-stability": "dev",
 	"homepage" : "https://github.com/concrete5/addon_community_translation",
 	"support" : {
 		"issues" : "https://github.com/concrete5/addon_community_translation/issues",
 		"source" : "https://github.com/concrete5/addon_community_translation"
+	},
+	"require": {
+		"concrete5/community_badges_client": "dev-master"
 	}
 }
