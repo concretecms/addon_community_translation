@@ -11,6 +11,7 @@ use CommunityTranslation\Entity\PackageSubscription as PackageSubscriptionEntity
 use CommunityTranslation\Entity\PackageVersionSubscription as PackageVersionSubscriptionEntity;
 use CommunityTranslation\Entity\Translatable as TranslatableEntity;
 use CommunityTranslation\Entity\Translatable\Comment as TranslatableCommentEntity;
+use CommunityTranslation\Entity\Translation;
 use CommunityTranslation\Entity\Translation as TranslationEntity;
 use CommunityTranslation\Repository\Glossary\Entry as GlossaryEntryRepository;
 use CommunityTranslation\Repository\Glossary\Entry\Localized as GlossaryEntryLocalizedRepository;
@@ -37,10 +38,12 @@ use Concrete\Core\Entity\User\User as UserEntity;
 use Concrete\Core\Error\UserMessageException;
 use Concrete\Core\Http\ResponseAssetGroup;
 use Concrete\Core\Http\ResponseFactoryInterface;
+use Concrete\Core\User\User;
 use Controller;
 use Doctrine\ORM\EntityManager;
 use Exception;
 use Gettext\Translations as GettextTranslations;
+use PortlandLabs\CommunityBadgesClient\Models\Achievements;
 use Punic\Misc;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -999,7 +1002,14 @@ class OnlineTranslation extends Controller
         $importer = $this->app->make(Importer::class);
         $importer->import($translations, $translation->getLocale(), $user, ImportOptions::forAdministrators());
         $this->getEntityManager()->clear();
+        /** @var Translation $translation */
         $translation = $this->app->make(TranslationRepository::class)->find($translationID);
+        $author = $translation->getCreatedBy();
+        if ($author instanceof UserEntity) {
+            /** @var Achievements $achievements */
+            $achievements = $this->app->make(Achievements::class, ["user" => User::getByUserID($author->getUserID())]);
+            $achievements->assign("translator");
+        }
         $result = $this->app->make(Editor::class)->getTranslations($translation->getLocale(), $translation->getTranslatable());
 
         return $this->app->make(ResponseFactoryInterface::class)->json($result);
