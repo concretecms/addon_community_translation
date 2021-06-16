@@ -7,8 +7,10 @@ use CommunityTranslation\Repository\Locale as LocaleRepository;
 use Concrete\Core\Application\Application;
 use Concrete\Core\Entity\User\User as UserEntity;
 use Concrete\Core\Error\UserMessageException;
+use Concrete\Core\User\User;
 use Concrete\Core\User\User as UserService;
 use Doctrine\ORM\EntityManager;
+use PortlandLabs\CommunityBadgesClient\Models\Achievements;
 
 class Access
 {
@@ -211,7 +213,7 @@ class Access
         if ($user->getUserID() === USER_SUPER_ID) {
             return;
         }
-        $access = (int) $access;
+        $access = (int)$access;
         if ($access === self::GLOBAL_ADMIN) {
             $this->setGlobalAccess(true, $user);
         } else {
@@ -222,6 +224,9 @@ class Access
             switch ($access) {
                 case self::ADMIN:
                     $newGroup = $this->groups->getAdministrators($locale);
+                    /** @var Achievements $achievements */
+                    $achievements = $this->app->make(Achievements::class, ["user" => $wantedUser]);
+                    $achievements->assign("coordinator");
                     break;
                 case self::TRANSLATE:
                     $newGroup = $this->groups->getTranslators($locale);
@@ -246,13 +251,13 @@ class Access
                     if ($g !== $newGroup && $user->inGroup($g)) {
                         $user->exitGroup($g);
                     }
-                    /* @noinspection PhpMissingBreakStatementInspection */
+                /* @noinspection PhpMissingBreakStatementInspection */
                 case self::TRANSLATE:
                     $g = $this->groups->getTranslators($locale);
                     if ($g !== $newGroup && $user->inGroup($g)) {
                         $user->exitGroup($g);
                     }
-                    /* @noinspection PhpMissingBreakStatementInspection */
+                /* @noinspection PhpMissingBreakStatementInspection */
                 case self::ASPRIRING:
                     $g = $this->groups->getAspiringTranslators($locale);
                     if ($g !== $newGroup && $user->inGroup($g)) {
