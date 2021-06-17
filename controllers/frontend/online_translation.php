@@ -1004,12 +1004,6 @@ class OnlineTranslation extends Controller
         $this->getEntityManager()->clear();
         /** @var Translation $translation */
         $translation = $this->app->make(TranslationRepository::class)->find($translationID);
-        $author = $translation->getCreatedBy();
-        if ($author instanceof UserEntity) {
-            /** @var Achievements $achievements */
-            $achievements = $this->app->make(Achievements::class, ["user" => User::getByUserID($author->getUserID())]);
-            $achievements->assign("translator");
-        }
         $result = $this->app->make(Editor::class)->getTranslations($translation->getLocale(), $translation->getTranslatable());
 
         return $this->app->make(ResponseFactoryInterface::class)->json($result);
@@ -1134,6 +1128,12 @@ class OnlineTranslation extends Controller
             $approved = false;
         }
 
+        if ($user instanceof UserEntity) {
+            /** @var Achievements $achievements */
+            $achievements = $this->app->make(Achievements::class, ["user" => User::getByUserID($user->getUserID())]);
+            $achievements->assign("translator");
+        }
+
         $translations = $this->convertTranslationToGettext($translation, !$approved);
         $importer = $this->app->make(Importer::class);
         $imported = $importer->import($translations, $locale, $user, ($access >= Access::ADMIN) ? ImportOptions::forAdministrators() : ImportOptions::forTranslators());
@@ -1148,7 +1148,6 @@ class OnlineTranslation extends Controller
                 ($packageVersion === null) ? null : $packageVersion->getID()
             );
         }
-
         $result = $this->app->make(Editor::class)->getTranslations($locale, $translatable);
         if ($imported->newApprovalNeeded && !$imported->addedAsCurrent) {
             $result['message'] = t('Since the current translation is approved, you have to wait that this new translation will be approved');
