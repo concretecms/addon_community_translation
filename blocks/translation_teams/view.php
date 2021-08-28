@@ -92,10 +92,10 @@ switch ($step) {
                             <tr>
                                 <th><?= t('Team') ?></th>
                                 <th class="visible-xs-block"><?= t('Contributors') ?></th>
-                                <th class="hidden-xs"><?= t('Coordinators') ?></th>
-                                <th class="hidden-xs"><?= t('Translators') ?></th>
+                                <th class="d-none d-sm-block"><?= t('Coordinators') ?></th>
+                                <th class="d-none d-sm-block"><?= t('Translators') ?></th>
                                 <th><?= t('Join Requests') ?></th>
-                                <th class="hidden-xs"></th>
+                                <th class="d-none d-sm-block"></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -105,10 +105,10 @@ switch ($step) {
                                 <tr data-locale-id="<?= h($l['id']) ?>" data-locale-name="<?= h(strtolower($l['name'])) ?>">
                                     <td><a href="<?= h($controller->getBlockActionURL($view, 'details', $l['id'])) ?>"><?= h($l['name']) ?></a></td>
                                     <td class="visible-xs-block"><?= ($l['admins'] || $l['translators']) ? ('<span class="badge badge-success">' . ($l['admins'] + $l['translators']) . '</span>') : '<span class="badge badge-default">0</span>' ?></td>
-                                    <td class="hidden-xs"><?= $l['admins'] ? ('<span class="badge badge-success">' . $l['admins'] . '</span>') : '<span class="badge badge-default">0</span>' ?></td>
-                                    <td class="hidden-xs"><?= $l['translators'] ? ('<span class="badge badge-success">' . $l['translators'] . '</span>') : '<span class="badge badge-default">0</span>' ?></td>
+                                    <td class="d-none d-sm-block"><?= $l['admins'] ? ('<span class="badge badge-success">' . $l['admins'] . '</span>') : '<span class="badge badge-default">0</span>' ?></td>
+                                    <td class="d-none d-sm-block"><?= $l['translators'] ? ('<span class="badge badge-success">' . $l['translators'] . '</span>') : '<span class="badge badge-default">0</span>' ?></td>
                                     <td><?= $l['aspiring'] ? ('<span class="badge badge-success">' . $l['aspiring'] . '</span>') : '<span class="badge badge-default">0</span>' ?></td>
-                                    <td class="hidden-xs"><?php
+                                    <td class="d-none d-sm-block"><?php
                                         switch ($l['access']) {
                                             case Access::GLOBAL_ADMIN:
                                                 break;

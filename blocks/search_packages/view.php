@@ -76,8 +76,8 @@ if (isset($package)) {
                         <th><?= t('ID') ?></th>
                         <th class="comtra-sorted-asc"><?= t('Language') ?></th>
                         <th></th>
-                        <th class="hidden-xs hidden-sm" data-sortby-default="desc"><?= t('Updated') ?></th>
-                        <th class="hidden-xs" data-sortby-default="desc"><?= t('Progress') ?></th>
+                        <th class="d-none d-md-block" data-sortby-default="desc"><?= t('Updated') ?></th>
+                        <th class="d-none d-sm-block" data-sortby-default="desc"><?= t('Progress') ?></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -119,13 +119,13 @@ if (isset($package)) {
                                 <td class="comtra-locale-actions">
                                     <?php
                                     foreach ($localeInfo['downloadFormats'] as $adf) {
-                                        ?><a class="hidden-xs btn btn-sm btn-info" style="padding: 5px 10px" href="<?= h($controller->getBlockActionURL($view, 'download_translations_file', $packageVersion->getID(), $locale->getID(), $adf->getHandle()) . '?' . $token->getParameter('comtra-download-translations-' . $packageVersion->getID() . '@' . $locale->getID() . '.' . $adf->getHandle())) ?>" title="<?= h(t('Download translations (%s)', $adf->getName())) ?>" style="padding: 5px 10px; white-space:nowrap"><i class="fa fa-cloud-download"></i> <?= h($adf->getFileExtension()) ?></a><?php
+                                        ?><a class="d-none d-sm-block btn btn-sm btn-info" style="padding: 5px 10px" href="<?= h($controller->getBlockActionURL($view, 'download_translations_file', $packageVersion->getID(), $locale->getID(), $adf->getHandle()) . '?' . $token->getParameter('comtra-download-translations-' . $packageVersion->getID() . '@' . $locale->getID() . '.' . $adf->getHandle())) ?>" title="<?= h(t('Download translations (%s)', $adf->getName())) ?>" style="padding: 5px 10px; white-space:nowrap"><i class="fa fa-cloud-download"></i> <?= h($adf->getFileExtension()) ?></a><?php
                                     }
                                     ?>
                                     <a class="btn btn-sm <?= $translateClass ?>" style="padding: 5px 10px" href="<?= h($translateLink) ?>"<?= $translateOnclick ?>><?= t('Translate') ?></a>
                                 </td>
-                                <td class="hidden-xs hidden-sm" data-sortby="<?= h($localeInfo['updatedOn_sort']) ?>"><?= h($localeInfo['updatedOn']) ?></td>
-                                <td class="hidden-xs" data-sortby-kind="numeric" data-sortby="<?= $localeInfo['percSort'] ?>"><div class="progress" style="margin: 0" title="<?= t2('%s untranslated string', '%s untranslated strings', $localeInfo['untranslated']) ?>">
+                                <td class="d-none d-md-block" data-sortby="<?= h($localeInfo['updatedOn_sort']) ?>"><?= h($localeInfo['updatedOn']) ?></td>
+                                <td class="d-none d-sm-block" data-sortby-kind="numeric" data-sortby="<?= $localeInfo['percSort'] ?>"><div class="progress" style="margin: 0" title="<?= t2('%s untranslated string', '%s untranslated strings', $localeInfo['untranslated']) ?>">
                                     <div class="progress-bar <?= $localeInfo['progressBarClass'] ?>" role="progressbar" style="width: <?= $localeInfo['perc'] ?>%">
                                         <span><?= $localeInfo['perc'] ?></span>
                                     </div>
@@ -220,8 +220,8 @@ if (isset($package)) {
                 <thead>
                     <tr>
                         <th><?= t('Package Name') ?></th>
-                        <th class="hidden-xs"><?= t('Latest version') ?></th>
-                        <th class="hidden-xs hidden-sm"><?= t('Handle') ?></th>
+                        <th class="d-none d-sm-block"><?= t('Latest version') ?></th>
+                        <th class="d-none d-md-block"><?= t('Handle') ?></th>
                         <?php
                         if ($searchLocale !== '') {
                             ?><th><?= t('Progress') ?></th><?php
@@ -243,7 +243,7 @@ if (isset($package)) {
                                 }
                                 ?>
                             </td>
-                            <td class="hidden-xs"><?php
+                            <td class="d-none d-sm-block"><?php
                                 $lv = $package->getLatestVersion();
                                 if ($lv) {
                                     echo $lv->getDisplayVersion();
@@ -251,7 +251,7 @@ if (isset($package)) {
                                     echo '?';
                                 }
                             ?></td>
-                            <td class="hidden-xs hidden-sm"><code><?= h($package->getHandle()) ?></code>
+                            <td class="d-none d-md-block"><code><?= h($package->getHandle()) ?></code>
                             <?php
                             if ($searchLocale !== '') {
                                 ?><td><?php
