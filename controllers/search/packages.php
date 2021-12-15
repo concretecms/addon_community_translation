@@ -28,7 +28,7 @@ class Packages extends AbstractController
     public function getStickyRequest()
     {
         if ($this->stickyRequest === null) {
-            $this->stickyRequest = $this->app->make(StickyRequest::class, ['community_translation.packages']);
+            $this->stickyRequest = $this->app->make(StickyRequest::class, ['namespace' => 'community_translation.packages']);
         }
 
         return $this->stickyRequest;
@@ -49,7 +49,7 @@ class Packages extends AbstractController
     public function getSearchList()
     {
         if ($this->searchList === null) {
-            $this->searchList = $this->app->make(SearchList::class, [$this->getStickyRequest()]);
+            $this->searchList = $this->app->make(SearchList::class, ['il' => $this->getStickyRequest()]);
         }
 
         return $this->searchList;
