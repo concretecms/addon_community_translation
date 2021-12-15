@@ -5,7 +5,7 @@ namespace CommunityTranslation\Service;
 use CommunityTranslation\Entity\Package as PackageEntity;
 use CommunityTranslation\Entity\Package\Version as PackageVersionEntity;
 use Doctrine\Common\EventSubscriber;
-use Doctrine\Common\Persistence\Event\LifecycleEventArgs;
+use Doctrine\ORM\Event\LifecycleEventArgs;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Events;
 
