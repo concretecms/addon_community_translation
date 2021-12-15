@@ -653,21 +653,28 @@ var Glossary = (function() {
                     })
                 );
             }
+            var fixTitle = function($tooltip) {
+                try {
+                    $tooltip.tooltip('fixTitle');
+                } catch(e) {
+                    $tooltip.tooltip('_fixTitle');
+                }
+            };
             this.$dt.removeAttr('title').removeAttr('data-original-title');
             if (this.data.termComments !== '') {
                 this.$dt.attr('title', textToHtml(this.data.termComments));
-                this.$dt.tooltip({
+                fixTitle(this.$dt.tooltip({
                     placement: 'right',
                     html: true
-                }).tooltip('fixTitle');
+                }));
             }
             this.$dd.removeAttr('title').removeAttr('data-original-title');
             if (this.data.translationComments !== '') {
                 this.$dd.attr('title', textToHtml(this.data.translationComments));
-                this.$dd.tooltip({
+                fixTitle(this.$dd.tooltip({
                     placement: 'left',
                     html: true
-                }).tooltip('fixTitle');
+                }));
             }
         }
     };
