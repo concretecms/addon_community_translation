@@ -1,14 +1,18 @@
 <?php
+
+declare(strict_types=1);
+
 defined('C5_EXECUTE') or die('Access Denied.');
 
-// Arguments
-/* @var array[] $pages */
+/**
+ * @var array[] $pages
+ */
 
 ?>
 <div class="col-md-4 ccm-dashboard-section-menu">
     <ul class="list-unstyled">
         <?php
-        if (!empty($pages)) {
+        if ($pages !== []) {
             foreach ($pages as $page) {
                 ?>
                 <li>

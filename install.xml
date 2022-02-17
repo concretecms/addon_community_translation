@@ -92,17 +92,82 @@
     </attributesets>
 
     <singlepages>
-        <page package="community_translation" name="Community Translation" description="" pagetype="" path="/dashboard/community_translation" filename="/dashboard/community_translation.php">
+        <page package="community_translation" name="Community Translation" description="" pagetype="" path="/dashboard/community_translation">
         </page>
-        <page package="community_translation" name="Strings from Git Repositories" description="" pagetype="" path="/dashboard/community_translation/git_repositories" filename="/dashboard/community_translation/git_repositories.php">
+        <page package="community_translation" name="Strings from Git Repositories" description="" pagetype="" path="/dashboard/community_translation/git_repositories">
         </page>
-        <page package="community_translation" name="Git Repository details" description="" pagetype="" path="/dashboard/community_translation/git_repositories/details" filename="/dashboard/community_translation/git_repositories/details.php">
+        <page package="community_translation" name="Git Repository details" description="" pagetype="" path="/dashboard/community_translation/git_repositories/details">
             <attributes>
                 <attributekey handle="exclude_nav"><value>1</value></attributekey>
             </attributes>
         </page>
-        <page package="community_translation" name="Community Translation Options" description="" pagetype="" path="/dashboard/community_translation/options" filename="/dashboard/community_translation/options.php">
+        <page package="community_translation" name="Remote Packages Log" description="" pagetype="" path="/dashboard/community_translation/remote_packages_log">
+        </page>
+        <page package="community_translation" name="Check Plural Rules" description="" pagetype="" path="/dashboard/community_translation/check_plural_rules">
+        </page>
+        <page package="community_translation" name="Community Translation Options" description="" pagetype="" path="/dashboard/community_translation/options">
+        </page>
+        <page package="community_translation" name="API" description="" pagetype="" path="/dashboard/community_translation/options/api">
+            <attributes>
+                <attributekey handle="exclude_nav"><value>1</value></attributekey>
+            </attributes>
+        </page>
+        <page package="community_translation" name="CLI" description="" pagetype="" path="/dashboard/community_translation/options/cli">
+            <attributes>
+                <attributekey handle="exclude_nav"><value>1</value></attributekey>
+            </attributes>
+        </page>
+        <page package="community_translation" name="Notifications" description="" pagetype="" path="/dashboard/community_translation/options/notifications">
+            <attributes>
+                <attributekey handle="exclude_nav"><value>1</value></attributekey>
+            </attributes>
+        </page>
+        <page package="community_translation" name="Paths" description="" pagetype="" path="/dashboard/community_translation/options/paths">
+            <attributes>
+                <attributekey handle="exclude_nav"><value>1</value></attributekey>
+            </attributes>
+        </page>
+        <page package="community_translation" name="Translation" description="" pagetype="" path="/dashboard/community_translation/options/translate">
+            <attributes>
+                <attributekey handle="exclude_nav"><value>1</value></attributekey>
+            </attributes>
         </page>
     </singlepages>
+
+    <ipaccesscontrolcategories>
+        <ipaccesscontrolcategory
+            handle="community_translation_api_access"
+            enabled="1"
+            name="Community Translation API Access"
+            max-events="5"
+            time-window="300"
+            ban-duration="600"
+            site-specific="1"
+            log-channel-handle="community_translation-api-access"
+            package="community_translation"
+        />
+        <ipaccesscontrolcategory
+            handle="community_translation_api_ratelimit"
+            enabled="0"
+            name="Community Translation API Rate Limit"
+            max-events="30000"
+            time-window="3600"
+            ban-duration="3600"
+            site-specific="1"
+            log-channel-handle=""
+            package="community_translation"
+        />
+        <ipaccesscontrolcategory
+            handle="community_translation_bt_fill_translations"
+            enabled="1"
+            name="Community Translation Rate Limit for Fill Translations block type"
+            max-events="2"
+            time-window="60"
+            ban-duration="30"
+            site-specific="1"
+            log-channel-handle=""
+            package="community_translation"
+        />
+    </ipaccesscontrolcategories>
 
 </concrete5-cif>

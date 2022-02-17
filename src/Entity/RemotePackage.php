@@ -1,17 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Entity;
 
-use DateTime;
-use Doctrine\ORM\Mapping as ORM;
+use DateTimeImmutable;
+
+defined('C5_EXECUTE') or die('Access Denied.');
 
 /**
  * Represent a remote package to be imported.
  *
- * @ORM\Entity(
+ * @Doctrine\ORM\Mapping\Entity(
  *     repositoryClass="CommunityTranslation\Repository\RemotePackage",
  * )
- * @ORM\Table(
+ * @Doctrine\ORM\Mapping\Table(
  *     name="CommunityTranslationRemotePackages",
  *     options={
  *         "comment": "List of all remote packages to be imported"
@@ -21,70 +24,113 @@ use Doctrine\ORM\Mapping as ORM;
 class RemotePackage
 {
     /**
-     * @param string $handle
-     * @param string $version
-     * @param string $archiveUrl
-     *
-     * @return static
-     */
-    public static function create($handle, $version, $archiveUrl)
-    {
-        $result = new static();
-        $result->id = null;
-        $result->handle = (string) $handle;
-        $result->name = '';
-        $result->url = '';
-        $result->approved = true;
-        $result->version = (string) $version;
-        $result->archiveUrl = (string) $archiveUrl;
-        $result->createdOn = new DateTime();
-        $result->processedOn = null;
-        $result->failCount = 0;
-        $result->lastError = '';
-
-        return $result;
-    }
-
-    protected function __construct()
-    {
-    }
-
-    /**
      * Remote package ID.
      *
-     * @ORM\Column(type="integer", options={"unsigned": true, "comment": "Remote package ID"})
-     * @ORM\Id
-     * @ORM\GeneratedValue(strategy="AUTO")
-     *
-     * @var int|null
+     * @Doctrine\ORM\Mapping\Column(type="integer", options={"unsigned": true, "comment": "Remote package ID"})
+     * @Doctrine\ORM\Mapping\Id
+     * @Doctrine\ORM\Mapping\GeneratedValue(strategy="AUTO")
      */
-    protected $id;
+    protected ?int $id;
+
+    /**
+     * Remote package handle.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="string", length=64, nullable=false, options={"comment": "Remote package handle"})
+     */
+    protected string $handle;
+
+    /**
+     * Remote package name.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="string", length=255, nullable=false, options={"comment": "Remote package name"})
+     */
+    protected string $name;
+
+    /**
+     * Remote package is approved?
+     *
+     * @Doctrine\ORM\Mapping\Column(type="boolean", nullable=false, options={"comment": "Remote package is approved?"})
+     */
+    protected bool $approved;
+
+    /**
+     * Remote package URL.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="string", length=2000, nullable=false, options={"comment": "Remote package URL"})
+     */
+    protected string $url;
+
+    /**
+     * Remote package version.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="string", length=64, nullable=false, options={"comment": "Remote package version"})
+     */
+    protected string $version;
+
+    /**
+     * URL of the remote package.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="string", length=2000, nullable=false, options={"comment": "URL of the remote package"})
+     */
+    protected string $archiveUrl;
+
+    /**
+     * Record creation date/time.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="datetime_immutable", nullable=false, options={"comment": "Record creation date/time"})
+     *
+     * @var DateTimeImmutable
+     */
+    protected DateTimeImmutable $createdOn;
+
+    /**
+     * Processed date/time (NULL if still to be processed).
+     *
+     * @Doctrine\ORM\Mapping\Column(type="datetime_immutable", nullable=true, options={"comment": "Processed date/time (NULL if still to be processed)"})
+     */
+    protected ?DateTimeImmutable $processedOn;
+
+    /**
+     * Number of process failures.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="integer", nullable=false, options={"unsigned": true, "comment": "Number of process failures"})
+     */
+    protected int $failCount;
+
+    /**
+     * The last process error.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="text", nullable=false, options={"comment": "Last process error"})
+     */
+    protected string $lastError;
+
+    public function __construct(string $handle, string $version, string $archiveUrl)
+    {
+        $this->id = null;
+        $this->handle = $handle;
+        $this->name = '';
+        $this->approved = true;
+        $this->url = '';
+        $this->version = $version;
+        $this->archiveUrl = $archiveUrl;
+        $this->createdOn = new DateTimeImmutable();
+        $this->processedOn = null;
+        $this->failCount = 0;
+        $this->lastError = '';
+    }
 
     /**
      * Get the remote package ID.
-     *
-     * @return int|null
      */
-    public function getID()
+    public function getID(): ?int
     {
         return $this->id;
     }
 
     /**
-     * Remote package handle.
-     *
-     * @ORM\Column(type="string", length=64, nullable=false, options={"comment": "Remote package handle"})
-     *
-     * @var string
-     */
-    protected $handle;
-
-    /**
      * Get the remote package handle.
-     *
-     * @return string
      */
-    public function getHandle()
+    public function getHandle(): string
     {
         return $this->handle;
     }
@@ -92,32 +138,19 @@ class RemotePackage
     /**
      * Set the remote package handle.
      *
-     * @param string $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setHandle($value)
+    public function setHandle(string $value): self
     {
-        $this->handle = (string) $value;
+        $this->handle = $value;
 
         return $this;
     }
 
     /**
-     * Remote package name.
-     *
-     * @ORM\Column(type="string", length=255, nullable=false, options={"comment": "Remote package name"})
-     *
-     * @var string
-     */
-    protected $name;
-
-    /**
      * Get the remote package name.
-     *
-     * @return string
      */
-    public function getName()
+    public function getName(): string
     {
         return $this->name;
     }
@@ -125,32 +158,19 @@ class RemotePackage
     /**
      * Set the remote package name.
      *
-     * @param string $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setName($value)
+    public function setName(string $value): self
     {
-        $this->name = (string) $value;
+        $this->name = $value;
 
         return $this;
     }
 
     /**
-     * Remote package is approved?
-     *
-     * @ORM\Column(type="boolean", nullable=false, options={"comment": "Remote package is approved?"})
-     *
-     * @var bool
-     */
-    protected $approved;
-
-    /**
      * Is the remote package approved?
-     *
-     * @return bool
      */
-    public function isApproved()
+    public function isApproved(): bool
     {
         return $this->approved;
     }
@@ -158,32 +178,19 @@ class RemotePackage
     /**
      * Is the remote package approved?
      *
-     * @param bool $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setIsApproved($value)
+    public function setIsApproved(bool $value): self
     {
-        $this->approved = $value ? true : false;
+        $this->approved = $value;
 
         return $this;
     }
 
     /**
-     * Remote package URL.
-     *
-     * @ORM\Column(type="string", length=2000, nullable=false, options={"comment": "Remote package URL"})
-     *
-     * @var string
-     */
-    protected $url;
-
-    /**
      * Get the remote package URL.
-     *
-     * @return string
      */
-    public function getUrl()
+    public function getUrl(): string
     {
         return $this->url;
     }
@@ -191,32 +198,19 @@ class RemotePackage
     /**
      * Set the remote package URL.
      *
-     * @param string $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setUrl($value)
+    public function setUrl(string $value): self
     {
-        $this->url = (string) $value;
+        $this->url = $value;
 
         return $this;
     }
 
     /**
-     * Remote package version.
-     *
-     * @ORM\Column(type="string", length=64, nullable=false, options={"comment": "Remote package version"})
-     *
-     * @var string
-     */
-    protected $version;
-
-    /**
      * Get the remote package version.
-     *
-     * @return string
      */
-    public function getVersion()
+    public function getVersion(): string
     {
         return $this->version;
     }
@@ -224,32 +218,19 @@ class RemotePackage
     /**
      * Set the remote package version.
      *
-     * @param string $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setVersion($value)
+    public function setVersion(string $value): self
     {
-        $this->version = (string) $value;
+        $this->version = $value;
 
         return $this;
     }
 
     /**
-     * URL of the remote package.
-     *
-     * @ORM\Column(type="string", length=2000, nullable=false, options={"comment": "URL of the remote package"})
-     *
-     * @var string
-     */
-    protected $archiveUrl;
-
-    /**
      * Get the URL of the remote package.
-     *
-     * @return string
      */
-    public function getArchiveUrl()
+    public function getArchiveUrl(): string
     {
         return $this->archiveUrl;
     }
@@ -257,51 +238,27 @@ class RemotePackage
     /**
      * Set the URL of the remote package.
      *
-     * @param string $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setArchiveUrl($value)
+    public function setArchiveUrl(string $value): self
     {
-        $this->archiveUrl = (string) $value;
+        $this->archiveUrl = $value;
 
         return $this;
     }
 
     /**
-     * Record creation date/time.
-     *
-     * @ORM\Column(type="datetime", nullable=false, options={"comment": "Record creation date/time"})
-     *
-     * @var DateTime
-     */
-    protected $createdOn;
-
-    /**
      * Get the record creation date/time.
-     *
-     * @return DateTime
      */
-    public function getCreatedOn()
+    public function getCreatedOn(): DateTimeImmutable
     {
         return $this->createdOn;
     }
 
     /**
-     * Processed date/time (NULL if still to be processed).
-     *
-     * @ORM\Column(type="datetime", nullable=true, options={"comment": "Processed date/time (NULL if still to be processed)"})
-     *
-     * @var DateTime|null
-     */
-    protected $processedOn;
-
-    /**
      * Get the processed date/time (NULL if still to be processed).
-     *
-     * @return DateTime|null
      */
-    public function getProcessedOn()
+    public function getProcessedOn(): ?DateTimeImmutable
     {
         return $this->processedOn;
     }
@@ -309,11 +266,9 @@ class RemotePackage
     /**
      * Set the processed date/time (NULL if still to be processed).
      *
-     * @param DateTime|null $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setProcessedOn(DateTime $value = null)
+    public function setProcessedOn(?DateTimeImmutable $value): self
     {
         $this->processedOn = $value;
 
@@ -321,20 +276,9 @@ class RemotePackage
     }
 
     /**
-     * Number of process failures.
-     *
-     * @ORM\Column(type="integer", nullable=false, options={"unsigned": true, "comment": "Number of process failures"})
-     *
-     * @var int
-     */
-    protected $failCount;
-
-    /**
      * Get the umber of process failures.
-     *
-     * @return int
      */
-    public function getFailCount()
+    public function getFailCount(): int
     {
         return $this->failCount;
     }
@@ -342,32 +286,19 @@ class RemotePackage
     /**
      * Set the umber of process failures.
      *
-     * @param int $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setFailCount($value)
+    public function setFailCount(int $value): self
     {
-        $this->failCount = (int) $value;
+        $this->failCount = $value;
 
         return $this;
     }
 
     /**
-     * The last process error.
-     *
-     * @ORM\Column(type="text", nullable=false, options={"comment": "Last process error"})
-     *
-     * @var string
-     */
-    protected $lastError;
-
-    /**
      * Get the last process error.
-     *
-     * @return string
      */
-    public function getLastError()
+    public function getLastError(): string
     {
         return $this->lastError;
     }
@@ -375,13 +306,11 @@ class RemotePackage
     /**
      * Set the last process error.
      *
-     * @param string $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setLastError($value)
+    public function setLastError(string $value): self
     {
-        $this->lastError = (string) $value;
+        $this->lastError = $value;
 
         return $this;
     }

@@ -1,17 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Concrete\Package\CommunityTranslation;
 
-use CommunityTranslation\Console\Command\AcceptPendingJoinRequestsCommand;
-use CommunityTranslation\Console\Command\NotifyPackageVersionsCommand;
-use CommunityTranslation\Console\Command\ProcessGitRepositoriesCommand;
-use CommunityTranslation\Console\Command\ProcessRemotePackagesCommand;
-use CommunityTranslation\Console\Command\RemoveLoggedIPAddressesCommand;
-use CommunityTranslation\Console\Command\SendNotificationsCommand;
-use CommunityTranslation\Console\Command\TransifexGlossaryCommand;
-use CommunityTranslation\Console\Command\TransifexTranslationsCommand;
+use CommunityTranslation\Api\EntryPoint as ApiEntryPoint;
+use CommunityTranslation\Console\Command;
 use CommunityTranslation\Entity\Locale as LocaleEntity;
-use CommunityTranslation\Parser\Concrete5Parser;
+use CommunityTranslation\Parser\ConcreteCMSParser;
 use CommunityTranslation\Parser\Provider as ParserProvider;
 use CommunityTranslation\Repository\Locale as LocaleRepository;
 use CommunityTranslation\Repository\Package as PackageRepository;
@@ -19,26 +15,28 @@ use CommunityTranslation\Service\EntitiesEventSubscriber;
 use CommunityTranslation\Service\EventSubscriber;
 use CommunityTranslation\ServiceProvider;
 use Concrete\Core\Asset\AssetList;
-use Concrete\Core\Backup\ContentImporter;
-use Concrete\Core\Entity\Package as PackageEntity;
+use Concrete\Core\Config\Repository\Repository;
+use Concrete\Core\Database\EntityManager\Provider\ProviderAggregateInterface;
+use Concrete\Core\Database\EntityManager\Provider\StandardPackageProvider;
 use Concrete\Core\Package\Package;
-use Concrete\Core\Package\PackageService;
 use Concrete\Core\Routing\Router;
 use Doctrine\ORM\EntityManager;
+
+defined('C5_EXECUTE') or die('Access Denied.');
 
 /**
  * The package controller.
  *
  * Handle installation/upgrading and startup of Community Translation.
  */
-class Controller extends Package
+class Controller extends Package implements ProviderAggregateInterface
 {
     /**
-     * The minimum concrete5 version.
+     * {@inheritdoc}
      *
-     * @var string
+     * @see \Concrete\Core\Package\Package::$appVersionRequired
      */
-    protected $appVersionRequired = '8.2.0';
+    protected $appVersionRequired = '9.0.3a1';
 
     /**
      * The package unique handle.
@@ -52,18 +50,18 @@ class Controller extends Package
      *
      * @var string
      */
-    protected $pkgVersion = '0.6.14';
+    protected $pkgVersion = '1.0.0';
 
     /**
-     * The mapping between RelativeDirectory <-> Namespace to autoload package classes.
+     * {@inheritdoc}
      *
-     * @var array
+     * @see \Concrete\Core\Package\Package::$pkgAutoloaderRegistries
      */
     protected $pkgAutoloaderRegistries = [
         'src' => 'CommunityTranslation',
     ];
 
-    protected $pkgAllowsFullContentSwap = true;
+    private string $upgradingFromVersion = '';
 
     /**
      * {@inheritdoc}
@@ -88,17 +86,28 @@ class Controller extends Package
     /**
      * {@inheritdoc}
      *
+     * @see \Concrete\Core\Database\EntityManager\Provider\ProviderAggregateInterface::getEntityManagerProvider()
+     */
+    public function getEntityManagerProvider()
+    {
+        return new StandardPackageProvider($this->app, $this, [
+            'src/Entity' => 'CommunityTranslation\Entity',
+        ]);
+    }
+
+    /**
+     * {@inheritdoc}
+     *
      * @see \Concrete\Core\Package\Package::install()
      */
     public function install()
     {
         parent::install();
+        $this->installXml();
         $this->registerServiceProvider();
         $this->configureSourceLocale();
         $this->refreshLatestPackageVersions();
     }
-
-    private $upgradingFromVersion = null;
 
     /**
      * {@inheritdoc}
@@ -109,7 +118,7 @@ class Controller extends Package
     {
         $e = $this->getPackageEntity();
         if ($e !== null) {
-            $this->upgradingFromVersion = $e->getPackageVersion();
+            $this->upgradingFromVersion = (string) $e->getPackageVersion();
         }
         parent::upgradeCoreData();
     }
@@ -122,40 +131,9 @@ class Controller extends Package
     public function upgrade()
     {
         parent::upgrade();
-        if ($this->upgradingFromVersion !== null && version_compare($this->upgradingFromVersion, '0.4.0') < 0) {
+        $this->installXml();
+        if ($this->upgradingFromVersion !== '' && version_compare($this->upgradingFromVersion, '0.4.0') < 0) {
             $this->refreshLatestPackageVersions();
-        }
-    }
-
-    /**
-     * Configure the source locale.
-     */
-    private function configureSourceLocale()
-    {
-        $em = $this->app->make(EntityManager::class);
-        /* @var EntityManager $em */
-        $repo = $this->app->make(LocaleRepository::class);
-        if ($repo->findOneBy(['isSource' => true]) === null) {
-            $locale = LocaleEntity::create('en_US');
-            $locale
-                ->setIsApproved(true)
-                ->setIsSource(true)
-            ;
-            $em->persist($locale);
-            $em->flush($locale);
-        }
-    }
-
-    private function refreshLatestPackageVersions()
-    {
-        $ees = $this->app->make(EntitiesEventSubscriber::class);
-        /* @var EntitiesEventSubscriber $ees */
-        $packageRepo = $this->app->make(PackageRepository::class);
-        /* @var PackageRepository $packageRepo */
-        $em = $this->app->make(EntityManager::class);
-        /* @var EntityManager $em */
-        foreach ($packageRepo->findAll() as $package) {
-            $ees->refreshPackageLatestVersion($em, $package);
         }
     }
 
@@ -176,77 +154,118 @@ class Controller extends Package
     }
 
     /**
+     * Install/refresh stuff from the XML installation file.
+     */
+    private function installXml(): void
+    {
+        $this->installContentFile('install.xml');
+    }
+
+    /**
+     * Configure the source locale.
+     */
+    private function configureSourceLocale(): void
+    {
+        $em = $this->app->make(EntityManager::class);
+        $repo = $this->app->make(LocaleRepository::class);
+        if ($repo->findOneBy(['isSource' => true]) === null) {
+            $locale = new LocaleEntity('en_US');
+            $locale
+                ->setIsApproved(true)
+                ->setIsSource(true)
+            ;
+            $em->persist($locale);
+            $em->flush($locale);
+        }
+    }
+
+    private function refreshLatestPackageVersions(): void
+    {
+        $ees = $this->app->make(EntitiesEventSubscriber::class);
+        $packageRepo = $this->app->make(PackageRepository::class);
+        $em = $this->app->make(EntityManager::class);
+        foreach ($packageRepo->findAll() as $package) {
+            $ees->refreshPackageLatestVersion($em, $package);
+        }
+    }
+
+    /**
      * Register some commonly used service classes.
      */
-    private function registerServiceProvider()
+    private function registerServiceProvider(): void
     {
         $provider = $this->app->make(ServiceProvider::class);
         $provider->register();
     }
 
-    private function registerParsers()
+    private function registerParsers(): void
     {
-        $this->app->make(ParserProvider::class)->register(Concrete5Parser::class);
+        $this->app->make(ParserProvider::class)->registerParserClass(ConcreteCMSParser::class);
     }
 
     /**
      * Register the CLI commands.
      */
-    private function registerCLICommands()
+    private function registerCLICommands(): void
     {
         $console = $this->app->make('console');
-        $console->add(new TransifexTranslationsCommand());
-        $console->add(new TransifexGlossaryCommand());
-        $console->add(new ProcessGitRepositoriesCommand());
-        $console->add(new AcceptPendingJoinRequestsCommand());
-        $console->add(new SendNotificationsCommand());
-        $console->add(new RemoveLoggedIPAddressesCommand());
-        $console->add(new NotifyPackageVersionsCommand());
-        $console->add(new ProcessRemotePackagesCommand());
+        $console->addCommands([
+            new Command\AcceptPendingJoinRequestsCommand(),
+            new Command\NotifyPackageVersionsCommand(),
+            new Command\ProcessGitRepositoriesCommand(),
+            new Command\ProcessRemotePackagesCommand(),
+            new Command\SendNotificationsCommand(),
+            new Command\TransifexGlossaryCommand(),
+            new Command\TransifexTranslationsCommand(),
+        ]);
     }
 
     /**
      * Register the assets.
      */
-    private function registerAssets()
+    private function registerAssets(): void
     {
         $al = AssetList::getInstance();
         $al->registerMultiple([
-            'jquery/scroll-to' => [
-                ['javascript', 'js/jquery.scrollTo.min.js', ['minify' => true, 'combine' => true, 'version' => '2.1.2'], $this],
+            'community_translation/table-sortable' => [
+                ['css', 'css/table-sortable.css', ['minify' => false, 'combine' => true], $this],
+                ['javascript', 'js/table-sortable.js', ['minify' => false, 'combine' => true], $this],
             ],
-            'community_translation/online_translation/markdown-it' => [
-                ['javascript', 'js/markdown-it.min.js', ['minify' => false, 'combine' => true], $this],
+            'community_translation/bootstrap' => [
+                ['javascript', 'js/bootstrap.js', ['minify' => false, 'combine' => false], $this],
             ],
-            'community_translation/online_translation/core' => [
-                ['css', 'css/online-translation.css', ['minify' => false, 'combine' => true], $this],
-                ['javascript', 'js/online-translation.js', ['minify' => true, 'combine' => true], $this],
+            'community_translation/markdown-it' => [
+                ['javascript', 'js/markdown-it.js', ['minify' => false, 'combine' => false], $this],
             ],
-            'jquery/comtraSortable' => [
-                ['css', 'css/jquery.comtraSortable.css', ['minify' => true, 'combine' => true], $this],
-                ['javascript', 'js/jquery.comtraSortable.js', ['minify' => true, 'combine' => true], $this],
+            'community_translation/progress-bar' => [
+                ['css', 'css/progress-bar.css', ['minify' => false, 'combine' => true], $this],
+            ],
+            'community_translation/online-translation' => [
+                ['css', 'css/online-translation.css', ['minify' => false, 'combine' => false], $this],
             ],
         ]);
         $al->registerGroupMultiple([
-            'jquery/scroll-to' => [
-                [
-                    ['javascript', 'jquery'],
-                    ['javascript', 'jquery/scroll-to'],
-                ],
-            ],
-            'community_translation/online_translation' => [
-                [
-                    ['css', 'community_translation/online_translation/core'],
-                    ['javascript', 'community_translation/online_translation/bootstrap'],
-                    ['javascript', 'community_translation/online_translation/markdown-it'],
-                    ['javascript', 'community_translation/online_translation/core'],
-                ],
-            ],
-            'jquery/comtraSortable' => [
+            'community_translation/table-sortable' => [
                 [
                     ['css', 'font-awesome'],
-                    ['css', 'jquery/comtraSortable'],
-                    ['javascript', 'jquery/comtraSortable'],
+                    ['css', 'community_translation/table-sortable'],
+                    ['javascript', 'jquery'],
+                    ['javascript', 'community_translation/table-sortable'],
+                ],
+            ],
+            'community_translation/progress-bar' => [
+                [
+                    ['css', 'community_translation/progress-bar'],
+                ],
+            ],
+            'community_translation/online-translation' => [
+                [
+                    ['css', 'font-awesome'],
+                    ['css', 'community_translation/online-translation'],
+                    ['javascript', 'jquery'],
+                    ['javascript', 'vue'],
+                    ['javascript', 'community_translation/bootstrap'],
+                    ['javascript', 'community_translation/markdown-it'],
                 ],
             ],
         ]);
@@ -255,16 +274,16 @@ class Controller extends Package
     /**
      * Register the routes.
      */
-    private function registerRoutes()
+    private function registerRoutes(): void
     {
-        $config = $this->app->make('community_translation/config');
-        $onlineTranslationPath = $config->get('options.onlineTranslationPath');
-        $apiEntryPoint = $config->get('options.api.entryPoint');
+        $config = $this->app->make(Repository::class);
+        $onlineTranslationPath = '/' . trim((string) $config->get('community_translation::paths.onlineTranslation'), '/');
+        $apiBasePath = '/' . trim((string) $config->get('community_translation::paths.api'), '/');
         $handleRegex = '[A-Za-z0-9]([A-Za-z0-9\_]*[A-Za-z0-9])?';
         $localeRegex = '[a-zA-Z]{2,3}([_\-][a-zA-Z0-9]{2,3})?';
         $this->app->make(Router::class)->registerMultiple([
             // Online Translation
-            "$onlineTranslationPath/{packageVersionID}/{localeID}" => [
+            "{$onlineTranslationPath}/{packageVersionID}/{localeID}" => [
                 'Concrete\Package\CommunityTranslation\Controller\Frontend\OnlineTranslation::view',
                 null,
                 ['packageVersionID' => 'unreviewed|[1-9][0-9]*', 'localeID' => $localeRegex],
@@ -273,7 +292,7 @@ class Controller extends Package
                 [],
                 ['GET'],
             ],
-            "$onlineTranslationPath/action/save_comment/{localeID}" => [
+            "{$onlineTranslationPath}/action/save_comment/{localeID}" => [
                 'Concrete\Package\CommunityTranslation\Controller\Frontend\OnlineTranslation::save_comment',
                 null,
                 ['localeID' => $localeRegex],
@@ -282,7 +301,7 @@ class Controller extends Package
                 [],
                 ['POST'],
             ],
-            "$onlineTranslationPath/action/delete_comment/{localeID}" => [
+            "{$onlineTranslationPath}/action/delete_comment/{localeID}" => [
                 'Concrete\Package\CommunityTranslation\Controller\Frontend\OnlineTranslation::delete_comment',
                 null,
                 ['localeID' => $localeRegex],
@@ -291,7 +310,7 @@ class Controller extends Package
                 [],
                 ['POST'],
             ],
-            "$onlineTranslationPath/action/load_all_places/{localeID}" => [
+            "{$onlineTranslationPath}/action/load_all_places/{localeID}" => [
                 'Concrete\Package\CommunityTranslation\Controller\Frontend\OnlineTranslation::load_all_places',
                 null,
                 ['localeID' => $localeRegex],
@@ -300,7 +319,7 @@ class Controller extends Package
                 [],
                 ['POST'],
             ],
-            "$onlineTranslationPath/action/process_translation/{localeID}" => [
+            "{$onlineTranslationPath}/action/process_translation/{localeID}" => [
                 'Concrete\Package\CommunityTranslation\Controller\Frontend\OnlineTranslation::process_translation',
                 null,
                 ['localeID' => $localeRegex],
@@ -309,7 +328,7 @@ class Controller extends Package
                 [],
                 ['POST'],
             ],
-            "$onlineTranslationPath/action/load_translation/{localeID}" => [
+            "{$onlineTranslationPath}/action/load_translation/{localeID}" => [
                 'Concrete\Package\CommunityTranslation\Controller\Frontend\OnlineTranslation::load_translation',
                 null,
                 ['localeID' => $localeRegex],
@@ -318,8 +337,8 @@ class Controller extends Package
                 [],
                 ['POST'],
             ],
-            "$onlineTranslationPath/action/save_glossary_term/{localeID}" => [
-                'Concrete\Package\CommunityTranslation\Controller\Frontend\OnlineTranslation::save_glossary_term',
+            "{$onlineTranslationPath}/action/save_glossary_entry/{localeID}" => [
+                'Concrete\Package\CommunityTranslation\Controller\Frontend\OnlineTranslation::save_glossary_entry',
                 null,
                 ['localeID' => $localeRegex],
                 [],
@@ -327,8 +346,8 @@ class Controller extends Package
                 [],
                 ['POST'],
             ],
-            "$onlineTranslationPath/action/delete_glossary_term/{localeID}" => [
-                'Concrete\Package\CommunityTranslation\Controller\Frontend\OnlineTranslation::delete_glossary_term',
+            "{$onlineTranslationPath}/action/delete_glossary_entry/{localeID}" => [
+                'Concrete\Package\CommunityTranslation\Controller\Frontend\OnlineTranslation::delete_glossary_entry',
                 null,
                 ['localeID' => $localeRegex],
                 [],
@@ -336,7 +355,7 @@ class Controller extends Package
                 [],
                 ['POST'],
             ],
-            "$onlineTranslationPath/action/download/{localeID}" => [
+            "{$onlineTranslationPath}/action/download/{localeID}" => [
                 'Concrete\Package\CommunityTranslation\Controller\Frontend\OnlineTranslation::download',
                 null,
                 ['localeID' => $localeRegex],
@@ -345,7 +364,7 @@ class Controller extends Package
                 [],
                 ['POST'],
             ],
-            "$onlineTranslationPath/action/upload/{localeID}" => [
+            "{$onlineTranslationPath}/action/upload/{localeID}" => [
                 'Concrete\Package\CommunityTranslation\Controller\Frontend\OnlineTranslation::upload',
                 null,
                 ['localeID' => $localeRegex],
@@ -354,7 +373,7 @@ class Controller extends Package
                 [],
                 ['POST'],
             ],
-            "$onlineTranslationPath/action/save_notifications/{packageID}" => [
+            "{$onlineTranslationPath}/action/save_notifications/{packageID}" => [
                 'Concrete\Package\CommunityTranslation\Controller\Frontend\OnlineTranslation::save_notifications',
                 null,
                 ['packageID' => '\d+'],
@@ -364,8 +383,8 @@ class Controller extends Package
                 ['POST'],
             ],
             // API Entry Points
-            "$apiEntryPoint/rate-limit/" => [
-                'CommunityTranslation\Api\EntryPoint::getRateLimit',
+            "{$apiBasePath}/rate-limit" => [
+                ApiEntryPoint\GetRateLimit::class . '::__invoke',
                 null,
                 [],
                 [],
@@ -373,8 +392,8 @@ class Controller extends Package
                 [],
                 ['GET'],
             ],
-            "$apiEntryPoint/locales/" => [
-                'CommunityTranslation\Api\EntryPoint::getLocales',
+            "{$apiBasePath}/locales" => [
+                ApiEntryPoint\GetLocales::class . '::__invoke',
                 null,
                 [],
                 [],
@@ -382,8 +401,8 @@ class Controller extends Package
                 [],
                 ['GET'],
             ],
-            "$apiEntryPoint/packages/" => [
-                'CommunityTranslation\Api\EntryPoint::getPackages',
+            "{$apiBasePath}/packages" => [
+                ApiEntryPoint\GetPackages::class . '::__invoke',
                 null,
                 [],
                 [],
@@ -391,8 +410,8 @@ class Controller extends Package
                 [],
                 ['GET'],
             ],
-            "$apiEntryPoint/package/{packageHandle}/versions/" => [
-                'CommunityTranslation\Api\EntryPoint::getPackageVersions',
+            "{$apiBasePath}/package/{packageHandle}/versions" => [
+                ApiEntryPoint\GetPackageVersions::class . '::__invoke',
                 null,
                 ['packageHandle' => $handleRegex],
                 [],
@@ -400,8 +419,8 @@ class Controller extends Package
                 [],
                 ['GET'],
             ],
-            "$apiEntryPoint/package/{packageHandle}/{packageVersion}/locales/{minimumLevel}/" => [
-                'CommunityTranslation\Api\EntryPoint::getPackageVersionLocales',
+            "{$apiBasePath}/package/{packageHandle}/{packageVersion}/locales/{minimumLevel}" => [
+                ApiEntryPoint\GetPackageVersionLocales::class . '::__invoke',
                 null,
                 ['packageHandle' => $handleRegex, 'minimumLevel' => '[0-9]{1,3}'],
                 [],
@@ -409,8 +428,8 @@ class Controller extends Package
                 [],
                 ['GET'],
             ],
-            "$apiEntryPoint/package/{packageHandle}/{packageVersion}/translations/{localeID}/{formatHandle}/" => [
-                'CommunityTranslation\Api\EntryPoint::getPackageVersionTranslations',
+            "{$apiBasePath}/package/{packageHandle}/{packageVersion}/translations/{localeID}/{formatHandle}" => [
+                ApiEntryPoint\GetPackageVersionTranslations::class . '::__invoke',
                 null,
                 ['packageHandle' => $handleRegex, 'localeID' => $localeRegex, 'formatHandle' => $handleRegex],
                 [],
@@ -418,8 +437,8 @@ class Controller extends Package
                 [],
                 ['GET'],
             ],
-            "$apiEntryPoint/fill-translations/{formatHandle}/" => [
-                'CommunityTranslation\Api\EntryPoint::fillTranslations',
+            "{$apiBasePath}/fill-translations/{formatHandle}" => [
+                ApiEntryPoint\FillTranslations::class . '::__invoke',
                 null,
                 ['formatHandle' => $handleRegex],
                 [],
@@ -427,8 +446,8 @@ class Controller extends Package
                 [],
                 ['POST'],
             ],
-            "$apiEntryPoint/package/{packageHandle}/{packageVersion}/translatables/{formatHandle}/" => [
-                'CommunityTranslation\Api\EntryPoint::importPackageVersionTranslatables',
+            "{$apiBasePath}/package/{packageHandle}/{packageVersion}/translatables/{formatHandle}" => [
+                ApiEntryPoint\ImportPackageVersionTranslatables::class . '::__invoke',
                 null,
                 ['packageHandle' => $handleRegex, 'formatHandle' => $handleRegex],
                 [],
@@ -436,8 +455,8 @@ class Controller extends Package
                 [],
                 ['POST'],
             ],
-            "$apiEntryPoint/translations/{localeID}/{formatHandle}/{approve}/" => [
-                'CommunityTranslation\Api\EntryPoint::importTranslations',
+            "{$apiBasePath}/translations/{localeID}/{formatHandle}/{approve}" => [
+                ApiEntryPoint\ImportTranslations::class . '::__invoke',
                 null,
                 ['localeID' => $localeRegex, 'formatHandle' => $handleRegex, 'approve' => '[01]'],
                 [],
@@ -445,8 +464,8 @@ class Controller extends Package
                 [],
                 ['POST'],
             ],
-            "$apiEntryPoint/import/package/" => [
-                'CommunityTranslation\Api\EntryPoint::importPackage',
+            "{$apiBasePath}/import/package" => [
+                ApiEntryPoint\ImportPackage::class . '::__invoke',
                 null,
                 [],
                 [],
@@ -454,34 +473,14 @@ class Controller extends Package
                 [],
                 ['PUT'],
             ],
-            "$apiEntryPoint/{unrecognizedPath}" => [
-                'CommunityTranslation\Api\EntryPoint::unrecognizedCall',
+            "{$apiBasePath}/{unrecognizedPath}" => [
+                ApiEntryPoint\Unrecognized::class . '::__invoke',
                 null,
                 ['unrecognizedPath' => '.*'],
             ],
-            "$apiEntryPoint" => [
-                'CommunityTranslation\Api\EntryPoint::unrecognizedCall',
+            "{$apiBasePath}" => [
+                ApiEntryPoint\Unrecognized::class . '::__invoke',
             ],
         ]);
-    }
-
-    public function on_after_swap_content()
-    {
-        /** @var PackageService $packageService */
-        $packageService = $this->app->make(PackageService::class);
-        $pkgEntity = $packageService->getByHandle("concrete_cms_theme");
-
-        if ($pkgEntity instanceof PackageEntity) {
-            /** @var \Concrete\Package\ConcreteCmsTheme\Controller $pkg */
-            $pkg = $pkgEntity->getController();
-            $pkg->on_after_swap_content();
-        }
-
-        $site = $this->app->make('site')->getActiveSiteForEditing();
-        $siteConfig = $site->getConfigRepository();
-
-        $siteConfig->save("concrete_cms_theme.elements_package_handle", "community_translation");
-        $siteConfig->save("concrete_cms_theme.override_sub_nav", true);
-        $siteConfig->save("concrete_cms_theme.enable_dark_mode", true);
     }
 }

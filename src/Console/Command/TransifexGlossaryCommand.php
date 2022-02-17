@@ -1,30 +1,78 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Console\Command;
 
 use CommunityTranslation\Console\Command;
+use CommunityTranslation\Console\Command\TransifexGlossaryCommand\State;
 use CommunityTranslation\Entity\Glossary\Entry as GlossaryEntryEntity;
 use CommunityTranslation\Entity\Glossary\Entry\Localized as GlossaryEntryLocalizedEntity;
+use CommunityTranslation\Entity\Locale as LocaleEntity;
 use CommunityTranslation\Glossary\EntryType as GlossaryEntryType;
 use CommunityTranslation\Repository\Glossary\Entry as GlossaryEntryRepository;
-use CommunityTranslation\Repository\Locale as LocaleRepository;
+use Concrete\Core\Error\UserMessageException;
 use Doctrine\ORM\EntityManager;
-use Exception;
-use Illuminate\Filesystem\Filesystem;
-use Symfony\Component\Console\Input\InputArgument;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Output\OutputInterface;
+use Generator;
+use Throwable;
+
+defined('C5_EXECUTE') or die('Access Denied.');
 
 class TransifexGlossaryCommand extends Command
 {
-    protected function configure()
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Console\Command::$signature
+     */
+    protected $signature = <<<'EOT'
+ct:transifex:glossary:import
+    {file : The path to the CSV file downloaded from Transifex (see help) }
+EOT
+    ;
+
+    private EntityManager $em;
+
+    private GlossaryEntryRepository $entryRepo;
+
+    public function handle(EntityManager $em): int
     {
-        $errExitCode = static::RETURN_CODE_ON_FAILURE;
+        try {
+            $this->em = $em;
+            $locales = $this->em->getRepository(LocaleEntity::class)->findBy(['isSource' => null]);
+            $this->entryRepo = $this->em->getRepository(GlossaryEntryEntity::class);
+            $glossaryFile = $this->input->getArgument('file');
+            $fd = $this->openGlossaryFile($glossaryFile);
+            try {
+                $state = new State($locales);
+                $this->parseGlossaryFile($state, $fd);
+            } finally {
+                fclose($fd);
+            }
+
+            return 0;
+        } catch (Throwable $x) {
+            $this->output->writeln($this->formatThrowable($x));
+
+            return 1;
+        }
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Console\Command::configureUsingFluentDefinition()
+     */
+    protected function configureUsingFluentDefinition()
+    {
+        parent::configureUsingFluentDefinition();
         $this
-            ->setName('ct:transifex-glossary')
+            ->setAliases([
+                'ct:transifex-glossary',
+            ])
             ->setDescription('Import glossaries from Transifex')
-            ->addArgument('file', InputArgument::REQUIRED, 'The path to the CSV file downloaded from Transifex (see help)')
-            ->setHelp(<<<EOT
+            ->setHelp(
+                <<<'EOT'
 Transifex organizations (that groups one or more Transifex projects) can have one or more glossaries.
 
 This command allows you to import those glossaries.
@@ -41,85 +89,49 @@ When you download the glossary, you should choose to download all the languages,
 
 Returns codes:
   0 operation completed successfully
-  $errExitCode errors occurred
+  1 errors occurred
 EOT
             )
         ;
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output)
+    /**
+     * @return resource
+     */
+    private function openGlossaryFile(string $glossaryFile)
     {
-        $fs = $this->app->make(Filesystem::class);
-        /* @var Filesystem $fs */
-        $glossaryFile = $input->getArgument('file');
-        if (!$fs->isFile($glossaryFile)) {
-            throw new Exception("Unable to find the file $glossaryFile");
+        if (!is_file($glossaryFile)) {
+            throw new UserMessageException("Unable to find the file {$glossaryFile}");
         }
-        $fd = @fopen($glossaryFile, 'rb');
-        if ($fd === false) {
-            throw new Exception("Failed to open the glossary file $glossaryFile");
+        if (!is_readable($glossaryFile)) {
+            throw new UserMessageException("The file {$glossaryFile} is not readable");
         }
+        set_error_handler(static function () {}, -1);
         try {
-            $this->parseFile($output, $fd);
-        } catch (Exception $x) {
-            @fclose($fd);
-            throw $x;
+            $fd = fopen($glossaryFile, 'rb');
+        } finally {
+            restore_error_handler();
         }
-        @fclose($fd);
-    }
+        if (!$fd) {
+            throw new UserMessageException("Failed to open the file {$glossaryFile}");
+        }
 
-    private $map;
-    private $sourceFields;
-    private $localizedFields;
-    private $rxLocalizedFields;
-    private $rowIndex;
-    private $numFields;
-    /**
-     * @var EntityManager
-     */
-    private $em;
-    /**
-     * @var \Doctrine\ORM\EntityRepository
-     */
-    private $entryRepo;
-
-    private function initializeState()
-    {
-        $this->map = null;
-        $this->sourceFields = ['term' => 'setTerm', 'pos' => 'setType', 'comment' => 'setComments'];
-        $this->localizedFields = ['translation' => 'text', 'comment' => 'comments'];
-        $rx = '/^(';
-        foreach (array_keys($this->localizedFields) as $i => $f) {
-            if ($i > 0) {
-                $rx .= '|';
-            }
-            $rx .= preg_quote($f, '/');
-        }
-        $rx .= ')_(.+)$/';
-        $this->rxLocalizedFields = $rx;
-        $this->rowIndex = 0;
-        $this->numFields = 0;
-        $this->em = $this->app->make(EntityManager::class);
-        $this->entryRepo = $this->app->make(GlossaryEntryRepository::class);
-        $existingLocales = [];
-        foreach ($this->app->make(LocaleRepository::class)->findBy(['isSource' => null]) as $locale) {
-            $existingLocales[$locale->getID()] = $locale;
-        }
-        $this->existingLocales = $existingLocales;
+        return $fd;
     }
 
     /**
      * @param resource $fd
      */
-    private function parseFile(OutputInterface $output, $fd)
+    private function parseGlossaryFile(State $state, $fd): void
     {
-        $this->initializeState();
+        $headerLineParsed = false;
         foreach ($this->readCSVLine($fd) as $line) {
-            ++$this->rowIndex;
-            if ($this->map === null) {
-                $this->parseMap($output, $line);
+            $state->rowIndex++;
+            if ($headerLineParsed === false) {
+                $this->parseHeaderLine($state, $line);
+                $headerLineParsed = true;
             } else {
-                $this->parseLine($output, $line);
+                $this->parseDataLine($state, $line);
             }
         }
     }
@@ -127,30 +139,27 @@ EOT
     /**
      * @param resource $fd
      *
-     * @return array[array]
+     * @return string[][]
      */
-    private function readCSVLine($fd)
+    private function readCSVLine($fd): Generator
     {
-        for (; ;) {
-            $line = @fgetcsv($fd, 0, ',', '"');
+        for (;;) {
+            $line = fgetcsv($fd, 0, ',', '"');
             if ($line === false) {
                 break;
-            }
-            if ($line === null) {
-                throw new Exception('Error in CSV file');
             }
             yield $line;
         }
     }
 
     /**
-     * @param array $line
+     * @param string[] $line
      *
-     * @return array
+     * @throws \Concrete\Core\Error\UserMessageException
      */
-    private function parseMap(OutputInterface $output, array $line)
+    private function parseHeaderLine(State $state, array $line): void
     {
-        $output->write('Parsing CSV header... ');
+        $this->output->write('Parsing CSV header... ');
         $map = [];
         $testLocales = [];
         $numFields = 0;
@@ -158,16 +167,16 @@ EOT
         $m = null;
         foreach ($line as $index => $field) {
             if ($index !== $numFields) {
-                throw new Exception('Invalid field index: ' . $index);
+                throw new UserMessageException("Invalid field index: {$index}");
             }
             if (strpos($field, ',') !== false) {
-                throw new Exception('Invalid field name: ' . $field);
+                throw new UserMessageException("Invalid field name: {$field}");
             }
-            if (isset($this->sourceFields[$field])) {
-                ++$sourceFieldsFound;
-                $key = $this->sourceFields[$field];
-            } elseif (preg_match($this->rxLocalizedFields, $field, $m)) {
-                $mappedField = $this->localizedFields[$m[1]];
+            if (isset($state->sourceFields[$field])) {
+                $sourceFieldsFound++;
+                $key = $state->sourceFields[$field];
+            } elseif (preg_match($state->rxLocalizedFields, $field, $m)) {
+                $mappedField = $state->localizedFields[$m[1]];
                 $mappedLocale = $m[2];
                 if (!isset($testLocales[$mappedLocale])) {
                     $testLocales[$mappedLocale] = [];
@@ -175,52 +184,58 @@ EOT
                 $testLocales[$mappedLocale][] = $mappedField;
                 $key = $mappedLocale . ',' . $mappedField;
             } else {
-                throw new Exception('Unknown field #' . ($index + 1) . ': ' . $field);
+                $displayIndex = $index + 1;
+                throw new UserMessageException("Unknown field #{$displayIndex}: {$field}");
             }
             if (in_array($key, $map, true)) {
-                throw new Exception('Duplicated field: ' . $field);
+                throw new UserMessageException("Duplicated field: {$field}");
             }
             $map[$index] = $key;
-            ++$numFields;
+            $numFields++;
         }
-        if ($sourceFieldsFound !== count($this->sourceFields)) {
-            throw new Exception('Bad source fields count');
+        if ($sourceFieldsFound !== count($state->sourceFields)) {
+            throw new UserMessageException('Bad source fields count');
         }
         foreach ($testLocales as $id => $fields) {
-            if (count($fields) !== count($this->localizedFields)) {
-                throw new Exception('Bad fields count for locale ' . $id);
+            if (count($fields) !== count($state->localizedFields)) {
+                throw new UserMessageException("Bad fields count for locale {$id}");
             }
         }
-        $output->writeln('<info>done</info>');
-        $this->map = $map;
-        $this->numFields = $numFields;
+        $state->map = $map;
+        $state->numFields = $numFields;
+        $this->output->writeln('<info>done</info>');
     }
 
-    private function parseLine(OutputInterface $output, array $line)
+    /**
+     * @param string[] $line
+     *
+     * @throws \Concrete\Core\Error\UserMessageException
+     */
+    private function parseDataLine(State $state, array $line): void
     {
-        $output->writeln("Parsing row {$this->rowIndex}");
-        if (count($line) !== $this->numFields) {
-            throw new Exception('Bad fields count!');
+        $this->output->writeln("Parsing row {$state->rowIndex}");
+        if (count($line) !== $state->numFields) {
+            throw new UserMessageException('Bad fields count!');
         }
-        $entry = GlossaryEntryEntity::create();
+        $entry = new GlossaryEntryEntity('');
         $translations = [];
         foreach ($line as $index => $value) {
-            if (!isset($this->map[$index])) {
-                throw new Exception('Bad field index: ' . $index);
+            if (!isset($state->map[$index])) {
+                throw new UserMessageException("Bad field index: {$index}");
             }
-            $v = explode(',', $this->map[$index]);
+            $v = explode(',', $state->map[$index]);
             $value = trim($value);
             if (count($v) === 1) {
-                switch ($this->map[$index]) {
+                $setter = $state->map[$index];
+                switch ($setter) {
                     case 'setType':
                         $value = strtolower($value);
                         if (GlossaryEntryType::isValidType($value) !== true) {
-                            throw new Exception('Invalid term type: ' . $value);
+                            throw new UserMessageException("Invalid term type: {$value}");
                         }
                         break;
                 }
-
-                $entry->{$this->map[$index]}($value);
+                $entry->{$setter}($value);
             } else {
                 if (!isset($translations[$v[0]])) {
                     $translations[$v[0]] = [];
@@ -229,33 +244,33 @@ EOT
             }
         }
         if ($entry->getTerm() === '') {
-            $output->writeln('EMPTY TERM - SKIPPING');
+            $this->output->writeln('EMPTY TERM - SKIPPING');
 
             return;
         }
-        $output->write(' > term is "' . $entry->getTerm() . '" (type: "' . $entry->getType() . '")');
+        $this->output->write(" > term is \"{$entry->getTerm()}\" (type: \"{$entry->getType()}\")");
         $existing = $this->entryRepo->findOneBy(['term' => $entry->getTerm(), 'type' => $entry->getType()]);
         if ($existing === null) {
-            $output->write(' (NEW)');
+            $this->output->write(' (NEW)');
             $this->em->persist($entry);
             $this->em->flush($entry);
-            $output->writeln(' persisted');
+            $this->output->writeln(' persisted');
         } else {
-            $output->writeln(' (AREADY EXISTS)');
+            $this->output->writeln(' (AREADY EXISTS)');
             $entry = $existing;
         }
         ksort($translations);
         foreach ($translations as $localeID => $translation) {
-            $output->write(" > checking translation for $localeID... ");
+            $this->output->write(" > checking translation for {$localeID}... ");
             if ($translation['text'] === '') {
-                $output->writeln('empty translation - skipped');
+                $this->output->writeln('empty translation - skipped');
                 continue;
             }
-            if (!isset($this->existingLocales[$localeID])) {
-                $output->writeln('LOCALE NOT DEFINED - skipped');
+            if (!isset($state->existingLocales[$localeID])) {
+                $this->output->writeln('LOCALE NOT DEFINED - skipped');
                 continue;
             }
-            $locale = $this->existingLocales[$localeID];
+            $locale = $state->existingLocales[$localeID];
             $already = null;
             foreach ($entry->getTranslations() as $et) {
                 if ($et->getLocale() === $locale) {
@@ -264,16 +279,15 @@ EOT
                 }
             }
             if ($already !== null) {
-                $output->writeln('already in DB - skipped');
+                $this->output->writeln('already in DB - skipped');
                 continue;
             }
-            $localizedEntry = GlossaryEntryLocalizedEntity::create($entry, $locale)
-                ->setTranslation($translation['text'])
-                ->setComments($translation['comments']);
+            $localizedEntry = new GlossaryEntryLocalizedEntity($entry, $locale, $translation['text']);
+            $localizedEntry->setComments($translation['comments']);
             $entry->getTranslations()->add($localizedEntry);
             $this->em->persist($localizedEntry);
             $this->em->flush($localizedEntry);
-            $output->writeln('saved.');
+            $this->output->writeln('saved.');
         }
     }
 }

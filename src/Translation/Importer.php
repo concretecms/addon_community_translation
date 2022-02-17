@@ -1,57 +1,47 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Translation;
 
 use CommunityTranslation\Entity\Locale as LocaleEntity;
-use Concrete\Core\Application\Application;
+use CommunityTranslation\Entity\Translatable as TranslatableEntity;
 use Concrete\Core\Database\Connection\Connection;
 use Concrete\Core\Entity\User\User as UserEntity;
 use Concrete\Core\Error\UserMessageException;
-use DateTime;
+use Concrete\Core\Events\EventDispatcher;
 use Doctrine\ORM\EntityManager;
-use Exception;
 use Gettext\Translation as GettextTranslation;
 use Gettext\Translations;
 use Punic\Misc;
 use Symfony\Component\EventDispatcher\GenericEvent;
 use Throwable;
 
-class Importer
+defined('C5_EXECUTE') or die('Access Denied.');
+
+final class Importer
 {
-    /**
-     * @var int
-     */
-    const IMPORT_BATCH_SIZE = 50;
+    private const IMPORT_BATCH_SIZE = 50;
 
     /**
-     * The application object.
-     *
-     * @var Application
+     * gettext strongly discourages the use of these characters.
      */
-    protected $app;
+    private const INVALID_CHARS_MAP = [
+        "\x07" => '\\a',
+        "\x08" => '\\b',
+        "\x0C" => '\\f',
+        "\x0D" => '\\r',
+        "\x0B" => '\\v',
+    ];
 
-    /**
-     * The entity manager object.
-     *
-     * @var EntityManager
-     */
-    protected $em;
+    private EntityManager $em;
 
-    /**
-     * The events director.
-     *
-     * @var \Symfony\Component\EventDispatcher\EventDispatcher
-     */
-    protected $events;
+    private EventDispatcher $eventDispatcher;
 
-    /**
-     * @param Application $application
-     */
-    public function __construct(Application $app, EntityManager $em)
+    public function __construct(EntityManager $em, EventDispatcher $eventDispatcher)
     {
-        $this->app = $app;
         $this->em = $em;
-        $this->events = $this->app->make('director');
+        $this->eventDispatcher = $eventDispatcher;
     }
 
     /**
@@ -60,16 +50,14 @@ class Importer
      * This function works directly with the database, not with entities (so that working on thousands of strings requires seconds instead of minutes).
      * This implies that entities related to translations may become invalid.
      *
-     * @param Translations $translations The translations to be imported
-     * @param LocaleEntity $locale The locale of the translations
-     * @param UserEntity $user The user to which new translations should be associated
-     * @param ImportOptions $options Import options (if not specified: we assume regular translator options)
+     * @param \Gettext\Translations $translations The translations to be imported
+     * @param \CommunityTranslation\Entity\Locale $locale The locale of the translations
+     * @param \Concrete\Core\Entity\User\User $user The user to which new translations should be associated
+     * @param \CommunityTranslation\Translation\ImportOptions $options Import options (if not specified: we assume regular translator options)
      *
-     * @throws UserMessageException
-     *
-     * @return ImportResult
+     * @throws \Concrete\Core\Error\UserMessageException
      */
-    public function import(Translations $translations, LocaleEntity $locale, UserEntity $user, ImportOptions $options = null)
+    public function import(Translations $translations, LocaleEntity $locale, UserEntity $user, ?ImportOptions $options = null): ImportResult
     {
         if ($options === null) {
             $options = ImportOptions::forTranslators();
@@ -79,20 +67,13 @@ class Importer
         $pluralCount = $locale->getPluralCount();
         $connection = $this->em->getConnection();
         $nowExpression = $connection->getDatabasePlatform()->getNowExpression();
-        $sqlNow = (new DateTime())->format($connection->getDatabasePlatform()->getDateTimeFormatString());
+        $sqlNow = date($connection->getDatabasePlatform()->getDateTimeFormatString());
         $translatablesChanged = [];
         $result = new ImportResult();
         $insertParams = [];
         $insertCount = 0;
-        // gettext strongly discourages the use of these characters
-        $invalidCharsMap = [
-            "\x07" => '\\a',
-            "\x08" => '\\b',
-            "\x0C" => '\\f',
-            "\x0D" => '\\r',
-            "\x0B" => '\\v',
-        ];
-        $invalidChars = implode('', array_keys($invalidCharsMap));
+        $invalidChars = implode('', array_keys(self::INVALID_CHARS_MAP));
+        $rollback = true;
         $connection->beginTransaction();
         try {
             // Prepare some queries
@@ -127,18 +108,17 @@ where
 
             // Check every strings to be imported
             foreach ($translations as $translationKey => $translation) {
-                /* @var GettextTranslation $translation */
-
+                /** @var \Gettext\Translation $translation */
                 // Check if the string is translated
                 if ($translation->hasTranslation() === false) {
                     // This $translation instance is not translated
-                    ++$result->emptyTranslations;
+                    $result->emptyTranslations++;
                     continue;
                 }
                 $isPlural = $translation->hasPlural();
                 if ($isPlural === true && $pluralCount > 1 && $translation->hasPluralTranslation() === false) {
                     // This plural form of the $translation instance is not translated
-                    ++$result->emptyTranslations;
+                    $result->emptyTranslations++;
                     continue;
                 }
 
@@ -150,9 +130,9 @@ where
                 $s = strpbrk($allTranslations, $invalidChars);
                 if ($s !== false) {
                     throw new UserMessageException(
-                        t('The translation for the string \'%1$s\' contains the invalid character \'%2$s\'.', $translation->getOriginal(), $invalidCharsMap[$s[0]])
+                        t('The translation for the string \'%1$s\' contains the invalid character \'%2$s\'.', $translation->getOriginal(), self::INVALID_CHARS_MAP[$s[0]])
                         . "\n" .
-                        t('Translations can not contain these characters: %s', "'" . implode("', '", array_values($invalidCharsMap)) . "'")
+                        t('Translations can not contain these characters: %s', "'" . implode("', '", array_values(self::INVALID_CHARS_MAP)) . "'")
                     );
                 }
 
@@ -163,7 +143,7 @@ where
                 $translatableID = null;
                 $currentTranslation = null;
                 $sameTranslation = null;
-                $hash = md5($isPlural ? ("$translationKey\005" . $translation->getPlural()) : $translationKey);
+                $hash = TranslatableEntity::generateHashFromGettextKey($translationKey, $isPlural ? $translation->getPlural() : '');
                 $querySearch->execute([$hash]);
                 while (($row = $querySearch->fetch()) !== false) {
                     if ($translatableID === null) {
@@ -179,11 +159,10 @@ where
                         $sameTranslation = $row;
                     }
                 }
-                $querySearch->closeCursor();
 
                 // Check if the translation doesn't have a corresponding translatable string
                 if ($translatableID === null) {
-                    ++$result->unknownStrings;
+                    $result->unknownStrings++;
                     continue;
                 }
 
@@ -202,12 +181,12 @@ where
                         $addAsCurrent = 1;
                         if ($isFuzzy) {
                             $addAsApproved = null;
-                            ++$result->newApprovalNeeded;
+                            $result->newApprovalNeeded++;
                         } else {
                             $addAsApproved = 1;
                         }
                         $translatablesChanged[] = $translatableID;
-                        ++$result->addedAsCurrent;
+                        $result->addedAsCurrent++;
                     } elseif ($isFuzzy === false || !$currentTranslation['approved']) {
                         // There's already a current translation for this string, but we'll activate this new one
                         if ($isFuzzy === false && $currentTranslation['approved'] === null) {
@@ -218,18 +197,18 @@ where
                         $addAsCurrent = 1;
                         if ($isFuzzy) {
                             $addAsApproved = null;
-                            ++$result->newApprovalNeeded;
+                            $result->newApprovalNeeded++;
                         } else {
                             $addAsApproved = 1;
                         }
                         $translatablesChanged[] = $translatableID;
-                        ++$result->addedAsCurrent;
+                        $result->addedAsCurrent++;
                     } else {
                         // Let keep the previously current translation as the current one, but let's add this new one
                         $addAsCurrent = null;
                         $addAsApproved = null;
-                        ++$result->addedNotAsCurrent;
-                        ++$result->newApprovalNeeded;
+                        $result->addedNotAsCurrent++;
+                        $result->newApprovalNeeded++;
                     }
 
                     // Add the new record to the queue
@@ -238,10 +217,10 @@ where
                     $insertParams[] = $addAsApproved;
                     $insertParams[] = $translatableID;
                     $insertParams[] = $translation->getTranslation();
-                    for ($p = 1; $p <= 5; ++$p) {
+                    for ($p = 1; $p <= 5; $p++) {
                         $insertParams[] = ($isPlural && $p < $pluralCount) ? $translation->getPluralTranslation($p - 1) : '';
                     }
-                    ++$insertCount;
+                    $insertCount++;
 
                     if ($insertCount === self::IMPORT_BATCH_SIZE) {
                         // Flush the add queue
@@ -256,22 +235,22 @@ where
                     } else {
                         $querySetCurrentTranslation->execute([1, $sameTranslation['id']]);
                         if (!$sameTranslation['approved']) {
-                            ++$result->newApprovalNeeded;
+                            $result->newApprovalNeeded++;
                         }
                     }
                     $translatablesChanged[] = $translatableID;
-                    ++$result->addedAsCurrent;
+                    $result->addedAsCurrent++;
                 } elseif ($sameTranslation['current'] === '1') {
                     // This translation is already present and it's the current one
                     if ($isFuzzy === false && !$sameTranslation['approved']) {
                         // Let's mark the translation as approved
                         $querySetCurrentTranslation->execute([1, $sameTranslation['id']]);
-                        ++$result->existingCurrentApproved;
+                        $result->existingCurrentApproved++;
                     } elseif ($isFuzzy === true && $sameTranslation['approved'] && $unapproveFuzzy) {
                         $querySetCurrentTranslation->execute([0, $sameTranslation['id']]);
-                        ++$result->existingCurrentUnapproved;
+                        $result->existingCurrentUnapproved++;
                     } else {
-                        ++$result->existingCurrentUntouched;
+                        $result->existingCurrentUntouched++;
                     }
                 } else {
                     // This translation exists, but we have already another translation that's the current one
@@ -284,16 +263,16 @@ where
                         }
                         $querySetCurrentTranslation->execute([1, $sameTranslation['id']]);
                         $translatablesChanged[] = $translatableID;
-                        ++$result->existingActivated;
+                        $result->existingActivated++;
                     } else {
                         // The new translation already exists, it is fuzzy (not approved) and the current translation is approved
                         if ($sameTranslation['approved'] !== null) {
                             // Let's re-submit the existing translation for approval, as if it's a new translation
                             $queryResubmitTranslation->execute([$sameTranslation['id']]);
-                            ++$result->addedNotAsCurrent;
-                            ++$result->newApprovalNeeded;
+                            $result->addedNotAsCurrent++;
+                            $result->newApprovalNeeded++;
                         } else {
-                            ++$result->existingNotCurrentUntouched;
+                            $result->existingNotCurrentUntouched++;
                         }
                     }
                 }
@@ -301,30 +280,26 @@ where
 
             if ($insertCount > 0) {
                 // Flush the add queue
-                $connection->executeQuery(
+                $connection->executeStatement(
                     $this->buildInsertTranslationsSQL($connection, $locale, $insertCount, $user),
                     $insertParams
                 );
             }
 
             $connection->commit();
-        } catch (Exception $x) {
-            try {
-                $connection->rollBack();
-            } catch (Exception $foo) {
+            $rollback = false;
+        } finally {
+            if ($rollback) {
+                try {
+                    $connection->rollBack();
+                } catch (Throwable $foo) {
+                }
             }
-            throw $x;
-        } catch (Throwable $x) {
-            try {
-                $connection->rollBack();
-            } catch (Exception $foo) {
-            }
-            throw $x;
         }
 
-        if (count($translatablesChanged) > 0) {
+        if ($translatablesChanged !== []) {
             try {
-                $this->events->dispatch(
+                $this->eventDispatcher->dispatch(
                     'community_translation.translationsUpdated',
                     new GenericEvent(
                         $locale,
@@ -333,13 +308,13 @@ where
                         ]
                     )
                 );
-            } catch (Exception $foo) {
+            } catch (Throwable $foo) {
             }
         }
 
         if ($result->newApprovalNeeded > 0) {
             try {
-                $this->events->dispatch(
+                $this->eventDispatcher->dispatch(
                     'community_translation.newApprovalNeeded',
                     new GenericEvent(
                         $locale,
@@ -348,21 +323,14 @@ where
                         ]
                     )
                 );
-            } catch (Exception $foo) {
+            } catch (Throwable $foo) {
             }
         }
 
         return $result;
     }
 
-    /**
-     * @param Connection $connection
-     * @param int $numRecords
-     * @param UserEntity $user
-     *
-     * @return string
-     */
-    private function buildInsertTranslationsSQL(Connection $connection, LocaleEntity $locale, $numRecords, UserEntity $user)
+    private function buildInsertTranslationsSQL(Connection $connection, LocaleEntity $locale, int $numRecords, UserEntity $user): string
     {
         $fields = '(locale, createdOn, createdBy, current, currentSince, approved, translatable, text0, text1, text2, text3, text4, text5)';
         $values = ' (' . implode(', ', [
@@ -393,15 +361,8 @@ where
 
     /**
      * Is a database row the same as the translation?
-     *
-     * @param array $row
-     * @param GettextTranslation $translation
-     * @param bool $isPlural
-     * @param int $pluralCount
-     *
-     * @return bool
      */
-    private function rowSameAsTranslation(array $row, GettextTranslation $translation, $isPlural, $pluralCount)
+    private function rowSameAsTranslation(array $row, GettextTranslation $translation, bool $isPlural, int $pluralCount): bool
     {
         if ($row['text0'] !== $translation->getTranslation()) {
             return false;
@@ -409,46 +370,43 @@ where
         if ($isPlural === false) {
             return true;
         }
-        $same = true;
         switch ($pluralCount) {
             case 6:
-                if ($same && $row['text5'] !== $translation->getPluralTranslation(4)) {
-                    $same = false;
+                if ($row['text5'] !== $translation->getPluralTranslation(4)) {
+                    return false;
                 }
-                /* @noinspection PhpMissingBreakStatementInspection */
+                // no break
             case 5:
-                if ($same && $row['text4'] !== $translation->getPluralTranslation(3)) {
-                    $same = false;
+                if ($row['text4'] !== $translation->getPluralTranslation(3)) {
+                    return false;
                 }
-                /* @noinspection PhpMissingBreakStatementInspection */
+                // no break
             case 4:
-                if ($same && $row['text3'] !== $translation->getPluralTranslation(2)) {
-                    $same = false;
+                if ($row['text3'] !== $translation->getPluralTranslation(2)) {
+                    return false;
                 }
-                /* @noinspection PhpMissingBreakStatementInspection */
+                // no break
             case 3:
-                if ($same && $row['text2'] !== $translation->getPluralTranslation(1)) {
-                    $same = false;
+                if ($row['text2'] !== $translation->getPluralTranslation(1)) {
+                    return false;
                 }
-                /* @noinspection PhpMissingBreakStatementInspection */
+                // no break
             case 2:
-                if ($same && $row['text1'] !== $translation->getPluralTranslation(0)) {
-                    $same = false;
+                if ($row['text1'] !== $translation->getPluralTranslation(0)) {
+                    return false;
                 }
                 break;
         }
 
-        return $same;
+        return true;
     }
 
     /**
      * Check that translated text doesn't contain potentially harmful code.
      *
-     * @param \Gettext\Translation $translation
-     *
      * @throws \Concrete\Core\Error\UserMessageException
      */
-    private function checkXSS(GettextTranslation $translation)
+    private function checkXSS(GettextTranslation $translation): void
     {
         $sourceText = $translation->getOriginal();
         $translatedText = $translation->getTranslation();
@@ -489,11 +447,9 @@ where
     /**
      * Check that translated text doesn't contain potentially harmful code.
      *
-     * @param \Gettext\Translation $translation
-     *
      * @throws \Concrete\Core\Error\UserMessageException
      */
-    private function checkFormat(GettextTranslation $translation)
+    private function checkFormat(GettextTranslation $translation): void
     {
         $sourcePlaceholdersList = $this->extractSourcePlaceholders($translation);
         $translatedTexts = [$translation->getTranslation()];
@@ -514,7 +470,7 @@ where
             }
             $sourcePlaceholderDescriptions = [];
             foreach ($sourcePlaceholdersList as $sourcePlaceholders) {
-                $sourcePlaceholders = array_map(function($placeholder) { return '"' . $placeholder . '"'; }, $sourcePlaceholders);                
+                $sourcePlaceholders = array_map(function ($placeholder) { return '"' . $placeholder . '"'; }, $sourcePlaceholders);
                 switch (count($sourcePlaceholders)) {
                     case 0:
                         $sourcePlaceholderDescriptions[] = t('no placeholders');
@@ -533,27 +489,42 @@ where
                 $sourcePlaceholderDescription = (string) array_pop($sourcePlaceholderDescriptions);
             }
             if ($translatedPlaceholders === []) {
-                throw new UserMessageException(t(
-                    'The translation does not contain any placeholder, but it should contain %s',
-                    $sourcePlaceholderDescription
-                ));
+                throw new UserMessageException(
+                    t('Error in the translation of the following string:')
+                    . "\n{$translation->getOriginal()}\n\n" .
+                    t(
+                        'The translation does not contain any placeholder, but it should contain %s',
+                        $sourcePlaceholderDescription
+                    )
+                );
             }
-            $translatedPlaceholderDescription = Misc::joinAnd(array_map(function($placeholder) { return '"' . $placeholder . '"'; }, $translatedPlaceholders));
+            $translatedPlaceholderDescription = Misc::joinAnd(array_map(function ($placeholder) { return '"' . $placeholder . '"'; }, $translatedPlaceholders));
             if ($sourcePlaceholderDescription === t('no placeholders')) {
-                throw new UserMessageException(t(
-                    'The translation should not contain any placeholder, but it contains %s',
-                    $translatedPlaceholderDescription
-                ));
+                throw new UserMessageException(
+                    t('Error in the translation of the following string:')
+                    . "\n{$translation->getOriginal()}\n\n" .
+                    t(
+                        'The translation should not contain any placeholder, but it contains %s',
+                        $translatedPlaceholderDescription
+                    )
+                );
             }
-            throw new UserMessageException(t(
-                'The translation contains %1$s, but it should contain %2$s',
-                $translatedPlaceholderDescription,
-                $sourcePlaceholderDescription
-            ));
+            throw new UserMessageException(
+                t('Error in the translation of the following string:')
+                . "\n{$translation->getOriginal()}\n\n" .
+                t(
+                    'The translation contains %1$s, but it should contain %2$s',
+                    $translatedPlaceholderDescription,
+                    $sourcePlaceholderDescription
+                )
+            );
         }
     }
 
-    private function extractSourcePlaceholders(GettextTranslation $translation)
+    /**
+     * @return string[][]
+     */
+    private function extractSourcePlaceholders(GettextTranslation $translation): array
     {
         $placeholdersList = [$this->extractPlaceholders($translation->getOriginal())];
         if (!$translation->hasPlural()) {
@@ -583,11 +554,9 @@ where
     /**
      * Extract the placeholders from a string.
      *
-     * @param string $text
-     *
      * @return string[] sorted list of placeholders found
      */
-    private function extractPlaceholders($text)
+    private function extractPlaceholders(string $text): array
     {
         // placeholder := %[position][flags][width][.precision]specifier
         // position := \d+$

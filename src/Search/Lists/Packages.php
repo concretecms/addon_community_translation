@@ -1,133 +1,100 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Search\Lists;
 
 use CommunityTranslation\Entity\Locale as LocaleEntity;
 use CommunityTranslation\Entity\Package as PackageEntity;
 use CommunityTranslation\Repository\Stats as StatsRepository;
-use Concrete\Core\Application\Application;
 use Concrete\Core\Application\ApplicationAwareInterface;
+use Concrete\Core\Application\ApplicationAwareTrait;
 use Concrete\Core\Database\Query\LikeBuilder;
 use Concrete\Core\Search\ItemList\Database\ItemList;
 use Concrete\Core\Search\Pagination\Pagination;
+use Doctrine\DBAL\Query\QueryBuilder;
 use Doctrine\ORM\EntityManager;
-use Pagerfanta\Adapter\DoctrineDbalAdapter;
+use Pagerfanta\Doctrine\DBAL\QueryAdapter;
+
+defined('C5_EXECUTE') or die('Access Denied.');
 
 /**
- * Class that manages the criterias of the boat searches.
+ * Class that manages the criterias of the package search.
  */
 class Packages extends ItemList implements ApplicationAwareInterface
 {
-    /**
-     * The application container.
-     *
-     * @var Application
-     */
-    protected $app;
+    use ApplicationAwareTrait;
 
     /**
      * {@inheritdoc}
      *
-     * @see ApplicationAwareInterface::setApplication()
-     */
-    public function setApplication(Application $app)
-    {
-        $this->app = $app;
-    }
-
-    /**
-     * @var EntityManager|null
-     */
-    protected $em;
-
-    /**
-     * @return EntityManager
-     */
-    protected function getEntityManager()
-    {
-        if ($this->em === null) {
-            $this->em = $this->app->make(EntityManager::class);
-        }
-
-        return $this->em;
-    }
-
-    /**
-     * @var StatsRepository|null
-     */
-    protected $stats;
-
-    /**
-     * @return StatsRepository
-     */
-    protected function getStats()
-    {
-        if ($this->stats === null) {
-            $this->stats = $this->app->make(StatsRepository::class);
-        }
-
-        return $this->stats;
-    }
-
-    /**
-     * The parameter name to be used for pagination.
-     *
-     * @var string
+     * @see \Concrete\Core\Search\ItemList\ItemList::$paginationPageParameter
      */
     protected $paginationPageParameter = 'page';
 
     /**
-     * {@inheritdoc}
-     *
-     * @see ItemList::createQuery()
+     * Show stats about a specific locale.
      */
-    public function createQuery()
-    {
-        $this->query->select('p.id, coalesce(p.name, p.handle) as sortBy')
-            ->from('CommunityTranslationPackages', 'p')
-            ->orderBy('sortBy', 'asc')
-        ;
-    }
+    private ?LocaleEntity $showStatsForLocale = null;
+
+    private ?EntityManager $em = null;
+
+    private ?StatsRepository $statsRepo = null;
 
     /**
      * Filter the results by keywords.
      *
      * @param string $name
+     *
+     * @return $this
      */
-    public function filterByKeywords($name)
+    public function filterByKeywords(string $name): self
     {
         $likeBuilder = $this->app->make(LikeBuilder::class);
-        /* @var LikeBuilder $likeBuilder */
         $likes = $likeBuilder->splitKeywordsForLike($name, '\W_');
-        if (!empty($likes)) {
-            $expr = $this->query->expr();
-            $orFields = $expr->orX();
-            foreach (['p.handle', 'p.name'] as $fieldName) {
-                $and = $expr->andX();
-                foreach ($likes as $like) {
-                    $and->add($expr->like($fieldName, $this->query->createNamedParameter($like)));
-                }
-                $orFields->add($and);
-            }
-            $this->query->andWhere($orFields);
+        if ($likes === null || $likes === []) {
+            return $this;
         }
+        $expr = $this->query->expr();
+        $andLike = null;
+        foreach ($likes as $like) {
+            $parameterName = $this->query->createNamedParameter($like);
+            $orLike = null;
+            foreach (['p.handle', 'p.name'] as $fieldName) {
+                $like = $expr->like($fieldName, $parameterName);
+                $orLike = $orLike === null ? $expr->or($like) : $orLike->with($like);
+            }
+            $andLike = $andLike === null ? $expr->and($orLike) : $andLike->with($orLike);
+        }
+        $this->query->andWhere($andLike);
+
+        return $this;
     }
 
     /**
-     * Show stats about a specific locale.
+     * Show stats about a specific locale (null for none).
      *
-     * @var LocaleEntity|null
+     * @return $this
      */
-    protected $localeStats;
+    public function showStatsForLocale(?LocaleEntity $locale)
+    {
+        $this->showStatsForLocale = $locale;
+
+        return $this;
+    }
 
     /**
-     * Show stats about a specific locale.
+     * {@inheritdoc}
      *
-     * @param LocaleEntity $locale
+     * @see \Concrete\Core\Search\ItemList\Database\ItemList::createQuery()
      */
-    public function showLocaleStats(LocaleEntity $locale)
+    public function createQuery()
     {
-        $this->localeStats = $locale;
+        $this->query
+            ->select('p.id, coalesce(p.name, p.handle) as sortBy')
+            ->from('CommunityTranslationPackages', 'p')
+            ->orderBy('sortBy', 'asc')
+        ;
     }
 
     /**
@@ -141,31 +108,10 @@ class Packages extends ItemList implements ApplicationAwareInterface
         $query
             ->resetQueryParts(['groupBy', 'orderBy'])
             ->select('count(distinct p.id)')
-            ->setMaxResults(1);
-        $result = $query->execute()->fetchColumn();
+            ->setMaxResults(1)
+        ;
 
-        return (int) $result;
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @see \Concrete\Core\Search\ItemList\ItemList::createPaginationObject()
-     */
-    protected function createPaginationObject()
-    {
-        $adapter = new DoctrineDbalAdapter(
-            $this->deliverQueryObject(),
-            function (\Doctrine\DBAL\Query\QueryBuilder $query) {
-                $query
-                    ->resetQueryParts(['groupBy', 'orderBy'])
-                    ->select('count(distinct p.id)')
-                    ->setMaxResults(1);
-            }
-        );
-        $pagination = new Pagination($this, $adapter);
-
-        return $pagination;
+        return (int) $query->execute()->fetchOne();
     }
 
     /**
@@ -175,22 +121,56 @@ class Packages extends ItemList implements ApplicationAwareInterface
      */
     public function getResult($queryRow)
     {
-        $result = null;
         $entityManager = $this->getEntityManager();
-        $package = $entityManager->find(PackageEntity::class, $queryRow['id']);
-
-        if ($package !== null) {
-            $result = [$package];
-            if ($this->localeStats !== null) {
-                $pv = $package->getLatestVersion();
-                if ($pv !== null) {
-                    $result[] = $this->getStats()->getOne($pv, $this->localeStats);
-                } else {
-                    $result[] = false;
-                }
-            }
+        $package = $entityManager->find(PackageEntity::class, (int) $queryRow['id']);
+        if ($package === null) {
+            return null;
+        }
+        $result = [$package];
+        if ($this->showStatsForLocale === null) {
+            return $result;
+        }
+        $pv = $package->getLatestVersion();
+        if ($pv !== null) {
+            $result[] = $this->getStatsRepo()->getOne($pv, $this->showStatsForLocale);
+        } else {
+            $result[] = null;
         }
 
         return $result;
+    }
+
+    public function createPaginationObject(): Pagination
+    {
+        $adapter = new QueryAdapter(
+            $this->deliverQueryObject(),
+            static function (QueryBuilder $query): void {
+                $query
+                    ->resetQueryParts(['groupBy', 'orderBy'])
+                    ->select('count(distinct p.id)')
+                    ->setMaxResults(1)
+                ;
+            }
+        );
+
+        return new Pagination($this, $adapter);
+    }
+
+    protected function getEntityManager(): EntityManager
+    {
+        if ($this->em === null) {
+            $this->em = $this->app->make(EntityManager::class);
+        }
+
+        return $this->em;
+    }
+
+    protected function getStatsRepo(): StatsRepository
+    {
+        if ($this->statsRepo === null) {
+            $this->statsRepo = $this->app->make(StatsRepository::class);
+        }
+
+        return $this->statsRepo;
     }
 }

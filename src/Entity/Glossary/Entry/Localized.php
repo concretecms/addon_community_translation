@@ -1,18 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Entity\Glossary\Entry;
 
 use CommunityTranslation\Entity\Glossary\Entry;
 use CommunityTranslation\Entity\Locale;
-use Doctrine\ORM\Mapping as ORM;
+
+defined('C5_EXECUTE') or die('Access Denied.');
 
 /**
  * Represents the translation of a glossary entry.
  *
- * @ORM\Entity(
+ * @Doctrine\ORM\Mapping\Entity(
  *     repositoryClass="CommunityTranslation\Repository\Glossary\Entry\Localized",
  * )
- * @ORM\Table(
+ * @Doctrine\ORM\Mapping\Table(
  *     name="CommunityTranslationGlossaryEntriesLocalized",
  *     options={"comment": "Localized glossary entries"}
  * )
@@ -20,131 +23,99 @@ use Doctrine\ORM\Mapping as ORM;
 class Localized
 {
     /**
-     * @param Entry $entry
-     * @param Locale $locale
-     * @param string $text
-     * @param string $comments
-     *
-     * @return static
-     */
-    public static function create(Entry $entry, Locale $locale)
-    {
-        $result = new static();
-        $result->entry = $entry;
-        $result->locale = $locale;
-        $result->comments = '';
-
-        return $result;
-    }
-
-    protected function __construct()
-    {
-    }
-
-    /**
      * Associated Entry record.
      *
-     * @ORM\ManyToOne(targetEntity="CommunityTranslation\Entity\Glossary\Entry", inversedBy="translations")
-     * @ORM\JoinColumn(name="entry", referencedColumnName="id", nullable=false, onDelete="CASCADE")
-     * @ORM\Id
-     *
-     * @var Entry
+     * @Doctrine\ORM\Mapping\ManyToOne(targetEntity="CommunityTranslation\Entity\Glossary\Entry", inversedBy="translations")
+     * @Doctrine\ORM\Mapping\JoinColumn(name="entry", referencedColumnName="id", nullable=false, onDelete="CASCADE")
+     * @Doctrine\ORM\Mapping\Id
      */
-    protected $entry;
+    protected Entry $entry;
+
+    /**
+     * Associated Locale.
+     *
+     * @Doctrine\ORM\Mapping\ManyToOne(targetEntity="CommunityTranslation\Entity\Locale", inversedBy="glossaryEntries")
+     * @Doctrine\ORM\Mapping\JoinColumn(name="locale", referencedColumnName="id", nullable=false, onDelete="CASCADE")
+     * @Doctrine\ORM\Mapping\Id
+     */
+    protected Locale $locale;
+
+    /**
+     * Term translation.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="text", nullable=false, options={"comment": "Translated term"})
+     *
+     * @var string
+     */
+    protected string $translation;
+
+    /**
+     * Locale-specific comments about the term.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="text", nullable=false, options={"comment": "Locale-specific comment about the term"})
+     */
+    protected string $comments;
+
+    public function __construct(Entry $entry, Locale $locale, string $translation)
+    {
+        $this->entry = $entry;
+        $this->locale = $locale;
+        $this->translation = $translation;
+        $this->comments = '';
+    }
 
     /**
      * Get the associated glossary entry.
-     *
-     * @return Entry|null
      */
-    public function getEntry()
+    public function getEntry(): Entry
     {
         return $this->entry;
     }
 
     /**
-     * Associated Locale.
-     *
-     * @ORM\ManyToOne(targetEntity="CommunityTranslation\Entity\Locale", inversedBy="glossaryEntries")
-     * @ORM\JoinColumn(name="locale", referencedColumnName="id", nullable=false, onDelete="CASCADE")
-     * @ORM\Id
-     *
-     * @var Locale|null
-     */
-    protected $locale;
-
-    /**
      * Get the associated Locale.
-     *
-     * @return Locale
      */
-    public function getLocale()
+    public function getLocale(): Locale
     {
         return $this->locale;
     }
 
     /**
-     * Term translation.
-     *
-     * @ORM\Column(type="text", nullable=false, options={"comment": "Translated term"})
-     *
-     * @var string
-     */
-    protected $translation;
-
-    /**
      * Set the term translation.
      *
-     * @param string $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setTranslation($value)
+    public function setTranslation(string $value): self
     {
-        $this->translation = (string) $value;
+        $this->translation = $value;
 
         return $this;
     }
 
     /**
      * Get the term translation.
-     *
-     * @return string
      */
-    public function getTranslation()
+    public function getTranslation(): string
     {
         return $this->translation;
     }
 
     /**
-     * Locale-specific comments about the term.
-     *
-     * @ORM\Column(type="text", nullable=false, options={"comment": "Locale-specific comment about the term"})
-     *
-     * @var string
-     */
-    protected $comments;
-
-    /**
      * Set the locale-specific comments about the term.
      *
-     * @param string $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setComments($value)
+    public function setComments(string $value): self
     {
-        $this->comments = (string) $value;
+        $this->comments = $value;
 
         return $this;
     }
 
     /**
      * Get the locale-specific comments about the term.
-     *
-     * @return string
      */
-    public function getComments()
+    public function getComments(): string
     {
         return $this->comments;
     }

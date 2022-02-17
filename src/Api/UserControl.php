@@ -1,49 +1,82 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Api;
 
 use CommunityTranslation\Repository\Locale as LocaleRepository;
 use CommunityTranslation\Service\Access;
-use CommunityTranslation\Service\IPControlLog;
 use Concrete\Core\Application\Application;
+use Concrete\Core\Config\Repository\Repository;
+use Concrete\Core\Entity\Permission\IpAccessControlCategory;
 use Concrete\Core\Entity\User\User as UserEntity;
 use Concrete\Core\Error\UserMessageException;
 use Concrete\Core\Http\Request;
-use Concrete\Core\User\Group\Group;
+use Concrete\Core\Permission\IpAccessControlService;
+use Concrete\Core\User\Group\GroupRepository;
 use Concrete\Core\User\User;
 use Concrete\Core\User\UserList;
-use DateTime;
 use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\EntityManagerInterface;
+use RuntimeException;
+use Symfony\Component\HttpFoundation\Response;
+
+defined('C5_EXECUTE') or die('Access Denied.');
 
 class UserControl
 {
-    const ACCESSOPTION_EVERYBODY = 'everybody';
-    const ACCESSOPTION_REGISTEREDUSERS = 'registered-users';
-    const ACCESSOPTION_TRANSLATORS = 'translators';
-    const ACCESSOPTION_TRANSLATORS_ALLLOCALES = 'translators-all-locales';
-    const ACCESSOPTION_TRANSLATORS_OWNLOCALES = 'translators-own-locales';
-    const ACCESSOPTION_LOCALEADMINS = 'localeadmins';
-    const ACCESSOPTION_LOCALEADMINS_ALLLOCALES = 'localeadmins-all-locales';
-    const ACCESSOPTION_LOCALEADMINS_OWNLOCALES = 'localeadmins-own-locales';
-    const ACCESSOPTION_GLOBALADMINS = 'globaladmins';
-    const ACCESSOPTION_SITEADMINS = 'siteadmins';
-    const ACCESSOPTION_ROOT = 'root';
-    const ACCESSOPTION_NOBODY = 'nobody';
+    public const ACCESSOPTION_EVERYBODY = 'everybody';
+
+    public const ACCESSOPTION_REGISTEREDUSERS = 'registered-users';
+
+    public const ACCESSOPTION_TRANSLATORS = 'translators';
+
+    public const ACCESSOPTION_TRANSLATORS_ALLLOCALES = 'translators-all-locales';
+
+    public const ACCESSOPTION_TRANSLATORS_OWNLOCALES = 'translators-own-locales';
+
+    public const ACCESSOPTION_LOCALEADMINS = 'localeadmins';
+
+    public const ACCESSOPTION_LOCALEADMINS_ALLLOCALES = 'localeadmins-all-locales';
+
+    public const ACCESSOPTION_LOCALEADMINS_OWNLOCALES = 'localeadmins-own-locales';
+
+    public const ACCESSOPTION_GLOBALADMINS = 'globaladmins';
+
+    public const ACCESSOPTION_SITEADMINS = 'siteadmins';
+
+    public const ACCESSOPTION_ROOT = 'root';
+
+    public const ACCESSOPTION_NOBODY = 'nobody';
+
+    private const REQUESTUSER_NO_TOKEN = 'no-token';
+
+    private const REQUESTUSER_BANNED = 'banned';
+
+    private const REQUESTUSER_INVALID_TOKEN = 'invalid-token';
+
+    private Application $app;
+
+    private Request $request;
+
+    private ?Access $accessService = null;
 
     /**
-     * @var Application
+     * @var \CommunityTranslation\Entity\Locale[]|null
      */
-    protected $app;
+    private ?array $approvedLocales = null;
+
+    private ?string $requestApiToken = null;
+
+    private ?IpAccessControlService $ipAccessControlAccess = null;
+
+    private ?IpAccessControlService $ipAccessControlRateLimit = null;
 
     /**
-     * @var Request
+     * @var \Concrete\Core\User\User|string|null
      */
-    protected $request;
+    private $requestUser;
 
-    /**
-     * @param Application $app
-     * @param Request $request
-     */
     public function __construct(Application $app, Request $request)
     {
         $this->app = $app;
@@ -51,145 +84,11 @@ class UserControl
     }
 
     /**
-     * @var Access|null
+     * @throws \CommunityTranslation\Api\AccessDeniedException
      */
-    private $accessHelper = null;
-
-    /**
-     * @return Access
-     */
-    protected function getAccessHelper()
+    public function checkGenericAccess(string $configKey): void
     {
-        if ($this->accessHelper === null) {
-            $this->accessHelper = $this->app->make(Access::class);
-        }
-
-        return $this->accessHelper;
-    }
-
-    /**
-     * @var \CommunityTranslation\Entity\Locale[]|null
-     */
-    private $approvedLocales = null;
-
-    /**
-     * @return \CommunityTranslation\Entity\Locale[]
-     */
-    protected function getApprovedLocales()
-    {
-        if ($this->approvedLocales === null) {
-            $this->approvedLocales = $this->app->make(LocaleRepository::class)->getApprovedLocales();
-        }
-
-        return $this->approvedLocales;
-    }
-
-    /**
-     * @var string|null
-     */
-    private $requestApiToken = null;
-
-    /**
-     * @return string
-     */
-    public function getRequestApiToken()
-    {
-        if ($this->requestApiToken === null) {
-            $requestApiToken = '';
-            if ($this->request->headers !== null) {
-                if ($this->request->headers->has('API-Token')) {
-                    $requestApiToken = $this->request->headers->get('API-Token');
-                    if (!is_string($requestApiToken)) {
-                        $requestApiToken = '';
-                    }
-                }
-            }
-            $this->requestApiToken = $requestApiToken;
-        }
-
-        return $this->requestApiToken;
-    }
-
-    /**
-     * @var User|string|null
-     */
-    private $requestUser = null;
-
-    /**
-     * @throws AccessDeniedException
-     *
-     * @return User
-     */
-    public function getRequestUser()
-    {
-        if ($this->requestUser === null) {
-            $token = $this->getRequestApiToken();
-            if ($token === '') {
-                $this->requestUser = 'no-token';
-            } else {
-                $ip = $this->app->make('ip');
-                if ($ip->isBanned()) {
-                    $this->requestUser = 'banned';
-                } else {
-                    $requestUser = null;
-                    $list = new UserList();
-                    $list->disableAutomaticSorting();
-                    $list->filterByAttribute('api_token', $token);
-                    $ids = $list->getResultIDs();
-                    if (!empty($ids)) {
-                        $u = \User::getByUserID($ids[0]);
-                        if ($u->isRegistered()) {
-                            $requestUser = $u;
-                        }
-                    }
-                    if ($requestUser === null) {
-                        $this->requestUser == 'invalid-token';
-                        $ip->logSignupRequest();
-                        if ($ip->signupRequestThreshholdReached()) {
-                            $ip->createIPBan();
-                        }
-                    } else {
-                        $this->requestUser = $requestUser;
-                    }
-                }
-            }
-        }
-        if ($this->requestUser === 'no-token') {
-            throw AccessDeniedException::create(t('API Access Token required'));
-        }
-        if ($this->requestUser === 'banned') {
-            throw AccessDeniedException::create($this->app->make('ip')->getErrorMessage());
-        }
-        if ($this->requestUser === 'invalid-token') {
-            throw AccessDeniedException::create(t('Bad API Access Token'));
-        }
-
-        return $this->requestUser;
-    }
-
-    /**
-     * @return UserEntity
-     */
-    public function getAssociatedUserEntity()
-    {
-        try {
-            $uID = $this->getRequestUser()->getUserID();
-        } catch (AccessDeniedException $x) {
-            $uID = USER_SUPER_ID;
-        }
-
-        return $this->app->make(EntityManager::class)->find(UserEntity::class, $uID);
-    }
-
-    /**
-     * @param string $configKey
-     *
-     * @throws AccessDeniedException
-     */
-    public function checkGenericAccess($configKey)
-    {
-        $config = $this->app->make('community_translation/config');
-        $level = $config->get('options.api.access.' . $configKey);
+        $level = $this->getConfiguredAccessLevel($configKey);
         switch ($level) {
             case self::ACCESSOPTION_EVERYBODY:
                 return;
@@ -208,51 +107,50 @@ class UserControl
                 break;
             case self::ACCESSOPTION_SITEADMINS:
                 $user = $this->getRequestUser();
-                if ($user->getUserID() != USER_SUPER_ID) {
-                    $admins = Group::getByID(ADMIN_GROUP_ID);
+                if (!$user->isSuperUser()) {
+                    $admins = $this->app->make(GroupRepository::class)->getGroupByID(ADMIN_GROUP_ID);
                     if (!$admins || !$user->inGroup($admins)) {
-                        throw AccessDeniedException::create();
+                        throw new AccessDeniedException();
                     }
                 }
 
                 return;
             case self::ACCESSOPTION_ROOT:
                 $user = $this->getRequestUser();
-                if ($user->getUserID() != USER_SUPER_ID) {
-                    throw AccessDeniedException::create();
+                if (!$user->isSuperUser()) {
+                    throw new AccessDeniedException();
                 }
 
                 return;
             case self::ACCESSOPTION_NOBODY:
+                throw new AccessDeniedException();
             default:
-                throw AccessDeniedException::create();
+                throw new RuntimeException("The API access control for {$configKey} is not configured correctly");
         }
         $user = $this->getRequestUser();
         $hasRequiredLevel = false;
         foreach ($this->getApprovedLocales() as $locale) {
-            if ($this->getAccessHelper()->getLocaleAccess($locale, $user) >= $requiredLevel) {
+            if ($this->getAccessService()->getLocaleAccess($locale, $user) >= $requiredLevel) {
                 $hasRequiredLevel = true;
                 break;
-            } elseif ($requiredLevel >= Access::GLOBAL_ADMIN) {
+            }
+            if ($requiredLevel >= Access::GLOBAL_ADMIN) {
                 break;
             }
         }
         if ($hasRequiredLevel !== true) {
-            throw AccessDeniedException::create();
+            throw new AccessDeniedException();
         }
     }
 
     /**
-     * @param string $configKey
-     *
-     * @throws AccessDeniedException
+     * @throws \CommunityTranslation\Api\AccessDeniedException
      *
      * @return \CommunityTranslation\Entity\Locale[]
      */
-    public function checkLocaleAccess($configKey)
+    public function checkLocaleAccess(string $configKey): array
     {
-        $config = $this->app->make('community_translation/config');
-        $level = $config->get('options.api.access.' . $configKey);
+        $level = $this->getConfiguredAccessLevel($configKey);
         switch ($level) {
             case self::ACCESSOPTION_EVERYBODY:
                 return $this->getApprovedLocales();
@@ -282,94 +180,215 @@ class UserControl
                 break;
             case self::ACCESSOPTION_SITEADMINS:
                 $user = $this->getRequestUser();
-                if ($user->getUserID() != USER_SUPER_ID) {
-                    $admins = Group::getByID(ADMIN_GROUP_ID);
+                if (!$user->isSuperUser()) {
+                    $admins = $this->app->make(GroupRepository::class)->getGroupByID(ADMIN_GROUP_ID);
                     if (!$admins || !$user->inGroup($admins)) {
-                        throw AccessDeniedException::create();
+                        throw new AccessDeniedException();
                     }
                 }
 
-                return;
+                return $this->getApprovedLocales();
             case self::ACCESSOPTION_ROOT:
                 $user = $this->getRequestUser();
-                if ($user->getUserID() != USER_SUPER_ID) {
-                    throw AccessDeniedException::create();
+                if (!$user->isSuperUser()) {
+                    throw new AccessDeniedException();
                 }
 
-                return;
+                return $this->getApprovedLocales();
             case self::ACCESSOPTION_NOBODY:
             default:
-                throw AccessDeniedException::create();
+                throw new AccessDeniedException();
         }
         $user = $this->getRequestUser();
+        $approvedLocales = $this->getApprovedLocales();
         $ownLocales = [];
-        foreach ($this->getApprovedLocales() as $locale) {
-            if ($this->getAccessHelper()->getLocaleAccess($locale, $user) >= $requiredLevel) {
-                $ownLocales[] = $locale;
+        foreach ($approvedLocales as $locale) {
+            if ($this->getAccessService()->getLocaleAccess($locale, $user) >= $requiredLevel) {
                 if ($ownLocalesOnly === false) {
-                    break;
+                    return $approvedLocales;
                 }
+                $ownLocales[] = $locale;
             } elseif ($requiredLevel >= Access::GLOBAL_ADMIN) {
                 break;
             }
         }
-        if (empty($ownLocales)) {
-            throw AccessDeniedException::create();
+        if ($ownLocales === []) {
+            throw new AccessDeniedException();
         }
 
-        return $ownLocalesOnly ? $ownLocales : $this->getApprovedLocales();
+        return $ownLocales;
     }
 
     /**
-     * Returns the defined rate limit (if set).
-     *
-     * @return int[]|null First item is the max requests, second limit is the time window. If no rate limit is defined returns null.
+     * Get the user entity to be associated with imported translations.
+     * It may be the current request's user (if available), or the super user otherwise.
      */
-    public function getRateLimit()
+    public function getAssociatedUserEntity(): UserEntity
     {
-        $result = null;
-        $config = $this->app->make('community_translation/config');
-        $maxRequests = (int) $config->get('options.api.rateLimit.maxRequests');
-        if ($maxRequests > 0) {
-            $timeWindow = (int) $config->get('options.api.rateLimit.timeWindow');
-            if ($timeWindow > 0) {
-                $result = [$maxRequests, $timeWindow];
-            }
+        try {
+            $uID = (int) $this->getRequestUser()->getUserID();
+        } catch (AccessDeniedException $x) {
+            $uID = USER_SUPER_ID;
         }
 
-        return $result;
+        return $this->app->make(EntityManager::class)->find(UserEntity::class, $uID);
     }
 
-    /**
-     * Get the number of visits from the current IP address since a determined number of seconds ago.
-     *
-     * @param int $timeWindow
-     *
-     * @return int
-     */
-    public function getVisitsCountFromCurrentIP($timeWindow)
+    public function getIpAccessControlRateLimit(): IpAccessControlService
     {
-        $timeWindow = (int) $timeWindow;
-        $ipControlLog = $this->app->make(IPControlLog::class);
+        if ($this->ipAccessControlRateLimit === null) {
+            $this->ipAccessControlRateLimit = $this->buildIpAccessControlService('community_translation_api_ratelimit');
+        }
 
-        return $ipControlLog->countVisits('api', new DateTime("-$timeWindow seconds"));
+        return $this->ipAccessControlRateLimit;
     }
 
     /**
      * Check if the API Rate limit has been reached.
      *
-     * @throws UserMessageException
+     * @throws \Concrete\Core\Error\UserMessageException
      */
-    public function checkRateLimit()
+    public function checkRateLimit(): void
     {
-        $rateLimit = $this->getRateLimit();
-        if ($rateLimit !== null) {
-            list($maxRequests, $timeWindow) = $rateLimit;
-            $visits = $this->getVisitsCountFromCurrentIP($timeWindow);
-            if ($visits >= $maxRequests) {
-                throw new UserMessageException(t('You reached the API rate limit (%1$s requests every %2$s seconds)', $maxRequests, $timeWindow));
+        $rateLimit = $this->getIpAccessControlRateLimit();
+        $range = $rateLimit->getRange();
+        if ($range !== null) {
+            if ($range->getType() & IpAccessControlService::IPRANGEFLAG_WHITELIST) {
+                return;
             }
-            $this->app->make(IPControlLog::class)->addVisit('api');
+            if ($range->getType() === IpAccessControlService::IPRANGETYPE_BLACKLIST_AUTOMATIC) {
+                throw new UserMessageException(t('You reached the API rate limit (%s)', $rateLimit->getCategory()->describeTimeWindow()), Response::HTTP_TOO_MANY_REQUESTS);
+            }
+            throw new UserMessageException(t('You have been blocked'));
         }
+        if ($rateLimit->isThresholdReached()) {
+            $rateLimit->addToDenylistForThresholdReached();
+            throw new UserMessageException(t('You reached the API rate limit (%s)', $rateLimit->getCategory()->describeTimeWindow()), Response::HTTP_TOO_MANY_REQUESTS);
+        }
+        $rateLimit->registerEvent();
+    }
+
+    private function getAccessService(): Access
+    {
+        if ($this->accessService === null) {
+            $this->accessService = $this->app->make(Access::class);
+        }
+
+        return $this->accessService;
+    }
+
+    /**
+     * @return \CommunityTranslation\Entity\Locale[]
+     */
+    private function getApprovedLocales(): array
+    {
+        if ($this->approvedLocales === null) {
+            $this->approvedLocales = $this->app->make(LocaleRepository::class)->getApprovedLocales();
+        }
+
+        return $this->approvedLocales;
+    }
+
+    private function getRequestApiToken(): string
+    {
+        if ($this->requestApiToken === null) {
+            $requestApiToken = '';
+            if ($this->request->headers !== null) {
+                if ($this->request->headers->has('API-Token')) {
+                    $requestApiToken = $this->request->headers->get('API-Token');
+                    if (!is_string($requestApiToken)) {
+                        $requestApiToken = '';
+                    }
+                }
+            }
+            $this->requestApiToken = $requestApiToken;
+        }
+
+        return $this->requestApiToken;
+    }
+
+    private function buildIpAccessControlService(string $handle): IpAccessControlService
+    {
+        $em = $this->app->make(EntityManagerInterface::class);
+        $repo = $em->getRepository(IpAccessControlCategory::class);
+        $category = $repo->findOneBy(['handle' => $handle]);
+
+        return $this->app->make(IpAccessControlService::class, ['category' => $category]);
+    }
+
+    private function getIpAccessControlAccess(): IpAccessControlService
+    {
+        if ($this->ipAccessControlAccess === null) {
+            $this->ipAccessControlAccess = $this->buildIpAccessControlService('community_translation_api_access');
+        }
+
+        return $this->ipAccessControlAccess;
+    }
+
+    /**
+     * @throws \CommunityTranslation\Api\AccessDeniedException
+     */
+    private function getRequestUser(): User
+    {
+        if ($this->requestUser === null) {
+            $this->requestUser = $this->resolveRequestUser();
+        }
+        if ($this->requestUser === self::REQUESTUSER_NO_TOKEN) {
+            throw new AccessDeniedException(t('API Access Token required'));
+        }
+        if ($this->requestUser === self::REQUESTUSER_BANNED) {
+            throw new AccessDeniedException($this->getIpAccessControlAccess()->getErrorMessage());
+        }
+        if ($this->requestUser === self::REQUESTUSER_INVALID_TOKEN) {
+            throw new AccessDeniedException(t('Bad API Access Token'));
+        }
+
+        return $this->requestUser;
+    }
+
+    /**
+     * @return \Concrete\Core\User\User|string
+     */
+    private function resolveRequestUser()
+    {
+        $token = $this->getRequestApiToken();
+        if ($token === '') {
+            return self::REQUESTUSER_NO_TOKEN;
+        }
+        $ipAccessControlAccess = $this->getIpAccessControlAccess();
+        $ipAccessControlRange = $ipAccessControlAccess->getRange();
+        if ($ipAccessControlRange !== null && ($ipAccessControlRange->getType() && IpAccessControlService::IPRANGEFLAG_BLACKLIST)) {
+            return self::REQUESTUSER_BANNED;
+        }
+        $requestUser = null;
+        $list = new UserList();
+        $list->disableAutomaticSorting();
+        $list->filterByAttribute('api_token', $token);
+        $ids = $list->getResultIDs();
+        if (!empty($ids)) {
+            $u = User::getByUserID((int) $ids[0]);
+            if ($u->isRegistered()) {
+                $requestUser = $u;
+            }
+        }
+        if ($requestUser !== null) {
+            return $requestUser;
+        }
+        if ($ipAccessControlRange === null) {
+            $ipAccessControlAccess->registerEvent();
+            if ($ipAccessControlAccess->isThresholdReached()) {
+                $ipAccessControlAccess->addToDenylistForThresholdReached();
+            }
+        }
+
+        return self::REQUESTUSER_INVALID_TOKEN;
+    }
+
+    private function getConfiguredAccessLevel(string $configKey): string
+    {
+        $config = $this->app->make(Repository::class);
+        $level = $config->get("community_translation::api.access.{$configKey}");
+
+        return is_string($level) ? $level : '';
     }
 }

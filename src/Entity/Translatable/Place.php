@@ -1,18 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Entity\Translatable;
 
-use CommunityTranslation\Entity\Package\Version;
-use CommunityTranslation\Entity\Translatable;
-use Doctrine\ORM\Mapping as ORM;
+use CommunityTranslation\Entity\Package\Version as PackageVersionEntity;
+use CommunityTranslation\Entity\Translatable as TranslatableEntity;
+
+defined('C5_EXECUTE') or die('Access Denied.');
 
 /**
  * Package versions where translatable strings are defined.
  *
- * @ORM\Entity(
+ * @Doctrine\ORM\Mapping\Entity(
  *     repositoryClass="CommunityTranslation\Repository\Translatable\Place",
  * )
- * @ORM\Table(
+ * @Doctrine\ORM\Mapping\Table(
  *     name="CommunityTranslationTranslatablePlaces",
  *     options={"comment": "Package versions where translatable strings are defined"}
  * )
@@ -22,169 +25,94 @@ class Place
     /**
      * Associated package version.
      *
-     * @ORM\ManyToOne(targetEntity="CommunityTranslation\Entity\Package\Version", inversedBy="places")
-     * @ORM\JoinColumn(name="packageVersion", referencedColumnName="id", nullable=false, onDelete="CASCADE")
-     * @ORM\Id
-     *
-     * @var Version
+     * @Doctrine\ORM\Mapping\ManyToOne(targetEntity="CommunityTranslation\Entity\Package\Version", inversedBy="places")
+     * @Doctrine\ORM\Mapping\JoinColumn(name="packageVersion", referencedColumnName="id", nullable=false, onDelete="CASCADE")
+     * @Doctrine\ORM\Mapping\Id
      */
-    protected $packageVersion;
+    protected PackageVersionEntity $packageVersion;
+
+    /**
+     * Associated translatable string.
+     *
+     * @Doctrine\ORM\Mapping\ManyToOne(targetEntity="CommunityTranslation\Entity\Translatable", inversedBy="places")
+     * @Doctrine\ORM\Mapping\JoinColumn(name="translatable", referencedColumnName="id", nullable=false, onDelete="CASCADE")
+     * @Doctrine\ORM\Mapping\Id
+     */
+    protected TranslatableEntity $translatable;
+
+    /**
+     * File paths where the translatable string is defined.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="array", nullable=false, options={"comment": "File paths where the translatable string is defined"})
+     *
+     * @var string
+     */
+    protected array $locations;
+
+    /**
+     * Comments for the translation.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="array", nullable=false, options={"comment": "Comments for the translation"})
+     *
+     * @var string[]
+     */
+    protected array $comments;
+
+    /**
+     * Sorting key for a translation in a locale.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="integer", nullable=false, options={"unsigned": true, "comment": "Sorting key for a translation in a locale"})
+     */
+    protected int $sort;
+
+    /**
+     * At the moment the creation of new Place records is done via direct SQL.
+     */
+    protected function __construct()
+    {
+    }
 
     /**
      * Get the associated package version.
-     *
-     * @return Version
      */
-    public function getPackageVersion()
+    public function getPackageVersion(): PackageVersionEntity
     {
         return $this->packageVersion;
     }
 
     /**
-     * Set the associated package version.
-     *
-     * @param Version $value
-     *
-     * @return static
-     */
-    public function setPackageVersion(Version $value)
-    {
-        $this->packageVersion = $value;
-
-        return $this;
-    }
-
-    /**
-     * Associated translatable string.
-     *
-     * @ORM\ManyToOne(targetEntity="CommunityTranslation\Entity\Translatable", inversedBy="places")
-     * @ORM\JoinColumn(name="translatable", referencedColumnName="id", nullable=false, onDelete="CASCADE")
-     * @ORM\Id
-     *
-     * @var Translatable
-     */
-    protected $translatable;
-
-    /**
      * Get the associated translatable string.
-     *
-     * @return Translatable
      */
-    public function getTranslatable()
+    public function getTranslatable(): TranslatableEntity
     {
         return $this->translatable;
     }
-
-    /**
-     * Set the associated translatable string.
-     *
-     * @param Translatable $value
-     *
-     * @return static
-     */
-    public function setTranslatable(Translatable $value)
-    {
-        $this->translatable = $value;
-
-        return $this;
-    }
-
-    /**
-     * File paths where the translatable string is defined.
-     *
-     * @ORM\Column(type="array", nullable=false, options={"comment": "File paths where the translatable string is defined"})
-     *
-     * @var string
-     */
-    protected $locations = [];
 
     /**
      * Get the file paths where the translatable string is defined.
      *
      * @return string[]
      */
-    public function getLocations()
+    public function getLocations(): array
     {
         return $this->locations;
     }
 
     /**
-     * Set the file paths where the translatable string is defined.
-     *
-     * @param string[] $value
-     *
-     * @return static
-     */
-    public function setLocations(array $value)
-    {
-        $this->locations = $value;
-
-        return $this;
-    }
-
-    /**
-     * Comments for the translation.
-     *
-     * @ORM\Column(type="array", nullable=false, options={"comment": "Comments for the translation"})
-     *
-     * @var string
-     */
-    protected $comments = [];
-
-    /**
-     * Set the comments for the translation.
+     * Get the comments for the translation.
      *
      * @return string[]
      */
-    public function getComments()
+    public function getComments(): array
     {
         return $this->comments;
     }
 
     /**
-     * Set the comments for the translation.
-     *
-     * @param string[] $value
-     *
-     * @return static
-     */
-    public function setComments(array $value)
-    {
-        $this->comments = $value;
-
-        return $this;
-    }
-
-    /**
-     * Sorting key for a translation in a locale.
-     *
-     * @ORM\Column(type="integer", nullable=false, options={"unsigned": true, "comment": "Sorting key for a translation in a locale"})
-     *
-     * @var int
-     */
-    protected $sort;
-
-    /**
      * Get the sorting key for a translation in a locale.
-     *
-     * @return int
      */
-    public function getSort()
+    public function getSort(): int
     {
         return $this->sort;
-    }
-
-    /**
-     * Set the sorting key for a translation in a locale.
-     *
-     * @param int $value
-     *
-     * @return static
-     */
-    public function setSort($value)
-    {
-        $this->sort = (int) $value;
-
-        return $this;
     }
 }

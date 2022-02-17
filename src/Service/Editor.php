@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Service;
 
 use CommunityTranslation\Entity\Locale as LocaleEntity;
@@ -13,7 +15,11 @@ use CommunityTranslation\Repository\Translation as TranslationRepository;
 use CommunityTranslation\Service\User as UserService;
 use CommunityTranslation\Translation\Exporter as TranslationExporter;
 use Concrete\Core\Application\Application;
+use Concrete\Core\User\User as UserObject;
+use Doctrine\DBAL\Result;
 use Doctrine\ORM\EntityManager;
+
+defined('C5_EXECUTE') or die('Access Denied.');
 
 class Editor
 {
@@ -22,53 +28,26 @@ class Editor
      *
      * @var int
      */
-    const MAX_SUGGESTIONS = 15;
+    private const MAX_SUGGESTIONS = 15;
 
     /**
      * Maximum number of glossary terms to show in the editor.
      *
      * @var int
      */
-    const MAX_GLOSSARY_ENTRIES = 15;
+    private const MAX_GLOSSARY_ENTRIES = 15;
 
-    /**
-     * The application object.
-     *
-     * @var Application
-     */
-    protected $app;
+    private Application $app;
 
-    /**
-     * @param Application $application
-     */
     public function __construct(Application $app)
     {
         $this->app = $app;
     }
 
     /**
-     * Returns the initial translations to be reviewed for the online editor, for a specific locale.
-     *
-     * @param LocaleEntity $locale
-     *
-     * @return array
-     */
-    public function getUnreviewedInitialTranslations(LocaleEntity $locale)
-    {
-        $rs = $this->app->make(TranslationExporter::class)->getUnreviewedSelectQuery($locale);
-
-        return $this->buildInitialTranslations($locale, $rs);
-    }
-
-    /**
      * Returns the initial translations for the online editor, for a specific package version.
-     *
-     * @param PackageVersionEntity $packageVersion
-     * @param LocaleEntity $locale
-     *
-     * @return array
      */
-    public function getInitialTranslations(PackageVersionEntity $packageVersion, LocaleEntity $locale)
+    public function getInitialTranslations(PackageVersionEntity $packageVersion, LocaleEntity $locale): array
     {
         $rs = $this->app->make(TranslationExporter::class)->getPackageSelectQuery($packageVersion, $locale, false);
 
@@ -76,108 +55,45 @@ class Editor
     }
 
     /**
-     * Builds the initial translations array.
-     *
-     * @param \Concrete\Core\Database\Driver\PDOStatement $rs
-     *
-     * @return array
+     * Returns the initial translations to be reviewed for the online editor, for a specific locale.
      */
-    protected function buildInitialTranslations(LocaleEntity $locale, \Concrete\Core\Database\Driver\PDOStatement $rs)
+    public function getUnreviewedInitialTranslations(LocaleEntity $locale): array
     {
-        $approvedSupport = $this->app->make(Access::class)->getLocaleAccess($locale) >= Access::ADMIN;
-        $result = [];
-        $numPlurals = $locale->getPluralCount();
-        while (($row = $rs->fetch()) !== false) {
-            $item = [
-                'id' => (int) $row['id'],
-                'original' => $row['text'],
-            ];
-            if ($approvedSupport && $row['approved']) {
-                $item['isApproved'] = true;
-            }
-            if ($row['context'] !== '') {
-                $item['context'] = $row['context'];
-            }
-            $isPlural = $row['plural'] !== '';
-            if ($isPlural) {
-                $item['originalPlural'] = $row['plural'];
-            }
-            if ($row['text0'] !== null) {
-                $translations = [];
-                switch ($isPlural ? $numPlurals : 1) {
-                    case 6:
-                        $translations[] = $row['text5'];
-                        /* @noinspection PhpMissingBreakStatementInspection */
-                    case 5:
-                        $translations[] = $row['text4'];
-                        /* @noinspection PhpMissingBreakStatementInspection */
-                    case 4:
-                        $translations[] = $row['text3'];
-                        /* @noinspection PhpMissingBreakStatementInspection */
-                    case 3:
-                        $translations[] = $row['text2'];
-                        /* @noinspection PhpMissingBreakStatementInspection */
-                    case 2:
-                        $translations[] = $row['text1'];
-                        /* @noinspection PhpMissingBreakStatementInspection */
-                    case 1:
-                        $translations[] = $row['text0'];
-                        break;
-                }
-                $item['translations'] = array_reverse($translations);
-            }
-            $result[] = $item;
-        }
-        $rs->closeCursor();
+        $rs = $this->app->make(TranslationExporter::class)->getUnreviewedSelectQuery($locale);
 
-        return $result;
+        return $this->buildInitialTranslations($locale, $rs);
     }
 
     /**
-     * Returns the data to be used in the editor when editing a string.
+     * Returns the data to be used in the editor when translating a string in a specific locale.
      *
-     * @param LocaleEntity $locale the current editor locale
-     * @param TranslatableEntity $translatable the source string that's being translated
-     * @param PackageVersionEntity $packageVersion the package version where this string is used
+     * @param \CommunityTranslation\Entity\Package\Version|null $packageVersion the package version where this string is used (if applicable)
      * @param bool $initial set to true when a string is first loaded, false after it has been saved
-     *
-     * @return array
      */
-    public function getTranslatableData(LocaleEntity $locale, TranslatableEntity $translatable, PackageVersionEntity $packageVersion = null, $initial = false)
+    public function getTranslatableData(LocaleEntity $locale, TranslatableEntity $translatable, ?PackageVersionEntity $packageVersion = null, bool $initial = false): array
     {
         $result = [
             'id' => $translatable->getID(),
             'translations' => $this->getTranslations($locale, $translatable),
         ];
         if ($initial) {
-            $place = ($packageVersion === null) ? null : $this->app->make(TranslatablePlaceRepository::class)->findOneBy(['packageVersion' => $packageVersion, 'translatable' => $translatable]);
-            if ($place !== null) {
-                $extractedComments = $place->getComments();
-                $references = $this->expandReferences($place->getLocations(), $packageVersion);
-            } else {
-                $extractedComments = [];
-                $references = [];
-            }
-            $result['extractedComments'] = $extractedComments;
-            $result['references'] = $references;
-            $result['extractedComments'] = ($place === null) ? [] : $place->getComments();
-            $result['comments'] = $this->getComments($locale, $translatable);
-            $result['suggestions'] = $this->getSuggestions($locale, $translatable);
-            $result['glossary'] = $this->getGlossaryTerms($locale, $translatable);
+            $place = $packageVersion === null ? null : $this->app->make(TranslatablePlaceRepository::class)->findOneBy(['packageVersion' => $packageVersion, 'translatable' => $translatable]);
+            $result += [
+                'extractedComments' => $place === null ? [] : $place->getComments(),
+                'references' => $place === null ? [] : $this->expandReferences($place->getLocations(), $packageVersion),
+                'comments' => $this->getComments($locale, $translatable),
+                'suggestions' => $this->getSuggestions($locale, $translatable),
+                'glossary' => $this->getGlossaryTerms($locale, $translatable),
+            ];
         }
 
         return $result;
     }
 
     /**
-     * Search all the translations associated to a translatable string.
-     *
-     * @param LocaleEntity $locale
-     * @param TranslatableEntity $translatable
-     *
-     * @return array
+     * Get all the translations in a specific locale associated to a specific translatable string.
      */
-    public function getTranslations(LocaleEntity $locale, TranslatableEntity $translatable)
+    public function getTranslations(LocaleEntity $locale, TranslatableEntity $translatable): array
     {
         $numPlurals = $locale->getPluralCount();
 
@@ -189,24 +105,24 @@ class Editor
         $dh = $this->app->make('helper/date');
         $uh = $this->app->make(UserService::class);
         foreach ($translations as $translation) {
-            /* @var \CommunityTranslation\Entity\Translation $translation */
+            /** @var \CommunityTranslation\Entity\Translation $translation */
             $texts = [];
             switch (($translatable->getPlural() === '') ? 1 : $numPlurals) {
                 case 6:
                     $texts[] = $translation->getText5();
-                    /* @noinspection PhpMissingBreakStatementInspection */
+                    // no break
                 case 5:
                     $texts[] = $translation->getText4();
-                    /* @noinspection PhpMissingBreakStatementInspection */
+                    // no break
                 case 4:
                     $texts[] = $translation->getText3();
-                    /* @noinspection PhpMissingBreakStatementInspection */
+                    // no break
                 case 3:
                     $texts[] = $translation->getText2();
-                    /* @noinspection PhpMissingBreakStatementInspection */
+                    // no break
                 case 2:
                     $texts[] = $translation->getText1();
-                    /* @noinspection PhpMissingBreakStatementInspection */
+                    // no break
                 case 1:
                 default:
                     $texts[] = $translation->getText0();
@@ -215,7 +131,7 @@ class Editor
             $item = [
                 'id' => $translation->getID(),
                 'createdOn' => $dh->formatPrettyDateTime($translation->getCreatedOn(), false, true),
-                'createdBy' => $uh->format($translation->getCreatedBy()),
+                'createdBy' => $uh->format($translation->getCreatedBy(), true),
                 'approved' => $translation->isApproved(),
                 'translations' => array_reverse($texts),
             ];
@@ -231,12 +147,9 @@ class Editor
     }
 
     /**
-     * Get the comments associated to a translatable strings.
-     *
-     * @param LocaleEntity $locale
-     * @param TranslatableEntity $translatable
+     * Get the comments associated to a translatable strings in a specific locale.
      */
-    public function getComments(LocaleEntity $locale, TranslatableEntity $translatable, TranslatableCommentEntity $parentComment = null)
+    public function getComments(LocaleEntity $locale, TranslatableEntity $translatable, ?TranslatableCommentEntity $parentComment = null): array
     {
         $repo = $this->app->make(TranslatableCommentRepository::class);
         if ($parentComment === null) {
@@ -262,123 +175,18 @@ class Editor
         $result = [];
         $uh = $this->app->make(UserService::class);
         $dh = $this->app->make('helper/date');
-        $me = new \User();
+        $me = $this->app->make(UserObject::class);
         $myID = $me->isRegistered() ? (int) $me->getUserID() : null;
         foreach ($comments as $comment) {
             $result[] = [
                 'id' => $comment->getID(),
                 'date' => $dh->formatPrettyDateTime($comment->getPostedOn(), true, true),
-                'mine' => $myID && $myID === $comment->getPostedBy(),
-                'by' => $uh->format($comment->getPostedBy()),
+                'mine' => $myID !== null && $comment->getPostedBy() !== null && $myID === (int) $comment->getPostedBy()->getUserID(),
+                'by' => $uh->format($comment->getPostedBy(), true),
                 'text' => $comment->getText(),
                 'comments' => $this->getComments($locale, $translatable, $comment),
-                'isGlobal' => $comment->getLocale() === null,
-            ];
+            ] + ($parentComment === null ? ['isGlobal' => $comment->getLocale() === null] : []);
         }
-
-        return $result;
-    }
-
-    /**
-     * Search for similar translations.
-     *
-     * @param LocaleEntity $locale
-     * @param TranslatableEntity $translatable
-     *
-     * @return array
-     */
-    public function getSuggestions(LocaleEntity $locale, TranslatableEntity $translatable)
-    {
-        $result = [];
-        $connection = $this->app->make(EntityManager::class)->getConnection();
-        $rs = $connection->executeQuery(
-            '
-                select distinct
-                    CommunityTranslationTranslatables.text,
-                    CommunityTranslationTranslations.text0,
-                    match(CommunityTranslationTranslatables.text) against (:search in natural language mode) as relevance
-                from
-                    CommunityTranslationTranslations
-                    inner join CommunityTranslationTranslatables on CommunityTranslationTranslations.translatable = CommunityTranslationTranslatables.id and 1 = CommunityTranslationTranslations.current and :locale = CommunityTranslationTranslations.locale
-                where
-                    CommunityTranslationTranslatables.id <> :currentTranslatableID
-                    and length(CommunityTranslationTranslatables.text) between :minLength and :maxLength
-                having
-                    relevance > 0
-                order by
-                    relevance desc,
-                    text asc
-                limit
-                    0, ' . ((int) self::MAX_SUGGESTIONS) . '
-            ',
-            [
-                'search' => $translatable->getText(),
-                'locale' => $locale->getID(),
-                'currentTranslatableID' => $translatable->getID(),
-                'minLength' => (int) floor(strlen($translatable->getText()) * 0.75),
-                'maxLength' => (int) ceil(strlen($translatable->getText()) * 1.33),
-            ]
-        );
-        while ($row = $rs->fetch()) {
-            $result[] = [
-                'source' => $row['text'],
-                'translation' => $row['text0'],
-            ];
-        }
-        $rs->closeCursor();
-
-        return $result;
-    }
-
-    /**
-     * Search the glossary entries to show when translating a string in a specific locale.
-     *
-     * @param LocaleEntity $locale the current editor locale
-     * @param TranslatableEntity $translatable the source string that's being translated
-     *
-     * @return array
-     */
-    public function getGlossaryTerms(LocaleEntity $locale, TranslatableEntity $translatable)
-    {
-        $result = [];
-        $connection = $this->app->make(EntityManager::class)->getConnection();
-        $rs = $connection->executeQuery(
-            '
-                select
-                    CommunityTranslationGlossaryEntries.id,
-                    CommunityTranslationGlossaryEntries.term,
-                    CommunityTranslationGlossaryEntries.type,
-                    CommunityTranslationGlossaryEntries.comments as commentsE,
-                    CommunityTranslationGlossaryEntriesLocalized.translation,
-                    CommunityTranslationGlossaryEntriesLocalized.comments as commentsEL,
-                    match(CommunityTranslationGlossaryEntries.term) against (:search in natural language mode) as relevance
-                from
-                    CommunityTranslationGlossaryEntries
-                    left join CommunityTranslationGlossaryEntriesLocalized on CommunityTranslationGlossaryEntries.id = CommunityTranslationGlossaryEntriesLocalized.entry and :locale = CommunityTranslationGlossaryEntriesLocalized.locale
-                having
-                    relevance > 0
-                order by
-                    relevance desc,
-                    CommunityTranslationGlossaryEntries.term asc
-                limit
-                    0, ' . ((int) self::MAX_GLOSSARY_ENTRIES) . '
-            ',
-            [
-                'search' => $translatable->getText(),
-                'locale' => $locale->getID(),
-            ]
-        );
-        while ($row = $rs->fetch()) {
-            $result[] = [
-                'id' => (int) $row['id'],
-                'term' => $row['term'],
-                'type' => $row['type'],
-                'termComments' => $row['commentsE'],
-                'translation' => ($row['translation'] === null) ? '' : $row['translation'],
-                'translationComments' => ($row['commentsEL'] === null) ? '' : $row['commentsEL'],
-            ];
-        }
-        $rs->closeCursor();
 
         return $result;
     }
@@ -387,14 +195,13 @@ class Editor
      * Expand translatable string references by adding a link to the online repository where they are defined.
      *
      * @param string[] $references
-     * @param PackageVersionEntity $packageVersion
      *
      * @return string[]
      */
-    public function expandReferences(array $references, PackageVersionEntity $packageVersion)
+    public function expandReferences(array $references, PackageVersionEntity $packageVersion): array
     {
-        if (empty($references)) {
-            return $references;
+        if ($references === []) {
+            return [];
         }
         $gitRepositories = $this->app->make(GitRepositoryRepository::class)->findBy(['packageHandle' => $packageVersion->getPackage()->getHandle()]);
         $applicableRepository = null;
@@ -407,20 +214,19 @@ class Editor
                 break;
             }
         }
-
         $pattern = null;
         $lineFormat = null;
         if ($applicableRepository !== null) {
             $matches = null;
             switch (true) {
-                case 1 == preg_match('/^(?:\w+:\/\/|\w+@)github.com[:\/]([a-z0-9_.\-]+\/[a-z0-9_.\-]+)\.git$/i', $applicableRepository->getURL(), $matches):
+                case preg_match('/^(?:\w+:\/\/|\w+@)github.com[:\/]([a-z0-9_.\-]+\/[a-z0-9_.\-]+)\.git$/i', $applicableRepository->getURL(), $matches) == 1:
                     switch ($foundVersionData['kind']) {
                         case 'tag':
-                            $pattern = 'https://github.com/' . $matches[1] . '/blob/' . $foundVersionData['repoName'] . '/<<FILE>><<LINE>>';
+                            $pattern = "https://github.com/{$matches[1]}/blob/{$foundVersionData['repoName']}/<<FILE>><<LINE>>";
                             $lineFormat = '#L%s';
                             break;
                         case 'branch':
-                            $pattern = 'https://github.com/' . $matches[1] . '/blob/' . $foundVersionData['repoName'] . '/<<FILE>><<LINE>>';
+                            $pattern = "https://github.com/{$matches[1]}/blob/{$foundVersionData['repoName']}/<<FILE>><<LINE>>";
                             $lineFormat = '#L%s';
                             break;
                     }
@@ -458,6 +264,159 @@ class Editor
                     ];
                 }
             }
+        }
+
+        return $result;
+    }
+
+    /**
+     * Builds the initial translations array.
+     */
+    private function buildInitialTranslations(LocaleEntity $locale, Result $rs): array
+    {
+        $result = [];
+        $numPlurals = $locale->getPluralCount();
+        while (($row = $rs->fetch()) !== false) {
+            $item = [
+                'id' => (int) $row['id'],
+                'original' => $row['text'],
+            ];
+            if ($row['context'] !== '') {
+                $item['context'] = $row['context'];
+            }
+            $isPlural = $row['plural'] !== '';
+            if ($isPlural) {
+                $item['originalPlural'] = $row['plural'];
+            }
+            if ($row['text0'] !== null) {
+                $item['isApproved'] = (bool) $row['approved'];
+                $translations = [];
+                switch ($isPlural ? $numPlurals : 1) {
+                    case 6:
+                        $translations[] = $row['text5'];
+                        // no break
+                    case 5:
+                        $translations[] = $row['text4'];
+                        // no break
+                    case 4:
+                        $translations[] = $row['text3'];
+                        // no break
+                    case 3:
+                        $translations[] = $row['text2'];
+                        // no break
+                    case 2:
+                        $translations[] = $row['text1'];
+                        // no break
+                    case 1:
+                        $translations[] = $row['text0'];
+                        break;
+                }
+                $item['translations'] = array_reverse($translations);
+            }
+            $result[] = $item;
+        }
+
+        return $result;
+    }
+
+    /**
+     * Search for similar translations.
+     */
+    private function getSuggestions(LocaleEntity $locale, TranslatableEntity $translatable): array
+    {
+        $result = [];
+        $connection = $this->app->make(EntityManager::class)->getConnection();
+        $maxSuggestions = (int) self::MAX_SUGGESTIONS;
+        $translatableTextLength = mb_strlen($translatable->getText());
+        $rs = $connection->executeQuery(
+            <<<EOT
+SELECT DISTINCT
+    CommunityTranslationTranslatables.text,
+    CommunityTranslationTranslations.text0,
+    MATCH(CommunityTranslationTranslatables.text) AGAINST (:search IN NATURAL LANGUAGE MODE) AS relevance
+FROM
+    CommunityTranslationTranslations
+    INNER JOIN CommunityTranslationTranslatables
+        ON CommunityTranslationTranslations.translatable = CommunityTranslationTranslatables.id
+        AND 1 = CommunityTranslationTranslations.current
+        AND :locale = CommunityTranslationTranslations.locale
+WHERE
+    CommunityTranslationTranslatables.id <> :currentTranslatableID
+    AND CHAR_LENGTH(CommunityTranslationTranslatables.text) BETWEEN :minLength AND :maxLength
+HAVING
+    relevance > 0
+ORDER BY
+    relevance DESC,
+    text ASC
+LIMIT
+    0, {$maxSuggestions}
+EOT
+            ,
+            [
+                'search' => $translatable->getText(),
+                'locale' => $locale->getID(),
+                'currentTranslatableID' => $translatable->getID(),
+                'minLength' => (int) floor($translatableTextLength * 0.75),
+                'maxLength' => (int) ceil($translatableTextLength * 1.33),
+            ]
+        );
+        while (($row = $rs->fetchAssociative()) !== false) {
+            $result[] = [
+                'source' => $row['text'],
+                'translation' => $row['text0'],
+            ];
+        }
+
+        return $result;
+    }
+
+    /**
+     * Search the glossary entries to be displayed when translating a string in a specific locale.
+     */
+    private function getGlossaryTerms(LocaleEntity $locale, TranslatableEntity $translatable): array
+    {
+        $result = [];
+        $connection = $this->app->make(EntityManager::class)->getConnection();
+        $maxGlossaryEntries = (int) self::MAX_GLOSSARY_ENTRIES;
+        $rs = $connection->executeQuery(
+            <<<EOT
+SELECT
+    CommunityTranslationGlossaryEntries.id,
+    CommunityTranslationGlossaryEntries.term,
+    CommunityTranslationGlossaryEntries.type,
+    CommunityTranslationGlossaryEntries.comments AS commentsE,
+    CommunityTranslationGlossaryEntriesLocalized.translation,
+    CommunityTranslationGlossaryEntriesLocalized.comments AS commentsEL,
+    MATCH(CommunityTranslationGlossaryEntries.term) AGAINST (:search IN NATURAL LANGUAGE MODE) AS relevance
+FROM
+    CommunityTranslationGlossaryEntries
+    LEFT JOIN CommunityTranslationGlossaryEntriesLocalized
+        ON CommunityTranslationGlossaryEntries.id = CommunityTranslationGlossaryEntriesLocalized.entry
+        AND :locale = CommunityTranslationGlossaryEntriesLocalized.locale
+HAVING
+    relevance > 0
+ORDER BY
+    relevance DESC,
+    CommunityTranslationGlossaryEntries.term ASC
+LIMIT
+    0, {$maxGlossaryEntries}
+
+EOT
+            ,
+            [
+                'search' => $translatable->getText(),
+                'locale' => $locale->getID(),
+            ]
+        );
+        while (($row = $rs->fetchAssociative()) !== false) {
+            $result[] = [
+                'id' => (int) $row['id'],
+                'term' => $row['term'],
+                'type' => $row['type'],
+                'termComments' => $row['commentsE'],
+                'translation' => (string) $row['translation'],
+                'translationComments' => (string) $row['commentsEL'],
+            ];
         }
 
         return $result;

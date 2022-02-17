@@ -1,17 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Entity;
 
 use Concrete\Core\Entity\User\User as UserEntity;
-use Doctrine\ORM\Mapping as ORM;
+
+defined('C5_EXECUTE') or die('Access Denied.');
 
 /**
  * User's subscription for package versions.
  *
- * @ORM\Entity(
+ * @Doctrine\ORM\Mapping\Entity(
  *     repositoryClass="CommunityTranslation\Repository\PackageVersionSubscription",
  * )
- * @ORM\Table(
+ * @Doctrine\ORM\Mapping\Table(
  *     name="CommunityTranslationPackageVersionSubscriptions",
  *     options={
  *         "comment": "User's subscription for package versions"
@@ -21,64 +24,54 @@ use Doctrine\ORM\Mapping as ORM;
 class PackageVersionSubscription
 {
     /**
-     * @param UserEntity $user User associated to this subscription
-     * @param Package $package package associated to this subscription
-     * @param bool $notifyUpdates Send notifications about updates to this package versions?
-     *
-     * @return static
-     */
-    public static function create(UserEntity $user, Package\Version $packageVersion, $notifyUpdates)
-    {
-        $result = new static();
-        $result->user = $user;
-        $result->packageVersion = $packageVersion;
-        $result->notifyUpdates = $notifyUpdates ? true : false;
-
-        return $result;
-    }
-
-    protected function __construct()
-    {
-    }
-
-    /**
      * Associated user.
      *
-     * @ORM\ManyToOne(targetEntity="Concrete\Core\Entity\User\User")
-     * @ORM\JoinColumn(name="user", referencedColumnName="uID", nullable=false, onDelete="CASCADE")
-     * @ORM\Id
-     *
-     * @var UserEntity
+     * @Doctrine\ORM\Mapping\ManyToOne(targetEntity="Concrete\Core\Entity\User\User")
+     * @Doctrine\ORM\Mapping\JoinColumn(name="user", referencedColumnName="uID", nullable=false, onDelete="CASCADE")
+     * @Doctrine\ORM\Mapping\Id
      */
-    protected $user;
+    protected UserEntity $user;
+
+    /**
+     * Associated package version.
+     *
+     * @Doctrine\ORM\Mapping\ManyToOne(targetEntity="CommunityTranslation\Entity\Package\Version")
+     * @Doctrine\ORM\Mapping\JoinColumn(name="packageVersion", referencedColumnName="id", nullable=false, onDelete="CASCADE")
+     * @Doctrine\ORM\Mapping\Id
+     */
+    protected Package\Version $packageVersion;
+
+    /**
+     * Notify updates to this package version?
+     *
+     * @Doctrine\ORM\Mapping\Column(type="boolean", nullable=false, options={"comment": "Notify updates to this package version?"})
+     */
+    protected bool $notifyUpdates;
+
+    /**
+     * @param \Concrete\Core\Entity\User\User $user The user associated to this subscription
+     * @param \CommunityTranslation\Entity\Package\Version $packageVersion The package associated to this subscription
+     * @param bool $notifyUpdates Send notifications about updates to this package versions?
+     */
+    public function __construct(UserEntity $user, Package\Version $packageVersion, bool $notifyUpdates)
+    {
+        $this->user = $user;
+        $this->packageVersion = $packageVersion;
+        $this->notifyUpdates = $notifyUpdates;
+    }
 
     /**
      * Get the user associated to this subscription.
-     *
-     * @return UserEntity
      */
-    public function getUser()
+    public function getUser(): UserEntity
     {
         return $this->user;
     }
 
     /**
-     * Associated package version.
-     *
-     * @ORM\ManyToOne(targetEntity="CommunityTranslation\Entity\Package\Version")
-     * @ORM\JoinColumn(name="packageVersion", referencedColumnName="id", nullable=false, onDelete="CASCADE")
-     * @ORM\Id
-     *
-     * @var Package\Version
-     */
-    protected $packageVersion;
-
-    /**
      * Get the package version associated to this subscription.
-     *
-     * @return Package\Version
      */
-    public function getPackageVersion()
+    public function getPackageVersion(): Package\Version
     {
         return $this->packageVersion;
     }
@@ -86,32 +79,19 @@ class PackageVersionSubscription
     /**
      * Notify updates to this package version?
      *
-     * @ORM\Column(type="boolean", nullable=false, options={"comment": "Notify updates to this package version?"})
-     *
-     * @var bool
+     * @return $this
      */
-    protected $notifyUpdates;
-
-    /**
-     * Notify updates to this package version?
-     *
-     * @param bool $value
-     *
-     * @return static
-     */
-    public function setNotifyUpdates($value)
+    public function setNotifyUpdates(bool $value): self
     {
-        $this->notifyUpdates = $value ? true : false;
+        $this->notifyUpdates = $value;
 
         return $this;
     }
 
     /**
      * Notify updates to this package version?
-     *
-     * @return bool
      */
-    public function notifyUpdates()
+    public function isNotifyUpdates(): bool
     {
         return $this->notifyUpdates;
     }

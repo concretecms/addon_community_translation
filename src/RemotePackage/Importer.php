@@ -1,159 +1,136 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\RemotePackage;
 
+use CommunityTranslation\Entity\Package as PackageEntity;
+use CommunityTranslation\Entity\RemotePackage;
 use CommunityTranslation\Entity\RemotePackage as RemotePackageEntity;
 use CommunityTranslation\Repository\Package as PackageRepository;
-use CommunityTranslation\Service\VolatileDirectory;
+use CommunityTranslation\Service\VolatileDirectoryCreator;
 use CommunityTranslation\Translatable\Importer as TranslatableImporter;
 use Concrete\Core\Application\Application;
 use Concrete\Core\Error\UserMessageException;
-use Concrete\Core\File\Service\Zip as ZipHelper;
+use Concrete\Core\File\Service\VolatileDirectory;
+use Concrete\Core\File\Service\Zip as ZipService;
 use Concrete\Core\Http\Client\Client as HttpClient;
-use Exception;
-use Zend\Http\Request;
+use Doctrine\ORM\EntityManager;
+use GuzzleHttp\Psr7\Request;
+use GuzzleHttp\RequestOptions;
+use Psr\Http\Message\RequestInterface;
 
-class Importer
+defined('C5_EXECUTE') or die('Access Denied.');
+
+final class Importer
 {
-    /**
-     * @var Application
-     */
-    protected $app;
+    private Application $app;
 
-    /**
-     * @var HttpClient
-     */
-    protected $httpClient;
+    private HttpClient $httpClient;
 
-    /**
-     * @var ZipHelper
-     */
-    protected $zip;
+    private ZipService $zip;
 
-    /**
-     * @var TranslatableImporter
-     */
-    protected $translatableImporter;
+    private TranslatableImporter $translatableImporter;
 
-    /**
-     * @var PackageRepository
-     */
-    protected $packageRepo;
+    private EntityManager $em;
 
-    /**
-     * @var \Doctrine\ORM\EntityManager
-     */
-    protected $em;
+    private PackageRepository $packageRepo;
 
     /**
      * Initializes the instance.
-     *
-     * @param Application $app
-     * @param HttpClient $httpClient
-     * @param ZipHelper $zip
      */
-    public function __construct(Application $app, HttpClient $httpClient, ZipHelper $zip, TranslatableImporter $translatableImporter, PackageRepository $packageRepo)
+    public function __construct(Application $app, HttpClient $httpClient, ZipService $zip, TranslatableImporter $translatableImporter, EntityManager $em)
     {
         $this->app = $app;
         $this->httpClient = $httpClient;
         $this->zip = $zip;
         $this->translatableImporter = $translatableImporter;
-        $this->packageRepo = $packageRepo;
-        $this->em = $this->packageRepo->createQueryBuilder('p')->getEntityManager();
+        $this->em = $em;
+        $this->packageRepo = $em->getRepository(PackageEntity::class);
     }
 
     /**
      * Import a remote package.
      *
-     *
-     * @param RemotePackageEntity $remotePackage
-     *
-     * @throws UserMessageException
+     * @throws \CommunityTranslation\RemotePackage\DownloadException
+     * @throws \Concrete\Core\Error\UserMessageException
      */
-    public function import(RemotePackageEntity $remotePackage)
+    public function import(RemotePackageEntity $remotePackage): void
     {
         $temp = $this->download($remotePackage);
         $rootPath = $this->getRootPath($temp);
         $this->translatableImporter->importDirectory($rootPath, $remotePackage->getHandle(), $remotePackage->getVersion(), '');
         $package = $this->packageRepo->findOneBy(['handle' => $remotePackage->getHandle()]);
-        if ($package !== null) {
-            /* @var \CommunityTranslation\Entity\Package $package */
-            $persist = false;
-            if ($remotePackage->getName() !== '' && $remotePackage->getName() !== $package->getName()) {
-                $package->setName($remotePackage->getName());
-                $persist = true;
-            }
-            if ($remotePackage->getUrl() !== '' && $remotePackage->getUrl() !== $package->getUrl()) {
-                $package->setUrl($remotePackage->getUrl());
-                $persist = true;
-            }
-            if ($persist) {
-                $this->em->persist($package);
-                $this->em->flush($package);
-            }
+        if ($package === null) {
+            return;
+        }
+        $persist = false;
+        if ($remotePackage->getName() !== '' && $remotePackage->getName() !== $package->getName()) {
+            $package->setName($remotePackage->getName());
+            $persist = true;
+        }
+        if ($remotePackage->getUrl() !== '' && $remotePackage->getUrl() !== $package->getUrl()) {
+            $package->setUrl($remotePackage->getUrl());
+            $persist = true;
+        }
+        if ($persist) {
+            $this->em->persist($package);
+            $this->em->flush($package);
         }
     }
 
     /**
-     * @param RemotePackageEntity $remotePackage
-     *
-     * @throws UserMessageException
-     *
-     * @return VolatileDirectory
+     * @throws \CommunityTranslation\RemotePackage\DownloadException
+     * @throws \Concrete\Core\Error\UserMessageException
      */
-    private function download(RemotePackageEntity $remotePackage)
+    private function download(RemotePackageEntity $remotePackage): VolatileDirectory
     {
-        $temp = $this->app->make(VolatileDirectory::class);
-        /* @var VolatileDirectory $temp */
-        $zipFilename = $temp->getPath() . '/downloaded.zip';
-        $this->httpClient->reset();
-        $this->httpClient->setOptions([
-            'storeresponse' => false,
-            'outputstream' => $zipFilename,
-        ]);
-        $request = new Request();
-
-        if (($header = (string) getenv('CT_REMOTEPACKAGE_HEADER')) &&
-            $value = (string) getenv('CT_REMOTEPACKAGE_HEADER_VALUE')) {
-            $request->getHeaders()->addHeaderLine($header, $value);
+        $request = $this->createRequest($remotePackage);
+        $response = $this->httpClient->send(
+            $request,
+            [
+                RequestOptions::HTTP_ERRORS => false,
+            ]
+        );
+        $statusCode = $response->getStatusCode();
+        if ($statusCode < 200 || $statusCode >= 300) {
+            throw new DownloadException(
+                t('Failed to download package archive %s v%s: %s (%d)', $remotePackage->getHandle(), $remotePackage->getVersion(), $response->getReasonPhrase(), $statusCode),
+                $statusCode
+            );
         }
-        $request->setMethod('GET')->setUri($remotePackage->getArchiveUrl());
-        $response = $this->httpClient->send($request);
-        $this->httpClient->reset();
-        $streamHandle = ($response instanceof \Zend\Http\Response\Stream) ? $response->getStream() : null;
-        if (is_resource($streamHandle)) {
-            fclose($streamHandle);
+        if ($response->getBody()->isSeekable()) {
+            $response->getBody()->rewind();
         }
-        if ($response->getStatusCode() != 200) {
-            $error = t('Failed to download package archive %s v%s: %s (%d)', $remotePackage->getHandle(), $remotePackage->getVersion(), $response->getReasonPhrase(), $response->getStatusCode());
-            unset($temp);
-            throw new DownloadException($error, $response->getStatusCode());
-        }
-
-        $contentEncodingHeader = $response->getHeaders()->get('Content-Encoding');
-        if (!empty($contentEncodingHeader)) {
-            $contentEncoding = trim((string) $contentEncodingHeader->getFieldValue());
-            if ($contentEncoding !== '') {
-                $decodedZipFilename = $temp->getPath() . '/downloaded-decoded.zip';
-                switch (strtolower($contentEncoding)) {
-                    case 'gzip':
-                        $this->decodeGzip($zipFilename, $decodedZipFilename);
-                        break;
-                    case 'deflate':
-                        $this->decodeDeflate($zipFilename, $decodedZipFilename);
-                        break;
-                    case 'plainbinary':
-                    default:
-                        $decodedZipFilename = '';
-                        break;
-                }
-                if ($decodedZipFilename !== '') {
-                    $temp->getFilesystem()->delete([$zipFilename]);
-                    $zipFilename = $decodedZipFilename;
-                }
+        $responseStream = $response->getBody()->detach();
+        try {
+            $temp = $this->app->make(VolatileDirectoryCreator::class)->createVolatileDirectory();
+            $zipFilename = $temp->getPath() . '/downloaded.zip';
+            set_error_handler(static function () {}, -1);
+            try {
+                $zipStream = fopen($zipFilename, 'w');
+            } finally {
+                restore_exception_handler();
             }
+            if ($zipStream === false) {
+                throw new UserMessageException('Failed to create a local zip temporary file');
+            }
+            set_error_handler(static function () {}, -1);
+            try {
+                $copyResult = stream_copy_to_stream($responseStream, $zipStream);
+            } finally {
+                fclose($zipStream);
+                set_error_handler(static function () {}, -1);
+            }
+        } finally {
+            fclose($responseStream);
         }
-
+        if ($copyResult === 0) {
+            throw new UserMessageException('Failed to save the response a local zip temporary file (the response body is empty)');
+        }
+        if ($copyResult === false) {
+            throw new UserMessageException('Failed to save the response a local zip temporary file');
+        }
         $temp->getFilesystem()->makeDirectory($temp->getPath() . '/unzipped');
         $this->zip->unzip($zipFilename, $temp->getPath() . '/unzipped');
         $temp->getFilesystem()->delete([$zipFilename]);
@@ -161,98 +138,12 @@ class Importer
         return $temp;
     }
 
-    /**
-     * @param string $fromFilename
-     * @param string $toFilename
-     *
-     * @throws UserMessageException
-     */
-    private function decodeGzip($fromFilename, $toFilename)
-    {
-        if (!function_exists('gzopen')) {
-            throw new UserMessageException(t(/*i18n: %s is a compression method, like gzip*/'The PHP zlib extension is required in order to decode "%s" encodings.', 'gzip'));
-        }
-        try {
-            $hFrom = @gzopen($fromFilename, 'rb');
-            if ($hFrom === false) {
-                throw new UserMessageException(t('Failed to open the file to be decoded with gzip.'));
-            }
-            $hTo = @fopen($toFilename, 'wb');
-            if ($hTo === false) {
-                throw new UserMessageException(t('Failed to create the file that contain gzip-decoded data.'));
-            }
-            while (!gzeof($hFrom)) {
-                $data = @gzread($hFrom, 32768);
-                if (!is_string($data) || $data === '') {
-                    throw new UserMessageException(t('Failed to decode the gzip data.'));
-                }
-                if (@fwrite($hTo, $data) === false) {
-                    throw new UserMessageException(t('Failed to write decoded gzip data.'));
-                }
-            }
-        } catch (Exception $x) {
-            if (isset($hTo) && is_resource($hTo)) {
-                @fclose($hTo);
-            }
-            if (isset($hFrom) && is_resource($hFrom)) {
-                @gzclose($hFrom);
-            }
-            throw $x;
-        }
-        fclose($hTo);
-        gzclose($hFrom);
-    }
-
-    /**
-     * @param string $fromFilename
-     * @param string $toFilename
-     *
-     * @throws UserMessageException
-     */
-    private function decodeDeflate($fromFilename, $toFilename)
-    {
-        if (!function_exists('gzuncompress')) {
-            throw new UserMessageException(t(/*i18n: %s is a compression method, like gzip*/'The PHP zlib extension is required in order to decode "%s" encodings.', 'deflate'));
-        }
-        $compressed = @file_get_contents($fromFilename);
-        if ($compressed === false) {
-            throw new UserMessageException(t('Failed to read the file to be decoded with inflate.'));
-        }
-        $isGZip = false;
-        if (isset($compressed[1])) {
-            $zlibHeader = unpack('n', substr($compressed, 0, 2));
-            if ($zlibHeader[1] % 31 === 0) {
-                $isGZip = true;
-            }
-        }
-        if ($isGZip) {
-            $decompressed = @gzuncompress($compressed);
-            if ($decompressed === false) {
-                throw new UserMessageException(t('Failed to decode the ZLIB compressed data.'));
-            }
-        } else {
-            $decompressed = @gzinflate($compressed);
-            if ($decompressed === false) {
-                throw new UserMessageException(t('Failed to inflate the deflated data.'));
-            }
-        }
-        if (@file_put_contents($toFilename, $decompressed) === false) {
-            throw new UserMessageException(t('Failed to decompress  the file to be decoded with inflate.'));
-        }
-        throw new UserMessageException(t('Failed to write the deflated data.'));
-    }
-
-    /**
-     * @param VolatileDirectory $temp
-     *
-     * @return string
-     */
-    private function getRootPath(VolatileDirectory $temp)
+    private function getRootPath(VolatileDirectory $temp): string
     {
         $fs = $temp->getFilesystem();
         $result = $temp->getPath() . '/unzipped';
-        for (; ;) {
-            if (count($fs->files($result)) !== 0) {
+        for (;;) {
+            if ($fs->files($result) !== []) {
                 break;
             }
             $dirs = $fs->directories($result);
@@ -262,6 +153,18 @@ class Importer
             $result = $dirs[0];
         }
 
-        return $result;
+        return str_replace(DIRECTORY_SEPARATOR, '/', $result);
+    }
+
+    private function createRequest(RemotePackage $remotePackage): RequestInterface
+    {
+        $headers = [];
+        $headerName = $_ENV['CT_REMOTEPACKAGE_HEADER'] ?? null;
+        $headerValue = $_ENV['CT_REMOTEPACKAGE_HEADER_VALUE'] ?? null;
+        if (is_string($headerName) && $headerName !== '' && is_string($headerValue) && $headerValue !== '') {
+            $headers[$headerName] = $headerValue;
+        }
+
+        return new Request('GET', $remotePackage->getArchiveUrl(), $headers);
     }
 }

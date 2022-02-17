@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Notification\Category;
 
 use CommunityTranslation\Entity\Notification as NotificationEntity;
@@ -7,6 +9,8 @@ use CommunityTranslation\Notification\Category;
 use CommunityTranslation\Repository\Package as PackageRepository;
 use Concrete\Core\User\UserInfo;
 use Exception;
+
+defined('C5_EXECUTE') or die('Access Denied.');
 
 /**
  * Notification category: a new translatable package is available.
@@ -16,28 +20,14 @@ class NewTranslatablePackage extends Category
     /**
      * @var int
      */
-    const PRIORITY = 5;
+    public const PRIORITY = 5;
 
     /**
      * {@inheritdoc}
      *
-     * @see Category::getRecipientIDs()
+     * @see \CommunityTranslation\Notification\CategoryInterface::getMailParameters()
      */
-    protected function getRecipientIDs(NotificationEntity $notification)
-    {
-        $notificationData = $notification->getNotificationData();
-
-        return [
-            $notificationData['userID'],
-        ];
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @see Category::getMailParameters()
-     */
-    public function getMailParameters(NotificationEntity $notification, UserInfo $recipient)
+    public function getMailParameters(NotificationEntity $notification, UserInfo $recipient): array
     {
         $notificationData = $notification->getNotificationData();
         $pr = $this->app->make(PackageRepository::class);
@@ -48,22 +38,37 @@ class NewTranslatablePackage extends Category
         }
         $packages = [];
         if ($or->count() > 0) {
-            foreach ($qb->where($or)->getQuery()->iterate() as $packageRow) {
-                $package = $packageRow[0];
-                $packageURL = $this->getBlockPageURL('CommunityTranslation Search Packages', 'package/' . $package->getHandle());
+            $em = $qb->getEntityManager();
+            foreach ($qb->where($or)->getQuery()->toIterable() as $package) {
+                /** @var \CommunityTranslation\Entity\Package $package */
+                $packageURL = $this->getBlockPageURL('CommunityTranslation Search Packages', "package/{$package->getHandle()}");
                 $packages[] = [
                     'url' => $packageURL,
                     'name' => $package->getDisplayName(),
                 ];
-                $qb->getEntityManager()->detach($package);
+                $em->detach($package);
             }
         }
-        if (count($packages) === 0) {
+        if ($packages === []) {
             throw new Exception(t('Unable to find any package'));
         }
 
         return [
             'packages' => $packages,
         ] + $this->getCommonMailParameters($notification, $recipient);
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \CommunityTranslation\Notification\Category::getRecipientIDs()
+     */
+    protected function getRecipientIDs(NotificationEntity $notification): array
+    {
+        $notificationData = $notification->getNotificationData();
+
+        return [
+            $notificationData['userID'],
+        ];
     }
 }

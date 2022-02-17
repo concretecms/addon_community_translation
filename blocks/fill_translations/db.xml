@@ -10,14 +10,6 @@
             <unsigned/>
             <key/>
         </field>
-        <field name="rateLimit_maxRequests" type="integer">
-            <unsigned/>
-        </field>
-        <field name="rateLimit_timeWindow" type="integer">
-            <unsigned/>
-            <default value="3600"/>
-            <notnull/>
-        </field>
         <field name="maxFileSize" type="integer">
             <unsigned/>
         </field>
@@ -28,7 +20,7 @@
             <unsigned/>
         </field>
         <field name="statsFromPackage" type="string" size="64">
-        	<notnull/>
+            <notnull/>
         </field>
     </table>
 

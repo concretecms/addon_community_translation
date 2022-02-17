@@ -1,45 +1,45 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Repository;
 
 use CommunityTranslation\Entity\Locale as LocaleEntity;
 use Doctrine\ORM\EntityRepository;
 use Punic\Comparer;
 
+defined('C5_EXECUTE') or die('Access Denied.');
+
 class Locale extends EntityRepository
 {
     /**
      * Search an approved locale given its ID (excluding the source one).
-     *
-     * @param string $localeID
-     *
-     * @return LocaleEntity|null
      */
-    public function findApproved($localeID)
+    public function findApproved(string $localeID): ?LocaleEntity
     {
-        $result = null;
-        if (is_string($localeID) && $localeID !== '') {
-            $l = $this->find($localeID);
-            if ($l !== null && $l->isApproved() && !$l->isSource()) {
-                $result = $l;
-            }
+        if ($localeID === '') {
+            return null;
         }
+        $locale = $this->find($localeID);
 
-        return $result;
+        return $locale !== null && $locale->isApproved() && !$locale->isSource() ? $locale : null;
     }
 
     /**
      * Get the list of the approved locales (excluding the source one).
      *
-     * @return LocaleEntity[]
+     * @return \CommunityTranslation\Entity\Locale[]
      */
-    public function getApprovedLocales()
+    public function getApprovedLocales(): array
     {
         $locales = $this->findBy(['isSource' => null, 'isApproved' => true]);
         $comparer = new Comparer();
-        usort($locales, function (LocaleEntity $a, LocaleEntity $b) use ($comparer) {
-            return $comparer->compare($a->getDisplayName(), $b->getDisplayName());
-        });
+        usort(
+            $locales,
+            static function (LocaleEntity $a, LocaleEntity $b) use ($comparer): int {
+                return $comparer->compare($a->getDisplayName(), $b->getDisplayName());
+            }
+        );
 
         return $locales;
     }

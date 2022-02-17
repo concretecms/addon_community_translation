@@ -1,17 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\TranslationsConverter;
 
 use Gettext\Translations;
 
-class PoConverter extends BaseConverter implements ConverterInterface
+defined('C5_EXECUTE') or die('Access Denied.');
+
+class PoConverter extends BaseConverter
 {
     /**
      * {@inheritdoc}
      *
-     * @see ConverterInterface::getHandle()
+     * @see \CommunityTranslation\TranslationsConverter\ConverterInterface::getHandle()
      */
-    public function getHandle()
+    public function getHandle(): string
     {
         return 'po';
     }
@@ -19,9 +23,9 @@ class PoConverter extends BaseConverter implements ConverterInterface
     /**
      * {@inheritdoc}
      *
-     * @see ConverterInterface::getName()
+     * @see \CommunityTranslation\TranslationsConverter\ConverterInterface::getName()
      */
-    public function getName()
+    public function getName(): string
     {
         return t('Gettext PO format');
     }
@@ -29,9 +33,9 @@ class PoConverter extends BaseConverter implements ConverterInterface
     /**
      * {@inheritdoc}
      *
-     * @see ConverterInterface::getDescription()
+     * @see \CommunityTranslation\TranslationsConverter\ConverterInterface::getDescription()
      */
-    public function getDescription()
+    public function getDescription(): string
     {
         return t('Uncompiled gettext PO');
     }
@@ -39,9 +43,9 @@ class PoConverter extends BaseConverter implements ConverterInterface
     /**
      * {@inheritdoc}
      *
-     * @see ConverterInterface::getFileExtension()
+     * @see \CommunityTranslation\TranslationsConverter\ConverterInterface::getFileExtension()
      */
-    public function getFileExtension()
+    public function getFileExtension(): string
     {
         return 'po';
     }
@@ -49,9 +53,9 @@ class PoConverter extends BaseConverter implements ConverterInterface
     /**
      * {@inheritdoc}
      *
-     * @see ConverterInterface::supportLanguageHeader()
+     * @see \CommunityTranslation\TranslationsConverter\ConverterInterface::supportLanguageHeader()
      */
-    public function supportLanguageHeader()
+    public function supportLanguageHeader(): bool
     {
         return true;
     }
@@ -59,9 +63,9 @@ class PoConverter extends BaseConverter implements ConverterInterface
     /**
      * {@inheritdoc}
      *
-     * @see ConverterInterface::supportPlurals()
+     * @see \CommunityTranslation\TranslationsConverter\ConverterInterface::supportPlurals()
      */
-    public function supportPlurals()
+    public function supportPlurals(): bool
     {
         return true;
     }
@@ -69,9 +73,9 @@ class PoConverter extends BaseConverter implements ConverterInterface
     /**
      * {@inheritdoc}
      *
-     * @see ConverterInterface::convertTranslationsToString()
+     * @see \CommunityTranslation\TranslationsConverter\ConverterInterface::serializeTranslations()
      */
-    public function convertTranslationsToString(Translations $translations)
+    public function serializeTranslations(Translations $translations): string
     {
         return $translations->toPoString();
     }
@@ -79,9 +83,9 @@ class PoConverter extends BaseConverter implements ConverterInterface
     /**
      * {@inheritdoc}
      *
-     * @see ConverterInterface::convertStringToTranslations()
+     * @see \CommunityTranslation\TranslationsConverter\ConverterInterface::unserializeTranslations()
      */
-    public function convertStringToTranslations($string)
+    public function unserializeTranslations(string $string): Translations
     {
         return Translations::fromPoString($string);
     }

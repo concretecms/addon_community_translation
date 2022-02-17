@@ -1,18 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Entity;
 
 use CommunityTranslation\Entity\Package\Version;
-use DateTime;
-use Doctrine\ORM\Mapping as ORM;
+use DateTimeImmutable;
+
+defined('C5_EXECUTE') or die('Access Denied.');
 
 /**
  * Represents an translatable string.
  *
- * @ORM\Entity(
+ * @Doctrine\ORM\Mapping\Entity(
  *     repositoryClass="CommunityTranslation\Repository\Stats",
  * )
- * @ORM\Table(
+ * @Doctrine\ORM\Mapping\Table(
  *     name="CommunityTranslationStats",
  *     options={"comment": "Translation statistics"}
  * )
@@ -20,84 +23,73 @@ use Doctrine\ORM\Mapping as ORM;
 class Stats
 {
     /**
-     * @param Version $packageVersion
-     * @param Locale $locale
-     *
-     * @return static
-     */
-    public static function create(Version $packageVersion, Locale $locale)
-    {
-        $result = new static();
-        $result->packageVersion = $packageVersion;
-        $result->locale = $locale;
-        $result->lastUpdated = null;
-        $result->total = 0;
-        $result->translated = 0;
-
-        return $result;
-    }
-
-    protected function __construct()
-    {
-    }
-
-    /**
      * Associated package version.
      *
-     * @ORM\ManyToOne(targetEntity="CommunityTranslation\Entity\Package\Version", inversedBy="stats")
-     * @ORM\JoinColumn(name="packageVersion", referencedColumnName="id", nullable=false, onDelete="CASCADE")
-     * @ORM\Id
-     *
-     * @var Version
+     * @Doctrine\ORM\Mapping\ManyToOne(targetEntity="CommunityTranslation\Entity\Package\Version", inversedBy="stats")
+     * @Doctrine\ORM\Mapping\JoinColumn(name="packageVersion", referencedColumnName="id", nullable=false, onDelete="CASCADE")
+     * @Doctrine\ORM\Mapping\Id
      */
-    protected $packageVersion;
+    protected Version $packageVersion;
+
+    /**
+     * Associated Locale.
+     *
+     * @Doctrine\ORM\Mapping\ManyToOne(targetEntity="CommunityTranslation\Entity\Locale", inversedBy="stats")
+     * @Doctrine\ORM\Mapping\JoinColumn(name="locale", referencedColumnName="id", nullable=false, onDelete="CASCADE")
+     * @Doctrine\ORM\Mapping\Id
+     */
+    protected Locale $locale;
+
+    /**
+     * Total number translatable strings.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="integer", nullable=false, options={"unsigned": true, "comment": "Total number translatable strings"})
+     */
+    protected int $total;
+
+    /**
+     * Number translated strings.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="integer", nullable=false, options={"unsigned": true, "comment": "Number translated strings"})
+     */
+    protected int $translated;
+
+    /**
+     * Date/time of the last updated translations for this package/locale (null if no translations).
+     *
+     * @Doctrine\ORM\Mapping\Column(type="datetime_immutable", nullable=true, options={"comment": "Date/time of the last updated translations for this package/locale (null if no translations)"})
+     */
+    protected ?DateTimeImmutable $lastUpdated;
+
+    public function __construct(Version $packageVersion, Locale $locale, int $total = 0)
+    {
+        $this->packageVersion = $packageVersion;
+        $this->locale = $locale;
+        $this->total = $total;
+        $this->translated = 0;
+        $this->lastUpdated = null;
+    }
 
     /**
      * Get the associated Package.
-     *
-     * @return Version
      */
-    public function getPackageVersion()
+    public function getPackageVersion(): Version
     {
         return $this->packageVersion;
     }
 
     /**
-     * Associated Locale.
-     *
-     * @ORM\ManyToOne(targetEntity="CommunityTranslation\Entity\Locale", inversedBy="stats")
-     * @ORM\JoinColumn(name="locale", referencedColumnName="id", nullable=false, onDelete="CASCADE")
-     * @ORM\Id
-     *
-     * @var Locale
-     */
-    protected $locale;
-
-    /**
      * Get the associated Locale.
-     *
-     * @return Locale
      */
-    public function getLocale()
+    public function getLocale(): Locale
     {
         return $this->locale;
     }
 
     /**
-     * Total number translatable strings.
-     *
-     * @ORM\Column(type="integer", nullable=false, options={"unsigned": true, "comment": "Total number translatable strings"})
-     *
-     * @var int
-     */
-    protected $total;
-
-    /**
      * Get the total number translatable strings.
-     *
-     * @return int
      */
-    public function getTotal()
+    public function getTotal(): int
     {
         return $this->total;
     }
@@ -105,32 +97,19 @@ class Stats
     /**
      * Set the total number translatable strings.
      *
-     * @param int $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setTotal($value)
+    public function setTotal(int $value): self
     {
-        $this->total = (int) $value;
+        $this->total = $value;
 
         return $this;
     }
 
     /**
-     * Number translated strings.
-     *
-     * @ORM\Column(type="integer", nullable=false, options={"unsigned": true, "comment": "Number translated strings"})
-     *
-     * @var int
-     */
-    protected $translated;
-
-    /**
      * Get the number translated strings.
-     *
-     * @return int
      */
-    public function getTranslated()
+    public function getTranslated(): int
     {
         return $this->translated;
     }
@@ -138,32 +117,19 @@ class Stats
     /**
      * Set the number translated strings.
      *
-     * @param int $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setTranslated($value)
+    public function setTranslated(int $value): self
     {
-        $this->translated = (int) $value;
+        $this->translated = $value;
 
         return $this;
     }
 
     /**
-     * Date/time of the last updated translations for this package/locale (null if no translations).
-     *
-     * @ORM\Column(type="datetime", nullable=true, options={"comment": "Date/time of the last updated translations for this package/locale (null if no translations)"})
-     *
-     * @var DateTime|null
-     */
-    protected $lastUpdated;
-
-    /**
      * Set the date/time of the last updated translations for this package/locale (null if no translations).
-     *
-     * @return DateTime|null
      */
-    public function getLastUpdated()
+    public function getLastUpdated(): ?DateTimeImmutable
     {
         return $this->lastUpdated;
     }
@@ -171,11 +137,9 @@ class Stats
     /**
      * Set the date/time of the last updated translations for this package/locale (null if no translations).
      *
-     * @param DateTime|null $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setLastUpdated(DateTime $value = null)
+    public function setLastUpdated(?DateTimeImmutable $value): self
     {
         $this->lastUpdated = $value;
 
@@ -184,10 +148,8 @@ class Stats
 
     /**
      * Get the number of untranslated strings.
-     *
-     * @return int
      */
-    public function getUntranslated()
+    public function getUntranslated(): int
     {
         return $this->total - $this->translated;
     }
@@ -196,22 +158,39 @@ class Stats
      * Get the translation percentage.
      *
      * @param bool $round Set to true to get a rounded value (0 if no translations at all, 100 if all strings are translated, 1...99 otherwise),
-     *
-     * @return int|float
      */
-    public function getPercentage($round = true)
+    public function getPercentage(): float
     {
         if ($this->translated === 0 || $this->total === 0) {
-            $result = $round ? 0 : 0.0;
-        } elseif ($this->translated === $this->total) {
-            $result = $round ? 100 : 100.0;
-        } else {
-            $result = $this->translated * 100.0 / $this->total;
-            if ($round) {
-                $result = max(1, min(99, (int) round($result)));
-            }
+            return 0.0;
+        }
+        if ($this->translated === $this->total) {
+            return 100.0;
         }
 
-        return $result;
+        return $this->translated * 100.0 / $this->total;
+    }
+
+    /**
+     * Get the rounded translation percentage (0 it exactly 0%, 100 if exactly 100%, a number between 1 and 99 otherwise).
+     */
+    public function getRoundedPercentage(): int
+    {
+        $float = $this->getPercentage();
+        if ($float === 0.0) {
+            return 0;
+        }
+        if ($float === 100.0) {
+            return 100;
+        }
+        $int = (int) round($float);
+        if ($int < 1) {
+            return 1;
+        }
+        if ($int > 99) {
+            return 99;
+        }
+
+        return $int;
     }
 }

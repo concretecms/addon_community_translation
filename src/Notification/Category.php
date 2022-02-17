@@ -1,23 +1,32 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Notification;
 
 use CommunityTranslation\Entity\Notification as NotificationEntity;
-use CommunityTranslation\Service\Groups;
+use CommunityTranslation\Service\Group as GroupService;
+use CommunityTranslation\Service\User as UserService;
 use Concrete\Core\Application\Application;
 use Concrete\Core\Block\Block;
+use Concrete\Core\Site\Service as SiteService;
+use Concrete\Core\Url\Resolver\Manager\ResolverManagerInterface;
 use Concrete\Core\User\UserInfo;
 use Concrete\Core\User\UserInfoRepository;
-use URL;
+use Generator;
+use RuntimeException;
+
+defined('C5_EXECUTE') or die('Access Denied.');
 
 abstract class Category implements CategoryInterface
 {
-    /**
-     * @var Application
-     */
-    protected $app;
+    protected Application $app;
 
-    private $blockPageURLs;
+    private ?GroupService $groupService = null;
+
+    private array $blockPageURLs = [];
+
+    private ?array $commonMailParameters = null;
 
     /**
      * @param Application $app
@@ -29,28 +38,11 @@ abstract class Category implements CategoryInterface
     }
 
     /**
-     * @var Groups|null
-     */
-    protected $groupsHelper = null;
-
-    /**
-     * @return Groups
-     */
-    protected function getGroupsHelper()
-    {
-        if ($this->groupsHelper === null) {
-            $this->groupsHelper = $this->app->make(Groups::class);
-        }
-
-        return $this->groupsHelper;
-    }
-
-    /**
      * {@inheritdoc}
      *
-     * @see CategoryInterface::getMailTemplate()
+     * @see \CommunityTranslation\Notification\CategoryInterface::getMailTemplate()
      */
-    public function getMailTemplate()
+    public function getMailTemplate(): array
     {
         $chunks = explode('\\', get_class($this));
         $className = array_pop($chunks);
@@ -62,20 +54,11 @@ abstract class Category implements CategoryInterface
     }
 
     /**
-     * Get the recipients user IDs.
-     *
-     * @param NotificationEntity $notification
-     *
-     * @return int[]
-     */
-    abstract protected function getRecipientIDs(NotificationEntity $notification);
-
-    /**
      * {@inheritdoc}
      *
-     * @see CategoryInterface::getRecipients()
+     * @see \CommunityTranslation\Notification\CategoryInterface::getRecipients()
      */
-    public function getRecipients(NotificationEntity $notification)
+    public function getRecipients(NotificationEntity $notification): Generator
     {
         $ids = $this->getRecipientIDs($notification);
         // be sure we have integers
@@ -84,68 +67,71 @@ abstract class Category implements CategoryInterface
         $ids = array_filter($ids);
         // remove duplicated
         $ids = array_unique($ids, SORT_REGULAR);
-        if (!empty($ids)) {
-            $repo = $this->app->make(UserInfoRepository::class);
-            /* @var UserInfoRepository $repo */
-            foreach ($ids as $id) {
-                $userInfo = $repo->getByID($id);
-                if ($userInfo !== null && $userInfo->isActive()) {
-                    yield $userInfo;
-                }
+        if ($ids === []) {
+            return;
+        }
+        $repo = $this->app->make(UserInfoRepository::class);
+        foreach ($ids as $id) {
+            $userInfo = $repo->getByID($id);
+            if ($userInfo !== null && $userInfo->isActive()) {
+                yield $userInfo;
             }
         }
     }
 
     /**
-     * {@inheritdoc}
+     * Get the recipients user IDs.
      *
-     * @see CategoryInterface::getMailParameters()
-     */
-    abstract public function getMailParameters(NotificationEntity $notification, UserInfo $recipient);
-
-    /**
      * @param NotificationEntity $notification
-     * @param UserInfo $recipient
      *
-     * @return array
+     * @return int[]
      */
-    protected function getCommonMailParameters(NotificationEntity $notification, UserInfo $recipient)
-    {
-        $site = $this->app->make('site')->getSite();
-        /* @var \Concrete\Core\Entity\Site\Site $site */
+    abstract protected function getRecipientIDs(NotificationEntity $notification): array;
 
-        return [
-            'siteName' => $site->getSiteName(),
-            'siteUrl' => (string) $site->getSiteCanonicalURL(),
-            'recipientName' => $recipient->getUserName(),
-            'recipientAccountUrl' => URL::to('/account/edit_profile'),
-            'usersHelper' => $this->app->make(\CommunityTranslation\Service\User::class),
-        ];
+    protected function getGroupService(): GroupService
+    {
+        if ($this->groupService === null) {
+            $this->groupService = $this->app->make(GroupService::class);
+        }
+
+        return $this->groupService;
     }
 
-    /**
-     * @param string $blockName
-     * @param string $blockAction
-     * @param bool $isBlockActionInstanceSpecific
-     *
-     * @return string
-     */
-    protected function getBlockPageURL($blockName, $blockAction = '', $isBlockActionInstanceSpecific = false)
+    protected function getCommonMailParameters(NotificationEntity $notification, UserInfo $recipient): array
     {
-        if (!isset($this->blockPageURLs[$blockName])) {
-            $page = null;
-            if ($blockName) {
-                $block = Block::getByName($blockName);
-                if ($block && $block->getBlockID()) {
-                    $page = $block->getOriginalCollection();
-                }
+        if ($this->commonMailParameters === null) {
+            $site = $this->app->make(SiteService::class)->getSite();
+            if ($site === null) {
+                throw new RuntimeException(t('Unable to get the current site'));
             }
-            $this->blockPageURLs[$blockName] = [
-                'foundBlockID' => ($page === null) ? null : $block->getBlockID(),
-                'url' => (string) ($page ? URL::to($page) : URL::to('/')),
+            $this->commonMailParameters = [
+                'siteName' => $site->getSiteName(),
+                'siteUrl' => (string) $site->getSiteCanonicalURL(),
+                'userService' => $this->app->make(UserService::class),
+                'recipientAccountUrl' => (string) $this->app->make(ResolverManagerInterface::class)->resolve(['/account/edit_profile']),
             ];
         }
 
+        return $this->commonMailParameters + [
+            'recipientName' => $recipient->getUserName(),
+        ];
+    }
+
+    protected function getBlockPageURL(string $blockName, string $blockAction = '', bool $isBlockActionInstanceSpecific = false): string
+    {
+        if (!isset($this->blockPageURLs[$blockName])) {
+            $page = null;
+            $block = Block::getByName($blockName);
+            $page = $block && $block->getBlockID() ? $block->getOriginalCollection() : null;
+            if ($page && $page->isError()) {
+                $page = null;
+            }
+            $urlResolver = $this->app->make(ResolverManagerInterface::class);
+            $this->blockPageURLs[$blockName] = [
+                'foundBlockID' => $page === null ? null : $block->getBlockID(),
+                'url' => (string) $urlResolver->resolve($page ? [$page] : ['/']),
+            ];
+        }
         $url = $this->blockPageURLs[$blockName]['url'];
         if ($blockAction !== '' && $this->blockPageURLs[$blockName]['foundBlockID'] !== null) {
             $url = rtrim($url, '/') . '/' . trim($blockAction, '/');

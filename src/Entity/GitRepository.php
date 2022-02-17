@@ -1,19 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Entity;
 
-use Doctrine\ORM\Mapping as ORM;
+defined('C5_EXECUTE') or die('Access Denied.');
 
 /**
  * Represents a git repository to fetch the translatables strings from.
  *
- * @ORM\Entity(
+ * @Doctrine\ORM\Mapping\Entity(
  *     repositoryClass="CommunityTranslation\Repository\GitRepository",
  * )
- * @ORM\Table(
+ * @Doctrine\ORM\Mapping\Table(
  *     name="CommunityTranslationGitRepositories",
  *     uniqueConstraints={
- *         @ORM\UniqueConstraint(name="IDX_CTGitRepositoriesName", columns={"name"})
+ *         @Doctrine\ORM\Mapping\UniqueConstraint(name="IDX_CTGitRepositoriesName", columns={"name"})
  *     },
  *     options={
  *         "comment": "Git repositories containing translatable strings"
@@ -23,164 +25,167 @@ use Doctrine\ORM\Mapping as ORM;
 class GitRepository
 {
     /**
-     * Create a new instance.
-     *
-     * @return static
-     */
-    public static function create()
-    {
-        $result = new static();
-        $result->devBranches = [];
-        $result->directoryToParse = '';
-        $result->directoryForPlaces = '';
-        $result->detectedVersions = [];
-        $result->tagToVersionRegexp = '/^(?:v(?:er(?:s(?:ion)?)?)?[.\s]*)?(\d+(?:\.\d+)*)$/';
-        $result->setTagFilters(null);
-
-        return $result;
-    }
-
-    protected function __construct()
-    {
-    }
-
-    /**
      * Git repository ID.
      *
-     * @ORM\Column(type="integer", options={"unsigned": true, "comment": "Git repository ID"})
-     * @ORM\Id
-     * @ORM\GeneratedValue(strategy="AUTO")
-     *
-     * @var int|null
+     * @Doctrine\ORM\Mapping\Column(type="integer", options={"unsigned": true, "comment": "Git repository ID"})
+     * @Doctrine\ORM\Mapping\Id
+     * @Doctrine\ORM\Mapping\GeneratedValue(strategy="AUTO")
      */
-    protected $id;
+    protected ?int $id;
+
+    /**
+     * Mnemonic name.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="string", length=100, nullable=false, options={"comment": "Mnemonic name"})
+     */
+    protected string $name;
+
+    /**
+     * Package handle.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="string", length=64, nullable=false, options={"comment": "Package handle"})
+     */
+    protected string $packageHandle;
+
+    /**
+     * Repository remote URL.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="string", length=255, nullable=false, options={"comment": "Repository remote URL"})
+     */
+    protected string $url;
+
+    /**
+     * Development branches (keys are the branch name, values are the version - they should start with Package\Version::DEV_PREFIX).
+     *
+     * @Doctrine\ORM\Mapping\Column(type="array", nullable=false, options={"comment": "Development branches (keys are the branch name, values are the version - they should start with Package\Version::DEV_PREFIX)"})
+     */
+    protected array $devBranches;
+
+    /**
+     * Path to the directory to be parsed.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="string", length=255, nullable=false, options={"comment": "Path to the directory to be parsed"})
+     */
+    protected string $directoryToParse;
+
+    /**
+     * Base directory for places.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="string", length=255, nullable=false, options={"comment": "Base directory for places"})
+     */
+    protected string $directoryForPlaces;
+
+    /**
+     * Detected versions.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="array", nullable=false, options={"comment": "Repository detected versions"})
+     */
+    protected array $detectedVersions;
+
+    /**
+     * Tag-to-version regular expression.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="string", length=255, nullable=false, options={"comment": "Tag-to-version regular expression"})
+     */
+    protected string $tagToVersionRegexp;
+
+    /**
+     * Repository tag filters.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="simple_array", nullable=false, options={"comment": "Repository tag filters"})
+     *
+     * @var string[]
+     */
+    protected array $tagFilters;
+
+    public function __construct()
+    {
+        $this->id = null;
+        $this->name = '';
+        $this->packageHandle = '';
+        $this->url = '';
+        $this->devBranches = [];
+        $this->directoryToParse = '';
+        $this->directoryForPlaces = '';
+        $this->detectedVersions = [];
+        $this->tagToVersionRegexp = '/^(?:v(?:er(?:s(?:ion)?)?)?[.\s]*)?(\d+(?:\.\d+)*)$/';
+        $this->setTagFilters(null);
+    }
 
     /**
      * Get the git repository ID.
-     *
-     * @return int|null
      */
-    public function getID()
+    public function getID(): ?int
     {
         return $this->id;
     }
 
     /**
-     * Mnemonic name.
-     *
-     * @ORM\Column(type="string", length=100, nullable=false, options={"comment": "Mnemonic name"})
-     *
-     * @var string
-     */
-    protected $name;
-
-    /**
      * Set the mnemonic name.
      *
-     * @param string $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setName($value)
+    public function setName(string $value): self
     {
-        $this->name = (string) $value;
+        $this->name = $value;
 
         return $this;
     }
 
     /**
      * Get the mnemonic name.
-     *
-     * @return string
      */
-    public function getName()
+    public function getName(): string
     {
         return $this->name;
     }
 
     /**
-     * Package handle.
-     *
-     * @ORM\Column(type="string", length=64, nullable=false, options={"comment": "Package handle"})
-     *
-     * @var string
-     */
-    protected $packageHandle;
-
-    /**
      * Set the package handle.
      *
-     * @param string $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setPackageHandle($value)
+    public function setPackageHandle(string $value): self
     {
-        $this->packageHandle = (string) $value;
+        $this->packageHandle = $value;
 
         return $this;
     }
 
     /**
      * Get the package handle.
-     *
-     * @return string
      */
-    public function getPackageHandle()
+    public function getPackageHandle(): string
     {
         return $this->packageHandle;
     }
 
     /**
-     * Repository remote URL.
-     *
-     * @ORM\Column(type="string", length=255, nullable=false, options={"comment": "Repository remote URL"})
-     *
-     * @var string
-     */
-    protected $url;
-
-    /**
      * Set the repository remote URL.
      *
-     * @param string $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setURL($value)
+    public function setURL(string $value): self
     {
-        $this->url = (string) $value;
+        $this->url = $value;
 
         return $this;
     }
 
     /**
      * Get the repository remote URL.
-     *
-     * @return string
      */
-    public function getURL()
+    public function getURL(): string
     {
         return $this->url;
     }
 
     /**
-     * Development branches (keys are the branch name, values are the version - they should start with Package\Version::DEV_PREFIX).
-     *
-     * @ORM\Column(type="array", nullable=false, options={"comment": "Development branches (keys are the branch name, values are the version - they should start with Package\Version::DEV_PREFIX)"})
-     *
-     * @var array
-     */
-    protected $devBranches;
-
-    /**
      * Set the development branches (keys are the branch name, values are the version).
      *
-     * @param array $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setDevBranches(array $value)
+    public function setDevBranches(array $value): self
     {
         $this->devBranches = $value;
 
@@ -189,95 +194,58 @@ class GitRepository
 
     /**
      * Get the development branches (keys are the branch name, values are the version).
-     *
-     * @return array
      */
-    public function getDevBranches()
+    public function getDevBranches(): array
     {
         return $this->devBranches;
     }
 
     /**
-     * Path to the directory to be parsed.
-     *
-     * @ORM\Column(type="string", length=255, nullable=false, options={"comment": "Path to the directory to be parsed"})
-     *
-     * @var string
-     */
-    protected $directoryToParse;
-
-    /**
      * Set the path to the directory to be parsed.
      *
-     * @param string $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setDirectoryToParse($value)
+    public function setDirectoryToParse(string $value): self
     {
-        $this->directoryToParse = trim(str_replace(DIRECTORY_SEPARATOR, '/', trim((string) $value)), '/');
+        $this->directoryToParse = trim(str_replace(DIRECTORY_SEPARATOR, '/', trim($value)), '/');
 
         return $this;
     }
 
     /**
      * Get the path to the directory to be parsed.
-     *
-     * @return string
      */
-    public function getDirectoryToParse()
+    public function getDirectoryToParse(): string
     {
         return $this->directoryToParse;
     }
 
     /**
-     * Base directory for places.
-     *
-     * @ORM\Column(type="string", length=255, nullable=false, options={"comment": "Base directory for places"})
-     *
-     * @var string
-     */
-    protected $directoryForPlaces;
-
-    /**
      * Set the base directory for places.
      *
-     * @param string $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setDirectoryForPlaces($value)
+    public function setDirectoryForPlaces(string $value): self
     {
-        $this->directoryForPlaces = trim(str_replace(DIRECTORY_SEPARATOR, '/', trim((string) $value)), '/');
+        $this->directoryForPlaces = trim(str_replace(DIRECTORY_SEPARATOR, '/', trim($value)), '/');
 
         return $this;
     }
 
     /**
      * Get the base directory for places.
-     *
-     * @return string
      */
-    public function getDirectoryForPlaces()
+    public function getDirectoryForPlaces(): string
     {
         return $this->directoryForPlaces;
     }
 
     /**
-     * Detected versions.
-     *
-     * @ORM\Column(type="array", nullable=false, options={"comment": "Repository detected versions"})
-     *
-     * @var array
-     */
-    protected $detectedVersions;
-
-    /**
-     * Reset the detected versions
+     * Reset the detected versions.
      *
      * @return $this
      */
-    public function resetDetectedVersions()
+    public function resetDetectedVersions(): self
     {
         $this->detectedVersions = [];
 
@@ -287,13 +255,9 @@ class GitRepository
     /**
      * Add a repository detected version.
      *
-     * @param string $version
-     * @param string $kind
-     * @param string $repoName
-     *
-     * @return static
+     * @return $this
      */
-    public function addDetectedVersion($version, $kind, $repoName)
+    public function addDetectedVersion(string $version, string $kind, string $repoName): self
     {
         $this->detectedVersions[$version] = [
             'kind' => $kind,
@@ -305,66 +269,40 @@ class GitRepository
 
     /**
      * Get the repository tag filters.
-     *
-     * @param string $version
-     *
-     * @return array|null
      */
-    public function getDetectedVersion($version)
+    public function getDetectedVersion(string $version): ?array
     {
-        return isset($this->detectedVersions[$version]) ? $this->detectedVersions[$version] : null;
+        return $this->detectedVersions[$version] ?? null;
     }
-
-    /**
-     * Tag-to-version regular expression.
-     *
-     * @ORM\Column(type="string", length=255, nullable=false, options={"comment": "Tag-to-version regular expression"})
-     *
-     * @var string
-     */
-    protected $tagToVersionRegexp;
 
     /**
      * Set the tag-to-version regular expression.
      *
-     * @param string $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setTagToVersionRegexp($value)
+    public function setTagToVersionRegexp(string $value): self
     {
-        $this->tagToVersionRegexp = (string) $value;
+        $this->tagToVersionRegexp = $value;
 
         return $this;
     }
 
     /**
      * Get the tag-to-version regular expression.
-     *
-     * @return string
      */
-    public function getTagToVersionRegexp()
+    public function getTagToVersionRegexp(): string
     {
         return $this->tagToVersionRegexp;
     }
 
     /**
-     * Repository tag filters.
-     *
-     * @ORM\Column(type="simple_array", nullable=false, options={"comment": "Repository tag filters"})
-     *
-     * @var string[]
-     */
-    protected $tagFilters;
-
-    /**
      * Set the repository tag filters.
      *
-     * @param string[]|null $value Null for no tags, an array otherwise (empty means all tags)
+     * @param string[]|null $value NULL for no tags, an array otherwise ([] means all tags)
      *
-     * @return static
+     * @return $this
      */
-    public function setTagFilters(array $value = null)
+    public function setTagFilters(?array $value = null): self
     {
         if ($value === null) {
             $this->tagFilters = ['none'];
@@ -382,17 +320,16 @@ class GitRepository
      *
      * @return string[]|null
      */
-    public function getTagFilters()
+    public function getTagFilters(): ?array
     {
         if ($this->tagFilters === ['none']) {
-            $result = null;
-        } elseif ($this->tagFilters === ['all']) {
-            $result = [];
-        } else {
-            $result = $this->tagFilters;
+            return null;
+        }
+        if ($this->tagFilters === ['all']) {
+            return [];
         }
 
-        return $result;
+        return $this->tagFilters;
     }
 
     /**
@@ -400,25 +337,24 @@ class GitRepository
      *
      * @return null|array(array('operator' => string, 'version' => string))
      */
-    public function getTagFiltersExpanded()
+    public function getTagFiltersExpanded(): ?array
     {
         $tagFilters = $this->getTagFilters();
         if ($tagFilters === null) {
-            $result = null;
-        } else {
-            $result = [];
-            $m = null;
-            foreach ($tagFilters as $tagFilter) {
-                if (preg_match('/^\s*([<>=]+)\s*(\d+(?:\.\d+)?)\s*$/', $tagFilter, $m)) {
-                    switch ($m[1]) {
-                        case '<=':
-                        case '<':
-                        case '=':
-                        case '>=':
-                        case '>':
-                            $result[] = ['operator' => $m[1], 'version' => $m[2]];
-                            break;
-                    }
+            return null;
+        }
+        $result = [];
+        $m = null;
+        foreach ($tagFilters as $tagFilter) {
+            if (preg_match('/^\s*([<>=]+)\s*(\d+(?:\.\d+)?)\s*$/', $tagFilter, $m)) {
+                switch ($m[1]) {
+                    case '<=':
+                    case '<':
+                    case '=':
+                    case '>=':
+                    case '>':
+                        $result[] = ['operator' => $m[1], 'version' => $m[2]];
+                        break;
                 }
             }
         }
@@ -428,35 +364,32 @@ class GitRepository
 
     /**
      * Get a visual representation of the tag filters.
-     *
-     * @return string
      */
-    public function getTagFiltersDisplayName()
+    public function getTagFiltersDisplayName(): string
     {
         $expanded = $this->getTagFiltersExpanded();
         if ($expanded === null) {
-            $result = tc('Tags', 'none');
-        } elseif (count($expanded) === 0) {
-            $result = tc('Tags', 'all');
-        } else {
-            $list = [];
-            foreach ($expanded as $x) {
-                switch ($x['operator']) {
-                    case '<=':
-                        $op = '≤';
-                        break;
-                    case '>=':
-                        $op = '≥';
-                        break;
-                    default:
-                        $op = $x['operator'];
-                        break;
-                }
-                $list[] = "$op {$x['version']}";
+            return tc('Tags', 'none');
+        }
+        if ($expanded === []) {
+            return tc('Tags', 'all');
+        }
+        $list = [];
+        foreach ($expanded as $x) {
+            switch ($x['operator']) {
+                case '<=':
+                    $op = '≤';
+                    break;
+                case '>=':
+                    $op = '≥';
+                    break;
+                default:
+                    $op = $x['operator'];
+                    break;
             }
-            $result = implode(' ∧ ', $list);
+            $list[] = "{$op} {$x['version']}";
         }
 
-        return $result;
+        return implode(' ∧ ', $list);
     }
 }

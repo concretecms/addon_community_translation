@@ -1,98 +1,93 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Api;
 
 use Concrete\Core\Database\Connection\Connection;
+use Doctrine\DBAL\Statement;
 
-class Token
+defined('C5_EXECUTE') or die('Access Denied.');
+
+final class Token
 {
     /**
      * The API Token dictionary.
      *
      * @var string
      */
-    const DICTIONARY = 'abcefghijklmnopqrstuvwxyz1234567890_-.';
+    private const DICTIONARY = 'abcefghijklmnopqrstuvwxyz1234567890_-.';
 
     /**
      * The API Token length.
      *
      * @var int
      */
-    const LENGTH = 32;
+    private const LENGTH = 32;
 
     /**
      * A regular expression that newly generated tokens must satisfy.
      *
      * @var string
      */
-    const TOKEN_GENERATION_REGEX = '/^[a-zA-Z0-9].*[a-zA-Z0-9]$/';
+    private const TOKEN_GENERATION_REGEX = '/^[a-zA-Z0-9].*[a-zA-Z0-9]$/';
 
-    /**
-     * @var Connection
-     */
-    protected $connection;
+    private Connection $connection;
 
-    /**
-     * @var \Doctrine\DBAL\Driver\Statement
-     */
-    protected $insertQuery;
+    private ?Statement $insertQuery = null;
 
-    /**
-     * @var \Doctrine\DBAL\Driver\Statement
-     */
-    protected $searchQuery;
+    private ?Statement $searchQuery = null;
 
-    /**
-     * @param Connection $connection
-     */
     public function __construct(Connection $connection)
     {
         $this->connection = $connection;
-        $this->insertQuery = $this->connection->prepare('insert ignore into CommunityTranslationGeneratedApiTokens (token) values (?)');
-        $this->searchQuery = $this->connection->prepare('select token from CommunityTranslationGeneratedApiTokens where token = ? limit 1');
     }
 
     /**
      * Generate a new API token.
-     *
-     * @return string
      */
-    public function generate()
+    public function generate(): string
     {
-        $pickChars = str_repeat(static::DICTIONARY, static::LENGTH);
-        for (; ;) {
-            $value = substr(str_shuffle($pickChars), 0, static::LENGTH);
-            if (preg_match(static::TOKEN_GENERATION_REGEX, $value)) {
-                $this->insertQuery->execute([$value]);
-                if ($this->insertQuery->rowCount() === 1) {
-                    break;
+        $insertQuery = $this->getInsertQuery();
+        $pickChars = str_repeat(self::DICTIONARY, self::LENGTH);
+        for (;;) {
+            $value = substr(str_shuffle($pickChars), 0, self::LENGTH);
+            if (preg_match(self::TOKEN_GENERATION_REGEX, $value)) {
+                if ($insertQuery->executeStatement([$value]) === 1) {
+                    return $value;
                 }
             }
         }
-
-        return $value;
     }
 
     /**
      * Check if a token has been generated.
-     *
-     * @param string $token
-     *
-     * @return bool
      */
-    public function isGenerated($token)
+    public function isGenerated(string $token): bool
     {
-        $result = false;
-        $token = (string) $token;
-        if ($token !== '') {
-            $this->searchQuery->execute([$token]);
-            $row = $this->searchQuery->fetch();
-            $this->searchQuery->closeCursor();
-            if ($row !== false) {
-                $result = true;
-            }
+        if (strlen($token) !== self::LENGTH) {
+            return false;
+        }
+        $rs = $this->getSearchQuery()->executeQuery([$token]);
+
+        return $rs->fetchOne() !== false;
+    }
+
+    private function getInsertQuery(): Statement
+    {
+        if ($this->insertQuery === null) {
+            $this->insertQuery = $this->connection->prepare('INSERT IGNORE INTO CommunityTranslationGeneratedApiTokens (token) VALUES (?)');
         }
 
-        return $result;
+        return $this->insertQuery;
+    }
+
+    private function getSearchQuery(): Statement
+    {
+        if ($this->searchQuery === null) {
+            $this->searchQuery = $this->connection->prepare('SELECT token FROM CommunityTranslationGeneratedApiTokens WHERE token = ? LIMIT 1');
+        }
+
+        return $this->searchQuery;
     }
 }

@@ -1,110 +1,106 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Parser;
 
 use CommunityTranslation\Entity\Locale;
+use CommunityTranslation\Service\SourceLocale;
 use Gettext\Translations;
 
-class Parsed
+defined('C5_EXECUTE') or die('Access Denied.');
+
+final class Parsed
 {
     /**
      * The source (untranslated) strings (representing a .pot file).
-     *
-     * @var Translations|null
      */
-    protected $sourceStrings = null;
+    private ?Translations $sourceStrings = null;
 
     /**
      * The translations (keys are the locale ID).
      *
      * @var [[Locale, Translations]]
      */
-    protected $translations = [];
+    private array $translations = [];
 
     /**
      * Set the source (untranslated) strings (representing a .pot file).
      *
-     * @param Translations $sourceStrings
+     * @return $this
      */
-    public function setSourceStrings(Translations $sourceStrings)
+    public function setSourceStrings(?Translations $sourceStrings): self
     {
         $this->sourceStrings = $sourceStrings;
+
+        return $this;
     }
 
     /**
      * Get the source (untranslated) strings (representing a .pot file).
      *
      * @param bool $buildIfNotSet set to true to build the string list if it's not set
-     *
-     * @return Translations|null
      */
-    public function getSourceStrings($buildIfNotSet = false)
+    public function getSourceStrings(bool $buildIfNotSet = false): ?Translations
     {
-        $result = $this->sourceStrings;
-        if ($result === null && $buildIfNotSet) {
-            $result = new Translations();
-            $result->setLanguage($this->app->make('community_translation/sourceLocale'));
-            foreach ($this->translations as $translations) {
-                foreach ($translations[1] as $key => $translation) {
-                    if (!$result->offsetExists($key)) {
-                        $newTranslation = $result->insert($translation->getContext(), $translation->getOriginal(), $translation->getPlural());
-                        foreach ($translation->getExtractedComments() as $comment) {
-                            $newTranslation->addExtractedComment($comment);
-                        }
+        if ($this->sourceStrings !== null || $buildIfNotSet === false) {
+            return $this->sourceStrings;
+        }
+        $sourceLocale = app(SourceLocale::class)->getRequiredSourceLocale();
+        $result = new Translations();
+        $result->setLanguage($sourceLocale->getID());
+        $result->setPluralForms($sourceLocale->getPluralCount(), $sourceLocale->getPluralFormula());
+        foreach ($this->translations as $translations) {
+            foreach ($translations[1] as $key => $translation) {
+                if (!$result->offsetExists($key)) {
+                    $newTranslation = $result->insert($translation->getContext(), $translation->getOriginal(), $translation->getPlural());
+                    foreach ($translation->getExtractedComments() as $comment) {
+                        $newTranslation->addExtractedComment($comment);
                     }
                 }
             }
-            $this->sourceStrings = $result;
         }
+        $this->sourceStrings = $result;
 
-        return $result;
+        return $this->sourceStrings;
     }
 
     /**
      * Set the translations for a specific locale.
      *
-     * @param Locale $locale
-     * @param Translations $translations
+     * @return $this
      */
-    public function setTranslations(Locale $locale, Translations $translations)
+    public function setTranslations(Locale $locale, Translations $translations): self
     {
         $this->translations[$locale->getID()] = [$locale, $translations];
+
+        return $this;
     }
 
     /**
      * Get the translations for a specific locale.
-     *
-     * @param Locale $locale
      */
-    public function getTranslations(Locale $locale)
+    public function getTranslations(Locale $locale): Translations
     {
         $localeID = $locale->getID();
-        $translations = isset($this->translations[$localeID]) ? $this->translations[$localeID][1] : null;
-        if ($translations === null) {
-            $translations = clone $this->getSourceStrings(true);
-            $translations->setLanguage($locale->getID());
-            $this->setTranslations($locale, $translations);
+        $translations = $this->translations[$localeID][1] ?? null;
+        if ($translations !== null) {
+            return $translations;
         }
+        $translations = clone $this->getSourceStrings(true);
+        $translations->setLanguage($locale->getID());
+        $translations->setPluralForms($locale->getPluralCount(), $locale->getPluralFormula());
+        $this->setTranslations($locale, $translations);
 
         return $translations;
     }
 
     /**
-     * Get all the translations set.
-     *
-     * @return [Locale, Translations]
-     */
-    public function getTranslationsList()
-    {
-        return array_values($this->translations);
-    }
-
-    /**
      * Merge another instance into this one.
      *
-     * @param Parsed $other
+     * @return $this
      */
-    public function mergeWith(Parsed $other)
+    public function mergeWith(self $other): self
     {
         $mergeMethod = Translations::MERGE_ADD | Translations::MERGE_PLURAL;
         if ($other->sourceStrings !== null) {
@@ -121,5 +117,7 @@ class Parsed
                 $this->translations[$key] = $data;
             }
         }
+
+        return $this;
     }
 }

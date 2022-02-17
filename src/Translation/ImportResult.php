@@ -1,76 +1,60 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Translation;
+
+defined('C5_EXECUTE') or die('Access Denied.');
 
 class ImportResult
 {
     /**
      * Number of strings not translated (skipped).
-     *
-     * @var int
      */
-    public $emptyTranslations = 0;
+    public int $emptyTranslations = 0;
 
     /**
      * Number of unknown translations (skipped).
-     *
-     * @var int
      */
-    public $unknownStrings = 0;
+    public int $unknownStrings = 0;
 
     /**
      * Number of new translations added and marked as the current ones.
-     *
-     * @var int
      */
-    public $addedAsCurrent = 0;
+    public int $addedAsCurrent = 0;
 
     /**
      * Number of new translations added but not marked as the current ones.
-     *
-     * @var int
      */
-    public $addedNotAsCurrent = 0;
+    public int $addedNotAsCurrent = 0;
 
     /**
      * Number of already current translations untouched.
-     *
-     * @var int
      */
-    public $existingCurrentUntouched = 0;
+    public int $existingCurrentUntouched = 0;
 
     /**
      * Number of current translations marked as approved.
-     *
-     * @var int
      */
-    public $existingCurrentApproved = 0;
+    public int $existingCurrentApproved = 0;
 
     /**
      * Number of current translations marked as not approved.
-     *
-     * @var int
      */
-    public $existingCurrentUnapproved = 0;
+    public int $existingCurrentUnapproved = 0;
 
     /**
      * Number of previous translations that have been activated (made current).
-     *
-     * @var int
      */
-    public $existingActivated = 0;
+    public int $existingActivated = 0;
 
     /**
      * Number of translations untouched.
-     *
-     * @var int
      */
-    public $existingNotCurrentUntouched = 0;
+    public int $existingNotCurrentUntouched = 0;
 
     /**
      * Number of new translations needing approval.
-     *
-     * @var int
      */
-    public $newApprovalNeeded = 0;
+    public int $newApprovalNeeded = 0;
 }

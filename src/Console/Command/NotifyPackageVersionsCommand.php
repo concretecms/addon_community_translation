@@ -1,134 +1,148 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Console\Command;
 
 use CommunityTranslation\Console\Command;
+use CommunityTranslation\Entity\Notification as NotificationEntity;
 use CommunityTranslation\Entity\Package as PackageEntity;
 use CommunityTranslation\Entity\Package\Version as PackageVersionEntity;
 use CommunityTranslation\Entity\PackageSubscription as PackageSubscriptionEntity;
 use CommunityTranslation\Repository\Notification as NotificationRepository;
 use CommunityTranslation\Repository\Package as PackageRepository;
-use CommunityTranslation\Repository\Package\Version as PackageVersionRepository;
-use CommunityTranslation\Repository\PackageSubscription as PackageSubscriptionRepository;
 use Concrete\Core\Entity\User\User as UserEntity;
+use Concrete\Core\Error\UserMessageException;
 use Concrete\Core\User\UserInfo;
 use Concrete\Core\User\UserInfoRepository;
 use Concrete\Core\User\UserList;
-use DateTime;
+use DateTimeImmutable;
 use Doctrine\ORM\EntityManager;
-use Exception;
-use Symfony\Component\Console\Input\InputOption;
+use Doctrine\ORM\Query;
+use Generator;
+use Throwable;
+
+defined('C5_EXECUTE') or die('Access Denied.');
 
 class NotifyPackageVersionsCommand extends Command
 {
-    const RETURN_CODE_ON_FAILURE = 3;
-
     /**
-     * @var DateTime|null
-     */
-    private $timeLimit;
-
-    /**
-     * @var EntityManager|null
-     */
-    private $em;
-
-    /**
-     * @var \Concrete\Core\Database\Connection\Connection|null
-     */
-    private $connection;
-
-    /**
-     * @var UserInfoRepository
-     */
-    private $userInfoRepository;
-
-    /**
-     * @var PackageRepository
-     */
-    private $packageRepository;
-
-    /**
-     * @var NotificationRepository
-     */
-    private $notificationRepository;
-
-    /**
-     * The default maximum age (in days) of the new packages/package versions that may raise notifications.
+     * {@inheritdoc}
      *
-     * @var int
+     * @see \Concrete\Core\Console\Command::$signature
      */
-    const DEFAULT_MAX_AGE = 3;
+    protected $signature = <<<'EOT'
+ct:notify-packages
+    {--a|max-age=3 : The maximum age (in days) of the packages and package versions }
 
-    protected function configure()
-    {
-        $errExitCode = static::RETURN_CODE_ON_FAILURE;
-        $this
-            ->setName('ct:notify-packages')
-            ->setDescription('Prepare notifications about new packages, new package versions and updated packages')
-            ->addOption('max-age', 'a', InputOption::VALUE_REQUIRED, 'The maximum age (in days) of the packages and package versions', static::DEFAULT_MAX_AGE)
-            ->setHelp(<<<EOT
-This command prepare notifications about new packages, new package versions and package versions with updated strings.
-
-Returns codes:
-  0 operation completed successfully
-  $errExitCode errors occurred
 EOT
-            )
-        ;
-    }
+    ;
 
-    protected function executeWithLogger()
-    {
-        $this->readParameters();
-        if ($this->acquireLock(0) === false) {
-            throw new Exception('Failed to acquire lock');
-        }
-        $this->initializeProcessing();
-        $this->notifyNewPackages();
-        $this->notifyPackageVersions();
-        $this->finishProcessing();
-        $this->releaseLock();
-    }
+    private EntityManager $em;
 
-    private function readParameters()
-    {
-        $maxAge = (int) $this->input->getOption('max-age');
-        if ($maxAge <= 0) {
-            throw new Exception('Invalid value of the max-age parameter (it must be an integer greater than 0)');
-        }
-        $this->timeLimit = new DateTime("-$maxAge days");
-    }
+    private DateTimeImmutable $timeLimit;
 
-    private function initializeProcessing()
-    {
-        $this->em = $this->app->make(EntityManager::class);
-        $this->connection = $this->em->getConnection();
-        $this->connection->beginTransaction();
-        $this->userInfoRepository = $this->app->make(UserInfoRepository::class);
-        $this->packageRepository = $this->app->make(PackageRepository::class);
-        $this->notificationRepository = $this->app->make(NotificationRepository::class);
-    }
+    private UserInfoRepository $userInfoRepository;
 
-    private function finishProcessing()
-    {
-        $this->connection->commit();
-        $this->connection = null;
-    }
+    private PackageRepository $packageRepository;
 
-    private function notifyNewPackages()
+    private NotificationRepository $notificationRepository;
+
+    public function handle(EntityManager $em, UserInfoRepository $userInfoRepository): int
     {
-        foreach ($this->getUsersForNewPackages() as $userInfo) {
-            foreach ($this->getNewPackagesForUser($userInfo) as $package) {
-                $this->notifyNewPackageTo($userInfo, $package);
+        $this->createLogger();
+        $mutexReleaser = null;
+        try {
+            $mutexReleaser = $this->acquireMutex();
+            $this->em = $em;
+            $this->userInfoRepository = $userInfoRepository;
+            $this->packageRepository = $em->getRepository(PackageEntity::class);
+            $this->notificationRepository = $em->getRepository(NotificationEntity::class);
+            $this->readParameters();
+            $this->em->transactional(function () {
+                $start = time();
+                $newPackagesCount = $this->notifyNewPackages();
+                $end = time();
+                $elapsed = $end - $start;
+                $start = time();
+                $this->logger->info("{$newPackagesCount} notifications created for new packages (time required: {$elapsed} seconds}");
+                [$newVersionsCount, $updatedVersionsCount] = $this->notifyPackageVersions();
+                $elapsed = $end - $start;
+                $this->logger->info("{$newVersionsCount} notifications created for new package versions, {$updatedVersionsCount} notifications created for updated package versions (time required: {$elapsed} seconds}");
+            });
+
+            return static::SUCCESS;
+        } catch (Throwable $x) {
+            $this->logger->error($this->formatThrowable($x));
+
+            return static::FAILURE;
+        } finally {
+            if ($mutexReleaser !== null) {
+                try {
+                    $mutexReleaser();
+                } catch (Throwable $x) {
+                }
             }
         }
     }
 
     /**
-     * @return UserInfo[]|\Generator
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Console\Command::configureUsingFluentDefinition()
      */
-    private function getUsersForNewPackages()
+    protected function configureUsingFluentDefinition()
+    {
+        parent::configureUsingFluentDefinition();
+        $this
+            ->setDescription('Prepare notifications about new packages, new package versions and updated packages')
+            ->setHelp(
+                <<<'EOT'
+This command prepare notifications about new packages, new package versions and package versions with updated strings.
+
+Returns codes:
+  0 operation completed successfully
+  1 errors occurred
+EOT
+            )
+        ;
+    }
+
+    private function readParameters(): void
+    {
+        $maxAge = (string) $this->input->getOption('max-age');
+        $maxAge = preg_match('/^\d+$/', $maxAge) ? (int) $maxAge : -1;
+        if ($maxAge <= 0) {
+            throw new UserMessageException('Invalid value of the max-age parameter (it must be an integer greater than 0)');
+        }
+        $this->timeLimit = new DateTimeImmutable("-{$maxAge} days");
+    }
+
+    private function notifyNewPackages(): int
+    {
+        $qb = $this->packageRepository->createQueryBuilder('p');
+        $qb
+            ->leftJoin(PackageSubscriptionEntity::class, 's', 'WITH', 'p.id = s.package AND :user = s.user')
+            ->andWhere($qb->expr()->isNull('s.user'))
+            ->andWhere('p.createdOn >= :timeLimit')
+            ->setParameter('timeLimit', $this->timeLimit->format($this->em->getConnection()->getDatabasePlatform()->getDateTimeFormatString()))
+        ;
+        $q = $qb->getQuery();
+        $result = 0;
+        foreach ($this->getUsersForNewPackages() as $userInfo) {
+            foreach ($this->getNewPackagesForUser($q, $userInfo) as $package) {
+                $this->notifyNewPackageTo($userInfo, $package);
+                $result++;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * @return \Concrete\Core\User\UserInfo[]
+     */
+    private function getUsersForNewPackages(): Generator
     {
         $userList = new UserList();
         $userList->filterByAttribute('notify_new_packages', 1);
@@ -142,110 +156,117 @@ EOT
     }
 
     /**
-     * @return UserInfo[]|\Generator
+     * @return \CommunityTranslation\Entity\Package[]
      */
-    private function getNewPackagesForUser(UserInfo $userInfo)
+    private function getNewPackagesForUser(Query $q, UserInfo $userInfo): Generator
     {
-        $qb = $this->packageRepository->createQueryBuilder('p');
-        $qb
-            ->leftJoin(PackageSubscriptionEntity::class, 's', 'WITH', 'p.id = s.package AND :user = s.user')->setParameter('user', $userInfo->getEntityObject())
-            ->where($qb->expr()->isNull('s.user'))
-            ->andWhere('p.createdOn >= :timeLimit')->setParameter('timeLimit', $this->timeLimit);
-        $q = $qb->getQuery();
-        foreach ($q->iterate() as $packageRows) {
-            yield $packageRows[0];
-            $this->em->detach($packageRows[0]);
+        $iterable = $q->setParameter('user', $userInfo->getEntityObject())->toIterable();
+        foreach ($iterable as $package) {
+            yield $package;
+            $this->em->detach($package);
         }
     }
 
-    private function notifyNewPackageTo(UserInfo $userInfo, PackageEntity $package)
+    private function notifyNewPackageTo(UserInfo $userInfo, PackageEntity $package): void
     {
-        $pse = PackageSubscriptionEntity::create($userInfo->getEntityObject(), $package, false);
+        $pse = new PackageSubscriptionEntity($userInfo->getEntityObject(), $package, false);
         $this->em->persist($pse);
         $this->em->flush($pse);
         $this->em->detach($pse);
-        $this->notificationRepository->newTranslatablePackage($package->getID(), $userInfo->getUserID());
+        $this->notificationRepository->newTranslatablePackage($package->getID(), (int) $userInfo->getUserID());
     }
 
-    private function notifyPackageVersions()
+    private function notifyPackageVersions(): array
     {
-        foreach ($this->getNotifyPackageVersionsData() as $data) {
-            list($user, $newPackageVersion, $updatedPackageVersion) = $data;
+        $result = [
+            0,
+            0,
+        ];
+        foreach ($this->getNotifyPackageVersionsData() as [$user, $newPackageVersion, $updatedPackageVersion]) {
             if ($newPackageVersion !== null) {
                 $this->notifyNewPackageVersionTo($user, $newPackageVersion);
+                $result[0]++;
             }
             if ($updatedPackageVersion !== null) {
                 $this->notifyUpdatedPackageVersionTo($user, $updatedPackageVersion);
+                $result[1]++;
             }
         }
+
+        return $result;
     }
 
     /**
-     * @return array[]|\Generator
+     * @return array[]
      */
-    private function getNotifyPackageVersionsData()
+    private function getNotifyPackageVersionsData(): Generator
     {
-        $dateHelper = $this->app->make('date');
-        /* @var \Concrete\Core\Localization\Service\Date $dateHelper */
-        $timeLimitSQL = $dateHelper->toDB($this->timeLimit);
-        $packageSubscriptionRepository = $this->app->make(PackageSubscriptionRepository::class);
-        /* @var PackageSubscriptionRepository $packageSubscriptionRepository */
-        $packageVersionRepository = $this->app->make(PackageVersionRepository::class);
-        /* @var PackageVersionRepository $packageVersionRepository */
+        $packageSubscriptionRepository = $this->em->getRepository(PackageSubscriptionEntity::class);
+        $packageVersionRepository = $this->em->getRepository(PackageVersionEntity::class);
         $packageSubscription = null;
+        /**
+         * @var \CommunityTranslation\Entity\PackageSubscription|null $packageSubscription
+         */
         $lastNewPackageVersionNotified = null;
+        /**
+         * @var \CommunityTranslation\Entity\Package\Version|null $lastUpdatedPackageVersionNotified
+         */
         $lastUpdatedPackageVersionNotified = null;
-        $rs = $this->em->getConnection()->executeQuery('
+        $cn = $this->em->getConnection();
+        $rs = $cn->executeQuery(
+            <<<'EOT'
 SELECT DISTINCT
-	ps.user,
-	ps.package,
-	pv1.id AS notifyNewPackageVersion,
-	pvs.packageVersion AS notifyUpdatedPackageVersion
+    ps.user,
+    ps.package,
+    pv1.id AS notifyNewPackageVersion,
+    pvs.packageVersion AS notifyUpdatedPackageVersion
 FROM
-		CommunityTranslationPackageSubscriptions AS ps
+    CommunityTranslationPackageSubscriptions AS ps
 -- new package versions
-	LEFT JOIN
-		CommunityTranslationPackageVersions AS pv1
-	ON
-		ps.package = pv1.package
-		AND ps.notifyNewVersions = 1
-		AND ? <= pv1.createdOn
-		AND ps.sendNotificationsAfter < pv1.createdOn
+    LEFT JOIN
+        CommunityTranslationPackageVersions AS pv1
+            ON
+                ps.package = pv1.package
+                AND ps.notifyNewVersions = 1
+                AND :timeLimit <= pv1.createdOn
+                AND ps.sendNotificationsAfter < pv1.createdOn
 -- updated package versions
-	LEFT JOIN
-		CommunityTranslationPackageVersions AS pv2
-	ON
-		ps.package = pv2.package
-	LEFT JOIN
-		CommunityTranslationPackageVersionSubscriptions AS pvs
-	ON
-		ps.user = pvs.user
-		AND pv2.id = pvs.packageVersion
-		AND 1 = pvs.notifyUpdates
-		AND ? <= pv2.updatedOn
-		AND ps.sendNotificationsAfter < pv2.updatedOn
+    LEFT JOIN
+        CommunityTranslationPackageVersions AS pv2
+            ON
+                ps.package = pv2.package
+    LEFT JOIN
+        CommunityTranslationPackageVersionSubscriptions AS pvs
+            ON
+                ps.user = pvs.user
+                AND pv2.id = pvs.packageVersion
+                AND 1 = pvs.notifyUpdates
+                AND :timeLimit <= pv2.updatedOn
+                AND ps.sendNotificationsAfter < pv2.updatedOn
 WHERE
-	pv1.package IS NOT NULL
-	or pvs.packageVersion IS NOT NULL
+    pv1.package IS NOT NULL
+    OR pvs.packageVersion IS NOT NULL
 ORDER BY
-	ps.user,
-	ps.package,
-	notifyNewPackageVersion,
-	notifyUpdatedPackageVersion
-', [$timeLimitSQL, $timeLimitSQL]);
-        /* @var \Concrete\Core\Database\Driver\PDOStatement $rs */
-        while (($row = $rs->fetch()) !== false) {
-            /* @var PackageSubscriptionEntity $packageSubscription */
+    ps.user,
+    ps.package,
+    notifyNewPackageVersion,
+    notifyUpdatedPackageVersion
+EOT
+            ,
+            [
+                'timeLimit' => $this->timeLimit->format($cn->getDatabasePlatform()->getDateTimeFormatString()),
+            ]
+        );
+        while (($row = $rs->fetchAssociative()) !== false) {
             if ($packageSubscription === null || $packageSubscription->getUser()->getUserID() != $row['user'] || $packageSubscription->getPackage()->getID() != $row['package']) {
                 $this->em->clear(PackageSubscriptionEntity::class);
                 $packageSubscription = $packageSubscriptionRepository->find(['user' => $row['user'], 'package' => $row['package']]);
-                $packageSubscription->setSendNotificationsAfter(new DateTime());
+                $packageSubscription->setSendNotificationsAfter(new DateTimeImmutable());
                 $this->em->persist($packageSubscription);
                 $this->em->flush($packageSubscription);
                 $lastNewPackageVersionNotified = null;
                 $lastUpdatedPackageVersionNotified = null;
             }
-            /* @var PackageVersionEntity $lastNewPackageVersionNotified */
             if ($row['notifyNewPackageVersion'] && ($lastNewPackageVersionNotified === null || $lastNewPackageVersionNotified->getID() != $row['notifyNewPackageVersion'])) {
                 $newPackageVersion = $packageVersionRepository->find($row['notifyNewPackageVersion']);
                 $lastNewPackageVersionNotified = $newPackageVersion;
@@ -260,16 +281,15 @@ ORDER BY
             }
             yield [$packageSubscription->getUser(), $newPackageVersion, $updatedPackageVersion];
         }
-        $rs->closeCursor();
     }
 
-    private function notifyNewPackageVersionTo(UserEntity $user, PackageVersionEntity $packageVersion)
+    private function notifyNewPackageVersionTo(UserEntity $user, PackageVersionEntity $packageVersion): void
     {
-        $this->notificationRepository->newTranslatablePackageVersion($packageVersion->getID(), $user->getUserID());
+        $this->notificationRepository->newTranslatablePackageVersion($packageVersion->getID(), (int) $user->getUserID());
     }
 
-    private function notifyUpdatedPackageVersionTo(UserEntity $user, PackageVersionEntity $packageVersion)
+    private function notifyUpdatedPackageVersionTo(UserEntity $user, PackageVersionEntity $packageVersion): void
     {
-        $this->notificationRepository->updatedTranslatablePackageVersion($packageVersion->getID(), $user->getUserID());
+        $this->notificationRepository->updatedTranslatablePackageVersion($packageVersion->getID(), (int) $user->getUserID());
     }
 }

@@ -1,54 +1,110 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Concrete\Package\CommunityTranslation\Block\TopTranslators;
 
 use CommunityTranslation\Controller\BlockController;
 use CommunityTranslation\Repository\Locale as LocaleRepository;
-use CommunityTranslation\Service\User;
 use Concrete\Core\Database\Connection\Connection;
 use Concrete\Core\Utility\Service\Validation\Numbers;
-use PDO;
+use Symfony\Component\HttpFoundation\Response;
+
+defined('C5_EXECUTE') or die('Access denied.');
 
 class Controller extends BlockController
 {
-    public $helpers = [];
-
-    protected $btTable = 'btCTTopTranslators';
-
-    protected $btInterfaceWidth = 600;
-    protected $btInterfaceHeight = 520;
-
-    protected $btCacheBlockRecord = true;
-    protected $btCacheBlockOutput = true;
-    protected $btCacheBlockOutputOnPost = true;
-    protected $btCacheBlockOutputForRegisteredUsers = true;
-
-    protected $btCacheBlockOutputLifetime = 3600; // 1 hour
-
-    protected $btSupportsInlineEdit = false;
-    protected $btSupportsInlineAdd = false;
-
     /**
-     * {@inheritdoc}
-     *
-     * @see \Concrete\Core\Block\BlockController::$supportSavingNullValues
-     */
-    protected $supportSavingNullValues = true;
-
-    /**
-     * @var int|null
+     * @var int|string|null
      */
     public $numTranslators;
 
     /**
-     * @var string
+     * @var string|null
      */
     public $limitToLocale;
 
     /**
-     * @var bool
+     * @var bool|string|null
      */
     public $allTranslations;
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::$helpers
+     */
+    protected $helpers = [];
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::$btTable
+     */
+    protected $btTable = 'btCTTopTranslators';
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::$btInterfaceWidth
+     */
+    protected $btInterfaceWidth = 400;
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::$btInterfaceHeight
+     */
+    protected $btInterfaceHeight = 380;
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::$btCacheBlockRecord
+     */
+    protected $btCacheBlockRecord = true;
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::$btCacheBlockOutput
+     */
+    protected $btCacheBlockOutput = true;
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::$btCacheBlockOutputOnPost
+     */
+    protected $btCacheBlockOutputOnPost = true;
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::$btCacheBlockOutputForRegisteredUsers
+     */
+    protected $btCacheBlockOutputForRegisteredUsers = true;
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::$btCacheBlockOutputLifetime
+     */
+    protected $btCacheBlockOutputLifetime = 3600; // 1 hour
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::$btSupportsInlineEdit
+     */
+    protected $btSupportsInlineEdit = false;
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::$btSupportsInlineAdd
+     */
+    protected $btSupportsInlineAdd = false;
 
     /**
      * {@inheritdoc}
@@ -60,6 +116,11 @@ class Controller extends BlockController
         return t('Top Translators');
     }
 
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::getBlockTypeDescription()
+     */
     public function getBlockTypeDescription()
     {
         return t('Display a list with the translators that contributed the most.');
@@ -72,36 +133,40 @@ class Controller extends BlockController
 
     public function edit()
     {
-        $this->set('form', $this->app->make('helper/form'));
         $locales = $this->app->make(LocaleRepository::class)->getApprovedLocales();
         $localeOptions = ['' => t('Every translation team')];
         foreach ($locales as $locale) {
             $localeOptions[$locale->getID()] = $locale->getDisplayName();
         }
+        $this->set('form', $this->app->make('helper/form'));
         $this->set('numTranslators', $this->numTranslators ? (int) $this->numTranslators : null);
         $this->set('localeOptions', $localeOptions);
         $this->set('limitToLocale', (string) $this->limitToLocale);
         $this->set('allTranslations', (bool) $this->allTranslations);
     }
 
+    public function view(): ?Response
+    {
+        $this->set('counters', $this->getCounters());
+        $this->set('userService', $this->getUserService());
+
+        return null;
+    }
+
     /**
      * {@inheritdoc}
      *
-     * @see BlockController::normalizeArgs()
+     * @see \CommunityTranslation\Controller\BlockController::normalizeArgs()
      */
     protected function normalizeArgs(array $args)
     {
-        $args += [
-            'numTranslators' => '',
-            'limitToLocale' => '',
-        ];
         $valn = $this->app->make(Numbers::class);
         $normalized = [
-            'numTranslators' => $valn->integer($args['numTranslators'], 1) ? (int) $args['numTranslators'] : null,
+            'numTranslators' => $valn->integer($args['numTranslators'] ?? null, 1) ? (int) $args['numTranslators'] : null,
             'allTranslations' => empty($args['allTranslations']) ? 0 : 1,
             'limitToLocale' => '',
         ];
-        if ($args['limitToLocale'] !== '') {
+        if (is_string($args['limitToLocale'] ?? null) && $args['limitToLocale'] !== '') {
             $locale = $this->app->make(LocaleRepository::class)->findApproved($args['limitToLocale']);
             if ($locale !== null) {
                 $normalized['limitToLocale'] = $locale->getID();
@@ -111,17 +176,7 @@ class Controller extends BlockController
         return $normalized;
     }
 
-    public function view()
-    {
-        $counters = $this->getCounters();
-        $this->set('counters', $counters);
-        $this->set('userService', $this->app->make(User::class));
-    }
-
-    /**
-     * @return array[]
-     */
-    private function getCounters()
+    private function getCounters(): array
     {
         $cn = $this->app->make(Connection::class);
         $qb = $cn->createQueryBuilder();
@@ -138,17 +193,17 @@ class Controller extends BlockController
         if (!$this->allTranslations) {
             $qb->andWhere($expr->isNotNull('t.currentSince'));
         }
-        if ($this->limitToLocale) {
+        if ((string) $this->limitToLocale !== '') {
             $qb->andWhere($expr->eq('t.locale', $qb->createNamedParameter($this->limitToLocale)));
         }
         $remainingGroups = $this->numTranslators ? (int) $this->numTranslators : null;
         $rs = $qb->execute();
         $result = [];
-        while (($row = $rs->fetch(PDO::FETCH_NUM)) !== false) {
+        while (($row = $rs->fetchNumeric()) !== false) {
             $numTranslations = (int) $row[1];
             if (!isset($result[$numTranslations])) {
                 if ($remainingGroups !== null) {
-                    --$remainingGroups;
+                    $remainingGroups--;
                     if ($remainingGroups < 0) {
                         break;
                     }

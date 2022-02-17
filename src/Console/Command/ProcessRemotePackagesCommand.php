@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Console\Command;
 
 use CommunityTranslation\Console\Command;
@@ -7,143 +9,198 @@ use CommunityTranslation\Entity\RemotePackage as RemotePackageEntity;
 use CommunityTranslation\RemotePackage\DownloadException;
 use CommunityTranslation\RemotePackage\Importer as RemotePackageImporter;
 use CommunityTranslation\Repository\RemotePackage as RemotePackageRepository;
-use DateTime;
+use Concrete\Core\Error\UserMessageException;
+use DateTimeImmutable;
 use Doctrine\Common\Collections\Criteria;
 use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManager;
-use Exception;
-use Symfony\Component\Console\Input\InputOption;
+use Generator;
 use Throwable;
+
+defined('C5_EXECUTE') or die('Access Denied.');
 
 class ProcessRemotePackagesCommand extends Command
 {
-    protected function configure()
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Console\Command::$signature
+     */
+    protected $signature = <<<'EOT'
+ct:remote-packages
+    {--m|max-failures=3 : The maximum number of failures before giving up with processing a package }
+    {--t|try-unapproved= : Try to process unapproved packages that are not newer than a specified number of days }
+EOT
+    ;
+
+    private int $maxFailures;
+
+    private ?DateTimeImmutable $tryUnapprovedDateLimit;
+
+    private EntityManager $em;
+
+    private RemotePackageRepository $repo;
+
+    private Connection $connection;
+
+    private RemotePackageImporter $remotePackageImporter;
+
+    public function handle(EntityManager $em, RemotePackageImporter $remotePackageImporter): int
     {
-        $errExitCode = static::RETURN_CODE_ON_FAILURE;
+        $someSuccess = false;
+        $someError = false;
+        $mutexReleaser = null;
+        $this->createLogger();
+        try {
+            $mutexReleaser = $this->acquireMutex();
+            $this->em = $em;
+            $this->repo = $this->em->getRepository(RemotePackageEntity::class);
+            $this->connection = $this->em->getConnection();
+            $this->remotePackageImporter = $remotePackageImporter;
+            $this->readOptions();
+            $numProcessed = 0;
+            foreach ($this->getRemotePackagesToBeProcesses() as $remotePackage) {
+                try {
+                    $this->processRemotePackage($remotePackage, true);
+                    $someSuccess = true;
+                    $numProcessed++;
+                } catch (Throwable $x) {
+                    $this->logger->error($this->formatThrowable($x));
+                    $someError++;
+                }
+            }
+            $this->logger->debug(sprintf('Number of approved packages processed: %d', $numProcessed));
+            if ($this->tryUnapprovedDateLimit !== null) {
+                $numProcessed = 0;
+                foreach ($this->getUnapprovedRemotePackageHandlesToTry() as $tryPackageHandle) {
+                    try {
+                        if ($this->tryProcessRemotePackage($tryPackageHandle) === true) {
+                            $someSuccess = true;
+                            $numProcessed++;
+                        }
+                    } catch (Throwable $x) {
+                        $this->logger->error($this->formatThrowable($x));
+                        $someError++;
+                    }
+                }
+                $this->logger->debug(sprintf('Number of unapproved packages processed: %d', $numProcessed));
+            }
+        } catch (Throwable $x) {
+            $this->logger->error($this->formatThrowable($x));
+            $someError = true;
+        } finally {
+            if ($mutexReleaser !== null) {
+                try {
+                    $mutexReleaser();
+                } catch (Throwable $x) {
+                }
+            }
+        }
+        if ($someError && $someSuccess) {
+            return 1;
+        }
+        if ($someError) {
+            return 2;
+        }
+
+        return 0;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Console\Command::configureUsingFluentDefinition()
+     */
+    protected function configureUsingFluentDefinition()
+    {
+        parent::configureUsingFluentDefinition();
         $this
-            ->setName('ct:remote-packages')
-            ->setDescription('Process the  queued remote packages')
-            ->addOption('max-failures', 'm', InputOption::VALUE_REQUIRED, 'The maximum number of failures before giving up with processing a package', 3)
-            ->addOption('try-unapproved', 't', InputOption::VALUE_REQUIRED, 'Try to process unapproved packages that are not newer than a specified number of days')
-            ->setHelp(<<<EOT
+            ->setDescription('Process the queued remote packages')
+            ->setHelp(
+                <<<'EOT'
 Returns codes:
   0 operation completed successfully
-  $errExitCode errors occurred
-  2 errors occurred but some repository has been processed
+  1 errors occurred but some package has been processed
+  2 errors occurred and no package has been processed
 EOT
             )
         ;
     }
 
-    protected function executeWithLogger()
+    private function readOptions(): void
     {
-        $this->acquireLock();
         $maxFailures = $this->input->getOption('max-failures');
-        $maxFailures = is_numeric($maxFailures) ? (int) $maxFailures : 0;
+        $maxFailures = preg_match('/^\d+$/', $maxFailures) ? (int) $maxFailures : 0;
         if ($maxFailures < 1) {
-            throw new Exception('Invalid value of max-failures option');
+            throw new UserMessageException('Invalid value of the max-failures option');
         }
-        $tryUnapprovedDateLimit = null;
+        $this->maxFailures = $maxFailures;
         $tryUapprovedMaxAge = $this->input->getOption('try-unapproved');
-        if ($tryUapprovedMaxAge !== null) {
-            $tryUapprovedMaxAge = is_numeric($tryUapprovedMaxAge) ? (int) $tryUapprovedMaxAge : -1;
+        if ($tryUapprovedMaxAge === null) {
+            $this->tryUnapprovedDateLimit = null;
+        } else {
+            $tryUapprovedMaxAge = preg_match('/^\d+$/', $tryUapprovedMaxAge) ? (int) $tryUapprovedMaxAge : -1;
             if ($tryUapprovedMaxAge < 0) {
-                throw new Exception('Invalid value of try-unapproved option');
+                throw new UserMessageException('Invalid value of the try-unapproved option');
             }
-            $tryUnapprovedDateLimit = new DateTime("-{$tryUapprovedMaxAge} days");
+            $this->tryUnapprovedDateLimit = new DateTimeImmutable("-{$tryUapprovedMaxAge} days");
         }
-        $em = $this->app->make(EntityManager::class);
-        /* @var EntityManager $em */
-        $connection = $em->getConnection();
-        $repo = $em->getRepository(RemotePackageEntity::class);
-        /* @var RemotePackageRepository $repo */
-        $importer = $this->app->make(RemotePackageImporter::class);
-        /* @var RemotePackageImporter $importer */
-        $n = 0;
-        $criteria = new Criteria();
-        $criteria
-            ->andWhere($criteria->expr()->eq('approved', true))
-            ->andWhere($criteria->expr()->isNull('processedOn', true))
-            ->andWhere($criteria->expr()->lt('failCount', $maxFailures))
-            ->orderBy(['createdOn' => 'ASC', 'id' => 'ASC'])
-            ->setMaxResults(1)
-        ;
-        for (; ;) {
-            $remotePackage = $repo->matching($criteria)->first();
-            if ($remotePackage === false) {
-                break;
-            }
-            $this->processRemotePackage($connection, $repo, $importer, $remotePackage, true);
-            ++$n;
-        }
-        $this->logger->debug(sprintf('Number of approved packages processed: %d', $n));
-        if ($tryUnapprovedDateLimit !== null) {
-            $n = 0;
-            foreach ($this->getPackageHandlesToTry($repo, $tryUnapprovedDateLimit) as $tryPackageHandle) {
-                if ($this->tryProcessRemotePackage($connection, $repo, $importer, $tryPackageHandle) === true) {
-                    ++$n;
-                }
-            }
-            $this->logger->debug(sprintf('Number of unapproved packages approved: %d', $n));
-        }
-        $this->releaseLock();
     }
 
     /**
-     * @param RemotePackageRepository $repo
-     * @param DateTime $dateLimit
-     *
-     * @return string[]|\Generator
+     * @return \CommunityTranslation\Entity\RemotePackage[]
      */
-    private function getPackageHandlesToTry(RemotePackageRepository $repo, DateTime $dateLimit)
+    private function getRemotePackagesToBeProcesses(): Generator
     {
-        $qb = $repo->createQueryBuilder('rp');
+        $criteria = new Criteria();
+            $criteria
+                ->andWhere($criteria->expr()->eq('approved', true))
+                ->andWhere($criteria->expr()->isNull('processedOn'))
+                ->andWhere($criteria->expr()->lt('failCount', $this->maxFailures))
+                ->orderBy(['createdOn' => 'ASC', 'id' => 'ASC'])
+                ->setMaxResults(1)
+        ;
+        for (;;) {
+            $remotePackage = $this->repo->matching($criteria)->first();
+            if ($remotePackage === false || $remotePackage === null) {
+                return;
+            }
+            yield $remotePackage;
+        }
+    }
+
+    /**
+     * @return string[]
+     */
+    private function getUnapprovedRemotePackageHandlesToTry(): Generator
+    {
+        $qb = $this->repo->createQueryBuilder('rp');
         $expr = $qb->expr();
         $qb
             ->distinct()
             ->select('rp.handle')
             ->where($expr->isNull('rp.processedOn'))
             ->andWhere($expr->eq('rp.approved', 0))
-            ->andWhere($expr->gte('rp.createdOn', ':minCreatedOn'))->setParameter('minCreatedOn', $dateLimit)
+            ->andWhere($expr->gte('rp.createdOn', ':minCreatedOn'))
+            ->setParameter('minCreatedOn', $this->tryUnapprovedDateLimit->format($this->connection->getDatabasePlatform()->getDateTimeFormatString()))
         ;
-        foreach ($qb->getQuery()->iterate() as $tryPackage) {
-            $row = array_pop($tryPackage);
+        $iterator = $qb->getQuery()->toIterable();
+        foreach ($iterator as $row) {
             yield $row['handle'];
         }
     }
 
-    /**
-     * @param Connection $connection
-     * @param RemotePackageRepository $repo
-     * @param RemotePackageImporter $importer
-     * @param RemotePackageEntity $remotePackage
-     * @param bool $recordFailures
-     *
-     * @throws Exception
-     * @throws Throwable
-     */
-    private function processRemotePackage(Connection $connection, RemotePackageRepository $repo, RemotePackageImporter $importer, RemotePackageEntity $remotePackage, $recordFailures)
+    private function processRemotePackage(RemotePackageEntity $remotePackage, bool $recordFailures): void
     {
         $this->logger->debug(sprintf('Processing package %s v%s', $remotePackage->getHandle(), $remotePackage->getVersion()));
-        $em = $repo->createQueryBuilder('r')->getEntityManager();
-        $remotePackage->setProcessedOn(new DateTime());
-        $em->persist($remotePackage);
-        $em->flush($remotePackage);
-        $connection->beginTransaction();
-        $error = null;
+        $remotePackage->setProcessedOn(new DateTimeImmutable());
+        $this->em->persist($remotePackage);
+        $this->em->flush($remotePackage);
         try {
-            $importer->import($remotePackage);
-            $connection->commit();
-        } catch (Exception $x) {
-            $error = $x;
-        } catch (Throwable $x) {
-            $error = $x;
-        }
-        if ($error !== null) {
-            try {
-                $connection->rollBack();
-            } catch (Exception $foo) {
-            }
+            $this->connection->transactional(function () use ($remotePackage) {
+                $this->remotePackageImporter->import($remotePackage);
+            });
+        } catch (Throwable $error) {
             $remotePackage->setProcessedOn(null);
             if ($recordFailures) {
                 $remotePackage
@@ -151,8 +208,8 @@ EOT
                     ->setLastError($error->getMessage())
                 ;
             }
-            $em->persist($remotePackage);
-            $em->flush($remotePackage);
+            $this->em->persist($remotePackage);
+            $this->em->flush($remotePackage);
             if ($error instanceof DownloadException && $error->getHttpCode() === 404) {
                 $this->logger->debug(sprintf('  NOT FOUND!'));
             } else {
@@ -161,19 +218,10 @@ EOT
         }
     }
 
-    /**
-     * @param Connection $connection
-     * @param RemotePackageRepository $repo
-     * @param RemotePackageImporter $importer
-     * @param string $remotePackageHandle
-     *
-     * @return bool
-     */
-    private function tryProcessRemotePackage(Connection $connection, RemotePackageRepository $repo, RemotePackageImporter $importer, $remotePackageHandle)
+    private function tryProcessRemotePackage(string $remotePackageHandle): bool
     {
-        $result = false;
         $this->logger->debug(sprintf('Trying unapproved package with handle %s', $remotePackageHandle));
-        $remotePackage = $repo->findOneBy(
+        $remotePackage = $this->repo->findOneBy(
             [
                 'handle' => $remotePackageHandle,
                 'processedOn' => null,
@@ -185,29 +233,26 @@ EOT
         );
         if ($remotePackage === null) {
             $this->logger->debug(' - FAILED: entity not found (???)');
-        } else {
-            $error = null;
-            try {
-                $this->processRemotePackage($connection, $repo, $importer, $remotePackage, false);
-            } catch (Exception $x) {
-                $error = $x;
-            } catch (Throwable $x) {
-                $error = $x;
-            }
-            if ($error !== null) {
-                $this->logger->debug(sprintf(' - FAILED: %s', trim($error->getMessage())));
-            } else {
-                $this->logger->debug(' - SUCCEEDED: marking the package as approved');
-                $qb = $repo->createQueryBuilder('rp');
-                $qb
-                    ->update()
-                    ->set('rp.approved', true)
-                    ->where($qb->expr()->eq('rp.handle', ':handle'))->setParameter('handle', $remotePackageHandle)
-                    ->getQuery()->execute();
-                $result = true;
-            }
-        }
 
-        return $result;
+            return false;
+        }
+        try {
+            $this->processRemotePackage($remotePackage, false);
+        } catch (Throwable $error) {
+            $this->logger->debug(sprintf(' - FAILED: %s', trim($error->getMessage())));
+
+            return false;
+        }
+        $this->logger->debug(' - SUCCEEDED: marking the package as approved');
+        $qb = $this->repo->createQueryBuilder('rp');
+        $qb
+            ->update()
+            ->set('rp.approved', true)
+            ->where($qb->expr()->eq('rp.handle', ':handle'))
+            ->setParameter('handle', $remotePackageHandle)
+        ;
+        $qb->getQuery()->execute();
+
+        return true;
     }
 }

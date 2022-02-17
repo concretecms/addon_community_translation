@@ -1,20 +1,24 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Service;
 
 use CommunityTranslation\Entity\Package as PackageEntity;
 use CommunityTranslation\Entity\Package\Version as PackageVersionEntity;
 use Doctrine\Common\EventSubscriber;
-use Doctrine\Common\Persistence\Event\LifecycleEventArgs;
 use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\Event\LifecycleEventArgs;
 use Doctrine\ORM\Events;
+
+defined('C5_EXECUTE') or die('Access Denied.');
 
 class EntitiesEventSubscriber implements EventSubscriber
 {
     /**
      * {@inheritdoc}
      *
-     * @see EventSubscriber::getSubscribedEvents()
+     * @see \Doctrine\Common\EventSubscriber::getSubscribedEvents()
      */
     public function getSubscribedEvents()
     {
@@ -27,10 +31,8 @@ class EntitiesEventSubscriber implements EventSubscriber
 
     /**
      * Callback method called when a new entity has been saved.
-     *
-     * @param LifecycleEventArgs $args
      */
-    public function postPersist(LifecycleEventArgs $args)
+    public function postPersist(LifecycleEventArgs $args): void
     {
         $entity = $args->getObject();
         if ($entity instanceof PackageVersionEntity) {
@@ -40,15 +42,13 @@ class EntitiesEventSubscriber implements EventSubscriber
 
     /**
      * Callback method called when a modified entity is going to be saved.
-     *
-     * @param LifecycleEventArgs $args
      */
-    public function postUpdate(LifecycleEventArgs $args)
+    public function postUpdate(LifecycleEventArgs $args): void
     {
         $entity = $args->getObject();
         if ($entity instanceof PackageVersionEntity) {
             $em = $args->getObjectManager();
-            /* @var \Doctrine\ORM\EntityManager $em */
+            /** @var \Doctrine\ORM\EntityManager $em */
             $unitOfWork = $em->getUnitOfWork();
             $changeSet = $unitOfWork->getEntityChangeSet($entity);
             if (in_array('version', $changeSet)) {
@@ -59,10 +59,8 @@ class EntitiesEventSubscriber implements EventSubscriber
 
     /**
      * Callback method called when an entity has been deleted.
-     *
-     * @param LifecycleEventArgs $args
      */
-    public function postRemove(LifecycleEventArgs $args)
+    public function postRemove(LifecycleEventArgs $args): void
     {
         $entity = $args->getObject();
         if ($entity instanceof PackageVersionEntity) {
@@ -72,15 +70,12 @@ class EntitiesEventSubscriber implements EventSubscriber
 
     /**
      * Set/reset the latest version of a package.
-     *
-     * @param EntityManager $em
-     * @param PackageEntity $package
      */
-    public function refreshPackageLatestVersion(EntityManager $em, PackageEntity $package)
+    public function refreshPackageLatestVersion(EntityManager $em, PackageEntity $package): void
     {
         $em->refresh($package);
         $versions = $package->getSortedVersions();
-        $latestVersion = empty($versions) ? null : array_pop($versions);
+        $latestVersion = array_pop($versions);
         if ($package->getLatestVersion() !== $latestVersion) {
             $package->setLatestVersion($latestVersion);
             $em->flush($package);

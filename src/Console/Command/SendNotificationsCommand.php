@@ -1,282 +1,227 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Console\Command;
 
 use CommunityTranslation\Console\Command;
+use CommunityTranslation\Console\Command\SendNotificationsCommand\State;
 use CommunityTranslation\Entity\Notification as NotificationEntity;
 use CommunityTranslation\Notification\CategoryInterface;
 use CommunityTranslation\Repository\Notification as NotificationRepository;
+use Concrete\Core\Application\Application;
+use Concrete\Core\Config\Repository\Repository;
+use Concrete\Core\Error\UserMessageException;
+use Concrete\Core\Mail\Service as MailService;
+use Concrete\Core\Site\Service as SiteService;
 use Concrete\Core\User\UserInfo;
-use DateTime;
+use DateTimeImmutable;
 use Doctrine\Common\Collections\Criteria;
 use Doctrine\ORM\EntityManager;
-use Exception;
-use Symfony\Component\Console\Input\InputOption;
+use Generator;
 use Throwable;
+
+defined('C5_EXECUTE') or die('Access Denied.');
 
 class SendNotificationsCommand extends Command
 {
     /**
      * {@inheritdoc}
      *
-     * @see Command::RETURN_CODE_ON_FAILURE
+     * @see \Concrete\Core\Console\Command::$signature
      */
-    const RETURN_CODE_ON_FAILURE = 3;
+    protected $signature = <<<'EOT'
+ct:send-notifications
+    {--r|retries=3 : The number of network failures thay may occur before giving up with a notification }
+    {--a|max-age=3 : The maximum age (in days) of the unsent notifications to be processed }
+    {--p|priority= : The miminum priority of the notifications to be processed (if not specified we'll process all the notifications) }
+EOT
+    ;
 
-    /**
-     * The default number of retries in case of network problems.
-     *
-     * @var int
-     */
-    const DEFAULT_DELIVERY_RETRIES = 3;
+    private Application $categoryBuilder;
 
-    /**
-     * The default maximum age (in days) of the unsent notifications to be parsed.
-     * Unsent notifications older than this time won't be sent.
-     *
-     * @var int
-     */
-    const DEFAULT_MAX_AGE = 3;
+    private Repository $config;
 
-    protected function configure()
+    private MailService $mailService;
+
+    private SiteService $siteService;
+
+    private EntityManager $em;
+
+    private NotificationRepository $repo;
+
+    private int $deliveryRetries;
+
+    private string $sqlTimeLimit;
+
+    private ?int $minPriority;
+
+    public function handle(Application $categoryBuilder, Repository $config, MailService $mailService, SiteService $siteService, EntityManager $em): int
     {
-        $errExitCode = static::RETURN_CODE_ON_FAILURE;
+        $state = new State($config);
+        $mutexReleaser = null;
+        $this->createLogger();
+        try {
+            $mutexReleaser = $this->acquireMutex();
+            $this->categoryBuilder = $categoryBuilder;
+            $this->mailService = $mailService;
+            $this->siteService = $siteService;
+            $this->em = $em;
+            $this->repo = $em->getRepository(NotificationEntity::class);
+            $this->readOptions();
+            $this->checkCanonicalURL();
+            foreach ($this->listNotifications() as $notification) {
+                $this->processNotification($state, $notification);
+            }
+        } catch (Throwable $x) {
+            $this->logger->error($this->formatThrowable($x));
+            $state->someNotificationFailed = true;
+        } finally {
+            if ($mutexReleaser !== null) {
+                try {
+                    $mutexReleaser();
+                } catch (Throwable $x) {
+                }
+            }
+        }
+        if ($state->someNotificationFailed) {
+            return $state->someNotificationSent ? 2 : 3;
+        }
+
+        return $state->someNotificationSent ? 1 : 0;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Console\Command::configureUsingFluentDefinition()
+     */
+    protected function configureUsingFluentDefinition()
+    {
+        parent::configureUsingFluentDefinition();
         $this
-            ->setName('ct:send-notifications')
             ->setDescription('Send pending notifications')
-            ->addOption('retries', 'r', InputOption::VALUE_REQUIRED, 'The number of network failures before giving up with a notification', static::DEFAULT_DELIVERY_RETRIES)
-            ->addOption('max-age', 'a', InputOption::VALUE_REQUIRED, 'The maximum age (in days) of the unsent notifications to be parsed', static::DEFAULT_MAX_AGE)
-            ->addOption('priority', 'p', InputOption::VALUE_REQUIRED, 'The miminum priority of the notifications to be parsed')
-            ->setHelp(<<<EOT
+            ->setHelp(
+                <<<'EOT'
 This command send notifications about events of Community Translations, like requests for new translation teams and new translators.
 
 Returns codes:
   0 no notification has been sent
   1 some notification has been sent
   2 errors occurred but some notification has been sent
-  $errExitCode errors occurred and no notification has been sent
+  3 errors occurred and no notification has been sent
 EOT
             )
         ;
     }
 
     /**
-     * @var EntityManager|null
+     * @throws \Concrete\Core\Error\UserMessageException
      */
-    private $em;
-
-    /**
-     * @var NotificationRepository|null
-     */
-    private $repo;
-
-    /**
-     * @var \Concrete\Core\Mail\Service|null
-     */
-    private $mail;
-
-    /**
-     * @var CategoryInterface[]|null
-     */
-    private $categories;
-
-    /**
-     * @var string[]|null
-     */
-    private $from;
-
-    /**
-     * @var bool|null
-     */
-    private $someNotificationSent;
-
-    /**
-     * @var bool|null
-     */
-    private $someNotificationFailed;
-
-    /**
-     * @var int|null
-     */
-    private $deliveryRetries;
-
-    /**
-     * @var string|null
-     */
-    private $timeLimit;
-
-    /**
-     * @var int|null
-     */
-    private $minPriority;
-
-    protected function executeWithLogger()
-    {
-        $this->initializeState();
-        $this->readParameters();
-        $this->checkCanonicalURL();
-        if ($this->acquireLock(20) === false) {
-            throw new Exception('Failed to acquire lock');
-        }
-        $lastID = null;
-        for (; ;) {
-            $criteria = Criteria::create()
-                ->where(Criteria::expr()->isNull('sentOn'))
-                ->andWhere(Criteria::expr()->gte('updatedOn', $this->timeLimit))
-                ->orderBy(['id' => 'ASC'])
-                ->setMaxResults(1);
-            if ($lastID !== null) {
-                $criteria->andWhere(Criteria::expr()->gt('id', $lastID));
-            }
-            if ($this->minPriority !== null) {
-                $criteria->andWhere(Criteria::expr()->gte('priority', $this->minPriority));
-            }
-            $notification = $this->repo->matching($criteria)->first();
-            if (!$notification) {
-                break;
-            }
-            $lastID = $notification->getID();
-            $this->logger->debug(sprintf('Processing notification %s', $notification->getID()));
-            $this->processNotification($notification);
-        }
-        $this->releaseLock();
-        if ($this->someNotificationSent && $this->someNotificationFailed) {
-            $rc = 2;
-        } elseif ($this->someNotificationSent) {
-            $rc = 1;
-        } elseif ($this->someNotificationFailed) {
-            $rc = static::RETURN_CODE_ON_FAILURE;
-        } else {
-            $rc = 0;
-        }
-
-        return $rc;
-    }
-
-    private function initializeState()
-    {
-        $this->em = $this->app->make(EntityManager::class);
-        $this->repo = $this->app->make(NotificationRepository::class);
-        $this->mail = $this->app->make('mail');
-        $this->categories = [];
-        $ctConfig = $this->app->make('community_translation/config');
-        $fromEmail = (string) $ctConfig->get('options.notificationsSenderAddress');
-        if ($fromEmail !== '') {
-            $this->from = [$fromEmail, $ctConfig->get('options.notificationsSenderName') ?: null];
-        } else {
-            $config = $this->app->make('config');
-            $this->from = [$config->get('concrete.email.default.address'), $config->get('concrete.email.default.name') ?: null];
-        }
-        $this->someNotificationSent = false;
-        $this->someNotificationFailed = false;
-    }
-
-    private function readParameters()
+    private function readOptions(): void
     {
         $deliveryRetries = $this->input->getOption('retries');
         $deliveryRetries = is_numeric($deliveryRetries) ? (int) $deliveryRetries : -1;
         if ($deliveryRetries < 0) {
-            throw new Exception('Invalid value of the retries parameter (it must be a non negative integer)');
+            throw new UserMessageException('Invalid value of the retries parameter (it must be a non negative integer)');
         }
         $this->deliveryRetries = $deliveryRetries;
-
-        $maxAge = (int) $this->input->getOption('max-age');
+        $maxAge = $this->input->getOption('max-age');
+        $maxAge = is_numeric($maxAge) ? (int) $maxAge : -1;
         if ($maxAge <= 0) {
-            throw new Exception('Invalid value of the max-age parameter (it must be an integer greater than 0)');
+            throw new UserMessageException('Invalid value of the max-age parameter (it must be an integer greater than 0)');
         }
-        $this->timeLimit = new DateTime("-$maxAge days");
-        $p = $this->input->getOption('priority');
-        if ($p === null) {
-            $this->minPriority = null;
-        } else {
-            $this->minPriority = @(int) $p;
-            if ((string) $this->minPriority !== (string) $p) {
-                throw new Exception('Invalid value of the priority parameter (it must be an integer)');
+        $timeLimit = new DateTimeImmutable("-{$maxAge} days");
+        $this->sqlTimeLimit = $timeLimit->format($this->em->getConnection()->getDatabasePlatform()->getDateTimeFormatString());
+        $minPriority = $this->input->getOption('priority');
+        if ($minPriority !== null) {
+            if (!is_numeric($minPriority)) {
+                throw new UserMessageException('Invalid value of the priority parameter (it must be an integer)');
             }
+            $minPriority = (int) $minPriority;
         }
+        $this->minPriority = $minPriority;
     }
 
-    private function checkCanonicalURL()
+    /**
+     * @throws \Concrete\Core\Error\UserMessageException
+     */
+    private function checkCanonicalURL(): void
     {
-        $site = $this->app->make('site')->getSite();
-        if (!$site->getSiteCanonicalURL()) {
-            throw new Exception('The site canonical URL must be set in order to run this command.');
+        $site = $this->siteService->getSite();
+        if ($site === null) {
+            throw new UserMessageException('Failed to get the Site object.');
+        }
+        if ($site->getSiteCanonicalURL() === '') {
+            throw new UserMessageException('The site canonical URL must be set in order to run this command.');
         }
     }
 
     /**
-     * @param string $fqnClass
-     *
-     * @throws Exception
-     *
-     * @return CategoryInterface
+     * @return \CommunityTranslation\Entity\Notification[]
      */
-    private function getNotificationCategory(NotificationEntity $notification)
+    private function listNotifications(): Generator
     {
-        $fqnClass = $notification->getFQNClass();
-        if (!isset($this->categories[$fqnClass])) {
-            if (!class_exists($fqnClass, true)) {
-                $this->categories[$fqnClass] = sprintf('Unable to find the category class %s', $fqnClass);
-            } else {
-                $obj = null;
-                $error = null;
-                try {
-                    $obj = $this->app->make($fqnClass);
-                } catch (Exception $x) {
-                    $error = $x;
-                } catch (Throwable $x) {
-                    $error = $x;
-                }
-                if ($error !== null) {
-                    $this->categories[$fqnClass] = sprintf('Failed to initialize category class %1$s: %2$s', $fqnClass, $error->getMessage());
-                } elseif (!($obj instanceof CategoryInterface)) {
-                    $this->categories[$fqnClass] = sprintf('The class %1$s does not implement %2$s', $fqnClass, CategoryInterface::class);
-                } else {
-                    $this->categories[$fqnClass] = $obj;
-                }
+        $lastID = null;
+        $expr = Criteria::expr();
+        for (;;) {
+            $criteria = Criteria::create()
+                ->where($expr->isNull('sentOn'))
+                ->andWhere($expr->gte('updatedOn', $this->timeLimit))
+                ->orderBy(['id' => 'ASC'])
+                ->setMaxResults(1)
+            ;
+            if ($lastID !== null) {
+                $criteria->andWhere($expr->gt('id', $lastID));
             }
+            if ($this->minPriority !== null) {
+                $criteria->andWhere($expr->gte('priority', $this->minPriority));
+            }
+            $notification = $this->repo->matching($criteria)->first();
+            if ($notification === null || $notification === false) {
+                return;
+            }
+            yield $notification;
+            $lastID = $notification->getID();
         }
-        if (is_string($this->categories[$fqnClass])) {
-            throw new Exception($this->categories[$fqnClass]);
-        }
-
-        return $this->categories[$fqnClass];
     }
 
-    /**
-     * @param NotificationEntity $notification
-     */
-    private function processNotification(NotificationEntity $notification)
+    private function processNotification(State $state, NotificationEntity $notification): void
     {
+        $this->logger->debug(sprintf('Processing notification %s', $notification->getID()));
         // Let's mark the notification as sent, so that it won't be updated with new messages
-        $notification->setSentOn(new DateTime());
+        $notification->setSentOn(new DateTimeImmutable());
         $this->em->persist($notification);
         $this->em->flush($notification);
         $notification
             ->setSentCountPotential(0)
-            ->setSentCountActual(0);
+            ->setSentCountActual(0)
+        ;
         $someNetworkProblems = false;
         $error = null;
         try {
-            $category = $this->getNotificationCategory($notification);
+            $category = $this->getNotificationCategory($state, $notification);
             $numRecipientsTotal = 0;
             $numRecipientsOk = 0;
             foreach ($category->getRecipients($notification) as $recipient) {
-                ++$numRecipientsTotal;
+                $numRecipientsTotal++;
                 $notification->setSentCountPotential($numRecipientsTotal);
-                $this->prepareMail($notification, $recipient, $category);
-                if ($this->mail->sendMail()) {
-                    ++$numRecipientsOk;
-                    $notification->setSentCountActual($numRecipientsOk);
-                } else {
+                $this->prepareMailService($state, $notification, $recipient, $category);
+                try {
+                    $this->mailService->sendMail();
+                    $sent = true;
+                } catch (Throwable $sendError) {
                     $someNetworkProblems = true;
+                    $sent = true;
+                }
+                if ($sent) {
+                    $numRecipientsOk++;
+                    $notification->setSentCountActual($numRecipientsOk);
                 }
             }
             if ($someNetworkProblems) {
-                throw new Exception($numRecipientsOk === 0 ? 'Mail service failed for all recipients' : 'Mail service failed for some recipients');
+                throw new UserMessageException($numRecipientsOk === 0 ? 'Mail service failed for all recipients' : 'Mail service failed for some recipients');
             }
-        } catch (Exception $x) {
-            $error = $x;
         } catch (Throwable $x) {
             $error = $x;
         }
@@ -292,7 +237,8 @@ EOT
                 // So, if the failure limit is under the threshold, let's mark the notification as not sent
                 $notification
                     ->setDeliveryAttempts($notification->getDeliveryAttempts() + 1)
-                    ->setSentOn(null);
+                    ->setSentOn(null)
+                ;
             }
         }
         $this->em->persist($notification);
@@ -302,15 +248,49 @@ EOT
         }
     }
 
-    private function prepareMail(NotificationEntity $notification, UserInfo $recipient, CategoryInterface $category)
+    /**
+     * @throws \Concrete\Core\Error\UserMessageException
+     */
+    private function getNotificationCategory(State $state, NotificationEntity $notification): CategoryInterface
     {
-        $this->mail->reset();
-        $this->mail->from($this->from[0], $this->from[1]);
-        $this->mail->to($recipient->getUserEmail(), $recipient->getUserName());
+        $fqnClass = $notification->getFQNClass();
+        if (!isset($state->categories[$fqnClass])) {
+            if (!class_exists($fqnClass, true)) {
+                $state->categories[$fqnClass] = sprintf('Unable to find the category class %s', $fqnClass);
+            } else {
+                $obj = null;
+                $error = null;
+                try {
+                    $obj = $state->categoryBuilder->make($fqnClass);
+                } catch (Throwable $x) {
+                    $error = $x;
+                }
+                if ($error !== null) {
+                    $state->categories[$fqnClass] = sprintf('Failed to initialize category class %1$s: %2$s', $fqnClass, $error->getMessage());
+                } elseif (!($obj instanceof CategoryInterface)) {
+                    $state->categories[$fqnClass] = sprintf('The class %1$s does not implement %2$s', $fqnClass, CategoryInterface::class);
+                } else {
+                    $state->categories[$fqnClass] = $obj;
+                }
+            }
+        }
+        if (is_string($state->categories[$fqnClass])) {
+            throw new UserMessageException($state->categories[$fqnClass]);
+        }
+
+        return $state->categories[$fqnClass];
+    }
+
+    private function prepareMailService(State $state, NotificationEntity $notification, UserInfo $recipient, CategoryInterface $category): void
+    {
+        $this->mailService->reset();
+        $this->mailService->setIsThrowOnFailure(true);
+        $this->mailService->from($state->from[0], $state->from[1]);
+        $this->mailService->to($recipient->getUserEmail(), $recipient->getUserName());
         foreach ($category->getMailParameters($notification, $recipient) as $key => $value) {
-            $this->mail->addParameter($key, $value);
+            $this->mailService->addParameter($key, $value);
         }
         $tp = $category->getMailTemplate();
-        $this->mail->load($tp[0], $tp[1]);
+        $this->mailService->load($tp[0], $tp[1]);
     }
 }
