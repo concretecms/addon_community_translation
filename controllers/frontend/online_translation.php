@@ -37,12 +37,13 @@ use CommunityTranslation\Translation\ImportOptions;
 use CommunityTranslation\TranslationsConverter\Provider as TranslationsConverterProvider;
 use Concrete\Core\Block\Block;
 use Concrete\Core\Config\Repository\Repository;
+use Concrete\Core\Controller\Controller;
 use Concrete\Core\Entity\User\User as UserEntity;
 use Concrete\Core\Error\UserMessageException;
 use Concrete\Core\Events\EventDispatcher;
 use Concrete\Core\Http\ResponseFactoryInterface;
 use Concrete\Core\Url\Resolver\Manager\ResolverManagerInterface;
-use Controller;
+use Concrete\Core\View\View;
 use Doctrine\ORM\EntityManager;
 use Gettext\Translations as GettextTranslations;
 use Punic\Comparer;
@@ -51,7 +52,6 @@ use Symfony\Component\EventDispatcher\GenericEvent;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
-use View;
 
 defined('C5_EXECUTE') or die('Access Denied.');
 
