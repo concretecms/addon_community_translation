@@ -66,7 +66,7 @@ class Translate extends DashboardPageController
     private function parseSourceLocale(): LocaleEntity
     {
         $sourceLocaleID = $this->request->request->get('sourceLocale');
-        if (!is_string($sourceLocaleID) || $sourceLocaleID !== '') {
+        if (!is_string($sourceLocaleID) || $sourceLocaleID === '') {
             throw new UserMessageException(t('Please specify a valid source locale'));
         }
         $newSourceLocale = new LocaleEntity($sourceLocaleID);

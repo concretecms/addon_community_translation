@@ -67,18 +67,19 @@ final class SourceLocale
     /**
      * Set the initial source locale, or change the current one.
      *
-     * @throws \Concrete\Core\Error\UserMessageException if the new source locale doesn't pass the checkElibible() checks
+     * @throws \Concrete\Core\Error\UserMessageException if the new source locale doesn't pass the checkEligible() checks
      *
      * @return bool true if the new source locale has been set, false otherwise (if the new source locale is the same as the old one)
      *
-     * @see \CommunityTranslation\Service\SourceLocale::checkElibible()
+     * @see \CommunityTranslation\Service\SourceLocale::checkEligible()
      */
     public function switchSourceLocale(LocaleEntity $newSourceLocale): bool
     {
-        $this->checkElibible($newSourceLocale);
-        $currentSourceLocale = $this->fetchSourceLocale();
+        $this->checkEligible($newSourceLocale);
+        $currentSourceLocale = $this->getSourceLocale();
         if (
-            $currentSourceLocale->getID() === $newSourceLocale->getID()
+            $currentSourceLocale !== null
+            && $currentSourceLocale->getID() === $newSourceLocale->getID()
             && $currentSourceLocale->getPluralCount() === $newSourceLocale->getPluralCount()
             && $currentSourceLocale->getPluralForms() === $newSourceLocale->getPluralForms()
             && $currentSourceLocale->getPluralFormula() === $newSourceLocale->getPluralFormula()
@@ -108,9 +109,9 @@ final class SourceLocale
      *
      * @throws \Concrete\Core\Error\UserMessageException
      */
-    public function checkElibible(LocaleEntity $newSourceLocale): void
+    public function checkEligible(LocaleEntity $newSourceLocale): void
     {
-        $currentSourceLocale = $this->fetchSourceLocale();
+        $currentSourceLocale = $this->getSourceLocale();
         if ($currentSourceLocale !== null && $currentSourceLocale->getID() === $newSourceLocale->getID() && $currentSourceLocale->getPluralCount() === $newSourceLocale->getPluralCount()) {
             return;
         }
