@@ -7,14 +7,14 @@ use PHPUnit_Framework_TestCase;
 
 abstract class ApiTest extends PHPUnit_Framework_TestCase
 {
-    private static $apiRootURL;
-
-    private static $config;
-
     /**
      * @var ApiClient|null
      */
     protected $apiClient;
+
+    private static $apiRootURL;
+
+    private static $config;
 
     public static function setUpBeforeClass()
     {
@@ -24,9 +24,9 @@ abstract class ApiTest extends PHPUnit_Framework_TestCase
         self::$config = null;
         if (is_dir($appDirectory)) {
             $configFiles = [
-                "$packageDirectory/config/options.php",
-                "$appDirectory/config/generated_overrides/community_translation/options.php",
-                "$appDirectory/config/community_translation/options.php",
+                "{$packageDirectory}/config/options.php",
+                "{$appDirectory}/config/generated_overrides/community_translation/options.php",
+                "{$appDirectory}/config/community_translation/options.php",
             ];
             foreach ($configFiles as $configFile) {
                 if (is_file($configFile)) {
@@ -39,6 +39,17 @@ abstract class ApiTest extends PHPUnit_Framework_TestCase
                 }
             }
         }
+    }
+
+    protected function setUp()
+    {
+        if (self::$apiRootURL === null) {
+            $this->markTestSkipped('CT_TEST_API_ROOTURL environment variable is missing: set it to the URL of a running concrete5 instance with Community Translation installed');
+        }
+        if (self::$config === null) {
+            $this->markTestSkipped('Unable to find the application directory. You can set it with the CT_TEST_APP_DIR environment variable');
+        }
+        $this->apiClient = new ApiClient(self::$apiRootURL . self::getConfigValue('api.entryPoint'));
     }
 
     protected static function getConfigValue($key, $default = null)
@@ -58,16 +69,5 @@ abstract class ApiTest extends PHPUnit_Framework_TestCase
         }
 
         return $result;
-    }
-
-    protected function setUp()
-    {
-        if (self::$apiRootURL === null) {
-            $this->markTestSkipped('CT_TEST_API_ROOTURL environment variable is missing: set it to the URL of a running concrete5 instance with Community Translation installed');
-        }
-        if (self::$config === null) {
-            $this->markTestSkipped('Unable to find the application directory. You can set it with the CT_TEST_APP_DIR environment variable');
-        }
-        $this->apiClient = new ApiClient(self::$apiRootURL . self::getConfigValue('api.entryPoint'));
     }
 }

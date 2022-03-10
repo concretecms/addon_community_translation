@@ -1,16 +1,16 @@
 <?php
 
-use Concrete\Core\Support\Facade\Application;
+declare(strict_types=1);
 
-$app = Application::getFacadeApplication();
+defined('C5_EXECUTE') or die('Access Denied.');
 
-$form = $app->make('helper/form');
-/* @var Concrete\Core\Form\Service\Form $form */
+/**
+ * @var Concrete\Core\Form\Service\Form $form
+ * @var int $territoryRequestLevel
+ * @var array $territoryRequestLevels
+ */
 
-/* @var int $territoryRequestLevel */
-/* @var array $territoryRequestLevels */
 ?>
-
 <fieldset>
 
     <legend><?= t('Options') ?></legend>

@@ -1,13 +1,18 @@
 <?php
+
+declare(strict_types=1);
+
 defined('C5_EXECUTE') or die('Access Denied.');
 
-/* @var Concrete\Core\Block\View\BlockView $view */
-/* @var Concrete\Package\CommunityTranslation\Block\FillTranslations\Controller $controller */
+/**
+ * @var Concrete\Core\Block\View\BlockView $this
+ * @var Concrete\Core\Block\View\BlockView $view
+ * @var Concrete\Package\CommunityTranslation\Block\TopTranslators\Controller $controller
+ * @var array $counters
+ * @var CommunityTranslation\Service\User $userService
+ */
 
-/* @var array $counters */
-/* @var CommunityTranslation\Service\User $userService */
-
-if (empty($counters)) {
+if ($counters === []) {
     ?>
     <div class="alert alert-info">
         <?= t('No translators found.') ?>
@@ -20,7 +25,7 @@ if (empty($counters)) {
         foreach ($counters as $numTranslations => $translatorIDs) {
             ?>
             <li>
-                <span class="label label-info"><?= t2('%d translation', '%d translations', $numTranslations) ?></span>
+                <span class="badge badge-info"><?= t2('%d translation', '%d translations', $numTranslations) ?></span>
                 <?php
                 $users = [];
                 foreach ($translatorIDs as $translatorID) {

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Logging\Handler;
 
 use Monolog\Formatter\LineFormatter;
@@ -7,9 +9,11 @@ use Monolog\Handler\AbstractProcessingHandler;
 use Monolog\Logger;
 use Symfony\Component\Console\Output\OutputInterface;
 
+defined('C5_EXECUTE') or die('Access Denied.');
+
 class ConsoleHandler extends AbstractProcessingHandler
 {
-    private $output;
+    private OutputInterface $output;
 
     public function __construct(OutputInterface $output)
     {
@@ -43,7 +47,7 @@ class ConsoleHandler extends AbstractProcessingHandler
     /**
      * {@inheritdoc}
      *
-     * @see AbstractProcessingHandler::write()
+     * @see \Monolog\Handler\AbstractProcessingHandler::write()
      */
     protected function write(array $record)
     {

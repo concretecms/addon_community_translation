@@ -1,72 +1,81 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Glossary;
 
 use Concrete\Core\Localization\Localization;
 use Punic\Comparer;
 
-class EntryType
+defined('C5_EXECUTE') or die('Access Denied.');
+
+final class EntryType
 {
     /**
      * Term type: adjective.
      *
      * @var string
      */
-    const ADJECTIVE = 'adjective';
+    public const ADJECTIVE = 'adjective';
+
     /**
      * Term type: adverb.
      *
      * @var string
      */
-    const ADVERB = 'adverb';
+    public const ADVERB = 'adverb';
+
     /**
      * Term type: conjunction.
      *
      * @var string
      */
-    const CONJUNCTION = 'conjunction';
+    public const CONJUNCTION = 'conjunction';
+
     /**
      * Term type: interjection.
      *
      * @var string
      */
-    const INTERJECTION = 'interjection';
+    public const INTERJECTION = 'interjection';
+
     /**
      * Term type: noun.
      *
      * @var string
      */
-    const NOUN = 'noun';
+    public const NOUN = 'noun';
+
     /**
      * Term type: preposition.
      *
      * @var string
      */
-    const PREPOSITION = 'preposition';
+    public const PREPOSITION = 'preposition';
+
     /**
      * Term type: pronoun.
      *
      * @var string
      */
-    const PRONOUN = 'pronoun';
+    public const PRONOUN = 'pronoun';
+
     /**
      * Term type: verb.
      *
      * @var string
      */
-    const VERB = 'verb';
+    public const VERB = 'verb';
 
     /**
      * @var array
      */
-    protected static $typesInfo = [];
+    private static $typesInfo = [];
 
     /**
      * Get all the allowed type names, short names and descriptions.
-     *
-     * @return array
      */
-    public static function getTypesInfo()
+    public static function getTypesInfo(): array
     {
         $locale = Localization::activeLocale();
         if (!isset(self::$typesInfo[$locale])) {
@@ -113,7 +122,7 @@ class EntryType
                 ],
             ];
             $comparer = new Comparer($locale);
-            uasort($list, function (array $a, array $b) use ($comparer) {
+            uasort($list, static function (array $a, array $b) use ($comparer): int {
                 return $comparer->compare($a['name'], $b['name']);
             });
             self::$typesInfo[$locale] = $list;
@@ -124,12 +133,8 @@ class EntryType
 
     /**
      * Check if a term type is valid.
-     *
-     * @param string $type
-     *
-     * @return bool
      */
-    public static function isValidType($type)
+    public static function isValidType(string $type): bool
     {
         if ($type === '') {
             $result = true;

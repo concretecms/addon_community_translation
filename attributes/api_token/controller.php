@@ -1,17 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Concrete\Package\CommunityTranslation\Attribute\ApiToken;
 
 use CommunityTranslation\Api\Token;
 use Concrete\Core\Attribute\DefaultController;
 use Concrete\Core\Attribute\FontAwesomeIconFormatter;
+use Concrete\Core\Error\UserMessageException;
 use Exception;
 use Symfony\Component\HttpFoundation\Session\Session;
 
+defined('C5_EXECUTE') or die('Access Denied.');
+
 class Controller extends DefaultController
 {
-    const DICTIONARY = 'abcefghijklmnopqrstuvwxyz1234567890_-.';
-    const SESSIONKEY_HASH = 'community_translation.apitoken_hash';
+    protected const SESSIONKEY_HASH = 'community_translation.apitoken_hash';
 
     protected $searchIndexFieldDefinition = [
         'type' => 'string',
@@ -28,25 +32,6 @@ class Controller extends DefaultController
         return new FontAwesomeIconFormatter('key');
     }
 
-    private function getSessionHash($generateInNotSet = false)
-    {
-        $session = $this->app->make(Session::class);
-        /* @var Session $session */
-        $hash = null;
-        if ($session->has(static::SESSIONKEY_HASH)) {
-            $hash = (string) $session->get(static::SESSIONKEY_HASH);
-            if ($hash === '') {
-                $hash = null;
-            }
-        }
-        if ($hash === null && $generateInNotSet) {
-            $hash = random_bytes(128);
-            $session->set(static::SESSIONKEY_HASH, $hash);
-        }
-
-        return $hash;
-    }
-
     /**
      * {@inheritdoc}
      *
@@ -55,11 +40,8 @@ class Controller extends DefaultController
     public function createAttributeValueFromRequest()
     {
         $data = $this->post();
-        if (!is_array($data)) {
-            $data = [];
-        }
-        $data += [
-            'operation' => null,
+        $data = (is_array($data) ? $data : []) + [
+            'operation' => '',
             'current-token' => '',
             'current-token-hash' => '',
         ];
@@ -70,7 +52,8 @@ class Controller extends DefaultController
                     $value = '';
                 }
                 if ($value !== '') {
-                    if (sha1($this->getSessionHash(false) . $value) !== $data['current-token-hash']) {
+                    $hash = $this->getSessionHash(false);
+                    if ($hash === '' || sha1($hash . $value) !== $data['current-token-hash']) {
                         $ok = false;
                     } else {
                         $ok = $this->app->make(Token::class)->isGenerated($value);
@@ -87,12 +70,17 @@ class Controller extends DefaultController
                 $value = '';
                 break;
             default:
-                throw new Exception('Invalid operation');
+                throw new UserMessageException(t('Invalid operation'));
         }
 
         return $this->createAttributeValue($value);
     }
 
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Attribute\DefaultController::form()
+     */
     public function form()
     {
         $value = '';
@@ -103,12 +91,16 @@ class Controller extends DefaultController
                 $value = (string) $avo->getValue();
             }
         }
-
         $hash = $this->getSessionHash(true);
         $this->set('value', $value);
         $this->set('valueHash', sha1($hash . $value));
     }
 
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Attribute\DefaultController::getDisplayValue()
+     */
     public function getDisplayValue()
     {
         $s = '';
@@ -136,14 +128,33 @@ class Controller extends DefaultController
     }
 
     /**
-     * @param \Concrete\Core\Search\ItemList\Database\AttributedItemList $list
+     * {@inheritdoc}
      *
-     * @return \Concrete\Core\Search\ItemList\Database\AttributedItemList
+     * @see \Concrete\Core\Attribute\DefaultController::searchForm()
      */
     public function searchForm($list)
     {
         $list->filterByAttribute($this->attributeKey->getAttributeKeyHandle(), $this->request('value'), '=');
 
         return $list;
+    }
+
+    private function getSessionHash(bool $generateIfNotSet = false): string
+    {
+        $session = $this->app->make(Session::class);
+        if ($session->has(static::SESSIONKEY_HASH)) {
+            $hash = $session->get(static::SESSIONKEY_HASH);
+            if (is_string($hash) && $hash !== '') {
+                return $hash;
+            }
+        }
+        if ($generateIfNotSet) {
+            $hash = random_bytes(128);
+            $session->set(static::SESSIONKEY_HASH, $hash);
+
+            return $hash;
+        }
+
+        return '';
     }
 }

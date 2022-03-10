@@ -1,16 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Entity;
 
-use Doctrine\ORM\Mapping as ORM;
+use DateTimeImmutable;
+
+defined('C5_EXECUTE') or die('Access Denied.');
 
 /**
  * Represents statistical data about translation downloads.
  *
- * @ORM\Entity(
+ * @Doctrine\ORM\Mapping\Entity(
  *     repositoryClass="CommunityTranslation\Repository\DownloadStats",
  * )
- * @ORM\Table(
+ * @Doctrine\ORM\Mapping\Table(
  *     name="CommunityTranslationDownloadStats",
  *     options={
  *         "comment": "Statistical data about translation downloads"
@@ -19,105 +23,88 @@ use Doctrine\ORM\Mapping as ORM;
  */
 class DownloadStats
 {
+    /**
+     * Associated Locale.
+     *
+     * @Doctrine\ORM\Mapping\ManyToOne(targetEntity="CommunityTranslation\Entity\Locale")
+     * @Doctrine\ORM\Mapping\JoinColumn(name="locale", referencedColumnName="id", nullable=false, onDelete="CASCADE")
+     * @Doctrine\ORM\Mapping\Id
+     */
+    protected Locale $locale;
+
+    /**
+     * Associated package version.
+     *
+     * @Doctrine\ORM\Mapping\ManyToOne(targetEntity="CommunityTranslation\Entity\Package\Version")
+     * @Doctrine\ORM\Mapping\JoinColumn(name="packageVersion", referencedColumnName="id", nullable=false, onDelete="CASCADE")
+     * @Doctrine\ORM\Mapping\Id
+     */
+    protected Package\Version $packageVersion;
+
+    /**
+     * The date/time of the first download.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="datetime_immutable", nullable=false, options={"comment": "Date/time of the first download"})
+     */
+    protected DateTimeImmutable $firstDowload;
+
+    /**
+     * The date/time of the last download.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="datetime_immutable", nullable=false, options={"comment": "Date/time of the last download"})
+     */
+    protected DateTimeImmutable $lastDowload;
+
+    /**
+     * The download count.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="integer", nullable=false, options={"unsigned": true, "comment": "Download count"})
+     */
+    protected int $downloadCount;
+
+    /**
+     * At the moment the creation of new DownloadStats records is done via direct SQL.
+     */
     protected function __construct()
     {
     }
 
     /**
-     * Associated Locale.
-     *
-     * @ORM\ManyToOne(targetEntity="CommunityTranslation\Entity\Locale")
-     * @ORM\JoinColumn(name="locale", referencedColumnName="id", nullable=false, onDelete="CASCADE")
-     * @ORM\Id
-     *
-     * @var Locale
-     */
-    protected $locale;
-
-    /**
      * Get the associated locale.
-     *
-     * @return Locale
      */
-    public function getLocale()
+    public function getLocale(): Locale
     {
         return $this->locale;
     }
 
     /**
-     * Associated package version.
-     *
-     * @ORM\ManyToOne(targetEntity="CommunityTranslation\Entity\Package\Version")
-     * @ORM\JoinColumn(name="packageVersion", referencedColumnName="id", nullable=false, onDelete="CASCADE")
-     * @ORM\Id
-     *
-     * @var Package\Version
-     */
-    protected $packageVersion;
-
-    /**
      * Get the associated package version.
-     *
-     * @return Package\Version
      */
-    public function getPackageVersion()
+    public function getPackageVersion(): Package\Version
     {
         return $this->packageVersion;
     }
 
     /**
-     * The date/time of the first download.
-     *
-     * @ORM\Column(type="datetime", nullable=false, options={"comment": "Date/time of the first download"})
-     *
-     * @var \DateTime
-     */
-    protected $firstDowload;
-
-    /**
      * Get the date/time of the first download.
-     *
-     * @return \DateTime
      */
-    public function getFirstDownload()
+    public function getFirstDownload(): DateTimeImmutable
     {
         return $this->firstDowload;
     }
 
     /**
-     * The date/time of the last download.
-     *
-     * @ORM\Column(type="datetime", nullable=false, options={"comment": "Date/time of the last download"})
-     *
-     * @var \DateTime
-     */
-    protected $lastDowload;
-
-    /**
      * Get the date/time of the last download.
-     *
-     * @return \DateTime
      */
-    public function getLastDownload()
+    public function getLastDownload(): DateTimeImmutable
     {
         return $this->lastDowload;
     }
 
     /**
-     * The download count.
-     *
-     * @ORM\Column(type="integer", nullable=false, options={"unsigned": true, "comment": "Download count"})
-     *
-     * @var int
-     */
-    protected $downloadCount;
-
-    /**
      * Get the download count.
-     *
-     * @return int
      */
-    public function getDownloadCount()
+    public function getDownloadCount(): int
     {
         return $this->downloadCount;
     }

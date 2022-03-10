@@ -1,22 +1,26 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Entity\Package;
 
 use CommunityTranslation\Entity\Package;
-use DateTime;
+use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\ORM\Mapping as ORM;
+use Doctrine\Common\Collections\Collection;
+
+defined('C5_EXECUTE') or die('Access Denied.');
 
 /**
  * Represent a package version.
  *
- * @ORM\Entity(
+ * @Doctrine\ORM\Mapping\Entity(
  *     repositoryClass="CommunityTranslation\Repository\Package\Version",
  * )
- * @ORM\Table(
+ * @Doctrine\ORM\Mapping\Table(
  *     name="CommunityTranslationPackageVersions",
  *     uniqueConstraints={
- *         @ORM\UniqueConstraint(name="IDX_CTPackageVersionPackageVersion", columns={"package", "version"})
+ *         @Doctrine\ORM\Mapping\UniqueConstraint(name="IDX_CTPackageVersionPackageVersion", columns={"package", "version"})
  *     },
  *     options={
  *         "comment": "List of versions for each package"
@@ -30,159 +34,135 @@ class Version
      *
      * @var string
      */
-    const DEV_PREFIX = 'dev-';
+    public const DEV_PREFIX = 'dev-';
 
     /**
-     * @param Package $package
-     * @param string $version
+     * Package version ID.
      *
-     * @return static
+     * @Doctrine\ORM\Mapping\Column(type="integer", options={"unsigned": true, "comment": "Package version ID"})
+     * @Doctrine\ORM\Mapping\Id
+     * @Doctrine\ORM\Mapping\GeneratedValue(strategy="AUTO")
      */
-    public static function create(Package $package, $version)
-    {
-        $result = new static();
-        $result->package = $package;
-        $result->version = (string) $version;
-        $result->createdOn = new DateTime();
-        $result->updatedOn = new DateTime();
+    protected ?int $id;
 
-        return $result;
-    }
+    /**
+     * Package associated to this version.
+     *
+     * @Doctrine\ORM\Mapping\ManyToOne(targetEntity="CommunityTranslation\Entity\Package", inversedBy="versions")
+     * @Doctrine\ORM\Mapping\JoinColumn(name="package", referencedColumnName="id", nullable=false, onDelete="CASCADE")
+     */
+    protected Package $package;
 
-    protected function __construct()
+    /**
+     * Package version (starting with Version::DEV_PREFIX for development branches).
+     *
+     * @Doctrine\ORM\Mapping\Column(type="string", length=64, nullable=false, options={"comment": "Package version (starting with Version::DEV_PREFIX for development branches)"})
+     */
+    protected string $version;
+
+    /**
+     * Record creation date/time.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="datetime_immutable", nullable=false, options={"comment": "Record creation date/time"})
+     */
+    protected DateTimeImmutable $createdOn;
+
+    /**
+     * Last date/time when the translatable strings changed.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="datetime_immutable", nullable=false, options={"comment": "Last date/time when the translatable strings changed"})
+     */
+    protected DateTimeImmutable $updatedOn;
+
+    /**
+     * Places associated to this string.
+     *
+     * @Doctrine\ORM\Mapping\OneToMany(targetEntity="CommunityTranslation\Entity\Translatable\Place", mappedBy="packageVersion")
+     */
+    protected Collection $places;
+
+    /**
+     * Stats associated to this string.
+     *
+     * @Doctrine\ORM\Mapping\OneToMany(targetEntity="CommunityTranslation\Entity\Stats", mappedBy="packageVersion")
+     */
+    protected Collection $stats;
+
+    public function __construct(Package $package, string $version)
     {
+        $this->id = null;
+        $this->package = $package;
+        $this->version = $version;
+        $this->createdOn = new DateTimeImmutable();
+        $this->updatedOn = new DateTimeImmutable();
         $this->places = new ArrayCollection();
         $this->stats = new ArrayCollection();
     }
 
     /**
-     * Package version ID.
-     *
-     * @ORM\Column(type="integer", options={"unsigned": true, "comment": "Package version ID"})
-     * @ORM\Id
-     * @ORM\GeneratedValue(strategy="AUTO")
-     *
-     * @var int|null
-     */
-    protected $id = null;
-
-    /**
      * Get the package version ID.
-     *
-     * @return int|null
      */
-    public function getID()
+    public function getID(): ?int
     {
         return $this->id;
     }
 
     /**
-     * Package associated to this version.
-     *
-     * @ORM\ManyToOne(targetEntity="CommunityTranslation\Entity\Package", inversedBy="versions")
-     * @ORM\JoinColumn(name="package", referencedColumnName="id", nullable=false, onDelete="CASCADE")
-     *
-     * @var Package|null
-     */
-    protected $package = null;
-
-    /**
      * Get the package associated to this version.
-     *
-     * @return Package|null
      */
-    public function getPackage()
+    public function getPackage(): Package
     {
         return $this->package;
     }
 
     /**
-     * Package version (starting with Version::DEV_PREFIX for development branches).
-     *
-     * @ORM\Column(type="string", length=64, nullable=false, options={"comment": "Package version (starting with Version::DEV_PREFIX for development branches)"})
-     *
-     * @var string
-     */
-    protected $version;
-
-    /**
      * Get the package version.
-     *
-     * @return string
      */
-    public function getVersion()
+    public function getVersion(): string
     {
         return $this->version;
     }
 
     /**
      * Get the package and package version display name.
-     *
-     * @return string
      */
-    public function getDisplayName()
+    public function getDisplayName(): string
     {
         return sprintf('%s %s', $this->getPackage()->getDisplayName(), $this->getDisplayVersion());
     }
 
     /**
      * Get the package version display name.
-     *
-     * @return string
      */
-    public function getDisplayVersion()
+    public function getDisplayVersion(): string
     {
         if ($this->isDevVersion()) {
             return t(/*i18n: %s is a version*/'%s development series', substr($this->version, strlen(static::DEV_PREFIX)));
-        } else {
-            return $this->version;
         }
+
+        return $this->version;
     }
 
     /**
      * Is this a development version?
-     *
-     * @return bool
      */
-    public function isDevVersion()
+    public function isDevVersion(): bool
     {
-        return (strpos($this->version, static::DEV_PREFIX) === 0) ? true : false;
+        return strpos($this->version, static::DEV_PREFIX) === 0;
     }
 
     /**
-     * Record creation date/time.
-     *
-     * @ORM\Column(type="datetime", nullable=false, options={"comment": "Record creation date/time"})
-     *
-     * @var DateTime
-     */
-    protected $createdOn;
-
-    /**
      * Get the record creation date/time.
-     *
-     * @return DateTime
      */
-    public function getCreatedOn()
+    public function getCreatedOn(): DateTimeImmutable
     {
         return $this->createdOn;
     }
 
     /**
-     * Last date/time when the translatable strings changed.
-     *
-     * @ORM\Column(type="datetime", nullable=false, options={"comment": "Last date/time when the translatable strings changed"})
-     *
-     * @var DateTime
-     */
-    protected $updatedOn;
-
-    /**
      * Get the last date/time when the translatable strings changed.
-     *
-     * @return DateTime
      */
-    public function getUpdatedOn()
+    public function getUpdatedOn(): DateTimeImmutable
     {
         return $this->updatedOn;
     }
@@ -190,28 +170,10 @@ class Version
     /**
      * Set the last date/time when the translatable strings changed.
      *
-     * @param DateTime $value
+     * @return $this
      */
-    public function setUpdatedOn(DateTime $value)
+    public function setUpdatedOn(DateTimeImmutable $value): self
     {
         $this->updatedOn = $value;
     }
-
-    /**
-     * Places associated to this string.
-     *
-     * @ORM\OneToMany(targetEntity="CommunityTranslation\Entity\Translatable\Place", mappedBy="packageVersion")
-     *
-     * @var ArrayCollection
-     */
-    protected $places;
-
-    /**
-     * Stats associated to this string.
-     *
-     * @ORM\OneToMany(targetEntity="CommunityTranslation\Entity\Stats", mappedBy="packageVersion")
-     *
-     * @var ArrayCollection
-     */
-    protected $stats;
 }

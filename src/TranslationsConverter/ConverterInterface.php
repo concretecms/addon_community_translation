@@ -1,110 +1,80 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\TranslationsConverter;
 
-use Concrete\Core\Error\UserMessageException;
 use Gettext\Translations;
+
+defined('C5_EXECUTE') or die('Access Denied.');
 
 interface ConverterInterface
 {
     /**
      * Get the handle of the converter.
-     *
-     * @return string
      */
-    public function getHandle();
+    public function getHandle(): string;
 
     /**
      * Get the name of the converter.
-     *
-     * @return string
      */
-    public function getName();
+    public function getName(): string;
 
     /**
      * Get the description of the converter.
-     *
-     * @return string
      */
-    public function getDescription();
+    public function getDescription(): string;
 
     /**
      * Get the file extension (without the initial dot).
-     *
-     * @return string
      */
-    public function getFileExtension();
+    public function getFileExtension(): string;
 
     /**
      * Does this format support a language header?
-     *
-     * @return bool
      */
-    public function supportLanguageHeader();
+    public function supportLanguageHeader(): bool;
 
     /**
      * Does this format support plural rules and forms?
-     *
-     * @return bool
      */
-    public function supportPlurals();
+    public function supportPlurals(): bool;
 
     /**
      * Is this converter able to convert \Gettext\Translations instances to strings/files?
-     *
-     * @return bool
      */
-    public function canSerializeTranslations();
+    public function canSerializeTranslations(): bool;
 
     /**
      * Is this converter able to convert strings/files to \Gettext\Translations instances?
-     *
-     * @return bool
      */
-    public function canUnserializeTranslations();
+    public function canUnserializeTranslations(): bool;
 
     /**
      * Convert a \Gettext\Translations instance to string.
      *
-     * @param Translations $translations
-     *
-     * @throws UserMessageException
-     *
-     * @return string
+     * @throws \Concrete\Core\Error\UserMessageException
      */
-    public function convertTranslationsToString(Translations $translations);
+    public function serializeTranslations(Translations $translations): string;
 
     /**
      * Convert a string into a \Gettext\Translations instance.
      *
-     * @param string $string
-     *
-     * @throws UserMessageException
-     *
-     * @return Translations
+     * @throws \Concrete\Core\Error\UserMessageException
      */
-    public function convertStringToTranslations($string);
+    public function unserializeTranslations(string $string): Translations;
 
     /**
      * Save a \Gettext\Translations instance to file.
      *
-     * @param Translations $translations
-     * @param string $filename
-     *
-     * @throws UserMessageException
-     *
-     * @return string
+     * @throws \Concrete\Core\Error\UserMessageException
      */
-    public function saveTranslationsToFile(Translations $translations, $filename);
+    public function saveTranslationsToFile(Translations $translations, string $filename): void;
 
     /**
      * Load \Gettext\Translations from file.
      *
-     * @param string $filename
-     *
-     * @throws UserMessageException
-     *
-     * @return Translations
+     * @throws \Concrete\Core\Error\UserMessageException
      */
-    public function loadTranslationsFromFile($filename);
+    public function loadTranslationsFromFile(string $filename): Translations;
 }

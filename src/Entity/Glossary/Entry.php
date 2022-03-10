@@ -1,23 +1,27 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Entity\Glossary;
 
 use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\ORM\Mapping as ORM;
+use Doctrine\Common\Collections\Collection;
+
+defined('C5_EXECUTE') or die('Access Denied.');
 
 /**
  * Represents an glossary entry.
  *
- * @ORM\Entity(
+ * @Doctrine\ORM\Mapping\Entity(
  *     repositoryClass="CommunityTranslation\Repository\Glossary\Entry",
  * )
- * @ORM\Table(
+ * @Doctrine\ORM\Mapping\Table(
  *     name="CommunityTranslationGlossaryEntries",
  *     uniqueConstraints={
- *         @ORM\UniqueConstraint(name="IDX_CTGlossaryEntryTermType", columns={"term", "type"})
+ *         @Doctrine\ORM\Mapping\UniqueConstraint(name="IDX_CTGlossaryEntryTermType", columns={"term", "type"})
  *     },
  *     indexes={
- *         @ORM\Index(name="IDX_CTGlossaryEntryTermFT", columns={"term"}, flags={"fulltext"})
+ *         @Doctrine\ORM\Mapping\Index(name="IDX_CTGlossaryEntryTermFT", columns={"term"}, flags={"fulltext"})
  *     },
  *     options={"comment": "Glossary entries"}
  * )
@@ -25,155 +29,129 @@ use Doctrine\ORM\Mapping as ORM;
 class Entry
 {
     /**
-     * @return static
+     * Glossary entry ID.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="integer", options={"unsigned": true, "comment": "Glossary entry ID"})
+     * @Doctrine\ORM\Mapping\Id
+     * @Doctrine\ORM\Mapping\GeneratedValue(strategy="AUTO")
+     *
+     * @var int|null
      */
-    public static function create()
-    {
-        $result = new static();
-        $result->comments = '';
-        $result->type = '';
+    protected ?int $id;
 
-        return $result;
-    }
+    /**
+     * Term.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="string", length=255, nullable=false, options={"comment": "Term"})
+     *
+     * @var string
+     */
+    protected string $term;
 
-    protected function __construct()
+    /**
+     * Term type.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="string", length=50, nullable=false, options={"comment": "Term type"})
+     */
+    protected string $type;
+
+    /**
+     * Comments about the term.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="text", nullable=false, options={"comment": "Comments about the term"})
+     */
+    protected string $comments;
+
+    /**
+     * Translations of this entry.
+     *
+     * @Doctrine\ORM\Mapping\OneToMany(targetEntity="CommunityTranslation\Entity\Glossary\Entry\Localized", mappedBy="entry")
+     */
+    protected Collection $translations;
+
+    public function __construct(string $term)
     {
+        $this->id = null;
+        $this->term = $term;
+        $this->comments = '';
+        $this->type = '';
         $this->translations = new ArrayCollection();
     }
 
     /**
-     * Glossary entry ID.
-     *
-     * @ORM\Column(type="integer", options={"unsigned": true, "comment": "Glossary entry ID"})
-     * @ORM\Id
-     * @ORM\GeneratedValue(strategy="AUTO")
-     *
-     * @var int|null
-     */
-    protected $id;
-
-    /**
      * Get the glossary entry ID.
-     *
-     * @return int|null
      */
-    public function getID()
+    public function getID(): ?int
     {
         return $this->id;
     }
 
     /**
-     * Term.
-     *
-     * @ORM\Column(type="string", length=255, nullable=false, options={"comment": "Term"})
-     *
-     * @var string
-     */
-    protected $term;
-
-    /**
      * Set the term.
      *
-     * @param string $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setTerm($value)
+    public function setTerm(string $value): self
     {
-        $this->term = (string) $value;
+        $this->term = $value;
 
         return $this;
     }
 
     /**
      * Get the term.
-     *
-     * @return string
      */
-    public function getTerm()
+    public function getTerm(): string
     {
         return $this->term;
     }
 
     /**
-     * Term type.
-     *
-     * @ORM\Column(type="string", length=50, nullable=false, options={"comment": "Term type"})
-     *
-     * @var string
-     */
-    protected $type;
-
-    /**
      * Set the term type (one of the Entry::CommunityTranslation\Glossary\EntryType:... constants).
      *
-     * @param string $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setType($value)
+    public function setType(string $value): self
     {
-        $this->type = (string) $value;
+        $this->type = $value;
 
         return $this;
     }
 
     /**
      * Get the term type (one of the CommunityTranslation\Glossary\EntryType::... constants).
-     *
-     * @return string
      */
-    public function getType()
+    public function getType(): string
     {
         return $this->type;
     }
 
     /**
-     * Comments about the term.
-     *
-     * @ORM\Column(type="text", nullable=false, options={"comment": "Comments about the term"})
-     *
-     * @var string
-     */
-    protected $comments;
-
-    /**
      * Set the comments about the term.
      *
-     * @param string $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setComments($value)
+    public function setComments(string $value): self
     {
-        $this->comments = (string) $value;
+        $this->comments = $value;
+
+        return $this;
     }
 
     /**
      * Get the comments about the term.
-     *
-     * @return string
      */
-    public function getComments()
+    public function getComments(): string
     {
         return $this->comments;
     }
 
     /**
-     * Translations of this entry.
-     *
-     * @ORM\OneToMany(targetEntity="CommunityTranslation\Entity\Glossary\Entry\Localized", mappedBy="entry")
-     *
-     * @var ArrayCollection
-     */
-    protected $translations;
-
-    /**
      * Get all the associated translations.
      *
-     * @return ArrayCollection
+     * @return \CommunityTranslation\Entity\Glossary\Entry\Localized[]
      */
-    public function getTranslations()
+    public function getTranslations(): Collection
     {
         return $this->translations;
     }

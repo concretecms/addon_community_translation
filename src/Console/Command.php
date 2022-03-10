@@ -1,253 +1,141 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Console;
 
+use Closure;
 use CommunityTranslation\Logging\Handler\ConsoleHandler;
 use CommunityTranslation\Monolog\Handler\TelegramHandler;
+use Concrete\Core\Config\Repository\Repository;
 use Concrete\Core\Console\Command as ConcreteCommand;
-use Concrete\Core\Support\Facade\Application;
-use Exception;
+use Concrete\Core\Error\UserMessageException;
+use Concrete\Core\System\Mutex\MutexInterface;
+use Generator;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\SlackHandler;
 use Monolog\Logger as MonologLogger;
 use Psr\Log\LoggerInterface;
-use ReflectionClass;
-use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Throwable;
 
+defined('C5_EXECUTE') or die('Access Denied.');
+
 abstract class Command extends ConcreteCommand
 {
-    /**
-     * @var \Concrete\Core\Application\Application
-     */
-    protected $app;
+    protected LoggerInterface $logger;
 
-    /**
-     * {@inheritdoc}
-     *
-     * @see \Symfony\Component\Console\Command\Command::__construct()
-     */
-    public function __construct($name = null)
-    {
-        parent::__construct($name);
-        $this->app = Application::getFacadeApplication();
-    }
-
-    /**
-     * @var LoggerInterface|null
-     */
-    protected $logger;
-
-    /**
-     * @var OutputInterface|null
-     */
-    protected $output;
-
-    /**
-     * @var InputInterface|null
-     */
-    protected $input;
-
-    /**
-     * {@inheritdoc}
-     *
-     * @see \Symfony\Component\Console\Command\Command::execute()
-     */
-    protected function execute(InputInterface $input, OutputInterface $output)
-    {
-        $this->input = $input;
-        $this->output = $output;
-        $this->logger = $this->createLogger($input, $output);
-        $error = null;
-        try {
-            $result = $this->executeWithLogger($input);
-        } catch (Exception $x) {
-            $error = $x;
-        } catch (Throwable $x) {
-            $error = $x;
-        }
-        if ($error !== null) {
-            $this->logger->error($this->formatThrowable($error));
-
-            return static::RETURN_CODE_ON_FAILURE;
-        }
-
-        return $result;
-    }
-
-    /**
-     * @param OutputInterface $output
-     *
-     * @return MonologLogger
-     */
-    private function createLogger(InputInterface $input, OutputInterface $output)
+    protected function createLogger(): void
     {
         $logger = new MonologLogger('CommunityTranslation');
-        if (!$input->isInteractive()) {
-            $config = $this->app->make('community_translation/config');
-            if ($config->get('options.nonInteractiveCLICommands.notify')) {
-                $to = $config->get('options.nonInteractiveCLICommands.to');
-                if ($to && is_array($to)) {
-                    $site = $this->app->make('site')->getSite()->getSiteName();
-                    foreach ($to as $toConfig) {
-                        $handler = null;
-                        if (is_array($toConfig) && isset($toConfig['handler'])) {
-                            switch ($toConfig['handler']) {
-                                case 'slack':
-                                    if (isset($toConfig['apiToken']) && $toConfig['apiToken'] && isset($toConfig['channel']) && $toConfig['channel']) {
-                                        $handler = new SlackHandler($toConfig['apiToken'], $toConfig['channel'], 'CommunityTranslation@' . $site);
-                                        $lineFormatter = new LineFormatter('%message%');
-                                        if (method_exists($lineFormatter, 'allowInlineLineBreaks')) {
-                                            $lineFormatter->allowInlineLineBreaks(true);
-                                        }
-                                        $handler->setFormatter($lineFormatter);
-                                    }
-                                    break;
-                                case 'telegram':
-                                    if (isset($toConfig['botToken']) && $toConfig['botToken'] && isset($toConfig['chatID']) && $toConfig['chatID']) {
-                                        $handler = new TelegramHandler($toConfig['botToken'], $toConfig['chatID']);
-                                    }
-                                    break;
-                            }
-                        }
-                        if ($handler !== null) {
-                            $handler->setLevel(MonologLogger::ERROR);
-                            $logger->pushHandler($handler);
-                        }
-                    }
-                }
+        if (!$this->input->isInteractive()) {
+            foreach ($this->buildNonInteractiveLogHandlers() as $handler) {
+                $logger->pushHandler($handler);
             }
         }
-        $logger->pushHandler(new ConsoleHandler($output));
-
-        return $logger;
+        $logger->pushHandler(new ConsoleHandler($this->output));
+        $this->logger = $logger;
     }
 
-    protected function executeWithLogger()
+    protected function getMutexKey(): string
     {
-        throw new Exception('Implement the execute() or the executeWithLogger() method');
+        $chunks = explode('\\', get_class($this));
+
+        return 'CommunityTranslation.' . array_pop($chunks);
     }
 
-    /**
-     * @param Exception|Throwable $error
-     *
-     * @return string
-     */
-    protected function formatThrowable($error)
+    protected function acquireMutex(string $key = ''): Closure
+    {
+        if ($key === '') {
+            $key = $this->getMutexKey();
+        }
+        $mutex = app(MutexInterface::class);
+        $mutex->acquire($key);
+
+        return static function () use ($mutex, $key): void {
+            $mutex->release($key);
+        };
+    }
+
+    protected function formatThrowable(Throwable $error): string
     {
         $message = trim($error->getMessage()) . "\n";
-        if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_VERBOSE) {
-            $file = $error->getFile();
-            if ($file) {
-                $message .= "\nFile:\n$file";
-                $line = $error->getLine();
-                if ($line) {
-                    $message .= ':' . $line;
-                }
-                $message .= "\n";
+        if ($error instanceof UserMessageException || $this->output->getVerbosity() < OutputInterface::VERBOSITY_VERBOSE) {
+            return $message;
+        }
+        $file = (string) $error->getFile();
+        if ($file !== '') {
+            $message .= "\nFile:\n{$file}";
+            $line = $error->getLine();
+            if ($line) {
+                $message .= ":{$line}";
             }
-            if ($this->output->getVerbosity() >= OutputInterface::VERBOSITY_VERY_VERBOSE) {
-                $trace = $error->getTraceAsString();
-                if ($trace) {
-                    $message .= "\nTrace:\n$trace\n";
-                }
-            }
+            $message .= "\n";
+        }
+        if ($this->output->getVerbosity() < OutputInterface::VERBOSITY_VERY_VERBOSE) {
+            return $message;
+        }
+        $trace = (string) $error->getTraceAsString();
+        if ($trace) {
+            $message .= "\nTrace:\n{$trace}\n";
         }
 
         return $message;
     }
 
     /**
-     * @param string|null $lockHandle
-     *
-     * @throws Exception
-     *
-     * @return string
+     * @return \Monolog\Handler\HandlerInterface[]|\Generator
      */
-    private function getLockFilename($lockHandle = null)
+    protected function buildNonInteractiveLogHandlers(): Generator
     {
-        $lockHandle = (string) $lockHandle;
-        if ($lockHandle === '') {
-            $myClass = new ReflectionClass($this);
-            $myFilename = $myClass->getFileName();
-            $lockHandle = $myClass->getShortName() . '-' . sha1($myFilename . DIR_APPLICATION);
+        $config = $this->app->make(Repository::class);
+        if (!$config->get('community_translation::cli.notify')) {
+            return;
         }
-        $config = $this->app->make('community_translation/config');
-        $tempDir = $config->get('options.tempDir');
-        $tempDir = is_string($tempDir) ? rtrim(str_replace(DIRECTORY_SEPARATOR, '/', $tempDir), '/') : '';
-        if ($tempDir === '') {
-            $fh = $this->app->make('helper/file');
-            $tempDir = $fh->getTemporaryDirectory();
-            $tempDir = is_string($tempDir) ? rtrim(str_replace(DIRECTORY_SEPARATOR, '/', $tempDir), '/') : '';
-            if ($tempDir === '') {
-                throw new Exception(t('Unable to retrieve the temporary directory.'));
+        $to = $config->get('community_translation::cli.notifyTo');
+        if (!is_array($to) || $to === []) {
+            return;
+        }
+        $site = $this->app->make('site')->getSite()->getSiteName();
+        foreach ($to as $toConfig) {
+            if (!is_array($toConfig) || !is_string($toConfig['handler'] ?? null)) {
+                continue;
             }
-        }
-        $locksDir = $tempDir . '/command-locks';
-        if (!@is_dir($locksDir)) {
-            @mkdir($locksDir, DIRECTORY_PERMISSIONS_MODE_COMPUTED, true);
-            if (!@is_dir($locksDir)) {
-                throw new Exception(t('Unable to create a temporary directory.'));
+            if (!($config['enabled'] ?? true)) {
+                continue;
             }
-        }
-
-        return $locksDir . "/$lockHandle.lock";
-    }
-
-    private $lockHandles = [];
-
-    /**
-     * @param int $maxWaitSeconds
-     * @param string|null $lockHandle
-     *
-     * @return bool
-     */
-    protected function acquireLock($maxWaitSeconds = 5, $lockHandle = null)
-    {
-        $lockFile = $this->getLockFilename($lockHandle);
-        if (isset($this->lockHandles[$lockFile])) {
-            $result = true;
-        } else {
-            $startTime = time();
-            $result = false;
-            $fd = null;
-            while ($result === false) {
-                $fd = @fopen($lockFile, 'w');
-                if ($fd !== false) {
-                    if (@flock($fd, LOCK_EX | LOCK_NB) === true) {
-                        $result = true;
-                        break;
-                    } else {
-                        @fclose($fd);
+            $level = is_int($toConfig['level'] ?? null) ? $toConfig['level'] : MonologLogger::ERROR;
+            switch ($toConfig['handler']) {
+                case 'slack':
+                    if (is_string($toConfig['apiToken'] ?? null) && $toConfig['apiToken'] !== '' && is_string($toConfig['channel'] ?? null) && $toConfig['channel'] !== '') {
+                        $handler = new SlackHandler(
+                            // $token
+                            $toConfig['apiToken'],
+                            // $channel
+                            $toConfig['channel'],
+                            // $username
+                            'CommunityTranslation@' . $site,
+                            // $useAttachment
+                            true,
+                            // $iconEmoji
+                            null,
+                            // $level
+                            $level
+                        );
+                        $lineFormatter = new LineFormatter('%message%');
+                        if (method_exists($lineFormatter, 'allowInlineLineBreaks')) {
+                            $lineFormatter->allowInlineLineBreaks(true);
+                        }
+                        $handler->setFormatter($lineFormatter);
                     }
-                }
-                $elapsedTime = time() - $startTime;
-                if ($elapsedTime >= $maxWaitSeconds) {
+                    yield $handler;
                     break;
-                }
-                sleep(1);
+                case 'telegram':
+                    if (is_string($toConfig['botToken'] ?? null) && $toConfig['botToken'] !== '' && is_scalar($toConfig['chatID'] ?? []) && (string) $toConfig['chatID'] !== '') {
+                        yield new TelegramHandler($this->app, $toConfig['botToken'], $toConfig['chatID'], $level);
+                    }
+                    break;
             }
-            if ($result === true) {
-                $this->lockHandles[$lockFile] = $fd;
-            }
-        }
-
-        return $result;
-    }
-
-    /**
-     * @param string|null $lockHandle
-     */
-    protected function releaseLock($lockHandle = null)
-    {
-        $lockFile = $this->getLockFilename($lockHandle);
-        if (isset($this->lockHandles[$lockFile])) {
-            $fd = $this->lockHandles[$lockFile];
-            unset($this->lockHandles[$lockFile]);
-            @flock($fd, LOCK_UN);
-            @fclose($fd);
-            @unlink($lockFile);
         }
     }
 }

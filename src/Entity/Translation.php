@@ -1,441 +1,358 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Entity;
 
 use Concrete\Core\Entity\User\User as UserEntity;
-use DateTime;
-use Doctrine\ORM\Mapping as ORM;
+use DateTimeImmutable;
+
+defined('C5_EXECUTE') or die('Access Denied.');
 
 /**
  * Represents an translated string.
  *
- * @ORM\Entity(
+ * @Doctrine\ORM\Mapping\Entity(
  *     repositoryClass="CommunityTranslation\Repository\Translation",
  * )
- * @ORM\Table(
+ * @Doctrine\ORM\Mapping\Table(
  *     name="CommunityTranslationTranslations",
  *     uniqueConstraints={
- *         @ORM\UniqueConstraint(name="IDX_CTTranslationLocaleTranslatableCurrent", columns={"locale", "translatable", "current"})
+ *         @Doctrine\ORM\Mapping\UniqueConstraint(name="IDX_CTTranslationLocaleTranslatableCurrent", columns={"locale", "translatable", "current"})
  *     },
  *     indexes={
- *         @ORM\Index(name="IDX_CTTranslationCreatorSince", columns={"currentSince", "createdBy"})
+ *         @Doctrine\ORM\Mapping\Index(name="IDX_CTTranslationCreatorSince", columns={"currentSince", "createdBy"})
  *     },
  *     options={"comment": "Translated strings"}
  * )
  */
 class Translation
 {
-    public static function create(Locale $locale, Translatable $translatable, $singularText, UserEntity $createdBy = null)
-    {
-        $result = new static();
-        $result->locale = $locale;
-        $result->translatable = $translatable;
-        $result->createdOn = new DateTime();
-        $result->createdBy = $createdBy;
-        $result->current = null;
-        $result->currentSince = null;
-        $result->approved = null;
-        $result->text0 = (string) $singularText;
-        $result->text1 = '';
-        $result->text2 = '';
-        $result->text3 = '';
-        $result->text4 = '';
-        $result->text5 = '';
-
-        return $result;
-    }
-
-    protected function __construct()
-    {
-    }
-
     /**
      * Translation ID.
      *
-     * @ORM\Column(type="integer", options={"unsigned": true, "comment": "Translation ID"})
-     * @ORM\Id
-     * @ORM\GeneratedValue(strategy="AUTO")
-     *
-     * @var int|null
+     * @Doctrine\ORM\Mapping\Column(type="integer", options={"unsigned": true, "comment": "Translation ID"})
+     * @Doctrine\ORM\Mapping\Id
+     * @Doctrine\ORM\Mapping\GeneratedValue(strategy="AUTO")
      */
-    protected $id;
+    protected ?int $id;
+
+    /**
+     * Associated Locale.
+     *
+     * @Doctrine\ORM\Mapping\ManyToOne(targetEntity="CommunityTranslation\Entity\Locale", inversedBy="translations")
+     * @Doctrine\ORM\Mapping\JoinColumn(name="locale", referencedColumnName="id", nullable=false, onDelete="CASCADE")
+     */
+    protected Locale $locale;
+
+    /**
+     * Associated Translatable.
+     *
+     * @Doctrine\ORM\Mapping\ManyToOne(targetEntity="CommunityTranslation\Entity\Translatable", inversedBy="translations")
+     * @Doctrine\ORM\Mapping\JoinColumn(name="translatable", referencedColumnName="id", nullable=false, onDelete="CASCADE")
+     */
+    protected Translatable $translatable;
+
+    /**
+     * Record creation date/time.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="datetime_immutable", nullable=false, options={"comment": "Record creation date/time"})
+     */
+    protected DateTimeImmutable $createdOn;
+
+    /**
+     * User that submitted this translation.
+     *
+     * @Doctrine\ORM\Mapping\ManyToOne(targetEntity="Concrete\Core\Entity\User\User")
+     * @Doctrine\ORM\Mapping\JoinColumn(name="createdBy", referencedColumnName="uID", nullable=true, onDelete="SET NULL")
+     */
+    protected ?UserEntity $createdBy;
+
+    /**
+     * Is this the current translation? (true: yes, null: no).
+     *
+     * @Doctrine\ORM\Mapping\Column(type="boolean", nullable=true, options={"comment": "Is this the current translation? (true: yes, null: no)"})
+     */
+    protected ?bool $current;
+
+    /**
+     * Since when is this the current translation?
+     *
+     * @Doctrine\ORM\Mapping\Column(type="datetime_immutable", nullable=true, options={"comment": "Since when is this the current translation?"})
+     */
+    protected ?DateTimeImmutable $currentSince;
+
+    /**
+     * Translation is approved (true: yes, false: no, null: pending review).
+     *
+     * @Doctrine\ORM\Mapping\Column(type="boolean", nullable=true, options={"comment": "Translation is approved (true: yes, false: no, null: pending review)"})
+     */
+    protected ?bool $approved;
+
+    /**
+     * Translation (singular / plural 0).
+     *
+     * @Doctrine\ORM\Mapping\Column(type="text", nullable=false, options={"comment": "Translation (singular / plural 0)"})
+     */
+    protected string $text0;
+
+    /**
+     * Translation (plural 1).
+     *
+     * @Doctrine\ORM\Mapping\Column(type="text", nullable=false, options={"comment": "Translation (plural 1)"})
+     */
+    protected string $text1;
+
+    /**
+     * Translation (plural 2).
+     *
+     * @Doctrine\ORM\Mapping\Column(type="text", nullable=false, options={"comment": "Translation (plural 2)"})
+     */
+    protected string $text2;
+
+    /**
+     * Translation (plural 3).
+     *
+     * @Doctrine\ORM\Mapping\Column(type="text", nullable=false, options={"comment": "Translation (plural 3)"})
+     */
+    protected string $text3;
+
+    /**
+     * Translation (plural 4).
+     *
+     * @Doctrine\ORM\Mapping\Column(type="text", nullable=false, options={"comment": "Translation (plural 4)"})
+     */
+    protected string $text4;
+
+    /**
+     * Translation (plural 5).
+     *
+     * @Doctrine\ORM\Mapping\Column(type="text", nullable=false, options={"comment": "Translation (plural 5)"})
+     */
+    protected string $text5;
+
+    public function __construct(Locale $locale, Translatable $translatable, string $singularText, ?UserEntity $createdBy = null)
+    {
+        $this->id = null;
+        $this->locale = $locale;
+        $this->translatable = $translatable;
+        $this->createdOn = new DateTimeImmutable();
+        $this->createdBy = $createdBy;
+        $this->current = null;
+        $this->currentSince = null;
+        $this->approved = null;
+        $this->text0 = $singularText;
+        $this->text1 = '';
+        $this->text2 = '';
+        $this->text3 = '';
+        $this->text4 = '';
+        $this->text5 = '';
+    }
 
     /**
      * Get the translation ID.
-     *
-     * @return int
      */
-    public function getID()
+    public function getID(): ?int
     {
         return $this->id;
     }
 
     /**
-     * Associated Locale.
-     *
-     * @ORM\ManyToOne(targetEntity="CommunityTranslation\Entity\Locale", inversedBy="translations")
-     * @ORM\JoinColumn(name="locale", referencedColumnName="id", nullable=false, onDelete="CASCADE")
-     *
-     * @var string
-     */
-    protected $locale;
-
-    /**
      * Get the associated locale.
-     *
-     * @return Locale
      */
-    public function getLocale()
+    public function getLocale(): Locale
     {
         return $this->locale;
     }
 
     /**
-     * Associated Translatable.
-     *
-     * @ORM\ManyToOne(targetEntity="CommunityTranslation\Entity\Translatable", inversedBy="translations")
-     * @ORM\JoinColumn(name="translatable", referencedColumnName="id", nullable=false, onDelete="CASCADE")
-     *
-     * @var Translatable
-     */
-    protected $translatable;
-
-    /**
      * Get the associated Translatable.
-     *
-     * @return Translatable
      */
-    public function getTranslatable()
+    public function getTranslatable(): Translatable
     {
         return $this->translatable;
     }
 
     /**
-     * Record creation date/time.
-     *
-     * @ORM\Column(type="datetime", nullable=false, options={"comment": "Record creation date/time"})
-     *
-     * @var DateTime
-     */
-    protected $createdOn;
-
-    /**
      * Get the record creation date/time.
-     *
-     * @return DateTime
      */
-    public function getCreatedOn()
+    public function getCreatedOn(): DateTimeImmutable
     {
         return $this->createdOn;
     }
 
     /**
-     * User that submitted this translation.
-     *
-     * @ORM\ManyToOne(targetEntity="Concrete\Core\Entity\User\User")
-     * @ORM\JoinColumn(name="createdBy", referencedColumnName="uID", nullable=true, onDelete="SET NULL")
-     *
-     * @var UserEntity|null
+     * Get the user that submitted this translation (if available).
      */
-    protected $createdBy;
-
-    /**
-     * Get the ID of the user that submitted this translation.
-     *
-     * @return int
-     */
-    public function getCreatedBy()
+    public function getCreatedBy(): ?UserEntity
     {
         return $this->createdBy;
     }
 
     /**
-     * Is this the current translation? (true: yes, null: no).
-     *
-     * @ORM\Column(type="boolean", nullable=true, options={"comment": "Is this the current translation? (true: yes, null: no)"})
-     *
-     * @var true|null
-     */
-    protected $current;
-
-    /**
      * Is this the current translation?
      *
-     * @param bool $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setIsCurrent($value)
+    public function setIsCurrent(bool $value): self
     {
-        if ($value) {
-            $this->current = true;
-        } else {
-            $this->current = null;
-        }
+        $this->current = $value ? true : null;
 
         return $this;
     }
 
     /**
      * Is this the current translation?
-     *
-     * @return bool
      */
-    public function isCurrent()
+    public function isCurrent(): bool
     {
-        return (bool) $this->current;
+        return $this->current === null ? false : $this->current;
     }
 
     /**
      * Since when is this the current translation?
-     *
-     * @ORM\Column(type="datetime", nullable=true, options={"comment": "Since when is this the current translation?"})
-     *
-     * @var DateTime|null
      */
-    protected $currentSince;
-
-    /**
-     * Since when is this the current translation?
-     *
-     * @return DateTime|null
-     */
-    public function getCurrentSince()
+    public function getCurrentSince(): ?DateTimeImmutable
     {
         return $this->currentSince;
     }
 
     /**
-     * Translation is approved (true: yes, false: no, null: pending review).
-     *
-     * @ORM\Column(type="boolean", nullable=true, options={"comment": "Translation is approved (true: yes, false: no, null: pending review)"})
-     *
-     * @var bool|null
-     */
-    protected $approved;
-
-    /**
      * Is the translation approved? (true: yes, false: no, null: pending review).
      *
-     * @param bool|null $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setIsApproved($value)
+    public function setIsApproved(?bool $value): self
     {
-        if ($value === null || $value === '') {
-            $this->approved = null;
-        } else {
-            $this->approved = (bool) $value;
-        }
+        $this->approved = $value;
 
         return $this;
     }
 
     /**
      * Is the translation approved? (true: yes, false: no, null: pending review).
-     *
-     * @return bool|null
      */
-    public function isApproved()
+    public function isApproved(): ?bool
     {
         return $this->approved;
     }
 
     /**
-     * Translation (singular / plural 0).
-     *
-     * @ORM\Column(type="text", nullable=false, options={"comment": "Translation (singular / plural 0)"})
-     *
-     * @var string
-     */
-    protected $text0;
-
-    /**
      * Set the translation (singular / plural 0).
      *
-     * @param string $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setText0($value)
+    public function setText0(string $value): self
     {
-        $this->text0 = (string) $value;
+        $this->text0 = $value;
 
         return $this;
     }
 
     /**
      * Get the translation (singular / plural 0).
-     *
-     * @return string
      */
-    public function getText0()
+    public function getText0(): string
     {
         return $this->text0;
     }
 
     /**
-     * Translation (plural 1).
-     *
-     * @ORM\Column(type="text", nullable=false, options={"comment": "Translation (plural 1)"})
-     *
-     * @var string
-     */
-    protected $text1;
-
-    /**
      * Set the translation (plural 1).
      *
-     * @param string $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setText1($value)
+    public function setText1(string $value): self
     {
-        $this->text1 = (string) $value;
+        $this->text1 = $value;
 
         return $this;
     }
 
     /**
      * Get the translation (plural 1).
-     *
-     * @return string
      */
-    public function getText1()
+    public function getText1(): string
     {
         return $this->text1;
     }
 
     /**
-     * Translation (plural 2).
-     *
-     * @ORM\Column(type="text", nullable=false, options={"comment": "Translation (plural 2)"})
-     *
-     * @var string
-     */
-    protected $text2;
-
-    /**
      * Set the translation (plural 2).
      *
-     * @param string $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setText2($value)
+    public function setText2(string $value): self
     {
-        $this->text2 = (string) $value;
+        $this->text2 = $value;
 
         return $this;
     }
 
     /**
      * Get the translation (plural 2).
-     *
-     * @return string
      */
-    public function getText2()
+    public function getText2(): string
     {
         return $this->text2;
     }
 
     /**
-     * Translation (plural 3).
-     *
-     * @ORM\Column(type="text", nullable=false, options={"comment": "Translation (plural 3)"})
-     *
-     * @var string
-     */
-    protected $text3;
-
-    /**
      * Set the translation (plural 3).
      *
-     * @param string $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setText3($value)
+    public function setText3(string $value): self
     {
-        $this->text3 = (string) $value;
+        $this->text3 = $value;
 
         return $this;
     }
 
     /**
      * Get the translation (plural 3).
-     *
-     * @return string
      */
-    public function getText3()
+    public function getText3(): string
     {
         return $this->text3;
     }
 
     /**
-     * Translation (plural 4).
-     *
-     * @ORM\Column(type="text", nullable=false, options={"comment": "Translation (plural 4)"})
-     *
-     * @var string
-     */
-    protected $text4;
-
-    /**
      * Set the translation (plural 4).
      *
-     * @param string $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setText4($value)
+    public function setText4(string $value): self
     {
-        $this->text4 = (string) $value;
+        $this->text4 = $value;
 
         return $this;
     }
 
     /**
      * Get the translation (plural 4).
-     *
-     * @return string
      */
-    public function getText4()
+    public function getText4(): string
     {
         return $this->text4;
     }
 
     /**
-     * Translation (plural 5).
-     *
-     * @ORM\Column(type="text", nullable=false, options={"comment": "Translation (plural 5)"})
-     *
-     * @var string
-     */
-    protected $text5;
-
-    /**
      * Set the translation (plural 5).
      *
-     * @param string $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setText5($value)
+    public function setText5(string $value): self
     {
-        $this->text5 = (string) $value;
+        $this->text5 = $value;
 
         return $this;
     }
 
     /**
      * Get the translation (plural 5).
-     *
-     * @return string
      */
-    public function getText5()
+    public function getText5(): string
     {
         return $this->text5;
     }

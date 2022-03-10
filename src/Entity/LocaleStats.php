@@ -1,16 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Entity;
 
-use Doctrine\ORM\Mapping as ORM;
+defined('C5_EXECUTE') or die('Access Denied.');
 
 /**
  * Statistical data about a locale.
  *
- * @ORM\Entity(
+ * @Doctrine\ORM\Mapping\Entity(
  *     repositoryClass="CommunityTranslation\Repository\LocaleStats",
  * )
- * @ORM\Table(
+ * @Doctrine\ORM\Mapping\Table(
  *     name="CommunityTranslationLocaleStats",
  *     options={"comment": "Statistical data about a locale"}
  * )
@@ -18,97 +20,86 @@ use Doctrine\ORM\Mapping as ORM;
 class LocaleStats
 {
     /**
-     * Create a new (unsaved) instance.
-     *
-     * @param Locale $locale
-     * @param int $numTranslatable
-     * @param int $numApprovedTranslations
-     *
-     * @return static
-     */
-    public static function create(Locale $locale, $numTranslatable, $numApprovedTranslations)
-    {
-        $result = new static();
-        $result->locale = $locale;
-        $result->numTranslatable = (int) $numTranslatable;
-        $result->numApprovedTranslations = (int) $numApprovedTranslations;
-
-        return $result;
-    }
-
-    protected function __construct()
-    {
-    }
-
-    /**
      * Associated Locale.
      *
-     * @ORM\ManyToOne(targetEntity="CommunityTranslation\Entity\Locale", inversedBy="translations")
-     * @ORM\JoinColumn(name="locale", referencedColumnName="id", nullable=false, onDelete="CASCADE")
-     * @ORM\Id
-     *
-     * @var Locale
+     * @Doctrine\ORM\Mapping\ManyToOne(targetEntity="CommunityTranslation\Entity\Locale", inversedBy="translations")
+     * @Doctrine\ORM\Mapping\JoinColumn(name="locale", referencedColumnName="id", nullable=false, onDelete="CASCADE")
+     * @Doctrine\ORM\Mapping\Id
      */
-    protected $locale;
+    protected Locale $locale;
 
     /**
      * Number of translatable strings.
      *
-     * @ORM\Column(type="integer", nullable=false, options={"unsigned": true, "comment": "Number of translatable strings"})
-     *
-     * @var int
+     * @Doctrine\ORM\Mapping\Column(type="integer", nullable=false, options={"unsigned": true, "comment": "Number of translatable strings"})
      */
-    protected $numTranslatable;
+    protected int $numTranslatable;
+
+    /**
+     * Number of approved translations.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="integer", nullable=false, options={"unsigned": true, "comment": "Number of approved translations"})
+     */
+    protected int $numApprovedTranslations;
+
+    public function __construct(Locale $locale, int $numTranslatable, int $numApprovedTranslations)
+    {
+        $this->locale = $locale;
+        $this->numTranslatable = $numTranslatable;
+        $this->numApprovedTranslations = $numApprovedTranslations;
+    }
 
     /**
      * Get the number of translatable strings.
-     *
-     * @return int
      */
-    public function getNumTranslatable()
+    public function getNumTranslatable(): int
     {
         return $this->numTranslatable;
     }
 
     /**
-     * Number of approved translations.
-     *
-     * @ORM\Column(type="integer", nullable=false, options={"unsigned": true, "comment": "Number of approved translations"})
-     *
-     * @var int
-     */
-    protected $numApprovedTranslations;
-
-    /**
      * Get the number of approved translations.
-     *
-     * @return int
      */
-    public function getNumApprovedTranslations()
+    public function getNumApprovedTranslations(): int
     {
         return $this->numApprovedTranslations;
     }
 
     /**
-     * Get the translation progress.
-     *
-     * @param bool $round
-     *
-     * @return int|float
+     * Get the actual translation progress.
      */
-    public function getPercentage($round = true)
+    public function getPercentage(): float
     {
         if ($this->numApprovedTranslations === 0 || $this->numTranslatable === 0) {
-            $result = $round ? 0 : 0.0;
-        } elseif ($this->numApprovedTranslations === $this->numTranslatable) {
-            $result = $round ? 100 : 100.0;
-        } else {
-            $result = $this->numApprovedTranslations * 100.0 / $this->numTranslatable;
-            if ($round) {
-                $result = max(1, min(99, (int) round($result)));
-            }
+            return 0.0;
+        }
+        if ($this->numApprovedTranslations === $this->numTranslatable) {
+            return 100.0;
         }
 
-        return $result;
+        return $this->numApprovedTranslations * 100.0 / $this->numTranslatable;
+    }
+
+    /**
+     * Get the rounded translation progress (0 it exactly 0%, 100 if exactly 100%, a number between 1 and 99 otherwise).
+     */
+    public function getRoundedPercentage(): int
+    {
+        $float = $this->getPercentage();
+        if ($float === 0.0) {
+            return 0;
+        }
+        if ($float === 100.0) {
+            return 100;
+        }
+        $int = (int) round($float);
+        if ($int < 1) {
+            return 1;
+        }
+        if ($int > 99) {
+            return 99;
+        }
+
+        return $int;
     }
 }

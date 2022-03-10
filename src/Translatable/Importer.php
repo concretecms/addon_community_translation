@@ -1,104 +1,64 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Translatable;
 
 use CommunityTranslation\Entity\Package as PackageEntity;
 use CommunityTranslation\Entity\Package\Version as PackageVersionEntity;
 use CommunityTranslation\Entity\Translatable as TranslatableEntity;
 use CommunityTranslation\Parser\ParserInterface;
-use CommunityTranslation\Repository\Package as PackageRepository;
+use CommunityTranslation\Service\SourceLocale;
 use Concrete\Core\Application\Application;
-use Concrete\Core\Error\UserMessageException;
-use DateTime;
+use Concrete\Core\Events\EventDispatcher;
+use DateTimeImmutable;
+use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManager;
-use Exception;
 use Gettext\Translations;
 use Symfony\Component\EventDispatcher\GenericEvent;
+use Throwable;
 
-class Importer
+defined('C5_EXECUTE') or die('Access Denied.');
+
+final class Importer
 {
-    const IMPORT_BATCH_SIZE = 50;
+    private const IMPORT_BATCH_SIZE = 50;
 
-    /**
-     * The application object.
-     *
-     * @var Application
-     */
-    protected $app;
+    private Application $app;
 
-    /**
-     * Entity manager.
-     *
-     * @var EntityManager
-     */
-    protected $em;
+    private EntityManager $em;
 
-    /**
-     * Parser.
-     *
-     * @var ParserInterface
-     */
-    protected $parser;
+    private ParserInterface $parser;
 
-    /**
-     * The events director.
-     *
-     * @var \Symfony\Component\EventDispatcher\EventDispatcher
-     */
-    protected $events;
+    private EventDispatcher $events;
 
-    /**
-     * @param Application $app
-     * @param EntityManager $em
-     * @param ParserInterface $parser
-     */
     public function __construct(Application $app, EntityManager $em, ParserInterface $parser)
     {
         $this->app = $app;
         $this->em = $em;
         $this->parser = $parser;
-        $this->events = $this->app->make('director');
+        $this->events = $this->app->make(EventDispatcher::class);
     }
 
     /**
      * Parse a directory and extract the translatable strings, and import them into the database.
      *
-     * @param string $directory
-     * @param string $packageHandle
-     * @param string $packageVersion
-     * @param string $basePlacesDirectory
-     *
-     * @throws UserMessageException
+     * @throws \Concrete\Core\Error\UserMessageException
      *
      * @return bool returns true if some translatable strings changed, false otherwise
      */
-    public function importDirectory($directory, $packageHandle, $packageVersion, $basePlacesDirectory)
+    public function importDirectory(string $directory, string $packageHandle, string $packageVersion, string $basePlacesDirectory): bool
     {
         $parsed = $this->parser->parseDirectory($packageHandle, $packageVersion, $directory, $basePlacesDirectory, ParserInterface::DICTIONARY_NONE);
         $translations = $parsed ? $parsed->getSourceStrings() : null;
         if ($translations === null) {
+            $sourceLocale = $this->app->make(SourceLocale::class)->getRequiredSourceLocale();
             $translations = new Translations();
-            $translations->setLanguage($this->app->make('community_translation/sourceLocale'));
+            $translations->setLanguage($sourceLocale->getID());
+            $translations->setPluralForms($sourceLocale->getPluralCount(), $sourceLocale->getPluralFormula());
         }
 
         return $this->importTranslations($translations, $packageHandle, $packageVersion);
-    }
-
-    /**
-     * @param int $packageVersionID
-     * @param int $numRecords
-     *
-     * @return string
-     */
-    private function buildInsertTranslatablePlacesSQL(PackageVersionEntity $packageVersion, $numRecords)
-    {
-        $fields = '(packageVersion, translatable, locations, comments, sort)';
-        $values = '(' . $packageVersion->getID() . ', ?, ?, ?, ?),';
-        $sql = 'INSERT INTO CommunityTranslationTranslatablePlaces ';
-        $sql .= ' ' . $fields;
-        $sql .= ' VALUES ' . rtrim(str_repeat($values, $numRecords), ',');
-
-        return $sql;
     }
 
     /**
@@ -107,60 +67,52 @@ class Importer
      * This function works directly with the database, not with entities (so that working on thousands of strings requires seconds instead of minutes).
      * This implies that entities related to Translatable may become invalid.
      *
-     * @param Translations $translations The strings to be imported
-     * @param string $packageHandle The package handle
-     * @param string $packageVersion The package version
-     *
-     * @throws UserMessageException
+     * @throws \Concrete\Core\Error\UserMessageException
      *
      * @return bool returns true if some translatable strings changed, false otherwise
      */
-    public function importTranslations(Translations $translations, $packageHandle, $packageVersion)
+    public function importTranslations(Translations $translations, string $packageHandle, string $packageVersion): bool
     {
-        $packageRepo = $this->app->make(PackageRepository::class);
+        $packageIsNew = true;
         $someStringChanged = false;
         $numStringsAdded = 0;
-        $connection = $this->em->getConnection();
-        $connection->beginTransaction();
-        try {
+        $version = null;
+        $this->em->getConnection()->transactional(function (Connection $connection) use ($translations, $packageHandle, $packageVersion, &$packageIsNew, &$numStringsAdded, &$version) {
+            $packageRepo = $this->em->getRepository(PackageEntity::class);
             $package = $packageRepo->findOneBy(['handle' => $packageHandle]);
+            $version = null;
             if ($package === null) {
-                $package = PackageEntity::create($packageHandle);
+                $package = new PackageEntity($packageHandle);
                 $this->em->persist($package);
                 $this->em->flush($package);
-            }
-            $version = null;
-            $packageIsNew = true;
-            foreach ($package->getVersions() as $pv) {
-                $packageIsNew = false;
-                if (version_compare($pv->getVersion(), $packageVersion) === 0) {
-                    $version = $pv;
-                    break;
+            } else {
+                foreach ($package->getVersions() as $pv) {
+                    $packageIsNew = false;
+                    if (version_compare($pv->getVersion(), $packageVersion) === 0) {
+                        $version = $pv;
+                        break;
+                    }
                 }
             }
             if ($version === null) {
                 $packageVersionIsNew = true;
-                $version = PackageVersionEntity::create($package, $packageVersion);
+                $version = new PackageVersionEntity($package, $packageVersion);
                 $this->em->persist($version);
                 $this->em->flush($version);
             } else {
                 $packageVersionIsNew = false;
             }
-
             $searchHash = $connection->prepare('SELECT id FROM CommunityTranslationTranslatables WHERE hash = ? LIMIT 1')->getWrappedStatement();
-            /* @var \Concrete\Core\Database\Driver\PDOStatement $searchHash */
             $insertTranslatable = $connection->prepare('INSERT INTO CommunityTranslationTranslatables SET hash = ?, context = ?, text = ?, plural = ?')->getWrappedStatement();
-            /* @var \Concrete\Core\Database\Driver\PDOStatement $insertTranslatable */
             $insertPlaces = $connection->prepare($this->buildInsertTranslatablePlacesSQL($version, self::IMPORT_BATCH_SIZE))->getWrappedStatement();
-            /* @var \Concrete\Core\Database\Driver\PDOStatement $insertPlaces */
             if ($packageVersionIsNew) {
                 $prevHash = null;
             } else {
-                $prevHash = (string) $connection->fetchColumn(
+                $prevHash = (string) $connection->fetchOne(
                     'select md5(group_concat(translatable)) from CommunityTranslationTranslatablePlaces where packageVersion = ? order by translatable',
                     [$version->getID()]
                 );
-                $connection->executeQuery(
+                $connection->executeStatement(
                     'delete from CommunityTranslationTranslatablePlaces where packageVersion = ?',
                     [$version->getID()]
                 );
@@ -169,12 +121,11 @@ class Importer
             $insertPlacesCount = 0;
             $importCount = 0;
             foreach ($translations as $translationKey => $translation) {
-                /* @var \Gettext\Translation $translation */
+                /** @var \Gettext\Translation $translation */
                 $plural = $translation->getPlural();
-                $hash = md5(($plural === '') ? $translationKey : "$translationKey\005$plural");
+                $hash = TranslatableEntity::generateHashFromGettextKey($translationKey, $plural);
                 $searchHash->execute([$hash]);
-                $translatableID = $searchHash->fetchColumn(0);
-                $searchHash->closeCursor();
+                $translatableID = $searchHash->fetchOne();
                 if ($translatableID === false) {
                     $insertTranslatable->execute([
                         $hash,
@@ -184,7 +135,7 @@ class Importer
                     ]);
                     $translatableID = (int) $connection->lastInsertId();
                     $someStringChanged = true;
-                    ++$numStringsAdded;
+                    $numStringsAdded++;
                 } else {
                     $translatableID = (int) $translatableID;
                 }
@@ -200,22 +151,22 @@ class Importer
                 $insertPlacesParams[] = serialize($translation->getExtractedComments());
                 // sort
                 $insertPlacesParams[] = $importCount;
-                ++$insertPlacesCount;
+                $insertPlacesCount++;
                 if ($insertPlacesCount === self::IMPORT_BATCH_SIZE) {
                     $insertPlaces->execute($insertPlacesParams);
                     $insertPlacesParams = [];
                     $insertPlacesCount = 0;
                 }
-                ++$importCount;
+                $importCount++;
             }
             if ($insertPlacesCount > 0) {
-                $connection->executeQuery(
+                $connection->executeStatement(
                     $this->buildInsertTranslatablePlacesSQL($version, $insertPlacesCount),
                     $insertPlacesParams
                 );
             }
             if ($someStringChanged === false && !$packageVersionIsNew) {
-                $newHash = (string) $connection->fetchColumn(
+                $newHash = (string) $connection->fetchOne(
                     'select md5(group_concat(translatable)) from CommunityTranslationTranslatablePlaces where packageVersion = ? order by translatable',
                     [$version->getID()]
                 );
@@ -224,20 +175,12 @@ class Importer
                 }
             }
             if ($someStringChanged) {
-                $version->setUpdatedOn(new DateTime());
+                $version->setUpdatedOn(new DateTimeImmutable());
                 $this->em->persist($version);
                 $this->em->flush($version);
                 $this->em->clear(TranslatableEntity::class);
             }
-            $connection->commit();
-        } catch (Exception $x) {
-            try {
-                $connection->rollBack();
-            } catch (Exception $foo) {
-            }
-            throw $x;
-        }
-
+        });
         if ($someStringChanged) {
             try {
                 $this->events->dispatch(
@@ -250,10 +193,21 @@ class Importer
                         ]
                     )
                 );
-            } catch (Exception $foo) {
+            } catch (Throwable $foo) {
             }
         }
 
         return $someStringChanged;
+    }
+
+    private function buildInsertTranslatablePlacesSQL(PackageVersionEntity $packageVersion, int $numRecords): string
+    {
+        $fields = '(packageVersion, translatable, locations, comments, sort)';
+        $values = '(' . $packageVersion->getID() . ', ?, ?, ?, ?),';
+        $sql = 'INSERT INTO CommunityTranslationTranslatablePlaces ';
+        $sql .= ' ' . $fields;
+        $sql .= ' VALUES ' . rtrim(str_repeat($values, $numRecords), ',');
+
+        return $sql;
     }
 }

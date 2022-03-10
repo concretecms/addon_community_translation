@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Concrete\Package\CommunityTranslation\Block\FillTranslations;
 
 use CommunityTranslation\Controller\BlockController;
@@ -8,116 +10,163 @@ use CommunityTranslation\Repository\Locale as LocaleRepository;
 use CommunityTranslation\Repository\LocaleStats as LocaleStatsRepository;
 use CommunityTranslation\Repository\Package as PackageRepository;
 use CommunityTranslation\Repository\Stats as StatsRepository;
-use CommunityTranslation\Service\IPControlLog;
-use CommunityTranslation\Service\RateLimit;
-use CommunityTranslation\Service\VolatileDirectory;
+use CommunityTranslation\Service\VolatileDirectoryCreator;
 use CommunityTranslation\Translation\Exporter;
+use Concrete\Core\Config\Repository\Repository;
+use Concrete\Core\Entity\Permission\IpAccessControlCategory;
 use Concrete\Core\Error\UserMessageException;
 use Concrete\Core\Http\ResponseFactoryInterface;
-use DateTime;
-use Exception;
+use Concrete\Core\Permission\IpAccessControlService;
+use Concrete\Core\Url\Resolver\Manager\ResolverManagerInterface;
+use Doctrine\ORM\EntityManagerInterface;
 use Gettext\Generators\Mo as MOGenerator;
 use Illuminate\Filesystem\Filesystem;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
+use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 use ZipArchive;
 
+defined('C5_EXECUTE') or die('Access Denied.');
+
 class Controller extends BlockController
 {
-    public $helpers = [];
-
-    protected $btTable = 'btCTFillTranslations';
-
-    protected $btInterfaceWidth = 600;
-    protected $btInterfaceHeight = 520;
-
-    protected $btCacheBlockRecord = true;
-    protected $btCacheBlockOutput = false;
-    protected $btCacheBlockOutputOnPost = false;
-    protected $btCacheBlockOutputForRegisteredUsers = false;
-
-    protected $btCacheBlockOutputLifetime = 0; // 86400 = 1 day
-
-    protected $btSupportsInlineEdit = false;
-    protected $btSupportsInlineAdd = false;
-
-    public $rateLimit_maxRequests;
-    public $rateLimit_timeWindow;
+    /**
+     * @var int|string|null
+     */
     public $maxFileSize;
+
+    /**
+     * @var int|string|null
+     */
     public $maxLocalesCount;
+
+    /**
+     * @var int|string|null
+     */
     public $maxStringsCount;
+
+    /**
+     * @var string|null
+     */
     public $statsFromPackage;
 
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::$helpers
+     */
+    protected $helpers = [];
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::$btTable
+     */
+    protected $btTable = 'btCTFillTranslations';
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::$btInterfaceWidth
+     */
+    protected $btInterfaceWidth = 600;
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::$btInterfaceHeight
+     */
+    protected $btInterfaceHeight = 580;
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::$btCacheBlockRecord
+     */
+    protected $btCacheBlockRecord = true;
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::$btCacheBlockOutput
+     */
+    protected $btCacheBlockOutput = false;
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::$btCacheBlockOutputOnPost
+     */
+    protected $btCacheBlockOutputOnPost = false;
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::$btCacheBlockOutputForRegisteredUsers
+     */
+    protected $btCacheBlockOutputForRegisteredUsers = false;
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::$btCacheBlockOutputLifetime
+     */
+    protected $btCacheBlockOutputLifetime = 0; // 86400 = 1 day
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::$btSupportsInlineEdit
+     */
+    protected $btSupportsInlineEdit = false;
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::$btSupportsInlineAdd
+     */
+    protected $btSupportsInlineAdd = false;
+
+    private ?IpAccessControlCategory $ipAccessControlCategory = null;
+
+    private ?IpAccessControlService $ipAccessControlService = null;
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::getBlockTypeName()
+     */
     public function getBlockTypeName()
     {
         return t('Fill Translations');
     }
 
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::getBlockTypeDescription()
+     */
     public function getBlockTypeDescription()
     {
         return t('Allow users to get translations for their own files.');
     }
 
-    /**
-     * @param string|int $size
-     *
-     * @return int|null
-     */
-    protected function parseSize($size)
-    {
-        $result = null;
-        $size = (string) $size;
-        $matches = null;
-        if (preg_match('/^\s*(\d+(?:\.\d*)?)\s*(?:([bkmgtpezy])b?)?\s*/i', $size, $matches)) {
-            $value = (float) $matches[1];
-            $unit = empty($matches[2]) ? 'b' : strtolower($matches[2]);
-            if ($unit === 'b') {
-                $result = (int) $value;
-            } else {
-                $result = (int) round($value * pow(1024, strpos('bkmgtpezy', $unit)));
-            }
-        }
-
-        return $result;
-    }
-
-    /**
-     * @return int|null
-     */
-    protected function getPostLimit()
-    {
-        $result = $this->parseSize(@ini_get('post_max_size'));
-        $r = $this->parseSize(@ini_get('upload_max_filesize'));
-        if ($result === null) {
-            $result = $r;
-        } elseif ($r !== null) {
-            $result = min($r, $result);
-        }
-
-        return $result;
-    }
-
     public function add()
     {
-        $this->rateLimit_timeWindow = 3600;
         $this->edit();
     }
 
     public function edit()
     {
         $this->set('form', $this->app->make('helper/form'));
-        $this->set('rateLimitHelper', $this->app->make(RateLimit::class));
-        $this->set('rateLimit_maxRequests', $this->rateLimit_maxRequests);
-        $this->set('rateLimit_timeWindow', $this->rateLimit_timeWindow);
+        $this->set('rateLimitControlUrl', (string) $this->app->make(ResolverManagerInterface::class)->resolve([
+            '/dashboard/system/permissions/denylist/configure',
+            $this->getIpAccessControlCategory()->getIpAccessControlCategoryID(),
+        ]));
         $this->set('statsFromPackage', (string) $this->statsFromPackage);
         $postLimit = $this->getPostLimit();
-        if ($postLimit === null) {
-            $s = '';
-        } else {
-            $nh = $this->app->make('helper/number');
-            $s = $nh->formatSize($postLimit);
-        }
-        $this->set('postLimit', $s);
-        $maxFileSizeValue = '';
+        $this->set('postLimit', $postLimit === null ? '' : $this->app->make('helper/number')->formatSize($postLimit));
+        $maxFileSizeValue = null;
         $maxFileSizeUnit = 'MB';
         if ($this->maxFileSize) {
             $maxFileSizeValue = (int) $this->maxFileSize;
@@ -137,96 +186,43 @@ class Controller extends BlockController
         }
         $this->set('maxFileSizeValue', $maxFileSizeValue);
         $this->set('maxFileSizeUnit', $maxFileSizeUnit);
-        $this->set('maxLocalesCount', $this->maxLocalesCount);
-        $this->set('maxStringsCount', $this->maxStringsCount);
+        $this->set('maxLocalesCount', $this->maxLocalesCount ? (int) $this->maxLocalesCount : null);
+        $this->set('maxStringsCount', $this->maxStringsCount ? (int) $this->maxStringsCount : null);
     }
 
     /**
      * {@inheritdoc}
      *
-     * @see BlockController::normalizeArgs()
+     * @see \Concrete\Core\Block\BlockController::delete()
      */
-    protected function normalizeArgs(array $args)
+    public function delete()
     {
-        $args += [
-            'statsFromPackage' => '',
-        ];
-        $error = $this->app->make('helper/validation/error');
-        $normalized = [];
-
-        try {
-            /* @var \CommunityTranslation\Service\RateLimit $rateLimitHelper */
-            list($normalized['rateLimit_maxRequests'], $normalized['rateLimit_timeWindow']) = $this->app->make(RateLimit::class)->fromWidgetHtml('rateLimit', $this->rateLimit_timeWindow ?: 3600);
-        } catch (UserMessageException $x) {
-            $error->add($x->getMessage());
-        }
-
-        $normalized['maxFileSize'] = null;
-        if (isset($args['maxFileSizeValue']) && (is_int($args['maxFileSizeValue']) || (is_string($args['maxFileSizeValue']) && is_numeric($args['maxFileSizeValue'])))) {
-            $maxFileSizeValue = (int) $args['maxFileSizeValue'];
-            if ($maxFileSizeValue > 0) {
-                $maxFileSizeUnit = $this->post('maxFileSizeUnit');
-                $p = is_string($maxFileSizeUnit) ? array_search($maxFileSizeUnit, ['b', 'KB', 'MB', 'GB'], true) : false;
-                if ($p === false) {
-                    $error->add(t('Please specify the unit of the max size of uploaded files'));
-                } else {
-                    $maxFileSize = (int) $maxFileSizeValue * pow(1024, $p);
-                    $postLimit = $this->getPostLimit();
-                    if ($postLimit !== null && $maxFileSize > $postLimit) {
-                        $nh = $this->app->make('helper/number');
-                        $error->add(
-                            t(
-                                'You can\'t set the max file size to %1$s since the current limit imposed by PHP is %2$s',
-                                $nh->formatSize($maxFileSize),
-                                $nh->formatSize($postLimit)
-                            )
-                        );
-                    } else {
-                        $normalized['maxFileSize'] = $maxFileSize;
-                    }
-                }
-            }
-        }
-        $normalized['maxLocalesCount'] = null;
-        if (isset($args['maxLocalesCount']) && (is_int($args['maxLocalesCount']) || (is_string($args['maxLocalesCount']) && is_numeric($args['maxLocalesCount'])))) {
-            $i = (int) $args['maxLocalesCount'];
-            if ($i > 0) {
-                $normalized['maxLocalesCount'] = $i;
-            }
-        }
-        $normalized['maxStringsCount'] = null;
-        if (isset($args['maxStringsCount']) && (is_int($args['maxStringsCount']) || (is_string($args['maxStringsCount']) && is_numeric($args['maxStringsCount'])))) {
-            $i = (int) $args['maxStringsCount'];
-            if ($i > 0) {
-                $normalized['maxStringsCount'] = $i;
-            }
-        }
-        $normalized['statsFromPackage'] = '';
-        if (is_string($args['statsFromPackage'])) {
-            $normalized['statsFromPackage'] = trim($args['statsFromPackage']);
-            if ($normalized['statsFromPackage'] !== '') {
-                $package = $this->app->make(PackageRepository::class)->findOneBy(['handle' => $normalized['statsFromPackage']]);
-                if ($package === null) {
-                    $error->add(t('Unable to find a package with handle "%s"', $normalized['statsFromPackage']));
-                } elseif ($package->getLatestVersion() === null) {
-                    $error->add(t('The package with handle "%s" does not have a latest version', $normalized['statsFromPackage']));
-                }
-            }
-        }
-
-        return $error->has() ? $error : $normalized;
+        parent::delete();
+        $category = $this->getIpAccessControlCategory();
+        $em = $this->app->make(EntityManagerInterface::class);
+        $em->remove($category);
+        $em->flush($category);
     }
 
-    public function view()
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::registerViewAssets()
+     */
+    public function registerViewAssets($outputContent = '')
+    {
+        $this->requireAsset('javascript', 'jquery');
+    }
+
+    public function view(): ?Response
     {
         $this->set('token', $this->app->make('helper/validation/token'));
         $locales = $this->app->make(LocaleRepository::class)->getApprovedLocales();
         $translatedLocales = [];
         $untranslatedLocales = [];
-        $threshold = (int) $this->app->make('community_translation/config')->get('options.translatedThreshold', 90);
-
+        $threshold = (int) $this->app->make(Repository::class)->get('community_translation::translate.translatedThreshold', 90);
         $statsForVersion = null;
-        if ('' !== (string) $this->statsFromPackage) {
+        if ((string) $this->statsFromPackage !== '') {
             $package = $this->app->make(PackageRepository::class)->findOneBy(['handle' => $this->statsFromPackage]);
             if ($package !== null) {
                 $statsForVersion = $package->getLatestVersion();
@@ -234,9 +230,8 @@ class Controller extends BlockController
         }
         if ($statsForVersion === null) {
             $localeStatsRepo = $this->app->make(LocaleStatsRepository::class);
-            /* @var LocaleStatsRepository $localeStatsRepo */
             foreach ($locales as $locale) {
-                if ($localeStatsRepo->getByLocale($locale)->getPercentage() >= $threshold) {
+                if ($localeStatsRepo->getByLocale($locale)->getRoundedPercentage() >= $threshold) {
                     $translatedLocales[] = $locale;
                 } else {
                     $untranslatedLocales[] = $locale;
@@ -244,13 +239,12 @@ class Controller extends BlockController
             }
         } else {
             $statsRepo = $this->app->make(StatsRepository::class);
-            /* @var StatsRepository $statsRepo */
             $stats = $statsRepo->get($statsForVersion, $locales);
             foreach ($locales as $locale) {
                 $isTranslated = false;
                 foreach ($stats as $stat) {
                     if ($stat->getLocale() === $locale) {
-                        if ($stat->getPercentage() >= $threshold) {
+                        if ($stat->getRoundedPercentage() >= $threshold) {
                             $isTranslated = true;
                         }
                         break;
@@ -263,15 +257,19 @@ class Controller extends BlockController
                 }
             }
         }
-        if (empty($translatedLocales) || empty($untranslatedLocales)) {
+        if ($translatedLocales === [] || $untranslatedLocales === []) {
             $translatedLocales = $locales;
             $untranslatedLocales = [];
         }
         $this->set('translatedLocales', $translatedLocales);
         $this->set('untranslatedLocales', $untranslatedLocales);
         $displayLimits = [];
-        if ($this->rateLimit_maxRequests && $this->rateLimit_timeWindow) {
-            $displayLimits[t('Requests limit')] = $this->app->make(RateLimit::class)->describeRate($this->rateLimit_maxRequests, $this->rateLimit_timeWindow);
+        $ipAccessControlCategory = $this->getIpAccessControlCategory();
+        if ($ipAccessControlCategory->isEnabled()) {
+            $limit = $ipAccessControlCategory->describeTimeWindow(false);
+            if ($limit !== '') {
+                $displayLimits[t('Requests limit')] = $limit;
+            }
         }
         $maxFileSize = $this->maxFileSize ? (int) $this->maxFileSize : null;
         $r = $this->getPostLimit();
@@ -284,105 +282,17 @@ class Controller extends BlockController
             $displayLimits[t('Maximum file size')] = $this->app->make('helper/number')->formatSize($maxFileSize);
         }
         if ($this->maxLocalesCount) {
-            $displayLimits[t('Maximum number of languages')] = $this->maxLocalesCount;
+            $displayLimits[t('Maximum number of languages')] = (string) $this->maxLocalesCount;
         }
         if ($this->maxStringsCount) {
-            $displayLimits[t('Maximum number of strings')] = $this->maxStringsCount;
+            $displayLimits[t('Maximum number of strings')] = (string) $this->maxStringsCount;
         }
         $this->set('displayLimits', $displayLimits);
+
+        return null;
     }
 
-    /**
-     * {@inheritdoc}
-     *
-     * @see BlockController::isControllerTaskInstanceSpecific()
-     */
-    protected function isControllerTaskInstanceSpecific($method)
-    {
-        return true;
-    }
-
-    /**
-     * @throws UserMessageException
-     *
-     * $return \Symfony\Component\HttpFoundation\File\UploadedFile
-     */
-    private function getPostedFile()
-    {
-        $file = $this->request->files->get('file');
-        if ($file === null) {
-            throw new UserMessageException(t('Please specify the file to be analyzed'));
-        }
-        if (!$file->isValid()) {
-            throw new UserMessageException($file->getErrorMessage());
-        }
-        if ($this->maxFileSize) {
-            $filesize = @filesize($file->getPathname());
-            if ($filesize !== false && $filesize > $this->maxFileSize) {
-                throw new UserMessageException(t('The uploaded file is too big'));
-            }
-        }
-
-        return $file;
-    }
-
-    /**
-     * @throws UserMessageException
-     *
-     * $return \CommunityTranslation\Entity\Locale[]
-     */
-    private function getPostedLocales()
-    {
-        $localeIDs = [];
-        $list = $this->post('translatedLocales');
-        if (is_array($list)) {
-            $localeIDs = array_merge($localeIDs, $list);
-        }
-        $list = $this->post('untranslatedLocales');
-        if (is_array($list)) {
-            $localeIDs = array_merge($localeIDs, $list);
-        }
-        $repo = $this->app->make(LocaleRepository::class);
-        $locales = $repo->getApprovedLocales();
-        $result = [];
-        foreach ($locales as $locale) {
-            if (in_array($locale->getID(), $localeIDs, true)) {
-                $result[] = $locale;
-            }
-        }
-
-        $count = count($result);
-        if ($count === 0) {
-            throw new UserMessageException(t('Please specify the languages of the .po/.mo files to generate'));
-        }
-        if ($this->maxLocalesCount && $count > (int) $this->maxLocalesCount) {
-            throw new UserMessageException(t('Please specify up to %s languages (you requested %2$s languages)', $this->maxLocalesCount, $count));
-        }
-
-        return $result;
-    }
-
-    /**
-     * @throws UserMessageException
-     */
-    private function checkRateLimit()
-    {
-        $maxRequests = (int) $this->rateLimit_maxRequests;
-        if ($maxRequests > 0) {
-            $timeWindow = (int) $this->rateLimit_timeWindow;
-            if ($timeWindow > 0) {
-                $ipControlLog = $this->app->make(IPControlLog::class);
-                /* @var IPControlLog $ipControlLog */
-                $visits = $ipControlLog->countVisits('fill-trans', new DateTime("-$timeWindow seconds"));
-                if ($visits >= $maxRequests) {
-                    throw new UserMessageException(t('You reached the rate limit (%1$s requests every %2$s seconds)', $maxRequests, $timeWindow));
-                }
-                $ipControlLog->addVisit('fill-trans');
-            }
-        }
-    }
-
-    public function action_fill_in()
+    public function action_fill_in(): Response
     {
         $responseFactory = $this->app->make(ResponseFactoryInterface::class);
         $message = '';
@@ -394,23 +304,20 @@ class Controller extends BlockController
 
             $file = $this->getPostedFile();
 
-            $writePOT = (bool) $this->post('include-pot');
-            $writePO = (bool) $this->post('include-po');
-            $writeMO = (bool) $this->post('include-mo');
+            $writePOT = $this->request->request->get('include-pot') ? true : false;
+            $writePO = $this->request->request->get('include-po') ? true : false;
+            $writeMO = $this->request->request->get('include-mo') ? true : false;
             if (!($writePOT || $writePO || $writeMO)) {
-                throw new UserMessageException(t('You need to specify at least one kind of file to generate'));
+                throw new UserMessageException(t('You need to specify at least one kind of file to be generated.'));
             }
+            $this->checkRateLimit();
 
             $locales = ($writePO || $writeMO) ? $this->getPostedLocales() : [];
-
-            $this->checkRateLimit();
 
             $parsed = $this->app->make(ParserInterface::class)->parseFile('', '', $file->getPathname());
             if ($parsed === null) {
                 throw new UserMessageException(t('No translatable string found in the uploaded file'));
             }
-
-            /* @var \CommunityTranslation\Parser\Parsed $parsed */
 
             if ($this->maxStringsCount) {
                 $n = count($parsed->getSourceStrings(true));
@@ -418,7 +325,7 @@ class Controller extends BlockController
                     throw new UserMessageException(t('Please specify up to %1$s strings (your file contains %2$s strings)', $this->maxStringsCount, $n));
                 }
             }
-            $tmp = $this->app->make(VolatileDirectory::class);
+            $tmp = $this->app->make(VolatileDirectoryCreator::class)->createVolatileDirectory();
             $zipName = $tmp->getPath() . '/out.zip';
             $zip = new ZipArchive();
             try {
@@ -432,7 +339,6 @@ class Controller extends BlockController
                 if ($writePO || $writeMO) {
                     MOGenerator::$includeEmptyTranslations = true;
                     $exporter = $this->app->make(Exporter::class);
-                    /* @var Exporter $exporter */
                     foreach ($locales as $locale) {
                         $dir = 'languages/' . $locale->getID();
                         $zip->addEmptyDir($dir);
@@ -450,18 +356,18 @@ class Controller extends BlockController
                     }
                 }
                 $zip->close();
-            } catch (Exception $x) {
-                try {
-                    $zip->close();
-                } catch (Exception $foo) {
+                $zip = null;
+                $contents = (new Filesystem())->get($zipName);
+            } finally {
+                if (isset($zip)) {
+                    try {
+                        $zip->close();
+                    } catch (Throwable $foo) {
+                    }
+                    unset($zip);
                 }
-                unset($zip);
                 unset($tmp);
-                throw $x;
             }
-            unset($zip);
-            $contents = (new Filesystem())->get($zipName);
-            unset($tmp);
 
             return $responseFactory->create(
                 $contents,
@@ -476,15 +382,245 @@ class Controller extends BlockController
             );
         } catch (UserMessageException $x) {
             $message = $x->getMessage();
-        } catch (Exception $x) {
-            $message = t('An unspecified error occurred');
         } catch (Throwable $x) {
             $message = t('An unspecified error occurred');
         }
 
-        return $this->app->make('helper/concrete/ui')->buildErrorResponse(
-            t('An unexpected error occurred.'),
-            nl2br(h($message))
+        $jsonMessage = json_encode($message);
+        $charset = APP_CHARSET;
+
+        return $responseFactory->create(
+            <<<EOT
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset={$charset}" />
+    <script>
+        (window.parent || window).alert({$jsonMessage});
+    </script>
+</head>
+</html>
+EOT
         );
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \CommunityTranslation\Controller\BlockController::isControllerTaskInstanceSpecific()
+     */
+    protected function isControllerTaskInstanceSpecific(string $method): bool
+    {
+        return true;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \CommunityTranslation\Controller\BlockController::normalizeArgs()
+     */
+    protected function normalizeArgs(array $args)
+    {
+        $error = $this->app->make('helper/validation/error');
+        $normalized = [];
+        $normalized['maxFileSize'] = null;
+        if (is_numeric($args['maxFileSizeValue'] ?? null)) {
+            $maxFileSizeValue = (int) $args['maxFileSizeValue'];
+            if ($maxFileSizeValue > 0) {
+                $maxFileSizeUnit = $this->request->request->get('maxFileSizeUnit');
+                $p = is_string($maxFileSizeUnit) ? array_search($maxFileSizeUnit, ['b', 'KB', 'MB', 'GB'], true) : false;
+                if ($p === false) {
+                    $error->add(t('Please specify the unit of the max size of uploaded files'));
+                } else {
+                    $maxFileSize = (int) ($maxFileSizeValue * 1024 ** $p);
+                    $postLimit = $this->getPostLimit();
+                    if ($postLimit !== null && $maxFileSize > $postLimit) {
+                        $nh = $this->app->make('helper/number');
+                        $error->add(
+                            t(
+                                'You can\'t set the max file size to %1$s since the current limit imposed by PHP is %2$s',
+                                $nh->formatSize($maxFileSize),
+                                $nh->formatSize($postLimit)
+                            )
+                        );
+                    } else {
+                        $normalized['maxFileSize'] = $maxFileSize;
+                    }
+                }
+            }
+        }
+        $normalized['maxLocalesCount'] = null;
+        if (is_numeric($args['maxLocalesCount'] ?? null)) {
+            $maxLocalesCount = (int) $args['maxLocalesCount'];
+            if ($maxLocalesCount > 0) {
+                $normalized['maxLocalesCount'] = $maxLocalesCount;
+            }
+        }
+        $normalized['maxStringsCount'] = null;
+        if (is_numeric($args['maxStringsCount'] ?? null)) {
+            $maxStringsCount = (int) $args['maxStringsCount'];
+            if ($maxStringsCount > 0) {
+                $normalized['maxStringsCount'] = $maxStringsCount;
+            }
+        }
+        $normalized['statsFromPackage'] = '';
+        if (is_string($args['statsFromPackage'] ?? null)) {
+            $normalized['statsFromPackage'] = trim($args['statsFromPackage']);
+            if ($normalized['statsFromPackage'] !== '') {
+                $package = $this->app->make(PackageRepository::class)->findOneBy(['handle' => $normalized['statsFromPackage']]);
+                if ($package === null) {
+                    $error->add(t('Unable to find a package with handle "%s"', $normalized['statsFromPackage']));
+                } elseif ($package->getLatestVersion() === null) {
+                    $error->add(t('The package with handle "%s" does not have a latest version', $normalized['statsFromPackage']));
+                }
+            }
+        }
+
+        return $error->has() ? $error : $normalized;
+    }
+
+    private function getPostLimit(): ?int
+    {
+        set_error_handler(static function () {}, -1);
+        try {
+            $iniValues = [ini_get('post_max_size'), ini_get('upload_max_filesize')];
+        } finally {
+            restore_error_handler();
+        }
+        $result = null;
+        foreach ($iniValues as $iniValue) {
+            $bytes = $this->parseSize($iniValue);
+            if ($bytes === null) {
+                continue;
+            }
+            $result = $result === null ? $bytes : min($result, $bytes);
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param string|int $size
+     */
+    private function parseSize($size): ?int
+    {
+        $matches = null;
+        if (!preg_match('/^\s*(?<value>\d+(?:\.\d*)?)\s*(?:(?<unit>[bkmgtpezy])b?)?\s*/i', (string) $size, $matches)) {
+            return null;
+        }
+        $value = (float) $matches['value'];
+        $unit = strtolower($matches['unit'] ?? 'b');
+        if ($unit === 'b') {
+            return (int) $value;
+        }
+
+        return (int) round($value * 1024 ** strpos('bkmgtpezy', $unit));
+    }
+
+    /**
+     * @throws \Concrete\Core\Error\UserMessageException
+     */
+    private function getPostedFile(): UploadedFile
+    {
+        $file = $this->request->files->get('file');
+        if ($file === null) {
+            throw new UserMessageException(t('Please specify the file to be analyzed'));
+        }
+        if (!$file->isValid()) {
+            throw new UserMessageException($file->getErrorMessage());
+        }
+        if ($this->maxFileSize) {
+            set_error_handler(static function () {}, -1);
+            try {
+                $filesize = $file->getSize();
+            } finally {
+                restore_error_handler();
+            }
+            if (is_int($filesize) && $filesize > (int) $this->maxFileSize) {
+                throw new UserMessageException(t('The uploaded file is too big'));
+            }
+        }
+
+        return $file;
+    }
+
+    /**
+     * @throws \Concrete\Core\Error\UserMessageException
+     *
+     * @return \CommunityTranslation\Entity\Locale[]
+     */
+    private function getPostedLocales(): array
+    {
+        $localeIDs = [];
+        $list = $this->request->request->get('translatedLocales');
+        if (is_array($list)) {
+            $localeIDs = array_merge($localeIDs, $list);
+        }
+        $list = $this->request->request->get('untranslatedLocales');
+        if (is_array($list)) {
+            $localeIDs = array_merge($localeIDs, $list);
+        }
+        $repo = $this->app->make(LocaleRepository::class);
+        $locales = $repo->getApprovedLocales();
+        $result = [];
+        foreach ($locales as $locale) {
+            if (in_array($locale->getID(), $localeIDs, true)) {
+                $result[] = $locale;
+            }
+        }
+        if ($result === []) {
+            throw new UserMessageException(t('Please specify the languages of the .po/.mo files to be generated.'));
+        }
+        if ($this->maxLocalesCount) {
+            $count = count($result);
+            if ($count > (int) $this->maxLocalesCount) {
+                throw new UserMessageException(t('Please specify up to %s languages (you requested %2$s languages)', $this->maxLocalesCount, $count));
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * @throws \Concrete\Core\Error\UserMessageException
+     */
+    private function checkRateLimit(): void
+    {
+        $service = $this->getIpAccessControlService();
+        $range = $service->getRange();
+        if ($range !== null) {
+            if ($range->getType() & IpAccessControlService::IPRANGEFLAG_WHITELIST) {
+                return;
+            }
+            if ($range->getType() === IpAccessControlService::IPRANGETYPE_BLACKLIST_AUTOMATIC) {
+                throw new UserMessageException(t('You reached the rate limit (%s)', $service->getCategory()->describeTimeWindow()));
+            }
+            throw new UserMessageException(t('You have been blocked'));
+        }
+        if ($service->isThresholdReached()) {
+            $service->addToDenylistForThresholdReached();
+            throw new UserMessageException(t('You reached the API rate limit (%s)', $service->getCategory()->describeTimeWindow()));
+        }
+        $service->registerEvent();
+    }
+
+    private function getIpAccessControlCategory(): IpAccessControlCategory
+    {
+        if ($this->ipAccessControlCategory === null) {
+            $em = $this->app->make(EntityManagerInterface::class);
+            $categoryRepository = $em->getRepository(IpAccessControlCategory::class);
+            $this->ipAccessControlCategory = $categoryRepository->findOneBy(['handle' => 'community_translation_bt_fill_translations']);
+        }
+
+        return $this->ipAccessControlCategory;
+    }
+
+    private function getIpAccessControlService(): IpAccessControlService
+    {
+        if ($this->ipAccessControlService === null) {
+            $this->ipAccessControlService = $this->app->make(IpAccessControlService::class, ['category' => $this->getIpAccessControlCategory()]);
+        }
+
+        return $this->ipAccessControlService;
     }
 }

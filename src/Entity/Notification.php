@@ -1,18 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Entity;
 
-use DateTime;
-use Doctrine\ORM\Mapping as ORM;
+use DateTimeImmutable;
 use ReflectionClass;
+
+defined('C5_EXECUTE') or die('Access Denied.');
 
 /**
  * Notificatons.
  *
- * @ORM\Entity(
+ * @Doctrine\ORM\Mapping\Entity(
  *     repositoryClass="CommunityTranslation\Repository\Notification",
  * )
- * @ORM\Table(
+ * @Doctrine\ORM\Mapping\Table(
  *     name="CommunityTranslationNotifications",
  *     options={"comment": "Notificatons"}
  * )
@@ -20,100 +23,139 @@ use ReflectionClass;
 class Notification
 {
     /**
+     * Notification ID.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="integer", options={"unsigned": true, "comment": "Notification ID"})
+     * @Doctrine\ORM\Mapping\Id
+     * @Doctrine\ORM\Mapping\GeneratedValue(strategy="AUTO")
+     */
+    protected ?int $id;
+
+    /**
+     * Date/time of the record creation.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="datetime_immutable", nullable=false, options={"comment": "Date/time of the record creation"})
+     */
+    protected DateTimeImmutable $createdOn;
+
+    /**
+     * Date/time when the data was last modified.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="datetime_immutable", nullable=false, options={"comment": "Date/time when the data was last modified"})
+     */
+    protected DateTimeImmutable $updatedOn;
+
+    /**
+     * Fully qualified name of the category class.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="string", length=255, nullable=false, options={"comment": "Fully qualified name of the category class"})
+     */
+    protected string $fqnClass;
+
+    /**
+     * The notification priority (bigger values for higher priorities).
+     *
+     * @Doctrine\ORM\Mapping\Column(type="smallint", nullable=false, options={"unsigned": false, "default" : 0, "comment": "Notification priority (bigger values for higher priorities)"})
+     */
+    protected int $priority;
+
+    /**
+     * Data specific to the notification class.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="array", nullable=false, options={"comment": "Data specific to the notification class"})
+     */
+    protected array $notificationData;
+
+    /**
+     * Number of delivery attempts.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="integer", nullable=false, options={"unsigned": true, "comment": "Number of delivery attempts"})
+     */
+    protected int $deliveryAttempts;
+
+    /**
+     * Date/time of the notification delivery (null if not yed delivered).
+     *
+     * @Doctrine\ORM\Mapping\Column(type="datetime_immutable", nullable=true, options={"comment": "Date/time of the notification delivery (null if not yed delivered)"})
+     */
+    protected ?DateTimeImmutable $sentOn;
+
+    /**
+     * Number of potential recipients notified (null if not yed delivered).
+     *
+     * @Doctrine\ORM\Mapping\Column(type="integer", nullable=true, options={"unsigned": true, "comment": "Number of potential recipients notified (null if not yed delivered)"})
+     */
+    protected ?int $sentCountPotential;
+
+    /**
+     * Number of actual recipients notified (null if not yed delivered).
+     *
+     * @Doctrine\ORM\Mapping\Column(type="integer", nullable=true, options={"unsigned": true, "comment": "Number of actual recipients notified (null if not yed delivered)"})
+     */
+    protected ?int $sentCountActual;
+
+    /**
+     * List of errors throws during delivery (empty if not yet delivered or if no errors occurred).
+     *
+     * @Doctrine\ORM\Mapping\Column(type="array", nullable=false, options={"comment": "List of errors throws during delivery (empty if not yet delivered or if no errors occurred)"})
+     *
+     * @var string[]
+     */
+    protected array $deliveryErrors;
+
+    /**
      * Create a new (unsaved) instance.
      *
      * @param string $fqnClass The fully qualified name of the category class
      * @param array $notificationData Data specific to the notification class
      * @param int|null $priority The notification priority (bigger values for higher priorities)
-     *
-     * @return static
      */
-    public static function create($fqnClass, array $notificationData = [], $priority = null)
+    public function __construct(string $fqnClass, array $notificationData = [], ?int $priority = null)
     {
-        if (!is_numeric($priority)) {
+        if ($priority === null) {
             $priority = 0;
-            if (class_exists($fqnClass) && class_exists(ReflectionClass::class)) {
+            if (class_exists($fqnClass)) {
                 $reflectionClass = new ReflectionClass($fqnClass);
                 $classConstants = $reflectionClass->getConstants();
-                if (isset($classConstants['PRIORITY'])) {
-                    $priority = (int) $classConstants['PRIORITY'];
+                if (is_int($classConstants['PRIORITY'] ?? null)) {
+                    $priority = $classConstants['PRIORITY'];
                 }
             }
         }
-        $result = new static();
-        $result->createdOn = new DateTime();
-        $result->updatedOn = new DateTime();
-        $result->fqnClass = (string) $fqnClass;
-        $result->priority = (int) $priority;
-        $result->notificationData = $notificationData;
-        $result->deliveryAttempts = 0;
-        $result->sentOn = null;
-        $result->sentCountPotential = null;
-        $result->sentCountActual = null;
-        $result->deliveryErrors = [];
-
-        return $result;
+        $now = new DateTimeImmutable();
+        $this->id = null;
+        $this->createdOn = $now;
+        $this->updatedOn = $now;
+        $this->fqnClass = $fqnClass;
+        $this->priority = $priority;
+        $this->notificationData = $notificationData;
+        $this->deliveryAttempts = 0;
+        $this->sentOn = null;
+        $this->sentCountPotential = null;
+        $this->sentCountActual = null;
+        $this->deliveryErrors = [];
     }
-
-    protected function __construct()
-    {
-    }
-
-    /**
-     * Notification ID.
-     *
-     * @ORM\Column(type="integer", options={"unsigned": true, "comment": "Notification ID"})
-     * @ORM\Id
-     * @ORM\GeneratedValue(strategy="AUTO")
-     *
-     * @var int|null
-     */
-    protected $id;
 
     /**
      * Get the Notification ID.
-     *
-     * @return int|null
      */
-    public function getID()
+    public function getID(): ?int
     {
         return $this->id;
     }
 
     /**
-     * Date/time of the record creation.
-     *
-     * @ORM\Column(type="datetime", nullable=false, options={"comment": "Date/time of the record creation"})
-     *
-     * @var DateTime
-     */
-    protected $createdOn;
-
-    /**
      * Get the date/time of the record creation.
-     *
-     * @return DateTime
      */
-    public function getCreatedOn()
+    public function getCreatedOn(): DateTimeImmutable
     {
         return $this->createdOn;
     }
 
     /**
-     * Date/time when the data was last modified.
-     *
-     * @ORM\Column(type="datetime", nullable=false, options={"comment": "Date/time when the data was last modified"})
-     *
-     * @var DateTime
-     */
-    protected $updatedOn;
-
-    /**
      * Get date/time when the data was last modified.
-     *
-     * @return DateTime
      */
-    public function getUpdatedOn()
+    public function getUpdatedOn(): DateTimeImmutable
     {
         return $this->updatedOn;
     }
@@ -121,11 +163,9 @@ class Notification
     /**
      * Set date/time when the data was last modified.
      *
-     * @param DateTime $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setUpdatedOn(DateTime $value)
+    public function setUpdatedOn(DateTimeImmutable $value): self
     {
         $this->updatedOn = $value;
 
@@ -133,103 +173,35 @@ class Notification
     }
 
     /**
-     * Fully qualified name of the category class.
-     *
-     * @ORM\Column(type="string", length=255, nullable=false, options={"comment": "Fully qualified name of the category class"})
-     *
-     * @var string
-     */
-    protected $fqnClass;
-
-    /**
      * Get the fully qualified name of the category class.
-     *
-     * @return string
      */
-    public function getFQNClass()
+    public function getFQNClass(): string
     {
         return $this->fqnClass;
     }
 
     /**
-     * The notification priority (bigger values for higher priorities).
-     *
-     * @ORM\Column(type="smallint", nullable=false, options={"unsigned": false, "default" : 0, "comment": "Notification priority (bigger values for higher priorities)"})
-     *
-     * @var int
-     */
-    protected $priority;
-
-    /**
      * Get the notification priority (bigger values for higher priorities).
-     *
-     * @return int
      */
-    public function getPriority()
+    public function getPriority(): int
     {
         return $this->priority;
     }
 
     /**
-     * Data specific to the notification class.
-     *
-     * @ORM\Column(type="array", nullable=false, options={"comment": "Data specific to the notification class"})
-     *
-     * @var array
-     */
-    protected $notificationData;
-
-    /**
      * Get the data specific to the notification class.
-     *
-     * @return array
      */
-    public function getNotificationData()
+    public function getNotificationData(): array
     {
         return $this->notificationData;
     }
 
     /**
-     * Number of delivery attempts.
-     *
-     * @ORM\Column(type="integer", nullable=false, options={"unsigned": true, "comment": "Number of delivery attempts"})
-     *
-     * @var int
-     */
-    protected $deliveryAttempts;
-
-    /**
-     * Get the number of delivery attempts.
-     *
-     * @return int
-     */
-    public function getDeliveryAttempts()
-    {
-        return $this->deliveryAttempts;
-    }
-
-    /**
-     * Set the number of delivery attempts.
-     *
-     * @param int $value
-     *
-     * @return static
-     */
-    public function setDeliveryAttempts($value)
-    {
-        $this->deliveryAttempts = (int) $value;
-
-        return $this;
-    }
-
-    /**
      * Set the data specific to the notification class.
      *
-     * @param array $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setNotificationData(array $value)
+    public function setNotificationData(array $value): self
     {
         $this->notificationData = $value;
 
@@ -237,20 +209,29 @@ class Notification
     }
 
     /**
-     * Date/time of the notification delivery (null if not yed delivered).
-     *
-     * @ORM\Column(type="datetime", nullable=true, options={"comment": "Date/time of the notification delivery (null if not yed delivered)"})
-     *
-     * @var DateTime
+     * Get the number of delivery attempts.
      */
-    protected $sentOn;
+    public function getDeliveryAttempts(): int
+    {
+        return $this->deliveryAttempts;
+    }
+
+    /**
+     * Set the number of delivery attempts.
+     *
+     * @return $this
+     */
+    public function setDeliveryAttempts(int $value): self
+    {
+        $this->deliveryAttempts = $value;
+
+        return $this;
+    }
 
     /**
      * Get the date/time of the notification delivery (null if not yed delivered).
-     *
-     * @return DateTime|null
      */
-    public function getSentOn()
+    public function getSentOn(): ?DateTimeImmutable
     {
         return $this->sentOn;
     }
@@ -258,11 +239,9 @@ class Notification
     /**
      * Set the date/time of the notification delivery (null if not yed delivered).
      *
-     * @param DateTime|null $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setSentOn(DateTime $value = null)
+    public function setSentOn(?DateTimeImmutable $value): self
     {
         $this->sentOn = $value;
 
@@ -270,20 +249,9 @@ class Notification
     }
 
     /**
-     * Number of potential recipients notified (null if not yed delivered).
-     *
-     * @ORM\Column(type="integer", nullable=true, options={"unsigned": true, "comment": "Number of potential recipients notified (null if not yed delivered)"})
-     *
-     * @var int|null
-     */
-    protected $sentCountPotential;
-
-    /**
      * Get the number of potential recipients notified (null if not yed delivered).
-     *
-     * @return int|null
      */
-    public function getSentCountPotential()
+    public function getSentCountPotential(): ?int
     {
         return $this->sentCountPotential;
     }
@@ -291,36 +259,19 @@ class Notification
     /**
      * Set the number of actual recipients notified (null if not yed delivered).
      *
-     * @param int|null $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setSentCountPotential($value = null)
+    public function setSentCountPotential(?int $value): self
     {
-        if ($value === null || $value === '' || $value === false) {
-            $this->sentCountPotential = null;
-        } else {
-            $this->sentCountPotential = (int) $value;
-        }
+        $this->sentCountPotential = $value;
 
         return $this;
     }
 
     /**
-     * Number of actual recipients notified (null if not yed delivered).
-     *
-     * @ORM\Column(type="integer", nullable=true, options={"unsigned": true, "comment": "Number of actual recipients notified (null if not yed delivered)"})
-     *
-     * @var int|null
-     */
-    protected $sentCountActual;
-
-    /**
      * Get the number of actual recipients notified (null if not yed delivered).
-     *
-     * @return int|null
      */
-    public function getSentCountActual()
+    public function getSentCountActual(): ?int
     {
         return $this->sentCountActual;
     }
@@ -328,50 +279,33 @@ class Notification
     /**
      * Set the number of actual recipients notified (null if not yed delivered).
      *
-     * @param int|null $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setSentCountActual($value = null)
+    public function setSentCountActual(?int $value): self
     {
-        if ($value === null || $value === '' || $value === false) {
-            $this->sentCountActual = null;
-        } else {
-            $this->sentCountActual = (int) $value;
-        }
+        $this->sentCountActual = $value;
 
         return $this;
     }
-
-    /**
-     * List of errors throws during delivery (empty if not yet delivered or if no errors occurred).
-     *
-     * @ORM\Column(type="array", nullable=false, options={"comment": "List of errors throws during delivery (empty if not yet delivered or if no errors occurred)"})
-     *
-     * @var string[]
-     */
-    protected $deliveryErrors;
 
     /**
      * Get list of errors throws during delivery (empty if not yet delivered or if no errors occurred).
      *
      * @return string[]
      */
-    public function getDeliveryErrors()
+    public function getDeliveryErrors(): array
     {
         return $this->deliveryErrors;
     }
 
     /**
-     * Add am error thrown during delivery.
+     * Add an error thrown during delivery.
      *
-     * @param string[] $value
-     *
-     * @return static
+     * @return $this
      */
-    public function addDeliveryError($value)
+    public function addDeliveryError(string $value): self
     {
-        $this->deliveryErrors[] = (string) $value;
+        $this->deliveryErrors[] = $value;
 
         return $this;
     }
@@ -381,9 +315,9 @@ class Notification
      *
      * @param string[] $value
      *
-     * @return static
+     * @return $this
      */
-    public function setDeliveryErrors(array $value)
+    public function setDeliveryErrors(array $value): self
     {
         $this->deliveryErrors = $value;
 

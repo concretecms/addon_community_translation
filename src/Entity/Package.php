@@ -1,24 +1,27 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Entity;
 
 use CommunityTranslation\Entity\Package\Version;
 use CommunityTranslation\Service\VersionComparer;
-use DateTime;
+use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\ORM\Mapping as ORM;
+use Doctrine\Common\Collections\Collection;
+
+defined('C5_EXECUTE') or die('Access Denied.');
 
 /**
  * Represent a package that can have translations.
  *
- * @ORM\Entity(
+ * @Doctrine\ORM\Mapping\Entity(
  *     repositoryClass="CommunityTranslation\Repository\Package",
  * )
- * @ORM\Table(
+ * @Doctrine\ORM\Mapping\Table(
  *     name="CommunityTranslationPackages",
  *     uniqueConstraints={
- *         @ORM\UniqueConstraint(name="IDX_CTPackageHandle", columns={"handle"}
- *         )
+ *         @Doctrine\ORM\Mapping\UniqueConstraint(name="IDX_CTPackageHandle", columns={"handle"})
  *     },
  *     options={
  *         "comment": "List of all package that can have translaitons"
@@ -28,65 +31,80 @@ use Doctrine\ORM\Mapping as ORM;
 class Package
 {
     /**
-     * @param string $handle
-     * @param string $name
-     * @param string $url
+     * Package ID.
      *
-     * @return static
+     * @Doctrine\ORM\Mapping\Column(type="integer", options={"unsigned": true, "comment": "Package ID"})
+     * @Doctrine\ORM\Mapping\Id
+     * @Doctrine\ORM\Mapping\GeneratedValue(strategy="AUTO")
      */
-    public static function create($handle, $name = '', $url = '')
-    {
-        $result = new static();
-        $result->handle = (string) $handle;
-        $result->name = (string) $name;
-        $result->url = (string) $url;
-        $result->latestVersion = null;
-        $result->createdOn = new DateTime();
+    protected ?int $id;
 
-        return $result;
-    }
+    /**
+     * Package handle.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="string", length=64, nullable=false, options={"comment": "Package handle"})
+     */
+    protected string $handle;
 
-    protected function __construct()
+    /**
+     * Package name.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="string", length=255, nullable=false, options={"comment": "Package name"})
+     */
+    protected string $name;
+
+    /**
+     * Package URL.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="text", length=2000, nullable=false, options={"comment": "Package URL"})
+     */
+    protected string $url;
+
+    /**
+     * Record creation date/time.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="datetime_immutable", nullable=false, options={"comment": "Record creation date/time"})
+     */
+    protected DateTimeImmutable $createdOn;
+
+    /**
+     * Latest package version.
+     *
+     * @Doctrine\ORM\Mapping\ManyToOne(targetEntity="CommunityTranslation\Entity\Package\Version", inversedBy="package")
+     * @Doctrine\ORM\Mapping\JoinColumn(name="latestVersion", referencedColumnName="id", nullable=true, onDelete="SET NULL")
+     */
+    protected ?Version $latestVersion;
+
+    /**
+     * Package versions.
+     *
+     * @Doctrine\ORM\Mapping\OneToMany(targetEntity="CommunityTranslation\Entity\Package\Version", mappedBy="package")
+     */
+    protected Collection $versions;
+
+    public function __construct(string $handle, string $name = '', string $url = '')
     {
+        $this->id = null;
+        $this->handle = $handle;
+        $this->name = $name;
+        $this->url = $url;
+        $this->latestVersion = null;
+        $this->createdOn = new DateTimeImmutable();
         $this->versions = new ArrayCollection();
     }
 
     /**
-     * Package ID.
-     *
-     * @ORM\Column(type="integer", options={"unsigned": true, "comment": "Package ID"})
-     * @ORM\Id
-     * @ORM\GeneratedValue(strategy="AUTO")
-     *
-     * @var int|null
-     */
-    protected $id;
-
-    /**
      * Get the package ID.
-     *
-     * @return int|null
      */
-    public function getID()
+    public function getID(): ?int
     {
         return $this->id;
     }
 
     /**
-     * Package handle.
-     *
-     * @ORM\Column(type="string", length=64, nullable=false, options={"comment": "Package handle"})
-     *
-     * @var string
-     */
-    protected $handle;
-
-    /**
      * Get the package handle.
-     *
-     * @return string
      */
-    public function getHandle()
+    public function getHandle(): string
     {
         return $this->handle;
     }
@@ -94,101 +112,64 @@ class Package
     /**
      * Set the package handle.
      *
-     * @param string $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setHandle($value)
+    public function setHandle(string $value): self
     {
-        $this->handle = (string) $value;
+        $this->handle = $value;
 
         return $this;
     }
 
     /**
-     * Package name.
-     *
-     * @ORM\Column(type="string", length=255, nullable=false, options={"comment": "Package name"})
-     *
-     * @var string
-     */
-    protected $name;
-
-    /**
      * Get the package name.
-     *
-     * @return string
      */
-    public function getName()
+    public function getName(): string
     {
         return $this->name;
     }
 
     /**
      * Get the package display name.
-     *
-     * @return string
      */
-    public function getDisplayName()
+    public function getDisplayName(): string
     {
         if ($this->name !== '') {
-            $result = $this->name;
-        } else {
-            $result = '';
-            $string = trim($this->handle, '_-');
-            $segments = preg_split('/[_-]+/', $string);
-            foreach ($segments as $segment) {
-                if ($segment !== '') {
-                    $len = mb_strlen($segment);
-                    if ($len === 1) {
-                        $segment = mb_strtoupper($segment);
-                    } else {
-                        $segment = mb_strtoupper(mb_substr($segment, 0, 1)) . mb_substr($segment, 1);
-                    }
-                    if ($result === '') {
-                        $result = $segment;
-                    } else {
-                        $result .= ' ' . $segment;
-                    }
-                }
-            }
-            if ($result === '') {
-                $result = $this->handle;
+            return $this->name;
+        }
+        $segments = preg_split('/[_-]+/', $this->handle, -1, PREG_SPLIT_NO_EMPTY);
+        if ($segments === []) {
+            return $this->handle;
+        }
+        $parts = [];
+        foreach ($segments as $segment) {
+            $len = mb_strlen($segment);
+            if ($len === 1) {
+                $parts[] = mb_strtoupper($segment);
+            } else {
+                $parts[] = mb_strtoupper(mb_substr($segment, 0, 1)) . mb_substr($segment, 1);
             }
         }
 
-        return $result;
+        return implode(' ', $parts);
     }
 
     /**
      * Set the package name.
      *
-     * @param string $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setName($value)
+    public function setName(string $value): self
     {
-        $this->name = (string) $value;
+        $this->name = $value;
 
         return $this;
     }
 
     /**
-     * Package URL.
-     *
-     * @ORM\Column(type="text", length=2000, nullable=false, options={"comment": "Package URL"})
-     *
-     * @var string
-     */
-    protected $url;
-
-    /**
      * Get the package URL.
-     *
-     * @return string
      */
-    public function getUrl()
+    public function getUrl(): string
     {
         return $this->url;
     }
@@ -196,52 +177,27 @@ class Package
     /**
      * Set the package URL.
      *
-     * @param string $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setUrl($value)
+    public function setUrl(string $value): self
     {
-        $this->url = (string) $value;
+        $this->url = $value;
 
         return $this;
     }
 
     /**
-     * Record creation date/time.
-     *
-     * @ORM\Column(type="datetime", nullable=false, options={"comment": "Record creation date/time"})
-     *
-     * @var DateTime
-     */
-    protected $createdOn;
-
-    /**
      * Get the record creation date/time.
-     *
-     * @return DateTime
      */
-    public function getCreatedOn()
+    public function getCreatedOn(): DateTimeImmutable
     {
         return $this->createdOn;
     }
 
     /**
-     * Latest package version.
-     *
-     * @ORM\ManyToOne(targetEntity="CommunityTranslation\Entity\Package\Version", inversedBy="package")
-     * @ORM\JoinColumn(name="latestVersion", referencedColumnName="id", nullable=true, onDelete="SET NULL")
-     *
-     * @var Version|null
-     */
-    protected $latestVersion;
-
-    /**
      * Get the latest package version.
-     *
-     * @return Version|null
      */
-    public function getLatestVersion()
+    public function getLatestVersion(): ?Version
     {
         return $this->latestVersion;
     }
@@ -249,11 +205,9 @@ class Package
     /**
      * Set the latest package version.
      *
-     * @param Version|null $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setLatestVersion(Version $value = null)
+    public function setLatestVersion(?Version $value): self
     {
         $this->latestVersion = $value;
 
@@ -261,20 +215,11 @@ class Package
     }
 
     /**
-     * Package versions.
-     *
-     * @ORM\OneToMany(targetEntity="CommunityTranslation\Entity\Package\Version", mappedBy="package")
-     *
-     * @var ArrayCollection
-     */
-    protected $versions;
-
-    /**
      * Get the package versions.
      *
-     * @return \CommunityTranslation\Entity\Package\Version[]|ArrayCollection
+     * @return \CommunityTranslation\Entity\Package\Version[]
      */
-    public function getVersions()
+    public function getVersions(): Collection
     {
         return $this->versions;
     }
@@ -282,21 +227,23 @@ class Package
     /**
      * Get the development versions, sorted in ascending or descending order.
      *
-     * @param bool $descending
-     *
      * @return \CommunityTranslation\Entity\Package\Version[]
      */
-    public function getSortedDevelopmentVersions($descending = false)
+    public function getSortedDevelopmentVersions(bool $descending = false): array
     {
-        $versions = [];
         foreach ($this->getVersions() as $v) {
             if (strpos($v->getVersion(), Package\Version::DEV_PREFIX) === 0) {
                 $versions[] = $v;
             }
         }
-        usort($versions, function (Package\Version $a, Package\Version $b) use ($descending) {
-            return version_compare($a->getVersion(), $b->getVersion()) * ($descending ? -1 : 1);
-        });
+        usort(
+            $versions,
+            static function (Package\Version $a, Package\Version $b) use ($descending): int {
+                $cmp = version_compare($a->getVersion(), $b->getVersion());
+
+                return $descending ? -$cmp : $cmp;
+            }
+        );
 
         return $versions;
     }
@@ -304,11 +251,9 @@ class Package
     /**
      * Get the production versions, sorted in ascending or descending order.
      *
-     * @param bool $descending
-     *
      * @return \CommunityTranslation\Entity\Package\Version[]
      */
-    public function getSortedProductionVersions($descending = false)
+    public function getSortedProductionVersions(bool $descending = false): array
     {
         $versions = [];
         foreach ($this->getVersions() as $v) {
@@ -316,9 +261,14 @@ class Package
                 $versions[] = $v;
             }
         }
-        usort($versions, function (Package\Version $a, Package\Version $b) use ($descending) {
-            return version_compare($a->getVersion(), $b->getVersion()) * ($descending ? -1 : 1);
-        });
+        usort(
+            $versions,
+            static function (Package\Version $a, Package\Version $b) use ($descending): int {
+                $cmp = version_compare($a->getVersion(), $b->getVersion());
+
+                return $descending ? -$cmp : $cmp;
+            }
+        );
 
         return $versions;
     }
@@ -326,26 +276,23 @@ class Package
     /**
      * Get the versions, sorted in ascending or descending order, with development or production versions first.
      *
-     * @param bool $descending
      * @param bool|null $developmentVersionsFirst If null, development versions are placed among the production versions
      *
-     * @return Package\Version[]
+     * @return \CommunityTranslation\Entity\Package\Version[]
      */
-    public function getSortedVersions($descending = false, $developmentVersionsFirst = null)
+    public function getSortedVersions(bool $descending = false, ?bool $developmentVersionsFirst = null): array
     {
         if ($developmentVersionsFirst === null) {
             $versionComparer = new VersionComparer();
-            $result = $versionComparer->sortPackageVersionEntities($this->getVersions()->toArray(), $descending);
-        } else {
-            $devVersions = $this->getSortedDevelopmentVersions($descending);
-            $prodVersions = $this->getSortedProductionVersions($descending);
-            if ($developmentVersionsFirst) {
-                $result = array_merge($devVersions, $prodVersions);
-            } else {
-                $result = array_merge($prodVersions, $devVersions);
-            }
-        }
 
-        return $result;
+            return $versionComparer->sortPackageVersionEntities($this->getVersions()->toArray(), $descending);
+        }
+        $devVersions = $this->getSortedDevelopmentVersions($descending);
+        $prodVersions = $this->getSortedProductionVersions($descending);
+
+        return array_merge(
+            $developmentVersionsFirst ? $devVersions : $prodVersions,
+            $developmentVersionsFirst ? $prodVersions : $devVersions
+        );
     }
 }

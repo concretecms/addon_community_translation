@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Concrete\Package\CommunityTranslation\Controller\Search;
 
 use CommunityTranslation\Repository\Locale as LocaleRepository;
@@ -8,6 +10,8 @@ use CommunityTranslation\Search\Results\Packages as SearchResult;
 use Concrete\Core\Controller\AbstractController;
 use Concrete\Core\Search\StickyRequest;
 
+defined('C5_EXECUTE') or die('Access Denied.');
+
 /**
  * Controller for the packages search.
  */
@@ -15,59 +19,51 @@ class Packages extends AbstractController
 {
     /**
      * Instance of a class that holds the criteria of the last performed search.
-     *
-     * @var StickyRequest|null
      */
-    private $stickyRequest;
+    private ?StickyRequest $stickyRequest = null;
+
+    /**
+     * Instance of a class that defines the search list.
+     *
+     * @var
+     */
+    private ?SearchList $searchList = null;
+
+    /**
+     * Instance of a class that defines the search results.
+     */
+    private ?SearchResult $searchResult = null;
 
     /**
      * Get the instance of a class that holds the criteria of the last performed search.
-     *
-     * @return StickyRequest
      */
-    public function getStickyRequest()
+    public function getStickyRequest(): StickyRequest
     {
         if ($this->stickyRequest === null) {
-            $this->stickyRequest = $this->app->make(StickyRequest::class, ['community_translation.packages']);
+            $this->stickyRequest = $this->app->make(StickyRequest::class, ['namespace' => 'community_translation.packages']);
         }
 
         return $this->stickyRequest;
     }
 
     /**
-     * Instance of a class that defines the search list.
-     *
-     * @var SearchList
-     */
-    private $searchList;
-
-    /**
      * Get the instance of a class that defines the search list.
-     *
-     * @return SearchList
      */
-    public function getSearchList()
+    public function getSearchList(): SearchList
     {
         if ($this->searchList === null) {
-            $this->searchList = $this->app->make(SearchList::class, [$this->getStickyRequest()]);
+            $this->searchList = $this->app->make(SearchList::class, ['req' => $this->getStickyRequest()]);
         }
 
         return $this->searchList;
     }
 
     /**
-     * Instance of a class that defines the search results.
-     *
-     * @var SearchResult|null
-     */
-    private $searchResult;
-
-    /**
      * Perform the search.
      *
      * @param bool $reset Should we reset all the previous search criteria?
      */
-    public function search($reset = false)
+    public function search(bool $reset = false): SearchResult
     {
         $stickyRequest = $this->getStickyRequest();
         $searchList = $this->getSearchList();
@@ -76,27 +72,25 @@ class Packages extends AbstractController
         }
         $req = $stickyRequest->getSearchRequest();
 
-        $req = $stickyRequest->getSearchRequest();
-
-        if (isset($req['keywords']) && $req['keywords'] !== '') {
+        if (is_string($req['keywords'] ?? null) && $req['keywords'] !== '') {
             $searchList->filterByKeywords($req['keywords']);
         }
-        if (isset($req['locale']) && is_string($req['locale']) && $req['locale'] !== '') {
+        if (is_string($req['locale'] ?? null) && $req['locale'] !== '') {
             $repo = $this->app->make(LocaleRepository::class);
             $locale = $repo->findApproved($req['locale']);
             if ($locale !== null) {
-                $searchList->showLocaleStats($locale);
+                $searchList->showStatsForLocale($locale);
             }
         }
-        $this->searchResult = new SearchResult($searchList);
+        $this->searchResult = $this->app->make(SearchResult::class, ['list' => $searchList]);
+
+        return $this->searchResult;
     }
 
     /**
      * Get the search result (once the search() method has been called).
-     *
-     * @return SearchResult|null
      */
-    public function getSearchResultObject()
+    public function getSearchResultObject(): ?SearchResult
     {
         return $this->searchResult;
     }

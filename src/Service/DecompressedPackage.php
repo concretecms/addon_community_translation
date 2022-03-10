@@ -1,131 +1,118 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Service;
 
-use Concrete\Core\Application\Application;
 use Concrete\Core\Error\UserMessageException;
+use Concrete\Core\File\Service\VolatileDirectory;
+use Concrete\Core\File\Service\Zip as ZipService;
+use Exception;
+use Throwable;
 
-class DecompressedPackage
+defined('C5_EXECUTE') or die('Access Denied.');
+
+final class DecompressedPackage
 {
-    /**
-     * The application object.
-     *
-     * @var Application
-     */
-    protected $app;
+    private ZipService $zipService;
+
+    private VolatileDirectoryCreator $volatileDirectoryCreator;
 
     /**
      * The full path of the archive file containing the package.
-     *
-     * @var string
      */
-    protected $packageArchive;
+    private string $packageArchive;
+
+    /**
+     * The volatile instance that contains the decompressed contents of the package archive.
+     */
+    private ?VolatileDirectory $volatileDirectory;
+
+    /**
+     * The working directory contaning the extracted package (empty string if not yet extracted).
+     */
+    private string $extractedWorkDir = '';
+
+    /**
+     * @param string $packageArchive the full path of the archive file containing the package
+     * @param \Concrete\Core\File\Service\VolatileDirectory|null $volatileDirectory an empty VolatileDirectory instance
+     */
+    public function __construct(ZipService $zipService, VolatileDirectoryCreator $volatileDirectoryCreator, string $packageArchive, ?VolatileDirectory $volatileDirectory = null)
+    {
+        $this->zipService = $zipService;
+        $this->volatileDirectoryCreator = $volatileDirectoryCreator;
+        $this->packageArchive = $packageArchive;
+        $this->volatileDirectory = $volatileDirectory;
+    }
 
     /**
      * Get the full path of the archive file containing the package.
-     *
-     * @return string
      */
-    public function getPackageArchive()
+    public function getPackageArchive(): string
     {
         return $this->packageArchive;
     }
 
     /**
-     * The volatile instance that contains the decompressed contents of the package archive.
-     *
-     * @var VolatileDirectory|null
-     */
-    protected $volatileDirectory = null;
-
-    /**
-     * Get the volatile instance that contains the decompressed contents of the package archive.
-     *
-     * @return VolatileDirectory
-     */
-    protected function getVolatileDirectory()
-    {
-        if ($this->volatileDirectory === null) {
-            $this->volatileDirectory = $this->app->make(VolatileDirectory::class);
-        }
-
-        return $this->volatileDirectory;
-    }
-
-    /**
-     * The working directory contaning the extracted package (null if still not extracted).
-     *
-     * @var string|null
-     */
-    protected $extractedWorkDir;
-
-    /**
-     * Initializes the instance.
-     *
-     * @param string $packageArchive the full path of the archive file containing the package
-     * @param VolatileDirectory $volatileDirectory an empty VolatileDirectory instance
-     */
-    public function __construct(Application $app, $packageArchive, VolatileDirectory $volatileDirectory = null)
-    {
-        $this->app = $app;
-        $this->packageArchive = $packageArchive;
-        $this->volatileDirectory = $volatileDirectory;
-        $this->extractedWorkDir = null;
-    }
-
-    /**
      * Extract the archive (if not already done).
      *
-     * @throws UserMessageException
+     * @throws \Concrete\Core\Error\UserMessageException
      */
-    public function extract()
+    public function extract(): void
     {
-        if ($this->extractedWorkDir !== null) {
+        if ($this->extractedWorkDir !== '') {
             return;
         }
         if (!is_file($this->packageArchive)) {
             throw new UserMessageException(t('Archive not found: %s', $this->packageArchive));
         }
+        $deleteVolatileDirectory = true;
         try {
-            $workDir = $this->getVolatileDirectory()->getPath();
+            $extractedWorkDir = $this->getVolatileDirectory()->getPath();
             try {
-                $this->app->make('helper/zip')->unzip($this->packageArchive, $workDir);
-            } catch (\Exception $x) {
+                $this->zipService->unzip($this->packageArchive, $extractedWorkDir);
+            } catch (Exception $x) {
                 throw new UserMessageException($x->getMessage());
             }
             $fs = $this->getVolatileDirectory()->getFilesystem();
-            $dirs = array_filter($fs->directories($workDir), function ($dn) {
-                return strpos(basename($dn), '.') !== 0;
-            });
+            $dirs = array_filter(
+                $fs->directories($extractedWorkDir),
+                static function (string $dirname): bool {
+                    return strpos(basename($dirname), '.') !== 0;
+                }
+            );
             if (count($dirs) === 1) {
-                $someFile = false;
-                foreach ($fs->files($workDir) as $fn) {
+                $someFiles = false;
+                foreach ($fs->files($extractedWorkDir) as $fn) {
                     if (strpos(basename($fn), '.') !== 0) {
-                        $someFile = true;
+                        $someFiles = true;
                         break;
                     }
                 }
-                if ($someFile === false) {
-                    $workDir = $dirs[0];
+                if ($someFiles === false) {
+                    $extractedWorkDir = rtrim(str_replace(DIRECTORY_SEPARATOR, '/', $dirs[0]), '/');
                 }
             }
-        } catch (\Exception $x) {
-            $this->volatileDirectory = null;
-            throw $x;
+            $deleteVolatileDirectory = false;
+        } finally {
+            if ($deleteVolatileDirectory) {
+                try {
+                    $this->volatileDirectory = null;
+                } catch (Throwable $x) {
+                }
+            }
         }
-        $this->extractedWorkDir = $workDir;
+        $this->extractedWorkDir = $extractedWorkDir;
     }
 
     /**
      * Get the working directory contaning the extracted package (we'll extract it if not already done).
      *
-     * @throws UserMessageException
-     *
-     * @return string
+     * @throws \Concrete\Core\Error\UserMessageException
      */
-    public function getExtractedWorkDir()
+    public function getExtractedWorkDir(): string
     {
-        if ($this->extractedWorkDir === null) {
+        if ($this->extractedWorkDir === '') {
             $this->extract();
         }
 
@@ -135,15 +122,27 @@ class DecompressedPackage
     /**
      * Re-create the source archive with the contents of the extracted directory.
      *
-     * @throws UserMessageException
+     * @throws \Concrete\Core\Error\UserMessageException
      */
-    public function repack()
+    public function repack(): void
     {
         $this->extract();
         try {
-            $this->app->make('helper/zip')->zip($this->getVolatileDirectory()->getPath(), $this->packageArchive, ['includeDotFiles' => true]);
-        } catch (\Exception $x) {
+            $this->zipService->zip($this->getVolatileDirectory()->getPath(), $this->packageArchive, ['includeDotFiles' => true]);
+        } catch (Exception $x) {
             throw new UserMessageException($x->getMessage());
         }
+    }
+
+    /**
+     * Get the volatile instance that contains the decompressed contents of the package archive.
+     */
+    private function getVolatileDirectory(): VolatileDirectory
+    {
+        if ($this->volatileDirectory === null) {
+            $this->volatileDirectory = $this->volatileDirectoryCreator->createVolatileDirectory();
+        }
+
+        return $this->volatileDirectory;
     }
 }

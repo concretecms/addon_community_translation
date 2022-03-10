@@ -1,15 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Notification\Category;
 
 use CommunityTranslation\Entity\Notification as NotificationEntity;
 use CommunityTranslation\Notification\Category;
 use CommunityTranslation\Repository\Locale as LocaleRepository;
 use CommunityTranslation\Repository\Package\Version as PackageVersionRepository;
+use Concrete\Core\Config\Repository\Repository;
+use Concrete\Core\Url\Resolver\Manager\ResolverManagerInterface;
 use Concrete\Core\User\UserInfo;
 use Concrete\Core\User\UserInfoRepository;
+use Concrete\Package\CommunityTranslation\Controller\Frontend\OnlineTranslation;
 use Exception;
-use URL;
+
+defined('C5_EXECUTE') or die('Access Denied.');
 
 /**
  * Notification category: some translations need approval.
@@ -19,37 +25,14 @@ class TranslationsNeedApproval extends Category
     /**
      * @var int
      */
-    const PRIORITY = 1;
+    public const PRIORITY = 1;
 
     /**
      * {@inheritdoc}
      *
-     * @see Category::getRecipientIDs()
+     * @see \CommunityTranslation\Notification\CategoryInterface::getMailParameters()
      */
-    protected function getRecipientIDs(NotificationEntity $notification)
-    {
-        $result = [];
-        $notificationData = $notification->getNotificationData();
-        $locale = $this->app->make(LocaleRepository::class)->findApproved($notificationData['localeID']);
-        if ($locale === null) {
-            throw new Exception(t('Unable to find the locale with ID %s', $notificationData['localeID']));
-        }
-        $group = $this->getGroupsHelper()->getAdministrators($locale);
-        $result = array_merge($result, $group->getGroupMemberIDs());
-        if (empty($result)) {
-            $group = $this->getGroupsHelper()->getGlobalAdministrators();
-            $result = $group->getGroupMemberIDs();
-        }
-
-        return $result;
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @see Category::getMailParameters()
-     */
-    public function getMailParameters(NotificationEntity $notification, UserInfo $recipient)
+    public function getMailParameters(NotificationEntity $notification, UserInfo $recipient): array
     {
         $notificationData = $notification->getNotificationData();
         $locale = $this->app->make(LocaleRepository::class)->findApproved($notificationData['localeID']);
@@ -69,11 +52,34 @@ class TranslationsNeedApproval extends Category
         return [
             'localeName' => $locale->getDisplayName(),
             'translations' => $translations,
-            'approvalURL' => (string) URL::to(
-                $this->app->make('community_translation/config')->get('options.onlineTranslationPath'),
-                $packageVersion ? $packageVersion->getID() : 'unreviewed',
-                $locale->getID()
-            ),
+            'approvalURL' => (string) $this->app->make(ResolverManagerInterface::class)->resolve([
+                (string) $this->app->make(Repository::class)->get('community_translation::paths.onlineTranslation'),
+                $packageVersion ? $packageVersion->getID() : OnlineTranslation::PACKAGEVERSION_UNREVIEWED,
+                $locale->getID(),
+            ]),
         ] + $this->getCommonMailParameters($notification, $recipient);
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \CommunityTranslation\Notification\Category::getRecipientIDs()
+     */
+    protected function getRecipientIDs(NotificationEntity $notification): array
+    {
+        $result = [];
+        $notificationData = $notification->getNotificationData();
+        $locale = $this->app->make(LocaleRepository::class)->findApproved($notificationData['localeID']);
+        if ($locale === null) {
+            throw new Exception(t('Unable to find the locale with ID %s', $notificationData['localeID']));
+        }
+        $group = $this->getGroupService()->getAdministrators($locale);
+        $result = array_merge($result, $group->getGroupMemberIDs());
+        if ($result === []) {
+            $group = $this->getGroupService()->getGlobalAdministrators();
+            $result = $group->getGroupMemberIDs();
+        }
+
+        return $result;
     }
 }

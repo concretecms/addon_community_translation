@@ -1,86 +1,86 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Translation;
 
 use CommunityTranslation\Entity\Locale as LocaleEntity;
 use CommunityTranslation\Entity\Package\Version as PackageVersionEntity;
+use CommunityTranslation\Entity\Translatable as TranslatableEntity;
 use CommunityTranslation\Repository\Package\Version as PackageVersionRepository;
-use Concrete\Core\Application\Application;
-use Concrete\Core\Database\Driver\PDOStatement;
 use Concrete\Core\Error\UserMessageException;
-use Doctrine\ORM\EntityManager;
+use Doctrine\DBAL\Result;
+use Doctrine\ORM\EntityManagerInterface;
+use Gettext\Translation;
 use Gettext\Translations;
+
+defined('C5_EXECUTE') or die('Access Denied.');
 
 class Exporter
 {
-    /**
-     * The application object.
-     *
-     * @var Application
-     */
-    protected $app;
+    private EntityManagerInterface $entityManager;
 
-    /**
-     * @param Application $app
-     */
-    public function __construct(Application $app)
+    private PackageVersionRepository $packageVersionRepository;
+
+    public function __construct(EntityManagerInterface $entityManager, PackageVersionRepository $packageVersionRepository)
     {
-        $this->app = $app;
+        $this->packageVersionRepository = $packageVersionRepository;
+        $this->entityManager = $entityManager;
     }
 
     /**
      * Fill in the translations for a specific locale.
-     *
-     * @param Translations $translations
-     * @param LocaleEntity $locale
-     *
-     * @return Translations
      */
-    public function fromPot(Translations $pot, LocaleEntity $locale)
+    public function fromPot(Translations $pot, LocaleEntity $locale): Translations
     {
-        $cn = $this->app->make(EntityManager::class)->getConnection();
+        $cn = $this->entityManager->getConnection();
         $po = clone $pot;
         $po->setLanguage($locale->getID());
+        $po->setPluralForms($locale->getPluralCount(), $locale->getPluralFormula());
         $numPlurals = $locale->getPluralCount();
-        $searchQuery = $cn->prepare('
-            select
-                CommunityTranslationTranslations.*
-            from
-                CommunityTranslationTranslatables
-                inner join CommunityTranslationTranslations on CommunityTranslationTranslatables.id = CommunityTranslationTranslations.translatable
-            where
-                CommunityTranslationTranslations.locale = ' . $cn->quote($locale->getID()) . '
-                and CommunityTranslationTranslations.current = 1
-                and CommunityTranslationTranslatables.hash = ?
-            limit 1
-        ')->getWrappedStatement();
+        $quotedLocaleID = $cn->quote($locale->getID());
+        $searchQuery = $cn->prepare(
+            <<<EOT
+SELECT
+    CommunityTranslationTranslations.*
+FROM
+    CommunityTranslationTranslatables
+    INNER JOIN CommunityTranslationTranslations ON CommunityTranslationTranslatables.id = CommunityTranslationTranslations.translatable
+WHERE
+    CommunityTranslationTranslations.locale = {$quotedLocaleID}
+    AND CommunityTranslationTranslations.current = 1
+    AND CommunityTranslationTranslatables.hash = ?
+LIMIT 1
+EOT
+        );
+        $searchStatement = $searchQuery->getWrappedStatement();
         foreach ($po as $translationKey => $translation) {
+            /** @var \Gettext\Translation $translation */
             $plural = $translation->getPlural();
-            $hash = md5(($plural === '') ? $translationKey : "$translationKey\005$plural");
-            $searchQuery->execute([$hash]);
-            $row = $searchQuery->fetch();
-            $searchQuery->closeCursor();
-            if ($row !== false) {
-                $translation->setTranslation($row['text0']);
-                if ($plural !== '') {
-                    switch ($numPlurals) {
-                        case 6:
-                            $translation->setPluralTranslation($row['text5'], 4);
-                            /* @noinspection PhpMissingBreakStatementInspection */
-                        case 5:
-                            $translation->setPluralTranslation($row['text4'], 3);
-                            /* @noinspection PhpMissingBreakStatementInspection */
-                        case 4:
-                            $translation->setPluralTranslation($row['text3'], 2);
-                            /* @noinspection PhpMissingBreakStatementInspection */
-                        case 3:
-                            $translation->setPluralTranslation($row['text2'], 1);
-                            /* @noinspection PhpMissingBreakStatementInspection */
-                        case 2:
-                            $translation->setPluralTranslation($row['text1'], 0);
-                            /* @noinspection PhpMissingBreakStatementInspection */
-                            break;
-                    }
+            $hash = TranslatableEntity::generateHashFromGettextKey($translationKey, $plural);
+            $searchStatement->execute([$hash]);
+            $row = $searchStatement->fetchAssociative();
+            if ($row === false) {
+                continue;
+            }
+            $translation->setTranslation($row['text0']);
+            if ($plural !== '') {
+                switch ($numPlurals) {
+                    case 6:
+                        $translation->setPluralTranslation($row['text5'], 4);
+                        // no break
+                    case 5:
+                        $translation->setPluralTranslation($row['text4'], 3);
+                        // no break
+                    case 4:
+                        $translation->setPluralTranslation($row['text3'], 2);
+                        // no break
+                    case 3:
+                        $translation->setPluralTranslation($row['text2'], 1);
+                        // no break
+                    case 2:
+                        $translation->setPluralTranslation($row['text1'], 0);
+                        break;
                 }
             }
         }
@@ -89,143 +89,72 @@ class Exporter
     }
 
     /**
-     * Builds the base select query string to retrieve some translatable/translated strings.
-     *
-     * @param LocaleEntity $locale
-     * @param bool $withPlaces
-     * @param bool $excludeUntranslatedStrings
-     *
-     * @return string
-     */
-    protected function getBaseSelectString(LocaleEntity $locale, $withPlaces, $excludeUntranslatedStrings)
-    {
-        $cn = $this->app->make(EntityManager::class)->getConnection();
-        $queryLocaleID = $cn->quote($locale->getID());
-
-        $result = '
-            select
-                CommunityTranslationTranslatables.id,
-                CommunityTranslationTranslatables.context,
-                CommunityTranslationTranslatables.text,
-                CommunityTranslationTranslatables.plural,
-        ';
-        if ($withPlaces) {
-            $result .= '
-                CommunityTranslationTranslatablePlaces.locations,
-                CommunityTranslationTranslatablePlaces.comments,
-            ';
-        } else {
-            $result .= "
-                'a:0:{}' as locations,
-                'a:0:{}' as comments,
-            ";
-        }
-        $result .= '
-                CommunityTranslationTranslations.approved,
-                CommunityTranslationTranslations.text0,
-                CommunityTranslationTranslations.text1,
-                CommunityTranslationTranslations.text2,
-                CommunityTranslationTranslations.text3,
-                CommunityTranslationTranslations.text4,
-                CommunityTranslationTranslations.text5
-            from
-                CommunityTranslationTranslatables
-        ';
-        if ($withPlaces) {
-            $result .= '
-                inner join CommunityTranslationTranslatablePlaces on CommunityTranslationTranslatables.id = CommunityTranslationTranslatablePlaces.translatable
-            ';
-        }
-        $result .=
-            ($excludeUntranslatedStrings ? 'inner join' : 'left join')
-            . "
-                CommunityTranslationTranslations on CommunityTranslationTranslatables.id = CommunityTranslationTranslations.translatable and 1 = CommunityTranslationTranslations.current and $queryLocaleID = CommunityTranslationTranslations.locale
-            "
-        ;
-
-        return $result;
-    }
-
-    /**
      * Get the recordset of all the translations of a locale that needs to be reviewed.
-     *
-     * @param LocaleEntity $locale
-     *
-     * @return PDOStatement
      */
-    public function getUnreviewedSelectQuery(LocaleEntity $locale)
+    public function getUnreviewedSelectQuery(LocaleEntity $locale): Result
     {
-        $cn = $this->app->make(EntityManager::class)->getConnection();
-        $queryLocaleID = $cn->quote($locale->getID());
+        $cn = $this->entityManager->getConnection();
+        $quotedLocaleID = $cn->quote($locale->getID());
+        $baseSelectString = $this->getBaseSelectString($locale, false, false);
 
         return $cn->executeQuery(
-            $this->getBaseSelectString($locale, false, false) .
-            " inner join
-                (
-                    select distinct
-                        translatable
-                    from
-                        CommunityTranslationTranslations
-                    where
-                        locale = $queryLocaleID
-                        and
-                        (
-                            (approved is null)
-                            or
-                            (current = 1 and approved = 0)
-                        )
-                ) as tNR on CommunityTranslationTranslatables.id = tNR.translatable
-            order by
-                CommunityTranslationTranslatables.text
-            "
+            <<<EOT
+{$baseSelectString}
+    INNER JOIN (
+        SELECT DISTINCT
+            translatable
+        FROM
+            CommunityTranslationTranslations
+        WHERE
+            locale = {$quotedLocaleID}
+            AND (
+                approved IS NULL
+                OR (current = 1 and approved = 0)
+            )
+    ) AS tNR ON CommunityTranslationTranslatables.id = tNR.translatable
+ORDER BY
+    CommunityTranslationTranslatables.text
+EOT
         );
     }
 
     /**
      * Get recordset of the translations for a specific package, version and locale.
-     *
-     * @param PackageVersionEntity $packageVersion
-     * @param LocaleEntity $locale
-     * @param bool $excludeUntranslatedStrings
-     *
-     * @return PDOStatement
      */
-    public function getPackageSelectQuery(PackageVersionEntity $packageVersion, LocaleEntity $locale, $excludeUntranslatedStrings = false)
+    public function getPackageSelectQuery(PackageVersionEntity $packageVersion, LocaleEntity $locale, bool $excludeUntranslatedStrings = false): Result
     {
-        $cn = $this->app->make(EntityManager::class)->getConnection();
+        $cn = $this->entityManager->getConnection();
         $queryPackageVersionID = (int) $packageVersion->getID();
+        $baseSelectString = $this->getBaseSelectString($locale, true, $excludeUntranslatedStrings);
 
         return $cn->executeQuery(
-            $this->getBaseSelectString($locale, true, $excludeUntranslatedStrings) .
-            "
-                where
-                    CommunityTranslationTranslatablePlaces.packageVersion = $queryPackageVersionID
-                order by
-                    CommunityTranslationTranslatablePlaces.sort
-            "
+            <<<EOT
+{$baseSelectString}
+WHERE
+    CommunityTranslationTranslatablePlaces.packageVersion = {$queryPackageVersionID}
+ORDER BY
+    CommunityTranslationTranslatablePlaces.sort
+EOT
         );
     }
 
     /**
      * Get the translations for a specific package, version and locale.
      *
-     * @param PackageVersionEntity|array $packageOrHandleVersion The package version for which you want the translations (a Package\Version entity instance of an array with handle and version)
-     * @param LocaleEntity $locale the locale that you want
+     * @param \CommunityTranslation\Entity\Package\Version|array $packageOrHandleVersion The package version for which you want the translations (a Package\Version entity instance of an array with handle and version)
      * @param bool $excludeUntranslatedStrings set to true to filter out untranslated strings
-     *
-     * @return Translations
      */
-    public function forPackage($packageOrHandleVersion, LocaleEntity $locale, $excludeUntranslatedStrings = false)
+    public function forPackage($packageOrHandleVersion, LocaleEntity $locale, bool $excludeUntranslatedStrings = false): Translations
     {
         if ($packageOrHandleVersion instanceof PackageVersionEntity) {
             $packageVersion = $packageOrHandleVersion;
-        } elseif (is_array($packageOrHandleVersion) && isset($packageOrHandleVersion['handle']) && isset($packageOrHandleVersion['version'])) {
-            $packageVersion = $this->app->make(PackageVersionRepository::class)->findOneBy([
+        } elseif (is_array($packageOrHandleVersion) && isset($packageOrHandleVersion['handle'], $packageOrHandleVersion['version'])) {
+            $packageVersion = $this->packageVersionRepository->findOneBy([
                 'handle' => $packageOrHandleVersion['handle'],
                 'version' => $packageOrHandleVersion['version'],
             ]);
-        } elseif (is_array($packageOrHandleVersion) && isset($packageOrHandleVersion[0]) && isset($packageOrHandleVersion[1])) {
-            $packageVersion = $this->app->make(PackageVersionRepository::class)->findOneBy([
+        } elseif (is_array($packageOrHandleVersion) && isset($packageOrHandleVersion[0], $packageOrHandleVersion[1])) {
+            $packageVersion = $this->packageVersionRepository->findOneBy([
                 'handle' => $packageOrHandleVersion[0],
                 'version' => $packageOrHandleVersion[1],
             ]);
@@ -236,46 +165,127 @@ class Exporter
             throw new UserMessageException(t('Invalid translated package version specified'));
         }
         $rs = $this->getPackageSelectQuery($packageVersion, $locale, $excludeUntranslatedStrings);
-
         $result = $this->buildTranslations($locale, $rs);
-
-        $result->setHeader('Project-Id-Version', $packageVersion->getPackage()->getHandle() . ' ' . $packageVersion->getVersion());
+        $result->setHeader('Project-Id-Version', "{$packageVersion->getPackage()->getHandle()} {$packageVersion->getVersion()}");
 
         return $result;
     }
 
     /**
      * Get the unreviewed translations for a locale.
-     *
-     * @param LocaleEntity $locale the locale that you want
-     * @param bool $excludeUntranslatedStrings set to true to filter out untranslated strings
-     *
-     * @return Translations
      */
-    public function unreviewed(LocaleEntity $locale)
+    public function unreviewed(LocaleEntity $locale): Translations
     {
         $rs = $this->getUnreviewedSelectQuery($locale);
-
         $result = $this->buildTranslations($locale, $rs);
-
         $result->setHeader('Project-Id-Version', 'unreviewed');
 
         return $result;
     }
 
     /**
-     * @param LocaleEntity $locale
-     * @param PDOStatement $rs
-     *
-     * @return Translations
+     * Does a locale have translation strings that needs review?
      */
-    protected function buildTranslations(LocaleEntity $locale, PDOStatement $rs)
+    public function localeHasPendingApprovals(LocaleEntity $locale): bool
+    {
+        $cn = $this->entityManager->getConnection();
+        $rs = $cn->executeQuery(
+            <<<'EOT'
+SELECT
+    CommunityTranslationTranslations.id
+FROM
+    CommunityTranslationTranslations
+    INNER JOIN CommunityTranslationTranslatablePlaces ON CommunityTranslationTranslations.translatable = CommunityTranslationTranslatablePlaces.translatable
+WHERE
+    CommunityTranslationTranslations.locale = ?
+    AND (
+        CommunityTranslationTranslations.approved IS NULL
+        OR (CommunityTranslationTranslations.current = 1 AND CommunityTranslationTranslations.approved = 0)
+    )
+LIMIT 1
+EOT
+            ,
+            [
+                $locale->getID(),
+            ]
+        );
+
+        return $rs->fetchOne() !== false;
+    }
+
+    /**
+     * Builds the base select query string to retrieve some translatable/translated strings.
+     */
+    private function getBaseSelectString(LocaleEntity $locale, bool $withPlaces, bool $excludeUntranslatedStrings): string
+    {
+        $cn = $this->entityManager->getConnection();
+        $quotedLocaleID = $cn->quote($locale->getID());
+
+        $result = <<<'EOT'
+SELECT
+    CommunityTranslationTranslatables.id,
+    CommunityTranslationTranslatables.context,
+    CommunityTranslationTranslatables.text,
+    CommunityTranslationTranslatables.plural,
+
+EOT
+        ;
+        if ($withPlaces) {
+            $result .= <<<'EOT'
+    CommunityTranslationTranslatablePlaces.locations,
+    CommunityTranslationTranslatablePlaces.comments,
+
+EOT
+            ;
+        } else {
+            $emptySerializedArray = $cn->quote(serialize([]));
+            $result .= <<<EOT
+    {$emptySerializedArray} as locations,
+    {$emptySerializedArray} as comments,
+
+EOT
+            ;
+        }
+        $result .= <<<'EOT'
+    CommunityTranslationTranslations.approved,
+    CommunityTranslationTranslations.text0,
+    CommunityTranslationTranslations.text1,
+    CommunityTranslationTranslations.text2,
+    CommunityTranslationTranslations.text3,
+    CommunityTranslationTranslations.text4,
+    CommunityTranslationTranslations.text5
+FROM
+    CommunityTranslationTranslatables
+
+EOT
+        ;
+        if ($withPlaces) {
+            $result .= <<<'EOT'
+    INNER JOIN CommunityTranslationTranslatablePlaces ON CommunityTranslationTranslatables.id = CommunityTranslationTranslatablePlaces.translatable
+
+EOT
+            ;
+        }
+        $joinHow = $excludeUntranslatedStrings ? 'INNER' : 'LEFT';
+        $result .= <<<EOT
+    {$joinHow} JOIN CommunityTranslationTranslations
+        ON CommunityTranslationTranslatables.id = CommunityTranslationTranslations.translatable AND
+        1 = CommunityTranslationTranslations.current
+        AND {$quotedLocaleID} = CommunityTranslationTranslations.locale
+EOT
+        ;
+
+        return $result;
+    }
+
+    private function buildTranslations(LocaleEntity $locale, Result $rs): Translations
     {
         $translations = new Translations();
         $translations->setLanguage($locale->getID());
+        $translations->setPluralForms($locale->getPluralCount(), $locale->getPluralFormula());
         $numPlurals = $locale->getPluralCount();
-        while (($row = $rs->fetch()) !== false) {
-            $translation = new \Gettext\Translation($row['context'], $row['text'], $row['plural']);
+        while (($row = $rs->fetchAssociative()) !== false) {
+            $translation = new Translation($row['context'], $row['text'], $row['plural']);
             foreach (unserialize($row['locations']) as $location) {
                 $translation->addReference($location);
             }
@@ -291,63 +301,25 @@ class Exporter
                     switch ($numPlurals) {
                         case 6:
                             $translation->setPluralTranslation($row['text5'], 4);
-                            /* @noinspection PhpMissingBreakStatementInspection */
+                            // no break
                         case 5:
                             $translation->setPluralTranslation($row['text4'], 3);
-                            /* @noinspection PhpMissingBreakStatementInspection */
+                            // no break
                         case 4:
                             $translation->setPluralTranslation($row['text3'], 2);
-                            /* @noinspection PhpMissingBreakStatementInspection */
+                            // no break
                         case 3:
                             $translation->setPluralTranslation($row['text2'], 1);
-                            /* @noinspection PhpMissingBreakStatementInspection */
+                            // no break
                         case 2:
                             $translation->setPluralTranslation($row['text1'], 0);
-                            /* @noinspection PhpMissingBreakStatementInspection */
                             break;
                     }
                 }
             }
             $translations->append($translation);
         }
-        $rs->closeCursor();
 
         return $translations;
-    }
-
-    /**
-     * Does a locale have translation strings that needs review?
-     *
-     * @param LocaleEntity $locale
-     *
-     * @return bool
-     */
-    public function localeHasPendingApprovals(LocaleEntity $locale)
-    {
-        $cn = $this->app->make(EntityManager::class)->getConnection();
-        $rs = $cn->executeQuery(
-            '
-                select
-                    CommunityTranslationTranslations.id
-                from
-                    CommunityTranslationTranslations
-                    inner join CommunityTranslationTranslatablePlaces on CommunityTranslationTranslations.translatable = CommunityTranslationTranslatablePlaces.translatable
-                where
-                    CommunityTranslationTranslations.locale = ?
-                    and (
-                        (CommunityTranslationTranslations.approved is null)
-                        or
-                        (CommunityTranslationTranslations.current = 1 and CommunityTranslationTranslations.approved = 0)
-                    )
-                limit 1
-            ',
-            [
-                $locale->getID(),
-            ]
-        );
-        $result = $rs->fetchColumn() !== false;
-        $rs->closeCursor();
-
-        return $result;
     }
 }

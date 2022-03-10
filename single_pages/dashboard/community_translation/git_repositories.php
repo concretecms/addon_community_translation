@@ -1,15 +1,21 @@
 <?php
+
+declare(strict_types=1);
+
 defined('C5_EXECUTE') or die('Access Denied.');
 
-/* @var CommunityTranslation\Entity\GitRepository[] $repositories */
+/**
+ * @var Concrete\Core\Url\Resolver\Manager\ResolverManagerInterface $urlResolver
+ * @var CommunityTranslation\Entity\GitRepository[] $repositories
+ */
 
 ?>
 <div class="ccm-dashboard-header-buttons">
-    <a href="<?= View::url('/dashboard/community_translation/git_repositories/details', 'new') ?>" class="btn btn-primary"><?= t('Add Git Repository') ?></a>
+    <a href="<?= h($urlResolver->resolve(['/dashboard/community_translation/git_repositories/details', 'new'])) ?>" class="btn btn-primary"><?= t('Add Git Repository') ?></a>
 </div>
 
 <?php
-if (empty($repositories)) {
+if ($repositories === []) {
     ?>
     <div class="alert alert-info">
         <?= t('No Git Repository has been defined.') ?>
@@ -33,23 +39,23 @@ if (empty($repositories)) {
             foreach ($repositories as $repository) {
                 ?>
                 <tr>
-                    <td><a href="<?= URL::to('/dashboard/community_translation/git_repositories/details', $repository->getID()) ?>"><?= h($repository->getName()) ?></a></td>
+                    <td><a href="<?= h($urlResolver->resolve(['/dashboard/community_translation/git_repositories/details', $repository->getID()])) ?>"><?= h($repository->getName()) ?></a></td>
                     <td><?= h($repository->getPackageHandle()) ?></td>
                     <td><a href="<?= h($repository->getURL()) ?>" target="_blank"><?= h($repository->getURL()) ?></a></td>
-                    <td><code>/<?php
-                        if ($repository->getDirectoryToParse() !== '') {
-                            echo h($repository->getDirectoryToParse()), '/';
-                        } ?></code></td>
+                    <td><code>/<?= h($repository->getDirectoryToParse()) ?></code></td>
                     <td><?= h($repository->getTagFiltersDisplayName()) ?></td>
-                    <td><?php
-                        $db = $repository->getDevBranches();
-                if (empty($db)) {
-                    ?><i><?= tc('Branch', 'none') ?></i><?php
-                } else {
-                    foreach ($db as $branch => $version) {
-                        echo t('Branch %s &rarr; version %s', '<code>' . h($branch) . '</code>', '<code>' . h($version) . '</code>'), '<br />';
-                    }
-                } ?></td>
+                    <td>
+                    	<?php
+                    	$devBranches = $repository->getDevBranches();
+                        if ($devBranches === []) {
+                            ?><i><?= tc('Branch', 'none') ?></i><?php
+                        } else {
+                            foreach ($devBranches as $branch => $version) {
+                                echo t('Branch %s &rarr; version %s', '<code>' . h($branch) . '</code>', '<code>' . h($version) . '</code>'), '<br />';
+                            }
+                        }
+                        ?>
+                    </td>
                 </tr>
                 <?php
             }

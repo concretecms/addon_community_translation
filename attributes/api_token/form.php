@@ -1,36 +1,45 @@
 <?php
 
-/* @var string $value */
-/* @var string $valueHash */
-/* @var Concrete\Core\Attribute\View $view */
+declare(strict_types=1);
 
-$id = preg_replace('/\W/', '_', $view->field('operation'));
+defined('C5_EXECUTE') or die('Access Denied.');
+
+/**
+ * @var Concrete\Package\CommunityTranslation\Attribute\ApiToken\Controller $controller
+ * @var Concrete\Core\Attribute\View $this
+ * @var Concrete\Core\Attribute\View $view
+ * @var int $akID
+ * @var string $value
+ * @var string $valueHash
+ */
+
+$id = preg_replace('/\W+/', '_', $view->field('operation'));
+
 ?>
-<div class="checkbox">
+<div class="form-group">
     <?php
     if ($value !== '') {
         ?>
         <code><?= h($value) ?></code>
-        <input type="hidden" name="<?= $view->field('current-token-hash') ?>" value="<?= h($valueHash) ?>" />
-        <input type="hidden" name="<?= $view->field('current-token') ?>" value="<?= h($value) ?>" />
+        <input type="hidden" name="<?= h($view->field('current-token-hash')) ?>" value="<?= h($valueHash) ?>" />
+        <input type="hidden" name="<?= h($view->field('current-token')) ?>" value="<?= h($value) ?>" />
         <?php
     }
     ?>
-    <div class="btn-group" id="<?= $id ?>">
-        <button type="button" data-value="keep" class="btn btn-sm btn-primary"><?= t('Keep API Token') ?></button>
-        <button type="button" data-value="generate" class="btn btn-sm btn-default"><?= t('Generate new API Token') ?></button>
-        <button type="button" data-value="remove" class="btn btn-sm btn-default"><?= t('Remove API Token') ?></button>
-        <input type='hidden' name="<?= $view->field('operation') ?>" value="keep" />
+    <div class="btn-group">
+        <input type="radio" class="btn-check" name="<?= h($view->field('operation')) ?>" id="<?= $id ?>keep" value="keep" autocomplete="off" checked="checked" />
+        <label class="btn btn-outline-primary" for="<?= $id ?>keep"><?= $value === '' ? t('Keep no API Token') : t('Keep API Token') ?></label>
+
+        <input type="radio" class="btn-check" name="<?= h($view->field('operation')) ?>" id="<?= $id ?>generate" value="generate" autocomplete="off" />
+        <label class="btn btn-outline-primary" for="<?= $id ?>generate"><?= $value === '' ? t('Generate API Token') : t('Generate new API Token') ?></label>
+
+        <?php
+        if ($value !== '') {
+            ?>
+            <input type="radio" class="btn-check" name="<?= h($view->field('operation')) ?>" id="<?= $id ?>remove" value="remove" autocomplete="off" />
+            <label class="btn btn-outline-primary" for="<?= $id ?>remove"><?= t('Remove API Token') ?></label>
+            <?php
+        }
+        ?>
     </div>
 </div>
-<script>
-$(document).ready(function() {
-    var $div = $(<?= json_encode('#' . $id) ?>);
-    $div.find('button').on('click', function() {
-        var $me = $(this);
-        $div.find('input').val($me.data('value'));
-        $div.find('button').removeClass('btn-primary').removeClass('btn-default');
-        $me.toggleClass('btn-primary btn-default');
-    });
-});
-</script>

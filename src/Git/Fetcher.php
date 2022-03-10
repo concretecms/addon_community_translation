@@ -1,165 +1,109 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Git;
 
 use CommunityTranslation\Entity\GitRepository;
 use Concrete\Core\Application\Application;
+use Concrete\Core\Config\Repository\Repository;
 use Concrete\Core\Error\UserMessageException;
-use Exception;
+use Concrete\Core\File\Service\File as FileService;
+use Concrete\Core\Foundation\Environment\FunctionInspector;
 use Illuminate\Filesystem\Filesystem;
+use Throwable;
 
-class Fetcher
+defined('C5_EXECUTE') or die('Access Denied.');
+
+final class Fetcher
 {
-    /**
-     * The application object.
-     *
-     * @var Application
-     */
-    protected $app;
+    private Application $app;
 
     /**
      * The associated Repository.
-     *
-     * @var GitRepository
      */
-    protected $gitRepository;
+    private GitRepository $gitRepository;
 
     /**
      * The Filesystem instance to use.
-     *
-     * @var Filesystem|null
      */
-    protected $filesystem = null;
+    private Filesystem $filesystem;
 
     /**
      * The working tree directory.
-     *
-     * @var string|null
      */
-    protected $worktreeDirectory = null;
+    private string $worktreeDirectory = '';
 
-    /**
-     * The git directory.
-     *
-     * @var string|null
-     */
-    protected $gitDirectory = null;
+    private string $gitDirectory = '';
+
+    private string $tempDir = '';
 
     /**
      * Initializes the instance.
-     *
-     * @param GitRepository $gitRepository
      */
     public function __construct(Application $app, GitRepository $gitRepository)
     {
         $this->app = $app;
         $this->gitRepository = $gitRepository;
+        $this->filesystem = new Filesystem();
     }
 
     /**
-     * Set the Filesystem instance to use.
+     * Set the Filesystem instance to be used.
      *
-     * @param Filesystem $filesystem
+     * @return $this
      */
-    public function setFilesystem(Filesystem $filesystem)
+    public function setFilesystem(Filesystem $filesystem): self
     {
         $this->filesystem = $filesystem;
+
+        return $this;
     }
 
     /**
-     * Get the Filesystem instance to use.
-     *
-     * @return Filesystem
+     * Get the used Filesystem instance.
      */
-    public function getFilesystem()
+    public function getFilesystem(): Filesystem
     {
-        if ($this->filesystem === null) {
-            $this->filesystem = new Filesystem();
-        }
-
         return $this->filesystem;
     }
 
-    /**
-     * Get the working tree directory.
-     *
-     * @throws UserMessageException
-     *
-     * @return string
-     */
-    protected function getWorktreeDirectory()
+    public function setTempDir(string $value): self
     {
-        if ($this->worktreeDirectory === null) {
-            $config = $this->app->make('community_translation/config');
-            $dir = $config->get('options.tempDir');
-            $dir = is_string($dir) ? rtrim(str_replace(DIRECTORY_SEPARATOR, '/', $dir), '/') : '';
-            if ($dir === '') {
-                $fh = $this->app->make('helper/file');
-                $dir = $fh->getTemporaryDirectory();
-                $dir = is_string($dir) ? rtrim(str_replace(DIRECTORY_SEPARATOR, '/', $dir), '/') : '';
-                if ($dir === '') {
-                    throw new UserMessageException(t('Unable to retrieve the temporary directory.'));
-                }
-            }
-            $fs = $this->getFilesystem();
-            $dir = $dir . '/git-repositories';
-            if (!@$fs->isDirectory($dir)) {
-                @$fs->makeDirectory($dir, DIRECTORY_PERMISSIONS_MODE_COMPUTED, true);
-                if (!@$fs->isDirectory($dir)) {
-                    throw new UserMessageException(t('Unable to create a temporary directory.'));
-                }
-            }
-            $file = $dir . '/index.html';
-            if (!$fs->isFile($file)) {
-                if (@$fs->put($file, '') === false) {
-                    throw new UserMessageException(t('Error initializing a temporary directory.'));
-                }
-            }
-            $file = $dir . '/.htaccess';
-            if (!$fs->isFile($file)) {
-                if (@$fs->put($file, <<<'EOT'
-Order deny,allow
-Deny from all
-php_flag engine off
-EOT
-                    ) === false) {
-                    throw new UserMessageException(t('Error initializing a temporary directory.'));
-                }
-            }
-            $handle = strtolower($this->gitRepository->getURL());
-            $handle = preg_replace('/[^a-z0-9\-_\.]+/', '_', $handle);
-            $handle = preg_replace('/_+/', '_', $handle);
-            $dir .= '/' . $handle;
-            $this->worktreeDirectory = $dir;
-        }
+        $this->tempDir = $value;
 
-        return $this->worktreeDirectory;
+        return $this;
     }
 
-    /**
-     * Get the git directory.
-     *
-     * @throws UserMessageException
-     *
-     * @return string
-     */
-    protected function getGitDirectory()
+    public function getTempDir(): string
     {
-        if ($this->gitDirectory === null) {
-            $this->gitDirectory = $this->getWorktreeDirectory() . '/.git';
+        if ($this->tempDir !== '') {
+            return $this->tempDir;
         }
+        $config = $this->app->make(Repository::class);
+        $tempDir = $config->get('community_translation::paths.tempDir');
+        $tempDir = is_string($tempDir) ? rtrim(str_replace(DIRECTORY_SEPARATOR, '/', $tempDir), '/') : '';
+        if ($tempDir !== '') {
+            $this->tempDir = $tempDir;
 
-        return $this->gitDirectory;
+            return $this->tempDir;
+        }
+        $tempDir = $this->app->make(FileService::class)->getTemporaryDirectory();
+        $tempDir = is_string($tempDir) ? rtrim(str_replace(DIRECTORY_SEPARATOR, '/', $tempDir), '/') : '';
+        if ($tempDir !== '') {
+            $this->tempDir = $tempDir;
+
+            return $this->tempDir;
+        }
+        throw new UserMessageException(t('Unable to retrieve the temporary directory.'));
     }
 
     /**
      * Return the directory containing the files to be parsed.
      *
-     * @throws UserMessageException
-     *
-     * @return string
+     * @throws \Concrete\Core\Error\UserMessageException
      */
-    public function getRootDirectory()
+    public function getRootDirectory(): string
     {
         $dir = $this->getWorktreeDirectory();
         $relativeRoot = trim(str_replace(DIRECTORY_SEPARATOR, '/', $this->gitRepository->getDirectoryToParse()), '/');
@@ -173,30 +117,42 @@ EOT
     /**
      * Initializes the git repository (if the local directory exists it will be erased).
      *
-     * @throws UserMessageException
+     * @throws \Concrete\Core\Error\UserMessageException
      */
-    public function initialize()
+    public function initialize(): void
     {
         $directory = $this->getWorktreeDirectory();
-        $fs = $this->getFilesystem();
-        if (@$fs->isDirectory($directory)) {
-            @$fs->cleanDirectory($directory);
-            if (count($fs->files($directory)) > 0 || count($fs->directories($directory)) > 0) {
-                throw new UserMessageException(t('Failed to empty directory %s', $directory));
+        if ($this->filesystem->isDirectory($directory)) {
+            set_error_handler(static function () {}, -1);
+            try {
+                $this->filesystem->cleanDirectory($directory);
+                if ($this->filesystem->files($directory) !== [] || $this->filesystem->directories($directory) !== []) {
+                    throw new UserMessageException(t('Failed to empty directory %s', $directory));
+                }
+            } finally {
+                restore_error_handler();
             }
         } else {
-            if (@$fs->makeDirectory($directory, DIRECTORY_PERMISSIONS_MODE_COMPUTED) !== true) {
-                throw new UserMessageException(t('Failed to create directory %s', $directory));
+            set_error_handler(static function () {}, -1);
+            try {
+                if (!$this->filesystem->makeDirectory($directory, DIRECTORY_PERMISSIONS_MODE_COMPUTED)) {
+                    throw new UserMessageException(t('Failed to create directory %s', $directory));
+                }
+            } finally {
+                restore_error_handler();
             }
         }
         try {
             $cmd = 'clone --quiet --no-checkout --origin origin';
             $cmd .= ' ' . escapeshellarg($this->gitRepository->getURL()) . ' ' . escapeshellarg(str_replace('/', DIRECTORY_SEPARATOR, $directory));
             $this->runGit($cmd);
-        } catch (Exception $x) {
+        } catch (Throwable $x) {
+            set_error_handler(static function () {}, -1);
             try {
-                $fs->deleteDirectory($directory);
-            } catch (Exception $foo) {
+                $this->filesystem->deleteDirectory($directory);
+            } catch (Throwable $foo) {
+            } finally {
+                restore_error_handler();
             }
             throw $x;
         }
@@ -205,12 +161,11 @@ EOT
     /**
      * Initializes or update the git repository.
      *
-     * @throws UserMessageException
+     * @throws \Concrete\Core\Error\UserMessageException
      */
-    public function update()
+    public function update(): void
     {
-        $fs = $this->getFilesystem();
-        if ($fs->isDirectory($this->getGitDirectory())) {
+        if ($this->filesystem->isDirectory($this->getGitDirectory())) {
             $this->runGit('fetch origin --tags');
         } else {
             $this->initialize();
@@ -220,62 +175,60 @@ EOT
     /**
      * Checkout the specified remote branch.
      *
-     * @param string $name
-     *
-     * @throws UserMessageException
+     * @throws \Concrete\Core\Error\UserMessageException
      */
-    public function switchToBranch($name)
+    public function switchToBranch(string $name): void
     {
-        $this->runGit('checkout --quiet --force ' . escapeshellarg("remotes/origin/$name"));
+        $this->runGit('checkout --quiet --force ' . escapeshellarg("remotes/origin/{$name}"));
     }
 
     /**
      * Checkout the specified tag.
      *
-     * @param string $tag
-     *
-     * @throws UserMessageException
+     * @throws \Concrete\Core\Error\UserMessageException
      */
-    public function switchToTag($tag)
+    public function switchToTag(string $tag): void
     {
-        $this->runGit('checkout --quiet --force ' . escapeshellarg("tags/$tag"));
+        $this->runGit('checkout --quiet --force ' . escapeshellarg("tags/{$tag}"));
     }
 
     /**
      * Returns the list of tags and their associated versions (keys are the tags, values are the versions).
      *
-     * @throws UserMessageException
+     * @throws \Concrete\Core\Error\UserMessageException
      *
      * @return array Keys: tag, values: version
      */
-    public function getTaggedVersions()
+    public function getTaggedVersions(): array
     {
         $tagFilters = $this->gitRepository->getTagFiltersExpanded();
-
+        if ($tagFilters === null) {
+            return [];
+        }
         $taggedVersions = [];
-        if ($tagFilters !== null) {
-            $matches = null;
-            foreach ($this->runGit('tag --list') as $tag) {
-                $matchResult = @preg_match($this->gitRepository->getTagToVersionRegexp(), $tag, $matches);
-                if ($matchResult === false) {
-                    throw new UserMessageException(t('Invalid regular expression for git repository %s', $this->gitRepository->getName()));
-                }
-                if ($matchResult > 0) {
-                    $version = $matches[1];
-                    $ok = true;
-                    foreach ($tagFilters as $tagFilter) {
-                        if (version_compare($version, $tagFilter['version'], $tagFilter['operator']) === false) {
-                            $ok = false;
-                            break;
-                        }
-                    }
-                    if ($ok) {
-                        $taggedVersions[$tag] = $version;
-                    }
+        $matches = null;
+        foreach ($this->runGit('tag --list') as $tag) {
+            set_error_handler(static function () {}, -1);
+            $matchResult = preg_match($this->gitRepository->getTagToVersionRegexp(), $tag, $matches);
+            restore_error_handler();
+            if ($matchResult === false) {
+                throw new UserMessageException(t('Invalid regular expression for git repository %s', $this->gitRepository->getName()));
+            }
+            if ($matchResult === 0) {
+                continue;
+            }
+            $version = $matches[1];
+            $ok = true;
+            foreach ($tagFilters as $tagFilter) {
+                if (version_compare($version, $tagFilter['version'], $tagFilter['operator']) === false) {
+                    $ok = false;
+                    break;
                 }
             }
+            if ($ok) {
+                $taggedVersions[$tag] = $version;
+            }
         }
-
         uasort($taggedVersions, 'version_compare');
 
         return $taggedVersions;
@@ -284,28 +237,19 @@ EOT
     /**
      * Execute a git command.
      *
-     * @param string $cmd
-     * @param bool $setDirectories
-     *
-     * @throws UserMessageException
+     * @throws \Concrete\Core\Error\UserMessageException
      *
      * @return string[]
      */
-    private function runGit($cmd, $setDirectories = true)
+    private function runGit(string $cmd, bool $setDirectories = true): array
     {
         static $execAvailable;
-        if (!isset($execAvailable)) {
-            $safeMode = @ini_get('safe_mode');
-            if (!empty($safeMode)) {
-                throw new UserMessageException(t("Safe-mode can't be on"));
-            }
-            if (!function_exists('exec')) {
-                throw new UserMessageException(t('exec() function is missing'));
-            }
-            if (in_array('exec', array_map('trim', explode(',', strtolower(@ini_get('disable_functions')))))) {
-                throw new UserMessageException(t('exec() function is disabled'));
-            }
-            $execAvailable = true;
+        if ($execAvailable === null) {
+            $fi = $this->app->make(FunctionInspector::class);
+            $execAvailable = $fi->functionAvailable('exec');
+        }
+        if (!$execAvailable) {
+            throw new UserMessageException(t('exec() function is missing'));
         }
         $line = 'git';
         if ($setDirectories) {
@@ -314,11 +258,102 @@ EOT
         $line .= ' ' . $cmd . ' 2>&1';
         $rc = 1;
         $output = [];
-        @exec($line, $output, $rc);
+        exec($line, $output, $rc);
         if ($rc !== 0) {
             throw new UserMessageException(t('Command failed with return code %1$s: %2$s', $rc, implode("\n", $output)));
         }
 
         return $output;
+    }
+
+    /**
+     * @throws \Concrete\Core\Error\UserMessageException
+     */
+    private function createWorktreeParentDirectory(): string
+    {
+        $result = null;
+        $tmp = "{$this->getTempDir()}/git-repositories";
+        set_error_handler(static function () {}, -1);
+        try {
+            if (!$this->filesystem->isDirectory($tmp)) {
+                $this->filesystem->makeDirectory($tmp, DIRECTORY_PERMISSIONS_MODE_COMPUTED, true);
+            }
+            if ($this->filesystem->isDirectory($tmp)) {
+                $tmp = realpath($tmp);
+                if ($tmp !== false) {
+                    $result = str_replace(DIRECTORY_SEPARATOR, '/', $tmp);
+                }
+            }
+        } finally {
+            restore_error_handler();
+        }
+        if ($result === null) {
+            throw new UserMessageException(t('Unable to create a temporary directory.'));
+        }
+
+        return $result;
+    }
+
+    /**
+     * @throws \Concrete\Core\Error\UserMessageException
+     */
+    private function createIndexFile(string $filePath, string $fileContent): void
+    {
+        set_error_handler(static function () {}, -1);
+        try {
+            if ($this->filesystem->isFile($filePath)) {
+                return;
+            }
+            if ($this->filesystem->put($filePath, $fileContent) === false) {
+                return;
+            }
+        } finally {
+            restore_error_handler();
+        }
+        throw new UserMessageException(t('Error initializing a temporary directory.'));
+    }
+
+    /**
+     * Get the working tree directory.
+     *
+     * @throws \Concrete\Core\Error\UserMessageException
+     */
+    private function getWorktreeDirectory(): string
+    {
+        if ($this->worktreeDirectory !== '') {
+            return $this->worktreeDirectory;
+        }
+        $dir = $this->createWorktreeParentDirectory();
+        $this->createIndexFile("{$dir}/index.html", '');
+        $this->createIndexFile(
+            "{$dir}/.htaccess",
+            <<<'EOT'
+Order deny,allow
+Deny from all
+php_flag engine off
+
+EOT
+        );
+        $handle = strtolower($this->gitRepository->getURL());
+        $handle = preg_replace('/[^a-z0-9\-_\.]+/', '_', $handle);
+        $handle = preg_replace('/_+/', '_', $handle);
+        $dir .= '/' . $handle;
+        $this->worktreeDirectory = $dir;
+
+        return $this->worktreeDirectory;
+    }
+
+    /**
+     * Get the git directory.
+     *
+     * @throws \Concrete\Core\Error\UserMessageException
+     */
+    private function getGitDirectory(): string
+    {
+        if ($this->gitDirectory === '') {
+            $this->gitDirectory = $this->getWorktreeDirectory() . '/.git';
+        }
+
+        return $this->gitDirectory;
     }
 }

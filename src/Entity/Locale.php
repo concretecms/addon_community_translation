@@ -1,25 +1,29 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Entity;
 
 use Concrete\Core\Entity\User\User;
 use Concrete\Core\Error\UserMessageException;
-use DateTime;
+use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\ORM\Mapping as ORM;
+use Doctrine\Common\Collections\Collection;
 use Gettext\Languages\Language as GettextLanguage;
 use Punic\Language;
+
+defined('C5_EXECUTE') or die('Access Denied.');
 
 /**
  * Represents a locale.
  *
- * @ORM\Entity(
+ * @Doctrine\ORM\Mapping\Entity(
  *     repositoryClass="CommunityTranslation\Repository\Locale",
  * )
- * @ORM\Table(
+ * @Doctrine\ORM\Mapping\Table(
  *     name="CommunityTranslationLocales",
  *     uniqueConstraints={
- *         @ORM\UniqueConstraint(name="IDX_CTLocaleIssource", columns={"isSource"})
+ *         @Doctrine\ORM\Mapping\UniqueConstraint(name="IDX_CTLocaleIssource", columns={"isSource"})
  *     },
  *     options={"comment": "Defined locales for the Community Translation package"}
  * )
@@ -27,13 +31,95 @@ use Punic\Language;
 class Locale
 {
     /**
-     * Create a new (unsaved and unapproved) Locale instance given its locale ID.
+     * Locale identifier.
      *
-     * @param string $id
-     *
-     * @return static
+     * @Doctrine\ORM\Mapping\Column(type="string", length=12, options={"comment": "Locale identifier"})
+     * @Doctrine\ORM\Mapping\Id
      */
-    public static function create($id)
+    protected string $id;
+
+    /**
+     * Locale English name.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="string", length=100, nullable=false, options={"comment": "Locale English name"})
+     */
+    protected string $name;
+
+    /**
+     * Is this the source locale? (One and only one locale should have this).
+     *
+     * @Doctrine\ORM\Mapping\Column(type="boolean", nullable=true, options={"comment": "Is this the source locale? (One and only one locale should have this)"}))
+     */
+    protected ?bool $isSource;
+
+    /**
+     * Plural forms.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="array", nullable=false, options={"comment": "Plural forms"})
+     */
+    protected array $pluralForms;
+
+    /**
+     * The formula used to to determine the plural case.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="text", nullable=false, options={"comment": "The formula used to to determine the plural case"})
+     */
+    protected string $pluralFormula;
+
+    /**
+     * Is this locale approved?
+     *
+     * @Doctrine\ORM\Mapping\Column(type="boolean", nullable=false, options={"comment": "Is this locale approved?"})
+     */
+    protected bool $isApproved;
+
+    /**
+     * User that requested this locale.
+     *
+     * @Doctrine\ORM\Mapping\ManyToOne(targetEntity="Concrete\Core\Entity\User\User")
+     * @Doctrine\ORM\Mapping\JoinColumn(name="requestedBy", referencedColumnName="uID", nullable=true, onDelete="SET NULL")
+     */
+    protected ?User $requestedBy;
+
+    /**
+     * When has this locale been requested?
+     *
+     * @Doctrine\ORM\Mapping\Column(type="datetime_immutable", nullable=true, options={"comment": "When has this locale been requested?"})
+     */
+    protected ?DateTimeImmutable $requestedOn;
+
+    /**
+     * Translations associated to this locale.
+     *
+     * @Doctrine\ORM\Mapping\OneToMany(targetEntity="CommunityTranslation\Entity\Translation", mappedBy="locale")
+     */
+    protected Collection $translations;
+
+    /**
+     * Stats associated to this locale.
+     *
+     * @Doctrine\ORM\Mapping\OneToMany(targetEntity="CommunityTranslation\Entity\Stats", mappedBy="locale")
+     */
+    protected Collection $stats;
+
+    /**
+     * Localized Glossary Entries associated to this locale.
+     *
+     * @Doctrine\ORM\Mapping\OneToMany(targetEntity="CommunityTranslation\Entity\Glossary\Entry\Localized", mappedBy="locale")
+     */
+    protected Collection $glossaryEntries;
+
+    /**
+     * Localized comments about translations.
+     *
+     * @Doctrine\ORM\Mapping\OneToMany(targetEntity="CommunityTranslation\Entity\Translatable\Comment", mappedBy="locale")
+     */
+    protected Collection $comments;
+
+    /**
+     * @throws \Concrete\Core\Error\UserMessageException if $id is not a valid locale identifier
+     */
+    public function __construct(string $id)
     {
         $language = GettextLanguage::getById($id);
         if ($language === null) {
@@ -43,74 +129,45 @@ class Locale
         foreach ($language->categories as $category) {
             $pluralForms[] = $category->id . ':' . $category->examples;
         }
-        $result = new static();
-        $result->id = $language->id;
-        $result
-            ->setIsApproved(false)
-            ->setIsSource(false)
-            ->setName($language->name)
-            ->setPluralForms($pluralForms)
-            ->setPluralFormula($language->formula)
-            ->setRequestedBy(null)
-            ->setRequestedOn(null)
-        ;
-
-        return $result;
-    }
-
-    protected function __construct()
-    {
+        $this->id = $language->id;
+        $this->name = $language->name;
+        $this->isSource = null;
+        $this->pluralForms = $pluralForms;
+        $this->pluralFormula = $language->formula;
+        $this->isApproved = false;
+        $this->requestedBy = null;
+        $this->requestedOn = null;
         $this->translations = new ArrayCollection();
         $this->stats = new ArrayCollection();
         $this->glossaryEntries = new ArrayCollection();
         $this->comments = new ArrayCollection();
     }
 
-    /**
-     * Locale identifier.
-     *
-     * @ORM\Column(type="string", length=12, options={"comment": "Locale identifier"})
-     * @ORM\Id
-     *
-     * @var string
-     */
-    protected $id;
-
-    /**
-     * Get the locale identifier.
-     *
-     * @return string
-     */
-    public function getID()
+    public function __toString(): string
     {
         return $this->id;
     }
 
     /**
-     * Locale English name.
-     *
-     * @ORM\Column(type="string", length=100, nullable=false, options={"comment": "Locale English name"})
-     *
-     * @var string
+     * Get the locale identifier.
      */
-    protected $name;
+    public function getID(): string
+    {
+        return $this->id;
+    }
 
     /**
      * Get the locale English name.
-     *
-     * @return string
      */
-    public function getName()
+    public function getName(): string
     {
         return $this->name;
     }
 
     /**
      * Get the localized name of this locale.
-     *
-     * @return string
      */
-    public function getDisplayName()
+    public function getDisplayName(): string
     {
         return Language::getName($this->id);
     }
@@ -118,44 +175,29 @@ class Locale
     /**
      * Set the locale English name.
      *
-     * @param string $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setName($value)
+    public function setName(string $value): self
     {
-        $this->name = (string) $value;
+        $this->name = $value;
 
         return $this;
     }
 
     /**
      * Is this the source locale? (One and only one locale should have this).
-     *
-     * @ORM\Column(type="boolean", nullable=true, options={"comment": "Is this the source locale? (One and only one locale should have this)"}))
-     *
-     * @var bool
      */
-    protected $isSource;
-
-    /**
-     * Is this the source locale? (One and only one locale should have this).
-     *
-     * @return bool
-     */
-    public function isSource()
+    public function isSource(): bool
     {
-        return (bool) $this->isSource;
+        return $this->isSource ?? false;
     }
 
     /**
      * Is this the source locale? (One and only one locale should have this).
      *
-     * @param bool $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setIsSource($value)
+    public function setIsSource(bool $value): self
     {
         $this->isSource = $value ? true : null;
 
@@ -163,30 +205,19 @@ class Locale
     }
 
     /**
-     * Plural forms.
-     *
-     * @ORM\Column(type="array", nullable=false, options={"comment": "Plural forms"})
-     *
-     * @var string
-     */
-    protected $pluralForms;
-
-    /**
      * Get the plural forms.
      *
      * @return string[]
      */
-    public function getPluralForms()
+    public function getPluralForms(): array
     {
         return $this->pluralForms;
     }
 
     /**
      * Get the number of plural forms.
-     *
-     * @return int
      */
-    public function getPluralCount()
+    public function getPluralCount(): int
     {
         return count($this->getPluralForms());
     }
@@ -196,9 +227,9 @@ class Locale
      *
      * @param string[] $value
      *
-     * @return static
+     * @return $this
      */
-    public function setPluralForms(array $value)
+    public function setPluralForms(array $value): self
     {
         $this->pluralForms = $value;
 
@@ -206,20 +237,9 @@ class Locale
     }
 
     /**
-     * The formula used to to determine the plural case.
-     *
-     * @ORM\Column(type="text", nullable=false, options={"comment": "The formula used to to determine the plural case"})
-     *
-     * @var string
-     */
-    protected $pluralFormula;
-
-    /**
      * Get the formula used to to determine the plural case.
-     *
-     * @return string
      */
-    public function getPluralFormula()
+    public function getPluralFormula(): string
     {
         return $this->pluralFormula;
     }
@@ -227,32 +247,19 @@ class Locale
     /**
      * Set the formula used to to determine the plural case.
      *
-     * @param string $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setPluralFormula($value)
+    public function setPluralFormula(string $value): self
     {
-        $this->pluralFormula = (string) $value;
+        $this->pluralFormula = $value;
 
         return $this;
     }
 
     /**
      * Is this locale approved?
-     *
-     * @ORM\Column(type="boolean", nullable=false, options={"comment": "Is this locale approved?"})
-     *
-     * @var bool
      */
-    protected $isApproved;
-
-    /**
-     * Is this locale approved?
-     *
-     * @return bool
-     */
-    public function isApproved()
+    public function isApproved(): bool
     {
         return $this->isApproved;
     }
@@ -260,33 +267,19 @@ class Locale
     /**
      * Is this locale approved?
      *
-     * @param bool $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setIsApproved($value)
+    public function setIsApproved(bool $value): self
     {
-        $this->isApproved = (bool) $value;
+        $this->isApproved = $value;
 
         return $this;
     }
 
     /**
-     * User that requested this locale.
-     *
-     * @ORM\ManyToOne(targetEntity="Concrete\Core\Entity\User\User")
-     * @ORM\JoinColumn(name="requestedBy", referencedColumnName="uID", nullable=true, onDelete="SET NULL")
-     *
-     * @var User|null
-     */
-    protected $requestedBy;
-
-    /**
      * Get the user that requested this locale.
-     *
-     * @return User|null
      */
-    public function getRequestedBy()
+    public function getRequestedBy(): ?User
     {
         return $this->requestedBy;
     }
@@ -294,11 +287,9 @@ class Locale
     /**
      * Set the user that requested this locale.
      *
-     * @param User|null $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setRequestedBy(User $value = null)
+    public function setRequestedBy(?User $value): self
     {
         $this->requestedBy = $value;
 
@@ -306,20 +297,9 @@ class Locale
     }
 
     /**
-     * When has this locale been requested?
-     *
-     * @ORM\Column(type="datetime", nullable=true, options={"comment": "When has this locale been requested?"})
-     *
-     * @var string
+     * Get the date/time when has this locale been requested (if available).
      */
-    protected $requestedOn;
-
-    /**
-     * Get the date/time when has this locale been requested.
-     *
-     * @return DateTime
-     */
-    public function getRequestedOn()
+    public function getRequestedOn(): ?DateTimeImmutable
     {
         return $this->requestedOn;
     }
@@ -327,58 +307,12 @@ class Locale
     /**
      * Set the date/time when has this locale been requested.
      *
-     * @param DateTime|null $value
-     *
-     * @return static
+     * @return $this
      */
-    public function setRequestedOn(DateTime $value = null)
+    public function setRequestedOn(?DateTimeImmutable $value): self
     {
         $this->requestedOn = $value;
 
         return $this;
-    }
-
-    /**
-     * Translations associated to this locale.
-     *
-     * @ORM\OneToMany(targetEntity="CommunityTranslation\Entity\Translation", mappedBy="locale")
-     *
-     * @var ArrayCollection
-     */
-    protected $translations;
-
-    /**
-     * Stats associated to this locale.
-     *
-     * @ORM\OneToMany(targetEntity="CommunityTranslation\Entity\Stats", mappedBy="locale")
-     *
-     * @var ArrayCollection
-     */
-    protected $stats;
-
-    /**
-     * Localized Glossary Entries associated to this locale.
-     *
-     * @ORM\OneToMany(targetEntity="CommunityTranslation\Entity\Glossary\Entry\Localized", mappedBy="locale")
-     *
-     * @var ArrayCollection
-     */
-    protected $glossaryEntries;
-
-    /**
-     * Localized comments about translations.
-     *
-     * @ORM\OneToMany(targetEntity="CommunityTranslation\Entity\Translatable\Comment", mappedBy="locale")
-     *
-     * @var ArrayCollection
-     */
-    protected $comments;
-
-    /**
-     * @return string
-     */
-    public function __toString()
-    {
-        return $this->id;
     }
 }

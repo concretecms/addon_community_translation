@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Parser;
 
 use CommunityTranslation\Service\DecompressedPackage;
@@ -7,26 +9,20 @@ use Concrete\Core\Application\Application;
 use Concrete\Core\Error\UserMessageException;
 use Illuminate\Filesystem\Filesystem;
 
+defined('C5_EXECUTE') or die('Access Denied.');
+
 abstract class Parser implements ParserInterface
 {
     /**
      * The application object.
-     *
-     * @var Application
      */
-    protected $app;
+    protected Application $app;
 
     /**
      * The Filesystem instance to use.
-     *
-     * @var Filesystem
      */
-    protected $filesystem;
+    protected Filesystem $filesystem;
 
-    /**
-     * @param Application $app
-     * @param Filesystem $filesystem
-     */
     public function __construct(Application $app, Filesystem $filesystem)
     {
         $this->app = $app;
@@ -38,19 +34,18 @@ abstract class Parser implements ParserInterface
      *
      * @see \CommunityTranslation\Parser\ParserInterface::parse()
      */
-    public function parse($packageHandle, $packageVersion, $path, $relDirectory = '', $searchDictionaryFiles = self::DICTIONARY_ALL)
+    public function parse(string $packageHandle, string $packageVersion, string $path, string $relDirectory = '', int $searchDictionaryFiles = self::DICTIONARY_ALL): ?Parsed
     {
-        if (is_object($path) && ($path instanceof DecompressedPackage)) {
-            $result = $this->parseDirectory($packageHandle, $packageVersion, $path->getExtractedWorkDir(), $relDirectory, $searchDictionaryFiles);
-        } elseif ($this->filesystem->isFile($path)) {
-            $result = $this->parseFile($packageHandle, $packageVersion, $path, $relDirectory, $searchDictionaryFiles);
-        } elseif ($this->filesystem->isDirectory($path)) {
-            $result = $this->parseDirectory($packageHandle, $packageVersion, $path, $relDirectory, $searchDictionaryFiles);
-        } else {
-            throw new UserMessageException(t('Unable to find the file/directory %s', $path));
+        if ($path instanceof DecompressedPackage) {
+            return $this->parseDirectory($packageHandle, $packageVersion, $path->getExtractedWorkDir(), $relDirectory, $searchDictionaryFiles);
         }
-
-        return $result;
+        if ($this->filesystem->isFile($path)) {
+            return $this->parseFile($packageHandle, $packageVersion, $path, $relDirectory, $searchDictionaryFiles);
+        }
+        if ($this->filesystem->isDirectory($path)) {
+            return $this->parseDirectory($packageHandle, $packageVersion, $path, $relDirectory, $searchDictionaryFiles);
+        }
+        throw new UserMessageException(t('Unable to find the file/directory %s', $path));
     }
 
     /**
@@ -58,7 +53,7 @@ abstract class Parser implements ParserInterface
      *
      * @see \CommunityTranslation\Parser\ParserInterface::parseFile()
      */
-    public function parseFile($packageHandle, $packageVersion, $path, $relDirectory = '', $searchDictionaryFiles = self::DICTIONARY_ALL)
+    public function parseFile(string $packageHandle, string $packageVersion, string $path, string $relDirectory = '', int $searchDictionaryFiles = self::DICTIONARY_ALL): ?Parsed
     {
         $zip = $this->app->make(DecompressedPackage::class, ['packageArchive' => $path, 'volatileDirectory' => null]);
         try {
@@ -67,15 +62,14 @@ abstract class Parser implements ParserInterface
             $zip = null;
         }
         if ($zip !== null) {
-            $result = $this->parseDirectory($packageHandle, $packageVersion, $zip->getExtractedWorkDir(), $relDirectory, $searchDictionaryFiles);
-        } else {
-            $result = null;
-            if ($searchDictionaryFiles !== self::DICTIONARY_NONE) {
-                $result = $this->parseDictionaryFile($packageHandle, $packageVersion, $path, $searchDictionaryFiles);
-            }
-            if ($result === null) {
-                $result = $this->parseSourceFile($packageHandle, $packageVersion, $path, $relDirectory);
-            }
+            return $this->parseDirectory($packageHandle, $packageVersion, $zip->getExtractedWorkDir(), $relDirectory, $searchDictionaryFiles);
+        }
+        $result = null;
+        if ($searchDictionaryFiles !== self::DICTIONARY_NONE) {
+            $result = $this->parseDictionaryFile($packageHandle, $packageVersion, $path, $searchDictionaryFiles);
+        }
+        if ($result === null) {
+            $result = $this->parseSourceFile($packageHandle, $packageVersion, $path, $relDirectory);
         }
 
         return $result;
@@ -86,14 +80,12 @@ abstract class Parser implements ParserInterface
      *
      * @see \CommunityTranslation\Parser\ParserInterface::parseZip()
      */
-    public function parseZip($packageHandle, $packageVersion, $path, $relDirectory = '', $searchDictionaryFiles = self::DICTIONARY_ALL)
+    public function parseZip(string $packageHandle, string $packageVersion, string $path, string $relDirectory = '', int $searchDictionaryFiles = self::DICTIONARY_ALL): ?Parsed
     {
         $zip = $this->app->make(DecompressedPackage::class, ['packageArchive' => $path, 'volatileDirectory' => null]);
         $zip->extract();
-        $result = $this->parseDirectory($packageHandle, $packageVersion, $zip->getExtractedWorkDir(), $relDirectory, $searchDictionaryFiles);
-        unset($zip);
 
-        return $result;
+        return $this->parseDirectory($packageHandle, $packageVersion, $zip->getExtractedWorkDir(), $relDirectory, $searchDictionaryFiles);
     }
 
     /**
@@ -101,26 +93,24 @@ abstract class Parser implements ParserInterface
      *
      * @param string $packageHandle The package handle being parsed
      * @param string $packageVersion The package version being parsed
-     * @param string $path
      * @param int $kinds One or more of self::DICTIONARY_SOURCE, self::DICTIONARY_LOCALIZED_SOURCE, self::DICTIONARY_LOCALIZED_COMPILED
      *
-     * @throws UserMessageException
+     * @throws \Concrete\Core\Error\UserMessageException
      *
-     * @return Parsed|null
+     * @return \CommunityTranslation\Parser\Parsed|null
      */
-    abstract public function parseDictionaryFile($packageHandle, $packageVersion, $path, $kinds);
+    abstract protected function parseDictionaryFile(string $packageHandle, string $packageVersion, string $path, int $kinds): ?Parsed;
 
     /**
      * Extract translations from a source file (.php, .xml, ...).
      *
      * @param string $packageHandle The package handle being parsed
      * @param string $packageVersion The package version being parsed
-     * @param string $path
      * @param string $relDirectory
      *
-     * @throws UserMessageException
+     * @throws \Concrete\Core\Error\UserMessageException
      *
-     * @return Parsed|null
+     * @return \CommunityTranslation\Parser\Parsed|null
      */
-    abstract public function parseSourceFile($packageHandle, $packageVersion, $path, $relDirectory = '');
+    abstract protected function parseSourceFile(string $packageHandle, string $packageVersion, string $path, string $relDirectory = ''): ?Parsed;
 }

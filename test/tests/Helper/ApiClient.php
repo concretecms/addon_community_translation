@@ -51,7 +51,7 @@ class ApiClient
     /**
      * Data from the last response.
      *
-     * @var null|array
+     * @var array|null
      */
     protected $lastResponse;
 
@@ -267,12 +267,11 @@ class ApiClient
         if ($responseCode >= 400) {
             if (strpos($contentType, 'text/plain') !== 0) {
                 throw new Exception('Wrong content type of error ' . $responseCode . ': ' . $contentType, $responseCode);
-            } else {
-                throw new ApiClientResponseException($responseBody, $responseCode);
             }
+            throw new ApiClientResponseException($responseBody, $responseCode);
         }
         if ($contentLength !== null && strlen($responseBody) !== $contentLength) {
-            throw new Exception("Wrong response size (expected: $contentLength, received: " . strlen($responseBody) . ')');
+            throw new Exception("Wrong response size (expected: {$contentLength}, received: " . strlen($responseBody) . ')');
         }
         if (strpos($contentType, 'application/json') === 0) {
             if (strcasecmp(trim($responseBody), 'null') === 0) {

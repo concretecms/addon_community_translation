@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Notification\Category;
 
 use CommunityTranslation\Entity\Notification as NotificationEntity;
@@ -9,6 +11,8 @@ use Concrete\Core\User\UserInfo;
 use Concrete\Core\User\UserInfoRepository;
 use Exception;
 
+defined('C5_EXECUTE') or die('Access Denied.');
+
 /**
  * Notification category: a translation team join request has been approved.
  */
@@ -17,36 +21,14 @@ class NewTranslatorApproved extends Category
     /**
      * @var int
      */
-    const PRIORITY = 10;
+    public const PRIORITY = 10;
 
     /**
      * {@inheritdoc}
      *
-     * @see Category::getRecipientIDs()
+     * @see \CommunityTranslation\Notification\CategoryInterface::getMailParameters()
      */
-    protected function getRecipientIDs(NotificationEntity $notification)
-    {
-        $result = [];
-        $notificationData = $notification->getNotificationData();
-        $result[] = $notificationData['applicantUserID'];
-        $locale = $this->app->make(LocaleRepository::class)->findApproved($notificationData['localeID']);
-        if ($locale === null) {
-            throw new Exception(t('Unable to find the locale with ID %s', $notificationData['localeID']));
-        }
-        $group = $this->getGroupsHelper()->getAdministrators($locale);
-        $result = array_merge($result, $group->getGroupMemberIDs());
-        $group = $this->getGroupsHelper()->getGlobalAdministrators();
-        $result = array_merge($result, $group->getGroupMemberIDs());
-
-        return $result;
-    }
-
-    /**
-     * {@inheritdoc}
-     *
-     * @see Category::getMailParameters()
-     */
-    public function getMailParameters(NotificationEntity $notification, UserInfo $recipient)
+    public function getMailParameters(NotificationEntity $notification, UserInfo $recipient): array
     {
         $notificationData = $notification->getNotificationData();
         $locale = $this->app->make(LocaleRepository::class)->findApproved($notificationData['localeID']);
@@ -58,14 +40,34 @@ class NewTranslatorApproved extends Category
         if ($applicant === null) {
             throw new Exception(t('Unable to find the user with ID %s', $notificationData['applicantUserID']));
         }
-        $approvedBy = $uir->getByID($notificationData['approvedByUserID']);
 
         return [
             'localeName' => $locale->getDisplayName(),
             'applicant' => $applicant,
-            'approvedBy' => $approvedBy,
+            'approvedBy' => $uir->getByID($notificationData['approvedByUserID']),
             'automatic' => $notificationData['automatic'],
-            'teamsUrl' => $this->getBlockPageURL('CommunityTranslation Team List', 'details/' . $locale->getID()),
+            'teamsUrl' => $this->getBlockPageURL('CommunityTranslation Team List', "details/{$locale->getID()}"),
         ] + $this->getCommonMailParameters($notification, $recipient);
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \CommunityTranslation\Notification\Category::getRecipientIDs()
+     */
+    protected function getRecipientIDs(NotificationEntity $notification): array
+    {
+        $result = [];
+        $notificationData = $notification->getNotificationData();
+        $result[] = $notificationData['applicantUserID'];
+        $locale = $this->app->make(LocaleRepository::class)->findApproved($notificationData['localeID']);
+        if ($locale === null) {
+            throw new Exception(t('Unable to find the locale with ID %s', $notificationData['localeID']));
+        }
+        $group = $this->getGroupService()->getAdministrators($locale);
+        $result = array_merge($result, $group->getGroupMemberIDs());
+        $group = $this->getGroupService()->getGlobalAdministrators();
+
+        return array_merge($result, $group->getGroupMemberIDs());
     }
 }

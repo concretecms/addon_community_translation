@@ -1,18 +1,26 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Concrete\Package\CommunityTranslation\Block\TranslationTeamRequest;
 
 use CommunityTranslation\Controller\BlockController;
 use CommunityTranslation\Entity\Locale as LocaleEntity;
 use CommunityTranslation\Repository\Locale as LocaleRepository;
 use CommunityTranslation\Repository\Notification as NotificationRepository;
-use CommunityTranslation\Service\Access;
+use CommunityTranslation\Service\Access as AccessService;
+use CommunityTranslation\Service\User as UserService;
 use Concrete\Core\Error\UserMessageException;
-use DateTime;
+use Concrete\Core\Url\Resolver\Manager\ResolverManagerInterface;
+use Concrete\Core\User\PostLoginLocation;
+use DateTimeImmutable;
 use Doctrine\ORM\EntityManager;
 use Gettext\Languages\Language as GettextLanguage;
 use Punic\Comparer;
 use Punic\Language as PunicLanguage;
+use Symfony\Component\HttpFoundation\Response;
+
+defined('C5_EXECUTE') or die('Access Denied.');
 
 class Controller extends BlockController
 {
@@ -21,53 +29,126 @@ class Controller extends BlockController
      *
      * @var int
      */
-    const TERRITORYREQUESTLEVEL_NEVER = 1;
+    private const TERRITORYREQUESTLEVEL_NEVER = 1;
 
     /**
      * Allow users to freely specify a territory.
      *
      * @var int
      */
-    const TERRITORYREQUESTLEVEL_OPTIONAL = 2;
+    private const TERRITORYREQUESTLEVEL_OPTIONAL = 2;
 
     /**
      * Strongly suggest users to specify a territory.
      *
      * @var int
      */
-    const TERRITORYREQUESTLEVEL_NOTSOOPTIONAL = 3;
+    private const TERRITORYREQUESTLEVEL_NOTSOOPTIONAL = 3;
 
     /**
      * Always require users to specify a territory.
      *
      * @var int
      */
-    const TERRITORYREQUESTLEVEL_ALWAYS = 4;
+    private const TERRITORYREQUESTLEVEL_ALWAYS = 4;
 
-    public $helpers = [];
-
-    protected $btTable = 'btCTTranslationTeamRequest';
-
-    protected $btInterfaceWidth = 600;
-    protected $btInterfaceHeight = 200;
-
-    protected $btCacheBlockRecord = true;
-    protected $btCacheBlockOutput = false;
-    protected $btCacheBlockOutputOnPost = false;
-    protected $btCacheBlockOutputForRegisteredUsers = false;
-
-    protected $btCacheBlockOutputLifetime = 0; // 86400 = 1 day
-
-    protected $btSupportsInlineEdit = false;
-    protected $btSupportsInlineAdd = false;
-
+    /**
+     * @var int|string|null
+     */
     public $territoryRequestLevel;
 
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::$helpers
+     */
+    protected $helpers = [];
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::$btTable
+     */
+    protected $btTable = 'btCTTranslationTeamRequest';
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::$btInterfaceWidth
+     */
+    protected $btInterfaceWidth = 600;
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::$btInterfaceHeight
+     */
+    protected $btInterfaceHeight = 250;
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::$btCacheBlockRecord
+     */
+    protected $btCacheBlockRecord = true;
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::$btCacheBlockOutput
+     */
+    protected $btCacheBlockOutput = false;
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::$btCacheBlockOutputOnPost
+     */
+    protected $btCacheBlockOutputOnPost = false;
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::$btCacheBlockOutputForRegisteredUsers
+     */
+    protected $btCacheBlockOutputForRegisteredUsers = false;
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::$btCacheBlockOutputLifetime
+     */
+    protected $btCacheBlockOutputLifetime = 0; // 86400 = 1 day
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::$btSupportsInlineEdit
+     */
+    protected $btSupportsInlineEdit = false;
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::$btSupportsInlineAdd
+     */
+    protected $btSupportsInlineAdd = false;
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::getBlockTypeName()
+     */
     public function getBlockTypeName()
     {
         return t('Translation team request');
     }
 
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Block\BlockController::getBlockTypeDescription()
+     */
     public function getBlockTypeDescription()
     {
         return t('Allow users to ask the creation of a new translation team.');
@@ -80,7 +161,8 @@ class Controller extends BlockController
 
     public function edit()
     {
-        $this->set('territoryRequestLevel', $this->territoryRequestLevel ?: self::TERRITORYREQUESTLEVEL_OPTIONAL);
+        $this->set('form', $this->app->make('helper/form'));
+        $this->set('territoryRequestLevel', $this->territoryRequestLevel ? (int) $this->territoryRequestLevel : self::TERRITORYREQUESTLEVEL_OPTIONAL);
         $this->set('territoryRequestLevels', [
             self::TERRITORYREQUESTLEVEL_NEVER => t('Never ask for a territory'),
             self::TERRITORYREQUESTLEVEL_OPTIONAL => t('Users may specify a territory'),
@@ -92,79 +174,33 @@ class Controller extends BlockController
     /**
      * {@inheritdoc}
      *
-     * @see BlockController::normalizeArgs()
+     * @see \Concrete\Core\Block\BlockController::registerViewAssets()
      */
-    protected function normalizeArgs(array $args)
+    public function registerViewAssets($outputContent = '')
     {
-        $error = $this->app->make('helper/validation/error');
-        $normalized = [];
-        $normalized['territoryRequestLevel'] = null;
-        if (isset($args['territoryRequestLevel']) && (is_int($args['territoryRequestLevel']) || (is_string($args['territoryRequestLevel']) && is_numeric($args['territoryRequestLevel'])))) {
-            $i = (int) $args['territoryRequestLevel'];
-            switch ($i) {
-                case self::TERRITORYREQUESTLEVEL_NEVER:
-                case self::TERRITORYREQUESTLEVEL_OPTIONAL:
-                case self::TERRITORYREQUESTLEVEL_NOTSOOPTIONAL:
-                case self::TERRITORYREQUESTLEVEL_ALWAYS:
-                    $normalized['territoryRequestLevel'] = $i;
-                    break;
-            }
+        $this->requireAsset('javascript', 'jquery');
+    }
+
+    public function view(): ?Response
+    {
+        return $this->action_language();
+    }
+
+    public function action_login(): ?Response
+    {
+        if ($this->getUserService()->isLoggedIn()) {
+            return $this->buildRedirect([$this->getCollectionObject()]);
         }
-        if ($normalized['territoryRequestLevel'] === null) {
-            $error->add(t('Please specify if and how the territory should be required'));
-        }
+        $this->app->make(PostLoginLocation::class)->setSessionPostLoginUrl($this->getCollectionObject());
 
-        return $error->has() ? $error : $normalized;
+        return $this->buildRedirect('/login');
     }
 
-    /**
-     * {@inheritdoc}
-     *
-     * @see BlockController::isControllerTaskInstanceSpecific($method)
-     */
-    protected function isControllerTaskInstanceSpecific($method)
-    {
-        return true;
-    }
-
-    /**
-     * @param null|string $checkToken
-     *
-     * @return bool
-     */
-    private function startStep($checkToken = null)
-    {
-        if ($this->getAccess()->isLoggedIn()) {
-            $result = true;
-            $token = $this->app->make('token');
-            if ($checkToken !== null && !$token->validate($checkToken)) {
-                $this->set('showError', $token->getErrorMessage());
-                $this->action_language();
-                $result = false;
-            } else {
-                $this->set('token', $this->app->make('token'));
-                $this->set('form', $this->app->make('helper/form'));
-            }
-        } else {
-            $result = false;
-            $this->set('step', null);
-            $this->set('showError', t('You need to sign-in in order to ask the creation of a new Translation Team'));
-        }
-
-        return $result;
-    }
-
-    public function view()
-    {
-        $this->action_language();
-    }
-
-    public function action_language()
+    public function action_language(): ?Response
     {
         if (!$this->startStep()) {
-            return;
+            return null;
         }
-        $this->set('step', 'language');
         $languages = [];
         $punicLanguages = PunicLanguage::getAll(true, true);
         foreach (GettextLanguage::getAll() as $l) {
@@ -175,44 +211,47 @@ class Controller extends BlockController
             }
         }
         (new Comparer())->sort($languages, true);
+        $this->set('step', 'language');
         $language = $this->get('language');
-        if (!$language || !isset($languages[$language])) {
+        $language = is_string($language) ? $language : '';
+        if ($language === '' || !isset($languages[$language])) {
             $languages = array_merge(['' => t('Please select')], $languages);
-            $this->set('language', '');
+            $language = '';
         }
+        $this->set('language', $language);
         $this->set('languages', $languages);
+
+        return null;
     }
 
-    public function action_language_set()
+    public function action_language_set(): ?Response
     {
         if (!$this->startStep('comtra-ttr-language_set')) {
-            return;
+            return null;
         }
-        $language = GettextLanguage::getById((string) $this->request->request->get('language'));
+        $languageID = $this->request->request->get('language');
+        $languageID = is_string($languageID) ? trim($languageID) : '';
+        $language = $languageID === '' ? null : GettextLanguage::getById($languageID);
         if ($language === null) {
             $this->set('showError', t('Please select the language you would like to add'));
-            $this->action_language();
 
-            return;
+            return $this->action_language();
         }
         $this->set('language', $language->id);
-        if ($this->territoryRequestLevel == self::TERRITORYREQUESTLEVEL_NEVER) {
+        if ((int) $this->territoryRequestLevel === self::TERRITORYREQUESTLEVEL_NEVER) {
             $err = $this->checkExistingLocale($language->id);
-            if ($err !== null) {
+            if ($err !== '') {
                 $this->set('showError', $err);
-                $this->action_language();
 
-                return;
+                return $this->action_language();
             }
             $this->set('territory', '');
             $this->preparePreviewStep();
 
-            return;
+            return null;
         }
         $ch = $this->app->make('helper/localization/countries');
-        /* @var \Concrete\Core\Localization\Service\CountryList $ch */
         $localeRepo = $this->app->make(LocaleRepository::class);
-        /* @var LocaleRepository $localeRepo */
         $sameLanguages = $localeRepo->
             createQueryBuilder('l')
                 ->where('l.id LIKE :like')->setParameter('like', $language->id . '%')
@@ -221,7 +260,6 @@ class Controller extends BlockController
         $suggestedCountryCodes = $ch->getCountriesForLanguage($language->id);
         $existingLocales = [];
         foreach ($sameLanguages as $l) {
-            /* @var \CommunityTranslation\Entity\Locale $l */
             $existingLocales[$l->getID()] = $l->getDisplayName();
             $chunks = explode('_', $l->getID());
             if (isset($chunks[1])) {
@@ -243,136 +281,177 @@ class Controller extends BlockController
                 $otherCountries[$c] = $n;
             }
         }
+        $this->set('urlResolver', $this->app->make(ResolverManagerInterface::class));
         $this->set('languageName', PunicLanguage::getName($language->id));
         $this->set('existingLocales', $existingLocales);
         $this->set('suggestedCountries', $suggestedCountries);
         $this->set('otherCountries', $otherCountries);
-        $this->set('allowNoTerrory', $this->territoryRequestLevel != self::TERRITORYREQUESTLEVEL_ALWAYS);
+        $this->set('allowNoTerrory', (int) $this->territoryRequestLevel !== self::TERRITORYREQUESTLEVEL_ALWAYS);
         $this->set('step', 'territory');
+
+        return null;
     }
 
-    public function action_territory_set()
+    public function action_territory_set(): ?Response
     {
         if (!$this->startStep('comtra-ttr-territory_set')) {
-            return;
+            return null;
         }
-        $language = GettextLanguage::getById((string) $this->request->request->get('language'));
+        $languageID = $this->request->request->get('language');
+        $languageID = is_string($languageID) ? trim($languageID) : '';
+        $language = $languageID === '' ? null : GettextLanguage::getById($languageID);
         if ($language === null) {
             $this->set('showError', t('Please select the language you would like to add'));
-            $this->action_language();
 
-            return;
+            return $this->action_language();
         }
         $this->set('language', $language->id);
-        if ($this->territoryRequestLevel != self::TERRITORYREQUESTLEVEL_ALWAYS && $this->request->request->get('noTerritory')) {
+        if ((int) $this->territoryRequestLevel !== self::TERRITORYREQUESTLEVEL_ALWAYS && $this->request->request->get('no-territory')) {
             $localeID = $language->id;
             $territory = '';
         } else {
-            $territory = (string) $this->request->request->get('territory');
+            $territory = $this->request->request->get('territory');
+            $territory = is_string($territory) ? trim($territory) : '';
             $ch = $this->app->make('helper/localization/countries');
-            /* @var \Concrete\Core\Localization\Service\CountryList $ch */
             $countryNames = $ch->getCountries();
-            if (!isset($countryNames[$territory])) {
+            if ($territory === '' || !isset($countryNames[$territory])) {
                 $this->set('showError', t('Invalid Country received'));
-                $this->action_language();
 
-                return;
+                return $this->action_language();
             }
-            $localeID = $language->id . '_' . $territory;
+            $localeID = "{$language->id}_{$territory}";
         }
         $err = $this->checkExistingLocale($localeID);
-        if ($err !== null) {
+        if ($err !== '') {
             $this->set('showError', $err);
-            $this->action_language();
 
-            return;
+            return $this->action_language();
         }
         $this->set('territory', $territory);
         $this->preparePreviewStep();
+
+        return null;
     }
 
-    public function action_submit()
+    public function action_submit(): ?Response
     {
         if (!$this->startStep('comtra-ttr-submit')) {
-            return;
+            return null;
         }
-        $language = GettextLanguage::getById((string) $this->request->request->get('language'));
+        $languageID = $this->request->request->get('language');
+        $languageID = is_string($languageID) ? trim($languageID) : '';
+        $language = $languageID === '' ? null : GettextLanguage::getById($languageID);
         if ($language === null) {
             $this->set('showError', t('Please select the language you would like to add'));
-            $this->action_language();
 
-            return;
+            return $this->action_language();
         }
         $approve = false;
-        if ($this->getAccess()->getLocaleAccess('') >= Access::GLOBAL_ADMIN) {
+        if ($this->getAccessService()->getLocaleAccess('') >= AccessService::GLOBAL_ADMIN) {
             if ($this->request->request->get('approve')) {
                 $approve = true;
             }
         }
         $notes = '';
-        $territory = (string) $this->request->request->get('territory');
+        $territory = $this->request->request->get('territory');
+        $territory = is_string($territory) ? trim($territory) : '';
         if ($territory === '') {
             $localeID = $language->id;
-            switch ($this->territoryRequestLevel) {
+            switch ((int) $this->territoryRequestLevel) {
                 case self::TERRITORYREQUESTLEVEL_ALWAYS:
                     $this->set('showError', t('Invalid Country received'));
-                    $this->action_language();
 
-                    return;
+                    return $this->action_language();
                 case self::TERRITORYREQUESTLEVEL_NOTSOOPTIONAL:
                     if (!$approve) {
                         $notes = $this->request->request->get('notes');
                         $notes = is_string($notes) ? trim($notes) : '';
                         if ($notes === '') {
                             $this->set('showError', t('Please specify why you need to create a language without an associated Country'));
-                            $this->action_language();
 
-                            return;
+                            return $this->action_language();
                         }
                     }
                     break;
             }
         } else {
-            switch ($this->territoryRequestLevel) {
+            switch ((int) $this->territoryRequestLevel) {
                 case self::TERRITORYREQUESTLEVEL_NEVER:
                     $this->set('showError', t('Invalid Country received'));
-                    $this->action_language();
 
-                    return;
+                    return $this->action_language();
             }
             $ch = $this->app->make('helper/localization/countries');
-            /* @var \Concrete\Core\Localization\Service\CountryList $ch */
             $countryNames = $ch->getCountries();
             if (!isset($countryNames[$territory])) {
                 $this->set('showError', t('Invalid Country received'));
-                $this->action_language();
 
-                return;
+                return $this->action_language();
             }
-            $localeID = $language->id . '_' . $territory;
+            $localeID = "{$language->id}_{$territory}";
         }
         $err = $this->checkExistingLocale($localeID);
-        if ($err !== null) {
+        if ($err !== '') {
             $this->set('showError', $err);
-            $this->action_language();
 
-            return;
+            return $this->action_language();
         }
         try {
             $locale = $this->createLocale($localeID, $notes, $approve);
         } catch (UserMessageException $x) {
             $this->set('showError', $err);
-            $this->action_language();
 
-            return;
+            return $this->action_language();
         }
         $this->set('step', 'submitted');
+        $this->set('urlResolver', $this->app->make(ResolverManagerInterface::class));
         $this->set('localeID', $localeID);
         $this->set('localeName', $locale->getDisplayName());
         $this->set('approved', $approve);
+
+        return null;
     }
 
-    private function preparePreviewStep()
+    /**
+     * {@inheritdoc}
+     *
+     * @see \CommunityTranslation\Controller\BlockController::normalizeArgs()
+     */
+    protected function normalizeArgs(array $args)
+    {
+        $error = $this->app->make('helper/validation/error');
+        $normalized = [
+            'territoryRequestLevel' => null,
+        ];
+        if (is_numeric($args['territoryRequestLevel'] ?? null)) {
+            $i = (int) $args['territoryRequestLevel'];
+            switch ($i) {
+                case self::TERRITORYREQUESTLEVEL_NEVER:
+                case self::TERRITORYREQUESTLEVEL_OPTIONAL:
+                case self::TERRITORYREQUESTLEVEL_NOTSOOPTIONAL:
+                case self::TERRITORYREQUESTLEVEL_ALWAYS:
+                    $normalized['territoryRequestLevel'] = $i;
+                    break;
+            }
+        }
+        if ($normalized['territoryRequestLevel'] === null) {
+            $error->add(t('Please specify if and how the territory should be required'));
+        }
+
+        return $error->has() ? $error : $normalized;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \CommunityTranslation\Controller\BlockController::isControllerTaskInstanceSpecific()
+     */
+    protected function isControllerTaskInstanceSpecific(string $method): bool
+    {
+        return true;
+    }
+
+    private function preparePreviewStep(): void
     {
         $this->set('step', 'preview');
         $localeID = $this->get('language');
@@ -382,12 +461,12 @@ class Controller extends BlockController
         }
         $this->set('localeID', $localeID);
         $this->set('localeName', PunicLanguage::getName($localeID));
-        if ($this->getAccess()->getLocaleAccess($localeID) === Access::GLOBAL_ADMIN) {
+        if ($this->getAccessService()->getLocaleAccess($localeID) === AccessService::GLOBAL_ADMIN) {
             $this->set('askApprove', true);
             $this->set('askWhyNoCountry', false);
         } else {
             $this->set('askApprove', false);
-            if ($territory === '' && $this->territoryRequestLevel == self::TERRITORYREQUESTLEVEL_NOTSOOPTIONAL) {
+            if ($territory === '' && (int) $this->territoryRequestLevel === self::TERRITORYREQUESTLEVEL_NOTSOOPTIONAL) {
                 $this->set('askWhyNoCountry', true);
             } else {
                 $this->set('askWhyNoCountry', false);
@@ -395,47 +474,36 @@ class Controller extends BlockController
         }
     }
 
-    /**
-     * @param string $localeID
-     *
-     * @return string|null
-     */
-    private function checkExistingLocale($localeID)
+    private function checkExistingLocale(string $localeID): string
     {
-        $result = null;
         $localeRepo = $this->app->make(LocaleRepository::class);
         $existing = $localeRepo->find($localeID);
-        if ($existing !== null) {
-            if ($existing->isSource()) {
-                $result = t("There couldn't be a language team for '%s' since it's the source language", $existing->getDisplayName());
-            } elseif ($existing->isApproved()) {
-                $result = t("The language team for '%s' already exists", $existing->getDisplayName());
-            } elseif ($existing->getRequestedOn() !== null) {
-                $result = t(
-                    "The language team for '%1\$s' has already been requested on %2\$s",
-                    $existing->getDisplayName(),
-                    $this->app->make('date')->formatDateTime($existing->getRequestedOn(), true)
-                );
-            } else {
-                $result = t("The language team for '%s' has already been requested", $existing->getDisplayName());
-            }
+        if ($existing === null) {
+            return '';
+        }
+        if ($existing->isSource()) {
+            return t("There couldn't be a language team for '%s' since it's the source language", $existing->getDisplayName());
+        }
+        if ($existing->isApproved()) {
+            return t("The language team for '%s' already exists", $existing->getDisplayName());
+        }
+        if ($existing->getRequestedOn() !== null) {
+            return t(
+                "The language team for '%1\$s' has already been requested on %2\$s",
+                $existing->getDisplayName(),
+                $this->app->make('date')->formatDateTime($existing->getRequestedOn(), true)
+            );
         }
 
-        return $result;
+        return t("The language team for '%s' has already been requested", $existing->getDisplayName());
     }
 
-    /**
-     * @param string $localeID
-     * @param string $notes
-     * @param bool $approve
-     *
-     * @return LocaleEntity
-     */
-    private function createLocale($localeID, $notes, $approve)
+    private function createLocale(string $localeID, string $notes, bool $approve): LocaleEntity
     {
-        $locale = LocaleEntity::create($localeID)
-            ->setRequestedBy($this->getAccess()->getUserEntity('current'))
-            ->setRequestedOn(new DateTime())
+        $locale = new LocaleEntity($localeID);
+        $locale
+            ->setRequestedBy($this->getUserService()->getUserEntity(UserService::CURRENT_USER_KEY))
+            ->setRequestedOn(new DateTimeImmutable())
             ->setIsApproved($approve)
         ;
         $em = $this->app->make(EntityManager::class);
@@ -446,5 +514,25 @@ class Controller extends BlockController
         }
 
         return $locale;
+    }
+
+    private function startStep(string $checkToken = ''): bool
+    {
+        if (!$this->getUserService()->isLoggedIn()) {
+            $this->render('view.notloggedin');
+
+            return false;
+        }
+        $token = $this->app->make('token');
+        if ($checkToken !== '' && !$token->validate($checkToken)) {
+            $this->set('showError', $token->getErrorMessage());
+            $this->action_language();
+
+            return false;
+        }
+        $this->set('token', $token);
+        $this->set('form', $this->app->make('helper/form'));
+
+        return true;
     }
 }

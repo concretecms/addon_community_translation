@@ -1,80 +1,58 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\TranslationsConverter;
 
-use Concrete\Core\Application\Application;
-use Concrete\Core\Error\UserMessageException;
 use Punic\Comparer;
 
-class Provider
-{
-    /**
-     * The application object.
-     *
-     * @var Application
-     */
-    protected $app;
+defined('C5_EXECUTE') or die('Access Denied.');
 
+final class Provider
+{
     /**
      * The registered converters.
      *
-     * @var ConverterInterface[]
+     * @var \CommunityTranslation\TranslationsConverter\ConverterInterface[]
      */
-    protected $converters;
-
-    /**
-     * @param Application $app
-     */
-    public function __construct(Application $app)
-    {
-        $this->app = $app;
-        $this->converters = [];
-    }
+    private array $converters = [];
 
     /**
      * Register a converter.
      *
-     * @param ConverterInterface $converter
+     * @return $this
      */
-    public function register(ConverterInterface $converter)
+    public function register(ConverterInterface $converter): self
     {
         $this->converters[$converter->getHandle()] = $converter;
+
+        return $this;
     }
 
     /**
      * Check if a converter handle is registered.
-     *
-     * @param string $handle
-     *
-     * @return bool
      */
-    public function isRegistered($handle)
+    public function isRegistered(string $handle): bool
     {
         return isset($this->converters[$handle]);
     }
 
     /**
      * Get a converter given its handle.
-     *
-     * @param string $handle
-     *
-     * @return ConverterInterface|null
      */
-    public function getByHandle($handle)
+    public function getByHandle(string $handle): ?ConverterInterface
     {
-        return isset($this->converters[$handle]) ? $this->converters[$handle] : null;
+        return $this->converters[$handle] ?? null;
     }
 
     /**
-     * Get the converter given a file extension.
+     * Get the converters that support a specific file extension.
      *
-     * @param string $fileExtension
-     *
-     * @return ConverterInterface[]
+     * @return \CommunityTranslation\TranslationsConverter\ConverterInterface[]
      */
-    public function getByFileExtension($fileExtension)
+    public function getByFileExtension(string $fileExtension): array
     {
-        $fileExtension = ltrim($fileExtension);
+        $fileExtension = ltrim($fileExtension, '.');
         $result = [];
         foreach ($this->converters as $converter) {
             if (strcasecmp($fileExtension, $converter->getFileExtension()) === 0) {
@@ -88,17 +66,18 @@ class Provider
     /**
      * Get the list of registered converters.
      *
-     * @throws UserMessageException
-     *
-     * @return ConverterInterface[]
+     * @return \CommunityTranslation\TranslationsConverter\ConverterInterface[]
      */
     public function getRegisteredConverters()
     {
         $result = $this->converters;
         $comparer = new Comparer();
-        usort($result, function (ConverterInterface $a, ConverterInterface $b) use ($comparer) {
-            return $comparer->compare($a->getName(), $b->getName());
-        });
+        usort(
+            $result,
+            static function (ConverterInterface $a, ConverterInterface $b) use ($comparer): int {
+                return $comparer->compare($a->getName(), $b->getName());
+            }
+        );
 
         return $result;
     }

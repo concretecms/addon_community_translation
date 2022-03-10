@@ -1,0 +1,13 @@
+table.table-sortable {
+    .table-sortable-sorted-asc:after, .table-sortable-sorted-desc:after {
+        font-family: "Font Awesome 5 Free";
+        opacity: 0.5;
+        margin-left: 0.5em;
+    }
+    .table-sortable-sorted-asc:after {
+        content: "\f0de"; /* fa-sort-asc */
+    }
+    .table-sortable-sorted-desc:after {
+        content: "\f0dd"; /* fa-sort-desc */
+    }
+}

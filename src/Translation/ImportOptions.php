@@ -1,6 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Translation;
+
+defined('C5_EXECUTE') or die('Access Denied.');
 
 /**
  * Options for CommunityTranslation\Translation\Importer::import().
@@ -9,56 +13,46 @@ class ImportOptions
 {
     /**
      * Consider all the translations as fuzzy?
-     *
-     * @var bool
      */
-    protected $allFuzzy;
+    private bool $allFuzzy;
 
     /**
      * Unapprove fuzzy translations?
-     *
-     * @var bool
      */
-    protected $unapproveFuzzy;
+    private bool $unapproveFuzzy;
+
+    /**
+     * Initialize the instance.
+     *
+     * @param bool $allFuzzy Consider all the translations as fuzzy?
+     * @param bool $unapproveFuzzy Unapprove fuzzy translations?
+     */
+    public function __construct(bool $allFuzzy, bool $unapproveFuzzy)
+    {
+        $this->allFuzzy = $allFuzzy;
+        $this->unapproveFuzzy = $unapproveFuzzy;
+    }
 
     /**
      * Consider all the translations as fuzzy?
-     *
-     * @return bool
      */
-    public function getAllFuzzy()
+    public function getAllFuzzy(): bool
     {
         return $this->allFuzzy;
     }
 
     /**
      * Unapprove fuzzy translations?
-     *
-     * @return bool
      */
-    public function getUnapproveFuzzy()
+    public function getUnapproveFuzzy(): bool
     {
         return $this->unapproveFuzzy;
     }
 
     /**
-     * Initialize the instance.
-     *
-     * @param mixed $allFuzzy Consider all the translations as fuzzy?
-     * @param mixed $unapproveFuzzy Unapprove fuzzy translations?
-     */
-    public function __construct($allFuzzy, $unapproveFuzzy)
-    {
-        $this->allFuzzy = (bool) $allFuzzy;
-        $this->unapproveFuzzy = (bool) $unapproveFuzzy;
-    }
-
-    /**
      * Get the options for normal (not administrator) translators.
-     *
-     * @return ImportOptions
      */
-    public static function forTranslators()
+    public static function forTranslators(): self
     {
         return new self(true, false);
     }
@@ -66,11 +60,9 @@ class ImportOptions
     /**
      * Get the options for normal (not administrator) translators.
      *
-     * @param mixed $unapproveFuzzy Unapprove fuzzy translations?
-     *
-     * @return ImportOptions
+     * @param bool $unapproveFuzzy Unapprove fuzzy translations?
      */
-    public static function forAdministrators($unapproveFuzzy = true)
+    public static function forAdministrators(bool $unapproveFuzzy = true): self
     {
         return new self(false, $unapproveFuzzy);
     }

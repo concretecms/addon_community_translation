@@ -1,27 +1,34 @@
 <?php
 
+declare(strict_types=1);
+
 defined('C5_EXECUTE') or die('Access Denied.');
 
-/* @var string $siteName */
-/* @var string $siteUrl */
-/* @var string $recipientName */
-/* @var League\URL\URLInterface $recipientAccountUrl */
-/* @var CommunityTranslation\Service\User $usersHelper */
+/**
+ * @var string $siteName
+ * @var string $siteUrl
+ * @var CommunityTranslation\Service\User $userService
+ * @var string $recipientAccountUrl
+ * @var string $recipientName
+ * @var string $localeName
+ * @var Concrete\Core\User\UserInfo|null $applicant
+ * @var Concrete\Core\User\UserInfo|null $approvedBy
+ * @var bool $automatic
+ * @var string $teamsUrl
+ */
 
-/* @var string $localeName */
-/* @var Concrete\Core\User\UserInfo|null $applicant */
-/* @var Concrete\Core\User\UserInfo|null $approvedBy */
-/* @var bool $automatic */
-/* @var string $teamsUrl */
+$subject = "[{$siteName}] User accepted for the team {$localeName}";
 
-$subject = "[$siteName] User accepted for the team $localeName";
+$bodyHTML = "<p>Hi {$recipientName},</p>";
 
-$bodyHTML = "<p>Hi $recipientName,</p>";
-
-$applicantHTML = $usersHelper->format($applicant);
+$applicantHTML = $userService->format($applicant);
 
 if ($automatic) {
-    $bodyHTML .= "<p>The user $applicantHTML has been automatically accepted as a translator of <a href=\"$teamsUrl\">$localeName</a>.</p>";
+    $bodyHTML .= "<p>The user {$applicantHTML} has been automatically accepted as a translator of <a href=\"{$teamsUrl}\">{$localeName}</a>.</p>";
 } else {
-    $bodyHTML .= "<p>The user $applicantHTML has been accepted by " . $usersHelper->format($approvedBy) . " as a translator of <a href=\"$teamsUrl\">$localeName</a>.</p>";
+    $htmlApprover = $userService->format($approvedBy);
+    $bodyHTML .= "<p>The user {$applicantHTML} has been accepted by {$htmlApprover} as a translator of <a href=\"{$teamsUrl}\">{$localeName}</a>.</p>";
 }
+
+// Let's avoid IDE warnings
+if (false) return [$subject, $bodyHTML];

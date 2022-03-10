@@ -1,50 +1,48 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Search\Results\Item;
 
+use CommunityTranslation\Entity\Package as PackageEntity;
+use CommunityTranslation\Entity\Stats as StatsEntity;
 use Concrete\Core\Search\Result\Item;
 use Concrete\Core\Search\Result\Result;
 
+defined('C5_EXECUTE') or die('Access Denied.');
+
 class Package extends Item
 {
-    /**
-     * @var \CommunityTranslation\Entity\Package
-     */
-    protected $package;
+    private PackageEntity $package;
 
-    /**
-     * 
-     * @var \CommunityTranslation\Entity\Stats|false|null
-     */
-    protected $stats;
+    private bool $mayHaveStats;
+
+    private ?StatsEntity $stats;
 
     public function __construct(Result $result, array $item)
     {
         $this->package = $item[0];
-        $this->stats = isset($item[1]) ? $item[1] : null;
+        if (array_key_exists(1, $item)) {
+            $this->mayHaveStats = true;
+            $this->stats = $item[1];
+        } else {
+            $this->mayHaveStats = false;
+            $this->stats = null;
+        }
     }
 
-    /**
-     * @return \CommunityTranslation\Entity\Package
-     */
-    public function getPackage()
+    public function getPackage(): PackageEntity
     {
         return $this->package;
     }
-    
-    /**
-     * @return bool
-     */
-    public function hasStats()
+
+    public function mayHaveStats(): bool
     {
-        return $this->stats !== null;
+        return $this->mayHaveStats;
     }
 
-    /**
-     * @return \CommunityTranslation\Entity\Stats|null
-     */
-    public function getStats()
+    public function getStats(): ?StatsEntity
     {
-        return $this->stats ?: null;
+        return $this->stats;
     }
 }
