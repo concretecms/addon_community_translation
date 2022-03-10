@@ -15,6 +15,10 @@ mix.webpackConfig({
 
 mix.options({
     manifest: false,
+    notifications: {
+        onSuccess: false,
+        onFailure: false,
+    },
     processCssUrls: false,
 });
 
