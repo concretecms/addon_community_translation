@@ -14,6 +14,7 @@ mix.webpackConfig({
 });
 
 mix.options({
+    manifest: false,
     processCssUrls: false,
 });
 
