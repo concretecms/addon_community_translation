@@ -1,14 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Tests;
 
 use CommunityTranslation\Entity\Package\Version as PackageVersionEntity;
 use CommunityTranslation\Service\VersionComparer;
-use PHPUnit_Framework_TestCase;
+use PHPUnit\Framework\TestCase;
 
-class VersionComparerTest extends PHPUnit_Framework_TestCase
+class VersionComparerTest extends TestCase
 {
-    public function versionBestMatchProvider()
+    public function versionBestMatchProvider(): array
     {
         $devPrefix = PackageVersionEntity::DEV_PREFIX;
 
@@ -32,11 +34,8 @@ class VersionComparerTest extends PHPUnit_Framework_TestCase
 
     /**
      * @dataProvider versionBestMatchProvider
-     *
-     * @param string $wanted
-     * @param string $expected
      */
-    public function testVersionBestMatch($wanted, $expected)
+    public function testVersionBestMatch(string $wanted, string $expected): void
     {
         $vm = new VersionComparer();
         $allVersions = $this->getAllVersions();
@@ -44,7 +43,7 @@ class VersionComparerTest extends PHPUnit_Framework_TestCase
         $this->assertSame($expected, $matchedVersion);
     }
 
-    protected function getAllVersions()
+    private function getAllVersions(): array
     {
         $devPrefix = PackageVersionEntity::DEV_PREFIX;
 

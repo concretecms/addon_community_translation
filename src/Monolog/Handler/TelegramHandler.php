@@ -77,7 +77,7 @@ class TelegramHandler extends AbstractProcessingHandler
         $client->send($request);
     }
 
-    private function setMessageText(array &$data, string $channel, string $message, int $maxLength = self::MAX_MESSAGE_LENGTH): void
+    private function setMessageText(array & $data, string $channel, string $message, int $maxLength = self::MAX_MESSAGE_LENGTH): void
     {
         $prefix = $channel === '' ? '' : "<b>{$this->safeHTML($channel)}</b>\n";
         for (;;) {

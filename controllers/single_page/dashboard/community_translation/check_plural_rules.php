@@ -93,7 +93,7 @@ class CheckPluralRules extends DashboardPageController
         return implode("\n", $forms);
     }
 
-    private function fixLocale(LocaleEntity $locale, ?int &$changedTranslations = null): void
+    private function fixLocale(LocaleEntity $locale, ?int & $changedTranslations = null): void
     {
         $this->entityManager->getConnection()->transactional(
             function (Connection $cn) use ($locale, &$changedTranslations) {

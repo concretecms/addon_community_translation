@@ -912,7 +912,7 @@ class OnlineTranslation extends Controller
      *
      * @throws \Concrete\Core\Error\UserMessageException
      */
-    private function getUserRequestedLocale($localeID, ?int &$userAccess = null): LocaleEntity
+    private function getUserRequestedLocale($localeID, ?int & $userAccess = null): LocaleEntity
     {
         if ($this->getUserService()->isLoggedIn() === false) {
             throw new UserMessageException(t('You need to be logged in'));

@@ -1,0 +1,47 @@
+name: Tests
+
+on:
+  - pull_request
+  - push
+
+jobs:
+  docker:
+    name: Tests in docker
+    runs-on: ubuntu-latest
+    container: ghcr.io/concrete5-community/docker5:develop
+    steps:
+      -
+        name: Prepare enviro
+        run: switch-composer 2
+      -
+        name: Checkout
+        uses: actions/checkout@v3
+      -
+        name: Check composer.json
+        run: composer --ansi --no-interaction validate --strict
+      -
+        name: Prepare package
+        run: ln -s "$GITHUB_WORKSPACE" /app/packages/community_translation
+      -
+        name: Start services
+        run: ccm-service start db web
+      -
+        name: Check PHP Coding style
+        run: /app/concrete/bin/concrete5 --ansi --no-interaction -v c5:phpcs check --no-cache --php=7.4 /app/packages/community_translation
+      -
+        name: Install package
+        run: sudo -u www-data /app/concrete/bin/concrete5 --ansi --no-interaction c5:package:install community_translation
+      -
+        name: Install Composer dependencies
+        run: composer --ansi --no-interaction update
+      -
+        name: Run PHPUnit
+        env:
+          CT_TEST_API_ROOTURL: http://localhost
+          CT_TEST_APP_DIR: /app/application
+        run: >
+          sudo -Eu www-data
+          /app/concrete/bin/concrete5 c5:exec /app/packages/community_translation/test/c5exec.php
+          --
+          --fail-on-skipped --colors=always --no-interaction --do-not-cache-result -vvv
+
