@@ -1,21 +1,24 @@
 <?php
 
+declare(strict_types=1);
+
 namespace CommunityTranslation\Tests\Api;
 
-use CommunityTranslation\Tests\Helper\ApiClientResponseException;
+use CommunityTranslation\Api as CTApi;
+use CommunityTranslation\Tests\Helper;
 
-class StatsTest extends ApiTest
+class StatsTest extends Helper\ApiTest
 {
-    public function testGetLocales()
+    public function testGetLocales(): void
     {
         $this->apiClient->setEntryPoint('locales')->setQueryString('rl=en_US');
         $error = null;
         try {
             $this->apiClient->exec();
-        } catch (ApiClientResponseException $x) {
+        } catch (Helper\ApiClientResponseException $x) {
             $error = $x;
         }
-        if ($this->getConfigValue('api.access.getLocales') === 'everybody') {
+        if ($this->getConfigValue('api.access.' . CTApi\EntryPoint\GetLocales::ACCESS_KEY) === CTApi\UserControl::ACCESSOPTION_EVERYBODY) {
             $this->assertNull($error);
         } else {
             $this->assertNotNull($error);
@@ -29,29 +32,29 @@ class StatsTest extends ApiTest
         $this->assertSame(200, $this->apiClient->getLastResponseCode());
         $this->assertSame('application/json', $this->apiClient->getLastResponseType());
         $data = $this->apiClient->getLastResponseData();
-        $this->assertInternalType('array', $data);
+        $this->assertIsArray($data);
         if (empty($data)) {
             $this->markTestIncomplete('No locales defined in CommunityTranslation');
         }
         foreach ($data as $key => $value) {
-            $this->assertInternalType('int', $key);
-            $this->assertInternalType('array', $value);
+            $this->assertIsInt($key);
+            $this->assertIsArray($value);
             $this->assertArrayHasKey('id', $value);
             $this->assertArrayHasKey('name', $value);
             $this->assertArrayHasKey('nameLocalized', $value);
         }
     }
 
-    public function testGetAvailablePackages()
+    public function testGetAvailablePackages(): void
     {
         $this->apiClient->setEntryPoint('packages')->setQueryString('rl=en_US');
         $error = null;
         try {
             $this->apiClient->exec();
-        } catch (ApiClientResponseException $x) {
+        } catch (Helper\ApiClientResponseException $x) {
             $error = $x;
         }
-        if ($this->getConfigValue('api.access.getPackages') === 'everybody') {
+        if ($this->getConfigValue('api.access.' . CTApi\EntryPoint\GetPackages::ACCESS_KEY) === CTApi\UserControl::ACCESSOPTION_EVERYBODY) {
             $this->assertNull($error);
         } else {
             $this->assertNotNull($error);
@@ -65,13 +68,13 @@ class StatsTest extends ApiTest
         $this->assertSame(200, $this->apiClient->getLastResponseCode());
         $this->assertSame('application/json', $this->apiClient->getLastResponseType());
         $data = $this->apiClient->getLastResponseData();
-        $this->assertInternalType('array', $data);
-        if (empty($data)) {
+        $this->assertIsArray($data);
+        if ($data === []) {
             $this->markTestIncomplete('No packages defined in CommunityTranslation');
         }
         foreach ($data as $key => $value) {
-            $this->assertInternalType('int', $key);
-            $this->assertInternalType('array', $value);
+            $this->assertIsInt($key);
+            $this->assertIsArray($value);
             $this->assertArrayHasKey('handle', $value);
             $this->assertArrayHasKey('name', $value);
         }

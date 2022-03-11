@@ -77,7 +77,7 @@ final class Importer
         $someStringChanged = false;
         $numStringsAdded = 0;
         $version = null;
-        $this->em->getConnection()->transactional(function (Connection $connection) use ($translations, $packageHandle, $packageVersion, &$packageIsNew, &$numStringsAdded, &$version) {
+        $this->em->getConnection()->transactional(function (Connection $connection) use ($translations, $packageHandle, $packageVersion, & $packageIsNew, & $numStringsAdded, & $version) {
             $packageRepo = $this->em->getRepository(PackageEntity::class);
             $package = $packageRepo->findOneBy(['handle' => $packageHandle]);
             $version = null;
