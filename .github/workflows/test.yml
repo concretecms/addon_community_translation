@@ -19,6 +19,10 @@ jobs:
       -
         name: Check composer.json
         run: composer --ansi --no-interaction validate --strict
+#     Step required when using a release version of Concrete, not "develop"
+#     - 
+#       name: Install Composer dependencies
+#       run: composer --ansi --no-interaction install --optimize-autoloader --working-dir=/app
       -
         name: Prepare package
         run: ln -s "$GITHUB_WORKSPACE" /app/packages/community_translation
@@ -32,16 +36,14 @@ jobs:
         name: Install package
         run: sudo -u www-data /app/concrete/bin/concrete5 --ansi --no-interaction c5:package:install community_translation
       -
-        name: Install Composer dependencies
-        run: composer --ansi --no-interaction update
+        name: Populate test data
+        run: sudo -u www-data /app/concrete/bin/concrete5 c5:exec /app/packages/community_translation/test/populate-test-data.php
       -
         name: Run PHPUnit
         env:
           CT_TEST_API_ROOTURL: http://localhost
-          CT_TEST_APP_DIR: /app/application
         run: >
           sudo -Eu www-data
-          /app/concrete/bin/concrete5 c5:exec /app/packages/community_translation/test/c5exec.php
+          /app/concrete/bin/concrete5 c5:exec /app/packages/community_translation/test/start.php
           --
-          --fail-on-skipped --colors=always --no-interaction --do-not-cache-result -vvv
-
+          --colors=always --no-interaction --do-not-cache-result -v

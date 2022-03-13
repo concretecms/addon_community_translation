@@ -195,24 +195,13 @@ class ApiClient
             $curlOptions[CURLOPT_POST] = false;
         } else {
             $curlOptions[CURLOPT_POST] = true;
-            if (defined('CURLOPT_SAFE_UPLOAD')) {
-                $curlOptions[CURLOPT_SAFE_UPLOAD] = true;
-            }
+            $curlOptions[CURLOPT_SAFE_UPLOAD] = true;
             if ($this->postFiles === []) {
                 $curlOptions[CURLOPT_POSTFIELDS] = $this->postFields;
             } else {
                 $fields = $this->postFields;
-                if (class_exists(CURLFile::class)) {
-                    foreach ($this->postFiles as $fieldName => $path) {
-                        $fields[$fieldName] = new CURLFile($path);
-                    }
-                } else {
-                    if (defined('CURLOPT_SAFE_UPLOAD')) {
-                        $curlOptions[CURLOPT_SAFE_UPLOAD] = false;
-                    }
-                    foreach ($this->postFiles as $fieldName => $path) {
-                        $fields[$fieldName] = '@' . $path;
-                    }
+                foreach ($this->postFiles as $fieldName => $path) {
+                    $fields[$fieldName] = new CURLFile($path);
                 }
                 $curlOptions[CURLOPT_POSTFIELDS] = $fields;
             }

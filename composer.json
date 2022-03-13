@@ -10,17 +10,8 @@
         "source" : "https://github.com/concrete5/addon_community_translation"
     },
     "require": {
-        "php": "^7.4 || ^8"
-    },
-    "require-dev": {
-        "ext-curl": "*",
-        "phpunit/phpunit": "^9.5.18"
-    },
-    "autoload-dev": {
-        "psr-4": {
-            "CommunityTranslation\\": "src",
-            "CommunityTranslation\\Tests\\": ["test/src", "test/tests"]
-        }
+        "php": "^7.4 || ^8",
+		"concrete5/core": "^9.0.3a1"
     },
     "config": {
         "optimize-autoloader": true,
