@@ -1269,17 +1269,20 @@ class OnlineTranslation extends Controller
         }
         $result = [];
         for ($index = 0; $index < $expectedCount; $index++) {
+            $string = '';
             $base64String = $base64Strings[$index] ?? null;
-            if (!is_string($base64String) || $base64String === '') {
-                throw new UserMessageException(t('Please specify the translations'));
+            if (is_string($base64String)) {
+                set_error_handler(static function () {}, -1);
+                try {
+                    $urlEncodedString = base64_decode($base64String, true);
+                    if (is_string($urlEncodedString)) {
+                        $string = rawurldecode($urlEncodedString);
+                    }
+                } finally {
+                    restore_error_handler();
+                }
             }
-            set_error_handler(static function () {}, -1);
-            try {
-                $string = base64_decode($base64String, true);
-            } finally {
-                restore_error_handler();
-            }
-            if ($string === false || trim($string) === '') {
+            if (!is_string($string) || trim($string) === '') {
                 throw new UserMessageException(t('Please specify the translations'));
             }
             $result[] = $string;
