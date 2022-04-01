@@ -1482,7 +1482,7 @@ new Vue({
                 return;
             }
             if (this.translationState.isTranslated) {
-                const translatedB64 = this.translating.map((s) => window.btoa(s));
+                const translatedB64 = this.translating.map((s) => window.btoa(window.encodeURIComponent(s)));
                 this.processTranslation(this.currentTranslation, 'save-current', {translatedB64, approved: this.translatingApproved ? 1 : 0}, completed);
             } else {
                 this.processTranslation(this.currentTranslation, 'clear-current', {}, completed);
