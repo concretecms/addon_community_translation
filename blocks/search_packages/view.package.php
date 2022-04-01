@@ -67,7 +67,7 @@ if (is_string($showWarning ?? null) && $showWarning !== '') {
                     </div>
                 </div>
             </div>
-            <table class="table table-striped table-striped table-sortable" data-table-sortable-persister-key="comtra-searchpackages-languages-<?= $bID ?>">
+            <table class="table table-striped table-striped table-sortable h-100" data-table-sortable-persister-key="comtra-searchpackages-languages-<?= $bID ?>">
                 <col width="1" />
                 <col />
                 <col />
@@ -116,14 +116,30 @@ if (is_string($showWarning ?? null) && $showWarning !== '') {
                             }
                             ?>
                             <tr data-sortsection="<?= $sectionIndex ?>">
-                                <td data-sortby="<?= h(mb_strtolower($locale->getID())) ?>"><span class="badge badge-info"><?= h($locale->getID()) ?></span></td>
-                                <td data-sortby="<?= h(mb_strtolower($locale->getDisplayName())) ?>"><?= $locale->getDisplayName() ?></td>
-                                <td class="d-none d-md-table-cell" data-sortby="<?= h($localeInfo['updatedOn_sort']) ?>"><?= h($localeInfo['updatedOn']) ?></td>
-                                <td class="d-none d-sm-table-cell" data-sortby-kind="numeric" data-sortby="<?= $localeInfo['percSort'] ?>"><div class="progress" style="margin: 0" title="<?= t2('%s untranslated string', '%s untranslated strings', $localeInfo['untranslated']) ?>">
-                                    <div class="progress-bar <?= $localeInfo['progressBarClass'] ?>" role="progressbar" style="width: <?= $localeInfo['perc'] ?>%">
-                                        <span><?= $localeInfo['perc'] ?></span>
+                                <td data-sortby="<?= h(mb_strtolower($locale->getID())) ?>">
+                                    <div class="h-100 pr-2 d-flex flex-column align-items-baseline justify-content-around">
+                                        <span class="badge badge-info"><?= h($locale->getID()) ?></span>
                                     </div>
-                                </div></td>
+                                </td>
+                                <td data-sortby="<?= h(mb_strtolower($locale->getDisplayName())) ?>">
+                                    <div class="h-100 d-flex flex-column justify-content-around">
+                                        <?= $locale->getDisplayName() ?>
+                                    </div>
+                                </td>
+                                <td class="d-none d-md-table-cell" data-sortby="<?= h($localeInfo['updatedOn_sort']) ?>">
+                                    <div class="h-100 d-flex flex-column justify-content-around">
+                                        <?= h($localeInfo['updatedOn']) ?>
+                                    </div>
+                                </td>
+                                <td class="d-none d-sm-table-cell h-100" data-sortby-kind="numeric" data-sortby="<?= $localeInfo['percSort'] ?>">
+                                    <div class="h-100 px-2 d-flex flex-column justify-content-around">
+                                        <div class="progress" style="margin: 0" title="<?= t2('%s untranslated string', '%s untranslated strings', $localeInfo['untranslated']) ?>">
+                                            <div class="progress-bar <?= $localeInfo['progressBarClass'] ?>" role="progressbar" style="width: <?= $localeInfo['perc'] ?>%">
+                                                <span><?= $localeInfo['perc'] ?></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
                                 <td class="text-nowrap">
                                     <span class="d-none d-sm-inline">
                                         <?php
