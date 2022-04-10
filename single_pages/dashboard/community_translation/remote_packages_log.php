@@ -62,9 +62,9 @@ defined('C5_EXECUTE') or die('Access Denied.');
                     </td>
                     <td>
                         <i v-if="remotePackage.failCount === 0 &amp;&amp; remotePackage.lastError === ''"><?= tc('Errors', 'none') ?></i>
-                        <div v-else v-bind:title="remotePackage.lastError">
+                        <div v-else>
                             <?= t('%s errors', '{{ remotePackage.failCount }}') ?><br />
-                            <?= t('Last error: %s', '{{ remotePackage.lastError }}') ?><br />
+                            <?= t('Last error: %s', '<span style="white-space: pre-wrap">{{ remotePackage.lastError }}</span>') ?>
                         </div>
                     </td>
                 </tr>
