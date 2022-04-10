@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace CommunityTranslation\Entity;
 
+use Concrete\Core\Error\UserMessageException;
 use DateTimeImmutable;
+use Throwable;
 
 defined('C5_EXECUTE') or die('Access Denied.');
 
@@ -311,6 +313,22 @@ class RemotePackage
     public function setLastError(string $value): self
     {
         $this->lastError = $value;
+
+        return $this;
+    }
+
+    /**
+     * Set the last process error starting from a throwed error.
+     *
+     * @return $this
+     */
+    public function setLastErrorFromThrowable(Throwable $error): self
+    {
+        if ($error instanceof UserMessageException) {
+            $this->setLastError($error->getMessage());
+        } else {
+            $this->setLastError((string) $error);
+        }
 
         return $this;
     }

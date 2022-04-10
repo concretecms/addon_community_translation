@@ -205,7 +205,7 @@ EOT
             if ($recordFailures) {
                 $remotePackage
                     ->setFailCount($remotePackage->getFailCount() + 1)
-                    ->setLastError($error->getMessage())
+                    ->setLastErrorFromThrowable($error)
                 ;
             }
             $this->em->persist($remotePackage);

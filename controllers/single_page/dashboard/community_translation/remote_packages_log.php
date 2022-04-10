@@ -105,10 +105,10 @@ class RemotePackagesLog extends DashboardPageController
                 $remotePackageImporter->import($remotePackage);
             });
         } catch (Throwable $error) {
-            $remotePackage->setProcessedOn(null);
             $remotePackage
+                ->setProcessedOn(null)
                 ->setFailCount($remotePackage->getFailCount() + 1)
-                ->setLastError($error->getMessage())
+                ->setLastErrorFromThrowable($error)
             ;
             $em->flush();
         }
