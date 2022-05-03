@@ -175,6 +175,7 @@ class Version
     public function setUpdatedOn(DateTimeImmutable $value): self
     {
         $this->updatedOn = $value;
+
         return $this;
     }
 }
