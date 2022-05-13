@@ -88,7 +88,8 @@ abstract class Command extends ConcreteCommand
      */
     protected function buildNonInteractiveLogHandlers(): Generator
     {
-        $config = $this->app->make(Repository::class);
+        $app = app();
+        $config = $app->make(Repository::class);
         if (!$config->get('community_translation::cli.notify')) {
             return;
         }
@@ -96,7 +97,7 @@ abstract class Command extends ConcreteCommand
         if (!is_array($to) || $to === []) {
             return;
         }
-        $site = $this->app->make('site')->getSite()->getSiteName();
+        $site = $app->make('site')->getSite()->getSiteName();
         foreach ($to as $toConfig) {
             if (!is_array($toConfig) || !is_string($toConfig['handler'] ?? null)) {
                 continue;
@@ -132,7 +133,7 @@ abstract class Command extends ConcreteCommand
                     break;
                 case 'telegram':
                     if (is_string($toConfig['botToken'] ?? null) && $toConfig['botToken'] !== '' && is_scalar($toConfig['chatID'] ?? []) && (string) $toConfig['chatID'] !== '') {
-                        yield new TelegramHandler($this->app, $toConfig['botToken'], $toConfig['chatID'], $level);
+                        yield new TelegramHandler($app, $toConfig['botToken'], $toConfig['chatID'], $level);
                     }
                     break;
             }
