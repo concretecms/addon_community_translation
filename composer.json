@@ -4,10 +4,10 @@
     "description" : "concrete5 translation package",
     "license" : "MIT",
     "minimum-stability": "dev",
-    "homepage" : "https://github.com/concrete5/addon_community_translation",
+    "homepage" : "https://github.com/concretecms/addon_community_translation",
     "support" : {
-        "issues" : "https://github.com/concrete5/addon_community_translation/issues",
-        "source" : "https://github.com/concrete5/addon_community_translation"
+        "issues" : "https://github.com/concretecms/addon_community_translation/issues",
+        "source" : "https://github.com/concretecms/addon_community_translation"
     },
     "require": {
         "php": "^7.4 || ^8",
