@@ -1,5 +1,5 @@
 {
-    "name" : "concrete5/community_translation",
+    "name" : "concretecms/community_translation",
     "type" : "concrete5-package",
     "description" : "concrete5 translation package",
     "license" : "MIT",
