@@ -1,7 +1,7 @@
 {
     "name" : "concretecms/community_translation",
     "type" : "concrete5-package",
-    "description" : "concrete5 translation package",
+    "description" : "Concrete CMS translation package",
     "license" : "MIT",
     "minimum-stability": "dev",
     "homepage" : "https://github.com/concretecms/addon_community_translation",
