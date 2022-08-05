@@ -30,4 +30,9 @@ interface CategoryInterface
      * Get the mail parameters for the mail template.
      */
     public function getMailParameters(NotificationEntity $notification, UserInfo $recipient): array;
+
+    /**
+     * Get the English description of the category.
+     */
+    public static function getDescription(): string;
 }

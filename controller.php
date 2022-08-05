@@ -7,6 +7,7 @@ namespace Concrete\Package\CommunityTranslation;
 use CommunityTranslation\Api\EntryPoint as ApiEntryPoint;
 use CommunityTranslation\Console\Command;
 use CommunityTranslation\Entity\Locale as LocaleEntity;
+use CommunityTranslation\Notification\CategoryInterface;
 use CommunityTranslation\Parser\ConcreteCMSParser;
 use CommunityTranslation\Parser\Provider as ParserProvider;
 use CommunityTranslation\Repository\Locale as LocaleRepository;
@@ -21,6 +22,10 @@ use Concrete\Core\Database\EntityManager\Provider\StandardPackageProvider;
 use Concrete\Core\Package\Package;
 use Concrete\Core\Routing\Router;
 use Doctrine\ORM\EntityManager;
+use Gettext\Translations;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use ReflectionClass;
 
 defined('C5_EXECUTE') or die('Access Denied.');
 
@@ -150,6 +155,35 @@ class Controller extends Package implements ProviderAggregateInterface
         } else {
             $this->registerAssets();
             $this->registerRoutes();
+        }
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \Concrete\Core\Package\Package::getTranslatableStrings()
+     */
+    public function getTranslatableStrings(Translations $translations)
+    {
+        $classPrefix = 'CommunityTranslation\\Notification\\Category';
+        $filePrefix = $this->getPackagePath() . '/src/Notification/Category';
+        $iterator = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($filePrefix));
+        foreach ($iterator as $file) {
+            /** @var \SplFileInfo $file */
+            if (!$file->isFile() || strcasecmp($file->getExtension(), 'php') !== 0) {
+                continue;
+            }
+            $filePath = str_replace(DIRECTORY_SEPARATOR, '/', $file->getPathname());
+            $relativePath = basename(substr($filePath, strlen($filePrefix) + 1), '.php');
+            $className = $classPrefix . '\\' . str_replace('/', '\\', $relativePath);
+            if (!is_a($className, CategoryInterface::class, true)) {
+                continue;
+            }
+            $class = new ReflectionClass($className);
+            if ($class->isAbstract()) {
+                continue;
+            }
+            $translations->insert('NotificationCategory', $className::getDescription());
         }
     }
 

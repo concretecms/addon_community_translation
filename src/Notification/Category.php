@@ -80,6 +80,32 @@ abstract class Category implements CategoryInterface
     }
 
     /**
+     * {@inheritdoc}
+     *
+     * @see \CommunityTranslation\Notification\CategoryInterface::getDescription()
+     */
+    public static function getDescription(): string
+    {
+        $name = get_called_class();
+        $prefix = 'CommunityTranslation\\Notification\\Category\\';
+        if (strpos($name, $prefix) === 0) {
+            $name = substr($name, strlen($prefix));
+        }
+        $name = str_replace('\\', '', $name);
+        $chunks = preg_split('/([A-Z])/', $name, -1, PREG_SPLIT_DELIM_CAPTURE);
+        array_shift($chunks);
+        $result = '';
+        foreach ($chunks as $index => $chunk) {
+            if ($index % 2 === 0) {
+                $result .= $chunk;
+            } else {
+                $result .= mb_strtolower($chunk, APP_CHARSET) . ' ';
+            }
+        }
+        return rtrim($result, ' ');
+    }
+
+    /**
      * Get the recipients user IDs.
      *
      * @param NotificationEntity $notification
