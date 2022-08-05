@@ -44,6 +44,7 @@ defined('C5_EXECUTE') or die('Access Denied.');
                             <span class="badge bg-secondary text-small p-1"><?= t('v.')?></span>{{ remotePackage.version }}
                         </span>
                         <div v-if="remotePackage.handle !== ''"><code>{{ remotePackage.handle }}</code></div>
+                    </td>
                     <td class="text-center">
                         <i class="fas fa-check text-success" v-if="remotePackage.approved"></i>
                         <i class="fas fa-times text-danger" v-else></i>
@@ -61,7 +62,7 @@ defined('C5_EXECUTE') or die('Access Denied.');
                         <span v-else>{{ remotePackage.processedOn }}</span>
                     </td>
                     <td>
-                        <i v-if="remotePackage.failCount === 0 &amp;&amp; remotePackage.lastError === ''"><?= tc('Errors', 'none') ?></i>
+                        <i v-if="remotePackage.failCount === 0 &amp;&amp; remotePackage.lastError === ''"><?= tc('Errors', 'None') ?></i>
                         <div v-else>
                             <?= t('%s errors', '{{ remotePackage.failCount }}') ?><br />
                             <?= t('Last error: %s', '<span style="white-space: pre-wrap">{{ remotePackage.lastError }}</span>') ?>
@@ -138,7 +139,7 @@ new Vue({
             })
             .always(() => {
                 this.busy = false;
-                this.refreshingRemotePackage = null;
+                this.importingRemotePackage = null;
             })
             .done((data) => {
                 for (const key in data) {
