@@ -33,11 +33,9 @@ ct:send-notifications
 EOT
     ;
 
-    private EntityManager $entityManager;
-
     private int $deliveryRetries;
 
-    private string $sqlTimeLimit;
+    private DateTimeImmutable $timeLimit;
 
     private ?int $minPriority;
 
@@ -49,7 +47,7 @@ EOT
         $this->createLogger();
         try {
             $mutexReleaser = $this->acquireMutex();
-            $this->readOptions();
+            $this->readOptions($entityManager);
             $this->checkCanonicalURL($siteService);
             foreach ($this->listNotifications($entityManager->getRepository(NotificationEntity::class)) as $notification) {
                 $this->logger->debug(sprintf('Processing notification %s', $notification->getID()));
@@ -106,12 +104,12 @@ EOT
     /**
      * @throws \Concrete\Core\Error\UserMessageException
      */
-    private function readOptions(): void
+    private function readOptions(EntityManager $entityManager): void
     {
         $deliveryRetries = $this->input->getOption('retries');
         $deliveryRetries = is_numeric($deliveryRetries) ? (int) $deliveryRetries : -1;
-        if ($deliveryRetries < 0) {
-            throw new UserMessageException('Invalid value of the retries parameter (it must be a non negative integer)');
+        if ($deliveryRetries <= 0) {
+            throw new UserMessageException('Invalid value of the retries parameter (it must be a positive integer)');
         }
         $this->deliveryRetries = $deliveryRetries;
         $maxAge = $this->input->getOption('max-age');
@@ -119,8 +117,7 @@ EOT
         if ($maxAge <= 0) {
             throw new UserMessageException('Invalid value of the max-age parameter (it must be an integer greater than 0)');
         }
-        $timeLimit = new DateTimeImmutable("-{$maxAge} days");
-        $this->sqlTimeLimit = $timeLimit->format($this->entityManager->getConnection()->getDatabasePlatform()->getDateTimeFormatString());
+        $this->timeLimit = new DateTimeImmutable("-{$maxAge} days");
         $minPriority = $this->input->getOption('priority');
         if ($minPriority !== null) {
             if (!is_numeric($minPriority)) {
@@ -155,6 +152,7 @@ EOT
         for (;;) {
             $criteria = Criteria::create()
                 ->where($expr->isNull('sentOn'))
+                ->andWhere($expr->lt('deliveryAttempts', $this->deliveryRetries))
                 ->andWhere($expr->gte('updatedOn', $this->timeLimit))
                 ->orderBy(['id' => 'ASC'])
                 ->setMaxResults(1)
