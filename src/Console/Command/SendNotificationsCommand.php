@@ -47,7 +47,7 @@ EOT
         $this->createLogger();
         try {
             $mutexReleaser = $this->acquireMutex();
-            $this->readOptions($entityManager);
+            $this->readOptions();
             $this->checkCanonicalURL($siteService);
             foreach ($this->listNotifications($entityManager->getRepository(NotificationEntity::class)) as $notification) {
                 $this->logger->debug(sprintf('Processing notification %s', $notification->getID()));
@@ -104,7 +104,7 @@ EOT
     /**
      * @throws \Concrete\Core\Error\UserMessageException
      */
-    private function readOptions(EntityManager $entityManager): void
+    private function readOptions(): void
     {
         $deliveryRetries = $this->input->getOption('retries');
         $deliveryRetries = is_numeric($deliveryRetries) ? (int) $deliveryRetries : -1;
