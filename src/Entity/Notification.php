@@ -74,23 +74,23 @@ class Notification
     protected int $deliveryAttempts;
 
     /**
-     * Date/time of the notification delivery (null if not yed delivered).
+     * Date/time of the notification delivery (null if not yet delivered).
      *
-     * @Doctrine\ORM\Mapping\Column(type="datetime_immutable", nullable=true, options={"comment": "Date/time of the notification delivery (null if not yed delivered)"})
+     * @Doctrine\ORM\Mapping\Column(type="datetime_immutable", nullable=true, options={"comment": "Date/time of the notification delivery (null if not yet delivered)"})
      */
     protected ?DateTimeImmutable $sentOn;
 
     /**
-     * Number of potential recipients notified (null if not yed delivered).
+     * Number of potential recipients notified (null if not yet delivered).
      *
-     * @Doctrine\ORM\Mapping\Column(type="integer", nullable=true, options={"unsigned": true, "comment": "Number of potential recipients notified (null if not yed delivered)"})
+     * @Doctrine\ORM\Mapping\Column(type="integer", nullable=true, options={"unsigned": true, "comment": "Number of potential recipients notified (null if not yet delivered)"})
      */
     protected ?int $sentCountPotential;
 
     /**
-     * Number of actual recipients notified (null if not yed delivered).
+     * Number of actual recipients notified (null if not yet delivered).
      *
-     * @Doctrine\ORM\Mapping\Column(type="integer", nullable=true, options={"unsigned": true, "comment": "Number of actual recipients notified (null if not yed delivered)"})
+     * @Doctrine\ORM\Mapping\Column(type="integer", nullable=true, options={"unsigned": true, "comment": "Number of actual recipients notified (null if not yet delivered)"})
      */
     protected ?int $sentCountActual;
 
@@ -229,7 +229,7 @@ class Notification
     }
 
     /**
-     * Get the date/time of the notification delivery (null if not yed delivered).
+     * Get the date/time of the notification delivery (null if not yet delivered).
      */
     public function getSentOn(): ?DateTimeImmutable
     {
@@ -237,7 +237,7 @@ class Notification
     }
 
     /**
-     * Set the date/time of the notification delivery (null if not yed delivered).
+     * Set the date/time of the notification delivery (null if not yet delivered).
      *
      * @return $this
      */
@@ -249,7 +249,7 @@ class Notification
     }
 
     /**
-     * Get the number of potential recipients notified (null if not yed delivered).
+     * Get the number of potential recipients notified (null if not yet delivered).
      */
     public function getSentCountPotential(): ?int
     {
@@ -257,7 +257,7 @@ class Notification
     }
 
     /**
-     * Set the number of actual recipients notified (null if not yed delivered).
+     * Set the number of actual recipients notified (null if not yet delivered).
      *
      * @return $this
      */
@@ -269,7 +269,7 @@ class Notification
     }
 
     /**
-     * Get the number of actual recipients notified (null if not yed delivered).
+     * Get the number of actual recipients notified (null if not yet delivered).
      */
     public function getSentCountActual(): ?int
     {
@@ -277,7 +277,7 @@ class Notification
     }
 
     /**
-     * Set the number of actual recipients notified (null if not yed delivered).
+     * Set the number of actual recipients notified (null if not yet delivered).
      *
      * @return $this
      */
