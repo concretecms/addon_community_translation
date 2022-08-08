@@ -85,7 +85,6 @@ class NotificationsLog extends DashboardPageController
 
     public function send_notification(): Response
     {
-        xdebug_break();
         if (!$this->token->validate('comtra-notifications-send')) {
             throw new UserMessageException($this->token->getErrorMessage());
         }
