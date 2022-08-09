@@ -97,7 +97,7 @@ final class Importer
             $message = t('Failed to download package archive %s v%s: %s (%d)', $remotePackage->getHandle(), $remotePackage->getVersion(), $response->getReasonPhrase(), $statusCode);
             $headerName = $this->getCustomRequestHeaderName();
             $headerValue = $this->getCustomRequestHeaderValue();
-            if ($headerName === '' && $headerValue === '') {
+            if ($headerName === '' || $headerValue === '') {
                 $message .= "\n(" . t('Not using a custom header') . ')';
             } else {
                 $headerDisplayValue = $headerValue[0] . str_repeat('*', strlen($headerValue) - 1);
