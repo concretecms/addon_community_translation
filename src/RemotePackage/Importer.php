@@ -104,7 +104,7 @@ final class Importer
                 if ($headerDisplayValue === $headerValue) {
                     $headerDisplayValue = '*';
                 }
-                $message .= "\n(" . t('Not using a custom header %s (%s)', $headerName, $headerDisplayValue) . ')';
+                $message .= "\n(" . t('Using a custom header %s (%s)', $headerName, $headerDisplayValue) . ')';
             }
             throw new DownloadException($message, $statusCode);
         }
