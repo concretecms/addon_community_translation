@@ -51,10 +51,10 @@ EOT
             $this->checkCanonicalURL($siteService);
             foreach ($this->listNotifications($entityManager->getRepository(NotificationEntity::class)) as $notification) {
                 $this->logger->debug(sprintf('Processing notification %s', $notification->getID()));
-                try {
-                    $sender->send($notification);
+                $sendError = $sender->send($notification);
+                if ($sendError === null) {
                     $someNotificationsSent = true;
-                } catch (Throwable $sendError) {
+                } else {
                     $someErrorsOccurred = true;
                     $this->logger->error($this->formatThrowable($sendError));
                 }

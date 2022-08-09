@@ -40,9 +40,9 @@ final class Sender
     }
 
     /**
-     * @throws \Concrete\Core\Error\UserMessageException|\Throwable
+     * @return \Throwable|null Returns NULL if the notification has been sent to at lease one recipient, a throwable otherwise (see also $notification->getDeliveryErrors() for further details).
      */
-    public function send(NotificationEntity $notification): void
+    public function send(NotificationEntity $notification): ?Throwable
     {
         // Let's mark the notification as sent, so that it won't be updated with new messages
         $notification
@@ -58,6 +58,7 @@ final class Sender
             ->setDeliveryErrors([])
         ;
         $deliveryErrors = [];
+        $result = null;
         try {
             $category = $this->getNotificationCategory($notification);
             foreach ($category->getRecipients($notification) as $recipient) {
@@ -85,10 +86,11 @@ final class Sender
                 ->addDeliveryError($x->getMessage())
                 ->setSentOn(null)
             ;
-            throw $x;
+            $result = $x;
         } finally {
             $this->entityManager->flush($notification);
         }
+        return $result;
     }
 
     private function buildFrom(Repository $config, string $addressKey, string $nameKey = ''): ?array
