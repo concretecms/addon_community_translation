@@ -94,10 +94,19 @@ final class Importer
         );
         $statusCode = $response->getStatusCode();
         if ($statusCode < 200 || $statusCode >= 300) {
-            throw new DownloadException(
-                t('Failed to download package archive %s v%s: %s (%d)', $remotePackage->getHandle(), $remotePackage->getVersion(), $response->getReasonPhrase(), $statusCode),
-                $statusCode
-            );
+            $message = t('Failed to download package archive %s v%s: %s (%d)', $remotePackage->getHandle(), $remotePackage->getVersion(), $response->getReasonPhrase(), $statusCode);
+            $headerName = $this->getCustomRequestHeaderName();
+            $headerValue = $this->getCustomRequestHeaderValue();
+            if ($headerName === '' && $headerValue === '') {
+                $message .= "\n(" . t('Not using a custom header') . ')';
+            } else {
+                $headerDisplayValue = $headerValue[0] . str_repeat('*', strlen($headerValue) - 1);
+                if ($headerDisplayValue === $headerValue) {
+                    $headerDisplayValue = '*';
+                }
+                $message .= "\n(" . t('Not using a custom header %s (%s)', $headerName, $headerDisplayValue) . ')';
+            }
+            throw new DownloadException($message, $statusCode);
         }
         if ($response->getBody()->isSeekable()) {
             $response->getBody()->rewind();
@@ -159,12 +168,26 @@ final class Importer
     private function createRequest(RemotePackage $remotePackage): RequestInterface
     {
         $headers = [];
-        $headerName = $_ENV['CT_REMOTEPACKAGE_HEADER'] ?? null;
-        $headerValue = $_ENV['CT_REMOTEPACKAGE_HEADER_VALUE'] ?? null;
-        if (is_string($headerName) && $headerName !== '' && is_string($headerValue) && $headerValue !== '') {
-            $headers[$headerName] = $headerValue;
+        $headerName = $this->getCustomRequestHeaderName();
+        if ($headerName !== '') {
+            $headerValue = $this->getCustomRequestHeaderValue();
+            if ($headerValue !== '') {
+                $headers[$headerName] = $headerValue;
+            }
         }
 
         return new Request('GET', $remotePackage->getArchiveUrl(), $headers);
+    }
+
+    private function getCustomRequestHeaderName(): string
+    {
+        $value = $_ENV['CT_REMOTEPACKAGE_HEADER'] ?? null;
+        return is_string($value) ? $value : '';
+    }
+
+    private function getCustomRequestHeaderValue(): string
+    {
+        $value = $_ENV['CT_REMOTEPACKAGE_HEADER_VALUE'] ?? null;
+        return is_string($value) ? $value : '';
     }
 }
