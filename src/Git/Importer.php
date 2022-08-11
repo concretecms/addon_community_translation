@@ -81,7 +81,11 @@ final class Importer
                 $this->logger->debug(t('Checking out tag %s', $tag, $version));
                 $fetcher->switchToTag($tag);
                 $this->logger->info(t('Extracting strings from tag %1$s for version %2$s', $tag, $version));
-                $importer->importDirectory($fetcher->getRootDirectory(), $package->getHandle(), $version, '');
+                if ($importer->importDirectory($fetcher->getRootDirectory(), $package->getHandle(), $version, '')) {
+                    $this->logger->debug(t('New translatable strings have been found'));
+                } else {
+                    $this->logger->debug(t('No new translatable strings have been found'));
+                }
             } else {
                 $this->logger->debug(t('Tag already imported: %1$s (version: %2$s)', $tag, $version));
             }
@@ -95,7 +99,11 @@ final class Importer
             $this->logger->debug(t('Checking out development branch %s', $branch));
             $fetcher->switchToBranch($branch);
             $this->logger->info(t('Extracting strings from development branch %1$s for version %2$s', $branch, $version));
-            $importer->importDirectory($fetcher->getRootDirectory(), $package->getHandle(), $version, '');
+            if ($importer->importDirectory($fetcher->getRootDirectory(), $package->getHandle(), $version, '')) {
+                $this->logger->debug(t('New translatable strings have been found'));
+            } else {
+                $this->logger->debug(t('No new translatable strings have been found'));
+            }
         }
     }
 }
