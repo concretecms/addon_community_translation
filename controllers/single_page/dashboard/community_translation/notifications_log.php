@@ -14,7 +14,6 @@ use DateTimeImmutable;
 use Doctrine\Common\Collections\Criteria;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Response;
-use Throwable;
 use CommunityTranslation\Notification\CategoryInterface;
 use CommunityTranslation\Notification\Sender;
 
