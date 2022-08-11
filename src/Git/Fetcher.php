@@ -304,7 +304,7 @@ final class Fetcher
             if ($this->filesystem->isFile($filePath)) {
                 return;
             }
-            if ($this->filesystem->put($filePath, $fileContent) === false) {
+            if ($this->filesystem->put($filePath, $fileContent) !== false) {
                 return;
             }
         } finally {
