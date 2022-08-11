@@ -27,7 +27,7 @@ defined('C5_EXECUTE') or die('Access Denied.');
                     <th class="text-center"><?= t('Approved') ?></th>
                     <th class="text-center"><?= t('Details') ?></th>
                     <th class="text-center"><?= t('Origin') ?></th>
-                    <th class="text-center"><?= t('Processed on') ?></th>
+                    <th class="text-center"><?= t('Imported on') ?></th>
                     <th class="text-center"><?= t('Errors') ?></th>
                 </tr>
             </thead>
@@ -58,14 +58,26 @@ defined('C5_EXECUTE') or die('Access Denied.');
                         <a v-bind:href="remotePackage.archiveUrl" target="_blank"><i class="fas fa-eye"></i></a>
                     </td>
                     <td>
-                        <i v-if="remotePackage.processedOn === null"><?= t('Never') ?></i>
-                        <span v-else>{{ remotePackage.processedOn }}</span>
+                        <div v-if="remotePackage.processedOn === null" class="alert alert-danger m-0 p-1">
+                            <?= t('Never') ?>
+                        </div>
+                        <div v-else class="alert alert-success m-0 p-1">
+                            {{ remotePackage.processedOn }}
+                        </div>
                     </td>
                     <td>
-                        <i v-if="remotePackage.failCount === 0 &amp;&amp; remotePackage.lastError === ''"><?= tc('Errors', 'None') ?></i>
+                        <i v-if="remotePackage.failCount === 0 &amp;&amp; remotePackage.lastError === ''">
+                            <?= tc('Errors', 'None') ?>
+                        </i>
                         <div v-else>
-                            <?= t('%s errors', '{{ remotePackage.failCount }}') ?><br />
-                            <?= t('Last error: %s', '<span style="white-space: pre-wrap">{{ remotePackage.lastError }}</span>') ?>
+                            <span v-if="remotePackage.processedOn === null">
+                                <?= t('%s errors occurred', '{{ remotePackage.failCount }}') ?>
+                            </span>
+                            <span v-else>
+                                <?= t("The package has been succesfully imported, but before we've had %s errors.", '{{ remotePackage.failCount }}') ?>
+                            </span>
+                            <br />
+                            <?= t('Last error: %s', '<span class="text-danger" style="white-space: pre-wrap">{{ remotePackage.lastError }}</span>') ?>
                         </div>
                     </td>
                 </tr>
