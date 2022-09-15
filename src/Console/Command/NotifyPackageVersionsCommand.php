@@ -62,12 +62,11 @@ EOT
             $this->em->transactional(function () {
                 $start = time();
                 $newPackagesCount = $this->notifyNewPackages();
-                $end = time();
-                $elapsed = $end - $start;
+                $elapsed = time() - $start;
                 $start = time();
                 $this->logger->info("{$newPackagesCount} notifications created for new packages (time required: {$elapsed} seconds}");
                 [$newVersionsCount, $updatedVersionsCount] = $this->notifyPackageVersions();
-                $elapsed = $end - $start;
+                $elapsed = time() - $start;
                 $this->logger->info("{$newVersionsCount} notifications created for new package versions, {$updatedVersionsCount} notifications created for updated package versions (time required: {$elapsed} seconds}");
             });
 
