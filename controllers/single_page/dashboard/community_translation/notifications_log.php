@@ -25,6 +25,7 @@ class NotificationsLog extends DashboardPageController
 
     public function view(): ?Response
     {
+        $this->set('categories', $this->getCategories());
         $this->set('notifications', $this->fetchNotifications());
         $this->set('token', $this->token);
 
@@ -39,26 +40,41 @@ class NotificationsLog extends DashboardPageController
         $id = $this->request->request->get('id');
         $id = is_numeric($id) ? (int) $id : 0;
         if ($id <= 0) {
-            throw new UserMessageException(t('Invalid parameter received'));
+            $id = null;
         }
         $createdOnDB = $this->request->request->get('createdOnDB');
-        if (!is_string($createdOnDB) || $createdOnDB === '') {
-            throw new UserMessageException(t('Invalid parameter received'));
+        if (!is_string($createdOnDB)) {
+            $createdOnDB = '';
         }
-        $dbDateTimeFormat = $this->app->make(EntityManagerInterface::class)->getConnection()->getDatabasePlatform()->getDateTimeFormatString();
-        set_error_handler(static function () {}, -1);
-        try {
-            $createdOnDBOk = DateTimeImmutable::createFromFormat($dbDateTimeFormat, $createdOnDB);
-        } finally {
-            restore_error_handler();
+        $category = $this->request->request->get('category');
+        if (!is_string($category)) {
+            $category = '';
         }
-        if ($createdOnDBOk === false) {
-            throw new UserMessageException(t('Invalid parameter received'));
+        if ($id === null) {
+            if ($createdOnDB !== '') {
+                throw new UserMessageException(t('Invalid parameter received'));
+            }
+            $lastLoaded = null;
+        } else {
+            if ($createdOnDB === '') {
+                throw new UserMessageException(t('Invalid parameter received'));
+            }
+            $dbDateTimeFormat = $this->app->make(EntityManagerInterface::class)->getConnection()->getDatabasePlatform()->getDateTimeFormatString();
+            set_error_handler(static function () {}, -1);
+            try {
+                $createdOnDBOk = DateTimeImmutable::createFromFormat($dbDateTimeFormat, $createdOnDB);
+            } finally {
+                restore_error_handler();
+            }
+            if ($createdOnDBOk === false) {
+                throw new UserMessageException(t('Invalid parameter received'));
+            }
+            $lastLoaded = [
+                'id' => $id,
+                'createdOn' => $createdOnDBOk,
+            ];
         }
-        $records = $this->fetchNotifications([
-            'id' => $id,
-            'createdOn' => $createdOnDBOk,
-        ]);
+        $records = $this->fetchNotifications($lastLoaded, $category);
 
         return $this->app->make(ResponseFactoryInterface::class)->json($records);
     }
@@ -103,7 +119,25 @@ class NotificationsLog extends DashboardPageController
         return $this->app->make(ResponseFactoryInterface::class)->json($this->serializeNotification($notification));
     }
 
-    private function fetchNotifications(?array $lastLoaded = null): array
+    private function getCategories(): array
+    {
+        $repo = $this->app->make(NotificationRepository::class);
+        $qb = $repo->createQueryBuilder('n')
+            ->select('DISTINCT n.fqnClass')
+        ;
+        $query = $qb->getQuery();
+        $classNames = $query->getSingleColumnResult();
+        $result = [];
+        foreach ($classNames as $className) {
+            $result[$className] = $this->getNotificationCategoryDescription($className);
+        }
+        uksort($result, static function (string $a, string $b): int {
+            return mb_strtolower($a) <=> mb_strtolower($b);
+        });
+
+        return $result;
+    }
+    private function fetchNotifications(?array $lastLoaded = null, string $category = ''): array
     {
         $repo = $this->app->make(NotificationRepository::class);
         $expr = Criteria::expr();
@@ -123,6 +157,9 @@ class NotificationsLog extends DashboardPageController
                     $expr->lt('id', $lastLoaded['id']),
                 )
             ));
+        }
+        if ($category !== '') {
+            $criteria->andWhere($expr->eq('fqnClass', $category));
         }
         $result = [];
         $dateService = $this->app->make(DateService::class);
@@ -148,7 +185,7 @@ class NotificationsLog extends DashboardPageController
             'createdOnDB' => $notification->getCreatedOn()->format($dbDateTimeFormat),
             'createdOn' => $dateService->formatPrettyDateTime($notification->getCreatedOn(), true),
             'updatedOn' => $dateService->formatPrettyDateTime($notification->getUpdatedOn(), true),
-            'category' => $this->getNotificationCategoryDescription($notification),
+            'category' => $this->getNotificationCategoryDescription($notification->getFQNClass()),
             'priority' => $notification->getPriority(),
             'deliveryAttempts' => $notification->getDeliveryAttempts(),
             'sentOn' => $notification->getSentOn() === null ? null : $dateService->formatPrettyDateTime($notification->getSentOn(), true),
@@ -158,9 +195,8 @@ class NotificationsLog extends DashboardPageController
         ];
     }
 
-    private function getNotificationCategoryDescription(NotificationEntity $notification): string
+    private function getNotificationCategoryDescription(string $className): string
     {
-        $className = $notification->getFQNClass();
         if (is_a($className, CategoryInterface::class, true)) {
             return tc('NotificationCategory', $className::getDescription());
         }

@@ -7,14 +7,37 @@ defined('C5_EXECUTE') or die('Access Denied.');
 /**
  * @var Concrete\Core\Page\View\PageView $view
  * @var Concrete\Core\Validation\CSRF\Token $token
+ * @var array $categories
  * @var array $notifications
  */
 ?>
 <div id="app" v-cloak>
-    <div v-if="notifications.length === 0" class="alert alert-info">
+    <fieldset class="mb-4">
+        <legend><?= t('Filter') ?></legend>
+        <div class="row">
+            <div class="col-auto">
+                <div class="input-group">
+                    <span class="input-group-text"><?= t('Category') ?></span>
+                    <select class="form-control" ref="filterCategory" v-bind:disabled="busy">
+                        <option value=""><?= h(tc('Category', '<any>')) ?></option>
+                        <?php
+                        foreach ($categories as $categoryClass => $categoryName) {
+                            ?>
+                            <option value="<?= h($categoryClass) ?>"><?= h($categoryName) ?></option>
+                            <?php
+                        }
+                        ?>
+                    </select>
+                </div>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-primary" v-on:click.prevent="applyFilters" v-bind:disabled="busy"><?= t('Apply') ?></button>
+            </div>        
+    </fieldset>
+    <div v-if="notifications.length === 0 && busy === false" class="alert alert-info">
         <?= t('No notification found in the database') ?>
     </div>
-    <div v-else>
+    <div v-if="notifications.length !== 0">
         <table class="table table-striped table-hover table-small">
             <colgroup>
                 <col width="1" />
@@ -97,6 +120,7 @@ new Vue({
     data: function() {
         return {
             busy: false,
+            filterCategory: '',
             notifications: <?= json_encode($notifications) ?>,
             refreshingNotification: null,
             sendingNotification: null,
@@ -104,6 +128,23 @@ new Vue({
         };
     },
     methods: {
+        applyFilters: function() {
+            if (this.busy) {
+                return;
+            }
+            let changes = false;
+            let filterCategory = this.$refs.filterCategory.value;
+            if (this.filterCategory !== filterCategory) {
+                changes = true;
+                this.filterCategory = filterCategory;
+            }
+            if (!changes) {
+                return;
+            }
+            this.notifications.splice(0, this.notifications.length);
+            this.noMoreNotifications = false;
+            this.loadNextPage();
+        },
         getPriorityPillClass: function(notification) {
             if (notification.priority >= 8) {
                 return 'bg-danger';
@@ -182,13 +223,14 @@ new Vue({
             if (this.busy || this.noMoreNotifications) {
                 return;
             }
-            const lastNotification = this.notifications[this.notifications.length - 1];
+            const lastNotification = this.notifications.length.length === 0 ? null : this.notifications[this.notifications.length - 1];
             this.busy = true;
             $.ajax({
                 data: {
                     <?= json_encode($token::DEFAULT_TOKEN_NAME) ?>: <?= json_encode($token->generate('comtra-notifications-nextpage'))?>,
-                    id: lastNotification.id,
-                    createdOnDB: lastNotification.createdOnDB,
+                    id: lastNotification ? lastNotification.id : '',
+                    createdOnDB: lastNotification ? lastNotification.createdOnDB : '',
+                    category: this.filterCategory,
                 },
                 dataType: 'json',
                 method: 'POST',
