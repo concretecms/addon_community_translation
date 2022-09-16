@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Concrete\Package\CommunityTranslation\Controller\SinglePage\Dashboard\CommunityTranslation;
 
 use CommunityTranslation\Entity\Notification as NotificationEntity;
+use CommunityTranslation\Notification\CategoryInterface;
+use CommunityTranslation\Notification\Sender;
 use CommunityTranslation\Repository\Notification as NotificationRepository;
 use Concrete\Core\Error\UserMessageException;
 use Concrete\Core\Http\ResponseFactoryInterface;
@@ -14,8 +16,6 @@ use DateTimeImmutable;
 use Doctrine\Common\Collections\Criteria;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\Response;
-use CommunityTranslation\Notification\CategoryInterface;
-use CommunityTranslation\Notification\Sender;
 
 defined('C5_EXECUTE') or die('Access Denied.');
 
@@ -137,6 +137,7 @@ class NotificationsLog extends DashboardPageController
 
         return $result;
     }
+
     private function fetchNotifications(?array $lastLoaded = null, string $category = ''): array
     {
         $repo = $this->app->make(NotificationRepository::class);
@@ -200,6 +201,7 @@ class NotificationsLog extends DashboardPageController
         if (is_a($className, CategoryInterface::class, true)) {
             return tc('NotificationCategory', $className::getDescription());
         }
+
         return $className;
     }
 }

@@ -182,12 +182,14 @@ final class Importer
     private function getCustomRequestHeaderName(): string
     {
         $value = $_ENV['CT_REMOTEPACKAGE_HEADER'] ?? null;
+
         return is_string($value) ? $value : '';
     }
 
     private function getCustomRequestHeaderValue(): string
     {
         $value = $_ENV['CT_REMOTEPACKAGE_HEADER_VALUE'] ?? null;
+
         return is_string($value) ? $value : '';
     }
 }

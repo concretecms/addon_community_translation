@@ -19,9 +19,13 @@ defined('C5_EXECUTE') or die('Access Denied.');
 final class Sender
 {
     private Application $categoryBuilder;
+
     private MailService $mailService;
+
     private EntityManager $entityManager;
+
     private array $from;
+
     private array $categories = [];
 
     public function __construct(Application $categoryBuilder, MailService $mailService, EntityManager $entityManager, Repository $config)
@@ -40,7 +44,7 @@ final class Sender
     }
 
     /**
-     * @return \Throwable|null Returns NULL if the notification has been sent to at lease one recipient, a throwable otherwise (see also $notification->getDeliveryErrors() for further details).
+     * @return \Throwable|null returns NULL if the notification has been sent to at lease one recipient, a throwable otherwise (see also $notification->getDeliveryErrors() for further details).
      */
     public function send(NotificationEntity $notification): ?Throwable
     {
@@ -90,6 +94,7 @@ final class Sender
         } finally {
             $this->entityManager->flush($notification);
         }
+
         return $result;
     }
 

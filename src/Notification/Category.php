@@ -102,6 +102,7 @@ abstract class Category implements CategoryInterface
                 $result .= mb_strtolower($chunk, APP_CHARSET) . ' ';
             }
         }
+
         return rtrim($result, ' ');
     }
 
