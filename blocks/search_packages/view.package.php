@@ -38,7 +38,7 @@ if (is_string($showWarning ?? null) && $showWarning !== '') {
 <div class="card card-primary mt-3">
     <div class="card-header">
         <?= t('Translations for %s', h($packageVersion->getDisplayName())) ?>
-        <div class="float-right"><a class="btn btn-sm btn-outline-info" href="<?= h($controller->getBlockActionURL('search')) ?>"><?= t('Search other packages') ?></a></div>
+        <div class="float-end"><a class="btn btn-sm btn-outline-info" href="<?= h($controller->getBlockActionURL('search')) ?>"><?= t('Search other packages') ?></a></div>
     </div>
     <div class="card-body">
         <div class="card-text">

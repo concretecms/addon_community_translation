@@ -96,8 +96,8 @@ $menu->render();
 
     <div class="ccm-dashboard-form-actions-wrapper">
         <div class="ccm-dashboard-form-actions">
-            <a href="<?= h($urlResolver->resolve(['/dashboard/community_translation'])) ?>" class="btn btn-secondary float-left" v-bind:disabled="busy"><?= t('Cancel') ?></a>
-            <input type="submit" class="btn btn-primary float-right btn ccm-input-submit" value="<?= t('Save') ?>" v-bind:disabled="busy" />
+            <a href="<?= h($urlResolver->resolve(['/dashboard/community_translation'])) ?>" class="btn btn-secondary float-start" v-bind:disabled="busy"><?= t('Cancel') ?></a>
+            <input type="submit" class="btn btn-primary float-end btn ccm-input-submit" value="<?= t('Save') ?>" v-bind:disabled="busy" />
         </div>
     </div>
 

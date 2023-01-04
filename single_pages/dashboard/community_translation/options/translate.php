@@ -49,8 +49,8 @@ $menu->render();
 
     <div class="ccm-dashboard-form-actions-wrapper">
         <div class="ccm-dashboard-form-actions">
-            <a href="<?= h($urlResolver->resolve(['/dashboard/community_translation'])) ?>" class="btn btn-secondary float-left"><?= t('Cancel') ?></a>
-            <input type="submit" class="btn btn-primary float-right btn ccm-input-submit" value="<?= t('Save') ?>">
+            <a href="<?= h($urlResolver->resolve(['/dashboard/community_translation'])) ?>" class="btn btn-secondary float-start"><?= t('Cancel') ?></a>
+            <input type="submit" class="btn btn-primary float-end btn ccm-input-submit" value="<?= t('Save') ?>">
         </div>
     </div>
 
