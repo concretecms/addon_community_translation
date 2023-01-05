@@ -38,7 +38,7 @@ $id = 'comtra-translation-team-request-' . uniqid();
                     <form method="POST" action="<?= h($controller->getBlockActionURL('language_set')) ?>">
                         <?php $token->output('comtra-ttr-language_set') ?>
                         <p><?= t('Please specify the new language you would like to translate') ?>
-                        <div class="form-group">
+                        <div class="mb-3">
                             <?= $form->label('language', t('Language'), ['classes' => 'form-label']) ?>
                             <?= $form->select('language', $languages, $language, ['required' => 'required', 'classes' => 'form-control']) ?>
                         </div>
@@ -80,7 +80,7 @@ $id = 'comtra-translation-team-request-' . uniqid();
                     <form method="POST" action="<?= h($controller->getBlockActionURL('territory_set')) ?>" id="<?= $id ?>_create"<?= $existingLocales === [] ? '' : ' class="d-none"' ?>>
                         <?php $token->output('comtra-ttr-territory_set') ?>
                         <?= $form->hidden('language', $language) ?>
-                        <div class="form-group">
+                        <div class="mb-3">
                             <?= $form->label("{$id}_territory", t('For which Country would you like to translate %s?', h($languageName)), ['classes' => 'form-label']) ?>
                             <select id="<?= "{$id}_territory" ?>" name="territory" required="required" class="form-control">
                                 <option value="" selected="selected"><?= t('Please Select') ?></option>
@@ -110,7 +110,7 @@ $id = 'comtra-translation-team-request-' . uniqid();
                         <?php
                         if ($allowNoTerrory) {
                             ?>
-                            <div class="form-group">
+                            <div class="mb-3">
                                 <div class="form-check">
                                     <?= $form->checkbox('no-territory', '1', true, ['classes' => 'form-check-input', 'id' => "{$id}_noTerritory"]) ?>
                                     <?= $form->label("{$id}_noTerritory", t('%s is not Country-specific', h($languageName)), ['classes' => 'form-check-label']) ?>
@@ -155,7 +155,7 @@ $id = 'comtra-translation-team-request-' . uniqid();
                         <?php
                         if ($askApprove) {
                             ?>
-                            <div class="form-group">
+                            <div class="mb-3">
                                 <div class="form-check">
                                     <?= $form->checkbox('approve', '1', true, ['classes' => 'form-check-input']) ?>
                                     <?= $form->label('approve', t("Approve immediately the locale '%s' (%s)", h($localeName), $localeID), ['classes' => 'form-check-label']) ?>
@@ -168,7 +168,7 @@ $id = 'comtra-translation-team-request-' . uniqid();
                             <?php
                             if ($askWhyNoCountry) {
                                 ?>
-                                <div class="form-group">
+                                <div class="mb-3">
                                     <p><?= t("Since we prefer to have Country-specific locales (eg 'en_US' instead of 'en' alone), please tell us why you need to create a language without an associated Country") ?></p>
                                     <?= $form->textarea('notes', '', ['required' => 'required', 'class' => 'form-control', 'size' => 5]) ?>
                                 </div>

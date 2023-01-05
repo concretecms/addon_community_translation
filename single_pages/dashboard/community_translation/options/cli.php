@@ -27,7 +27,7 @@ $menu->render();
 
     <?php $token->output('ct-options-save-cli') ?>
 
-    <div class="form-group">
+    <div class="mb-3">
         <div class="form-check">
             <?= $form->checkbox('notify', '1', $notify, ['v-bind:disabled' => 'busy']) ?>
             <?= $form->label('notify', t('Send notifications when running CLI commands non-interactively')) ?>
@@ -46,39 +46,39 @@ $menu->render();
                 <h5><?= t('Notify via %s', '{{ getHandlerName(nto.handler) }}')?></h5>
             </div>
             <div class="card-body">
-                <div class="form-group">
+                <div class="mb-3">
                     <div class="form-check">
                         <?= $form->checkbox('', '', false, ['v-bind:id' => '`notifyTo${index}_enabled`', 'v-bind:name' => '`notifyTo${index}_enabled`', 'v-bind:value' => 'true', 'v-model' => 'nto.enabled', 'v-bind:disabled' => 'busy']) ?>
                         <?= $form->label('', t('Enabled'), ['v-bind:for' => '`notifyTo${index}_enabled`']) ?>
                     </div>
                 </div>
-                <div class="form-group">
+                <div class="mb-3">
                     <?= $form->label('', t('Minimum level'), ['v-bind:for' => '`notifyTo${index}_level`']) ?>
                     <select class="form-select" v-bind:id="`notifyTo${index}_level`" v-bind:name="`notifyTo${index}_level`" v-model="nto.level" required="required" v-bind:disabled="busy">
                         <option v-for="HL in HANDLER_LEVELS" v-bind:value="HL.level">{{ HL.name }}</option>
                     </select>
                 </div>
-                <div class="form-group">
+                <div class="mb-3">
                     <?= $form->label('', t('Description'), ['v-bind:for' => '`notifyTo${index}_description`']) ?>
                     <?= $form->text('', '', ['v-bind:id' => '`notifyTo${index}_description`', 'v-bind:name' => '`notifyTo${index}_description`', 'v-model.trim' => 'nto.description', 'v-bind:disabled' => 'busy']) ?>
                 </div>
                 <div v-if="false"></div>
                 <div v-else-if="nto.handler === 'slack'">
-                    <div class="form-group">
+                    <div class="mb-3">
                         <?= $form->label('', t('API Token'), ['v-bind:for' => '`notifyTo${index}_apiToken`']) ?>
                         <?= $form->text('', '', ['v-bind:id' => '`notifyTo${index}_apiToken`', 'v-bind:name' => '`notifyTo${index}_apiToken`', 'v-model.trim' => 'nto.apiToken', 'required' => 'required', 'v-bind:disabled' => 'busy']) ?>
                     </div>
-                    <div class="form-group">
+                    <div class="mb-3">
                         <?= $form->label('', t('Channel'), ['v-bind:for' => '`notifyTo${index}_channel`']) ?>
                         <?= $form->text('', '', ['v-bind:id' => '`notifyTo${index}_channel`', 'v-bind:name' => '`notifyTo${index}_channel`', 'v-model.trim' => 'nto.channel', 'required' => 'required', 'v-bind:disabled' => 'busy']) ?>
                     </div>
                 </div>
                 <div v-else-if="nto.handler === 'telegram'">
-                    <div class="form-group">
+                    <div class="mb-3">
                         <?= $form->label('', t('Bot Token'), ['v-bind:for' => '`notifyTo${index}_botToken`']) ?>
                         <?= $form->text('', '', ['v-bind:id' => '`notifyTo${index}_botToken`', 'v-bind:name' => '`notifyTo${index}_botToken`', 'v-model.trim' => 'nto.botToken', 'required' => 'required', 'v-bind:disabled' => 'busy']) ?>
                     </div>
-                    <div class="form-group">
+                    <div class="mb-3">
                         <?= $form->label('', t('Chat ID'), ['v-bind:for' => '`notifyTo${index}_chatID`']) ?>
                         <?= $form->text('', '', ['v-bind:id' => '`notifyTo${index}_chatID`', 'v-bind:name' => '`notifyTo${index}_chatID`', 'v-model.trim' => 'nto.chatID', 'required' => 'required', 'v-bind:disabled' => 'busy']) ?>
                     </div>

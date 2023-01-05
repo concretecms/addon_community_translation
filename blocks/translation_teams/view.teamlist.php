@@ -92,7 +92,7 @@ if (($showSuccess ?? '') !== '') {
                             <th class="d-none d-md-table-cell text-center"><?= t('Coordinators') ?></th>
                             <th class="d-none d-md-table-cell text-center"><?= t('Translators') ?></th>
                             <th class="text-center"><?= t('Join Requests') ?></th>
-                            <th class="d-none d-md-table-cell text-right"></th>
+                            <th class="d-none d-md-table-cell text-end"></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -108,7 +108,7 @@ if (($showSuccess ?? '') !== '') {
                                 <td class="d-none d-md-table-cell text-center"><?= $l['admins'] ? ('<span class="badge badge-success">' . $l['admins'] . '</span>') : '<span class="badge badge-light">0</span>' ?></td>
                                 <td class="d-none d-md-table-cell text-center"><?= $l['translators'] ? ('<span class="badge badge-success">' . $l['translators'] . '</span>') : '<span class="badge badge-light">0</span>' ?></td>
                                 <td class="text-center"><?= $l['aspiring'] ? ('<span class="badge badge-success">' . $l['aspiring'] . '</span>') : '<span class="badge badge-light">0</span>' ?></td>
-                                <td class="d-none d-md-table-cell text-right"><?php
+                                <td class="d-none d-md-table-cell text-end"><?php
                                     switch ($l['access']) {
                                         case Access::GLOBAL_ADMIN:
                                             break;

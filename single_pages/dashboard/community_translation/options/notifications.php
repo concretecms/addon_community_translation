@@ -30,14 +30,14 @@ $menu->render();
         <?= t('Here you can configure the sender of the notifications sent by CommunityTranslation') ?>
     </p>
 
-	<div class="form-group">
+	<div class="mb-3">
         <?= $form->label('senderAddress', t('Sender email address'))?>
         <?= $form->email('senderAddress', $senderAddress) ?>
         <div class="small text-muted">
             <?= t("If not specified we'll use the default one: %s", '<code>' . h($defaultSenderAddress) . '</code>') ?>
         </div>
     </div>
-	<div class="form-group">
+	<div class="mb-3">
         <?= $form->label('senderName', t('Sender name'))?>
         <?= $form->text('senderName', $senderName, ['placeholder' => t('Default sender name: %s', h($defaultSenderName))]) ?>
         <?php

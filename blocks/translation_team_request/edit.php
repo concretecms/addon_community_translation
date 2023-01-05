@@ -15,7 +15,7 @@ defined('C5_EXECUTE') or die('Access Denied.');
 
     <legend><?= t('Options') ?></legend>
 
-    <div class="form-group">
+    <div class="mb-3">
         <?= $form->label('territoryRequestLevel', t('Territory specification')) ?>
         <?= $form->select('territoryRequestLevel', $territoryRequestLevels, $territoryRequestLevel) ?>
     </div>

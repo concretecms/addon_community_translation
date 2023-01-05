@@ -26,15 +26,15 @@ $menu->render();
 
     <?php $token->output('ct-options-save-paths') ?>
 
-	<div class="form-group">
+	<div class="mb-3">
 		<?= $form->label('onlineTranslationPath', t('Online Translation URI')) ?>
     	<?= $form->text('onlineTranslationPath', $onlineTranslationPath, ['required' => 'required']) ?>
 	</div>
-	<div class="form-group">
+	<div class="mb-3">
         <?= $form->label('apiBasePath', t('API Base Path')) ?>
         <?= $form->text('apiBasePath', $apiBasePath, ['required' => 'required']) ?>
     </div>
-	<div class="form-group">
+	<div class="mb-3">
         <?= $form->label('tempDir', t('Temporary directory')) ?>
         <?= $form->text('tempDir', $tempDir) ?>
         <?php

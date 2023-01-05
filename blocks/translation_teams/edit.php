@@ -15,7 +15,7 @@ defined('C5_EXECUTE') or die('Access Denied.');
 ?>
 
 <fieldset>
-    <div class="form-group">
+    <div class="mb-3">
         <?= $form->label('askNewTeam', t('Show link to ask creation of a new translation team')) ?>
         <?= $destinationPicker->generate('askNewTeam', $askNewTeamConfig, $askNewTeamHandle, $askNewTeamValue) ?>
     </div>

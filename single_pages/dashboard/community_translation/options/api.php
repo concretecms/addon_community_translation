@@ -26,15 +26,15 @@ $menu->render();
 
     <?php $token->output('ct-options-save-api') ?>
 
-    <div class="form-group">
+    <div class="mb-3">
         <?= $form->label('', t('Block API access by invalid user token')) ?><br />
         <a href="<?= h($accessDenylistUrl) ?>" target="_blank" class="btn btn-info"><?= t('Configure') ?></a>
     </div>
-    <div class="form-group">
+    <div class="mb-3">
         <?= $form->label('', t('Limit API access rate')) ?><br />
         <a href="<?= h($rateLimitDenylistUrl) ?>" target="_blank" class="btn btn-info"><?= t('Configure') ?></a>
     </div>
-    <div class="form-group">
+    <div class="mb-3">
         <?= $form->label('accessControlAllowOrigin', tc(/*i18n: %s is a header name of an HTTP response*/'ResponseHeader', '%s header', 'Access-Control-Allow-Origin')) ?><br />
         <?= $form->text('accessControlAllowOrigin', $accessControlAllowOrigin, ['required' => 'required', 'style' => 'font-family: monospace']) ?>
         <div class="small text-muted">
@@ -46,7 +46,7 @@ $menu->render();
         <?php
         foreach ($accessChecks as $key => $info) {
             ?>
-            <div class="form-group">
+            <div class="mb-3">
                 <?= $form->label("apiAccess-{$key}", h($info['label'])) ?>
                 <?= $form->select("apiAccess-{$key}", $info['values'], $info['value'], ['required' => 'required']) ?>
             </div>

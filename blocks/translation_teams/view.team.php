@@ -190,7 +190,7 @@ if ($aspiring !== []) {
     <?php
 }
 ?>
-<div class="text-right mb-3">
+<div class="text-end mb-3">
     <?php
     switch ($access) {
         case Access::NOT_LOGGED_IN:

@@ -118,7 +118,7 @@ if (is_string($showWarning ?? null) && $showWarning !== '') {
                             <tr data-sortsection="<?= $sectionIndex ?>">
                                 <td data-sortby="<?= h(mb_strtolower($locale->getID())) ?>">
                                     <div class="h-100 pr-2 d-flex flex-column align-items-baseline justify-content-around">
-                                        <span class="badge badge-info"><?= h($locale->getID()) ?></span>
+                                        <span class="badge bg-info"><?= h($locale->getID()) ?></span>
                                     </div>
                                 </td>
                                 <td data-sortby="<?= h(mb_strtolower($locale->getDisplayName())) ?>">
@@ -144,11 +144,11 @@ if (is_string($showWarning ?? null) && $showWarning !== '') {
                                     <span class="d-none d-sm-inline">
                                         <?php
                                         foreach ($localeInfo['downloadFormats'] as $adf) {
-                                            ?><a class="btn btn-sm btn-info" style="padding: 5px 10px" href="<?= h($controller->getBlockActionURL('download_translations_file', $packageVersion->getID(), $locale->getID(), $adf->getHandle()) . '?' . $token->getParameter('comtra-download-translations-' . $packageVersion->getID() . '@' . $locale->getID() . '.' . $adf->getHandle())) ?>" title="<?= h(t('Download translations (%s)', $adf->getName())) ?>" style="padding: 5px 10px; white-space:nowrap"><i class="fa fa-cloud-download"></i> <?= h($adf->getFileExtension()) ?></a><?php
+                                            ?><a class="btn btn-sm btn-secondary" href="<?= h($controller->getBlockActionURL('download_translations_file', $packageVersion->getID(), $locale->getID(), $adf->getHandle()) . '?' . $token->getParameter('comtra-download-translations-' . $packageVersion->getID() . '@' . $locale->getID() . '.' . $adf->getHandle())) ?>" title="<?= h(t('Download translations (%s)', $adf->getName())) ?>" style="white-space:nowrap"><i class="fa fa-cloud-download"></i> <?= h($adf->getFileExtension()) ?></a><?php
                                         }
                                         ?>
                                     </span>
-                                    <a class="btn btn-sm <?= $translateClass ?>" style="padding: 5px 10px" href="<?= h($translateLink) ?>"<?= $translateOnclick ?>><?= t('Translate') ?></a>
+                                    <a class="btn btn-sm <?= $translateClass ?>" href="<?= h($translateLink) ?>"<?= $translateOnclick ?>><?= t('Translate') ?></a>
                                     <?php
                                     if ($localeInfo['totalStrings']) {
                                         ?>

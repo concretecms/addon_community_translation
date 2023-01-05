@@ -46,15 +46,15 @@ $id = 'comtra-fill-translations-' . uniqid();
         }
         ?>
 
-        <div class="form-group">
-            <label class="control-label" for="<?= $id ?>_file"><b><?= t('File to be processed') ?></b></label>
+        <div class="mb-3">
+            <label class="form-label" for="<?= $id ?>_file"><b><?= t('File to be processed') ?></b></label>
             <input class="form-control" type="file" name="file" id="<?= $id ?>_file" required="required" />
         </div>
 
         <h4><?= t('Options') ?></h4>
 
-        <div class="form-group">
-            <label class="control-label"><?= t('File to be generated') ?></label>
+        <div class="mb-3">
+            <label class="form-label"><?= t('File to be generated') ?></label>
 
             <div class="form-check">
                 <input type="checkbox" name="include-pot" value="1" id="<?= $id ?>_includePot" class="form-check-input"/>
@@ -72,10 +72,8 @@ $id = 'comtra-fill-translations-' . uniqid();
             </div>
         </div>
 
-        <div class="form-group">
-            <div class="control-label">
-                <label for="<?= $id ?>_translatedLocales"><?= t('Main languages') ?></label>
-            </div>
+        <div class="mb-3">
+            <label class="form-label" for="<?= $id ?>_translatedLocales"><?= t('Main languages') ?></label>
             <select class="form-control" multiple="multiple" name="translatedLocales[]" id="<?= $id ?>_translatedLocales" size="7">
                 <?php
                 foreach ($translatedLocales as $locale) {
@@ -83,7 +81,7 @@ $id = 'comtra-fill-translations-' . uniqid();
                 }
                 ?>
             </select>
-            <div class="text-right comtra-fill-translations-selectlocales">
+            <div class="text-end comtra-fill-translations-selectlocales">
                 <a href="#" onclick="$('#<?= $id ?>_translatedLocales option').prop('selected', true); return false"><?= tc('Languages', 'Select all') ?></a>
                 |
                 <a href="#" onclick="$('#<?= $id ?>_translatedLocales option').prop('selected', false); return false"><?= tc('Languages', 'Select none') ?></a>
@@ -92,10 +90,8 @@ $id = 'comtra-fill-translations-' . uniqid();
         <?php
         if ($untranslatedLocales !== []) {
             ?>
-            <div class="form-group">
-                <div class="control-label">
-                    <label for="<?= $id ?>_untranslatedLocales"><?= t('Other languages') ?></label>
-                </div>
+            <div class="mb-3">
+                <label for="<?= $id ?>_untranslatedLocales" class="form-label"><?= t('Other languages') ?></label>
                 <select class="form-control" multiple="multiple" name="untranslatedLocales[]" id="<?= $id ?>_untranslatedLocales" size="7">
                     <?php
                     foreach ($untranslatedLocales as $locale) {
@@ -103,7 +99,7 @@ $id = 'comtra-fill-translations-' . uniqid();
                     }
                     ?>
                 </select>
-                <div class="text-right comtra-fill-translations-selectlocales">
+                <div class="text-end comtra-fill-translations-selectlocales">
                     <a href="#" onclick="$('#<?= $id ?>_untranslatedLocales option').prop('selected', true); return false"><?= tc('Languages', 'Select all') ?></a>
                     |
                     <a href="#" onclick="$('#<?= $id ?>_untranslatedLocales option').prop('selected', false); return false"><?= tc('Languages', 'Select none') ?></a>

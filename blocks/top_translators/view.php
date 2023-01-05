@@ -25,7 +25,7 @@ if ($counters === []) {
         foreach ($counters as $numTranslations => $translatorIDs) {
             ?>
             <li>
-                <span class="badge badge-info"><?= t2('%d translation', '%d translations', $numTranslations) ?></span>
+                <span class="badge bg-info"><?= t2('%d translation', '%d translations', $numTranslations) ?></span>
                 <?php
                 $users = [];
                 foreach ($translatorIDs as $translatorID) {

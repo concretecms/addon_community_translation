@@ -28,14 +28,14 @@ $maxFileSizeUnits = [
 ];
 ?>
 
-<div class="form-group">
+<div class="mb-3">
     <?= $form->label('', t('Rate limit')) ?>
     <div class="alert alert-info">
         <a href="<?= h($rateLimitControlUrl) ?>" target="_blank"><?= t('Configurable here') ?> &#x2197;</a>
     </div>
 </div>
 
-<div class="form-group">
+<div class="mb-3">
     <?= $form->label('maxFileSizeValue', t('Max size of uploaded files')) ?>
     <div class="input-group">
         <?= $form->number('maxFileSizeValue', $maxFileSizeValue, ['min' => 1, 'placeholder' => t('Empty for no limit')]) ?>
@@ -48,17 +48,17 @@ $maxFileSizeUnits = [
     ?>
 </div>
 
-<div class="form-group">
+<div class="mb-3">
     <?= $form->label('maxLocalesCount', t('Max number of locales')) ?>
     <?= $form->number('maxLocalesCount', $maxLocalesCount, ['min' => 1, 'placeholder' => t('Empty for no limit')]) ?>
 </div>
 
-<div class="form-group">
+<div class="mb-3">
     <?= $form->label('maxStringsCount', t('Max number of strings')) ?>
     <?= $form->number('maxStringsCount', $maxStringsCount, ['min' => 1, 'placeholder' => t('Empty for no limit')]) ?>
 </div>
 
-<div class="form-group mb-0">
+<div>
     <?= $form->label('statsFromPackage', t('Calculate "translated" languages inspecting package')) ?>
     <?= $form->text('statsFromPackage', $statsFromPackage, ['placeholder' => t('Empty to use every package')]) ?>
 </div>
