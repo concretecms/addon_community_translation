@@ -26,15 +26,15 @@ $menu->render();
 
     <?php $token->output('ct-options-save-paths') ?>
 
-	<div class="form-group">
+	<div class="mb-3">
 		<?= $form->label('onlineTranslationPath', t('Online Translation URI')) ?>
     	<?= $form->text('onlineTranslationPath', $onlineTranslationPath, ['required' => 'required']) ?>
 	</div>
-	<div class="form-group">
+	<div class="mb-3">
         <?= $form->label('apiBasePath', t('API Base Path')) ?>
         <?= $form->text('apiBasePath', $apiBasePath, ['required' => 'required']) ?>
     </div>
-	<div class="form-group">
+	<div class="mb-3">
         <?= $form->label('tempDir', t('Temporary directory')) ?>
         <?= $form->text('tempDir', $tempDir) ?>
         <?php
@@ -50,8 +50,8 @@ $menu->render();
 
     <div class="ccm-dashboard-form-actions-wrapper">
         <div class="ccm-dashboard-form-actions">
-            <a href="<?= h($urlResolver->resolve(['/dashboard/community_translation'])) ?>" class="btn btn-secondary float-left"><?= t('Cancel') ?></a>
-            <input type="submit" class="btn btn-primary float-right btn ccm-input-submit" value="<?= t('Save') ?>">
+            <a href="<?= h($urlResolver->resolve(['/dashboard/community_translation'])) ?>" class="btn btn-secondary float-start"><?= t('Cancel') ?></a>
+            <input type="submit" class="btn btn-primary float-end btn ccm-input-submit" value="<?= t('Save') ?>">
         </div>
     </div>
 

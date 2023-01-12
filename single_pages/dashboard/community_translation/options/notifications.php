@@ -30,14 +30,14 @@ $menu->render();
         <?= t('Here you can configure the sender of the notifications sent by CommunityTranslation') ?>
     </p>
 
-	<div class="form-group">
+	<div class="mb-3">
         <?= $form->label('senderAddress', t('Sender email address'))?>
         <?= $form->email('senderAddress', $senderAddress) ?>
         <div class="small text-muted">
             <?= t("If not specified we'll use the default one: %s", '<code>' . h($defaultSenderAddress) . '</code>') ?>
         </div>
     </div>
-	<div class="form-group">
+	<div class="mb-3">
         <?= $form->label('senderName', t('Sender name'))?>
         <?= $form->text('senderName', $senderName, ['placeholder' => t('Default sender name: %s', h($defaultSenderName))]) ?>
         <?php
@@ -53,8 +53,8 @@ $menu->render();
 
     <div class="ccm-dashboard-form-actions-wrapper">
         <div class="ccm-dashboard-form-actions">
-            <a href="<?= h($urlResolver->resolve(['/dashboard/community_translation'])) ?>" class="btn btn-secondary float-left"><?= t('Cancel') ?></a>
-            <input type="submit" class="btn btn-primary float-right btn ccm-input-submit" value="<?= t('Save') ?>">
+            <a href="<?= h($urlResolver->resolve(['/dashboard/community_translation'])) ?>" class="btn btn-secondary float-start"><?= t('Cancel') ?></a>
+            <input type="submit" class="btn btn-primary float-end btn ccm-input-submit" value="<?= t('Save') ?>">
         </div>
     </div>
 

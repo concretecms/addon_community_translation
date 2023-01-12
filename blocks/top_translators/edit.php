@@ -16,16 +16,16 @@ defined('C5_EXECUTE') or die('Access denied.');
  */
 
 ?>
-<div class="form-group">
+<div class="mb-3">
     <?= $form->label('numTranslators', t('Maximum number of translators to display')) ?>
     <?= $form->number('numTranslators', (string) $numTranslators, ['min' => 1, 'step' => 1, 'placeholder' => t('Empty: unlimited')]) ?>
 </div>
 
-<div class="form-group">
+<div class="mb-3">
     <?= $form->label('limitToLocale', t('Translation team')) ?>
     <?= $form->select('limitToLocale', $localeOptions, $limitToLocale) ?>
 </div>
-<div class="form-group mb-0">
+<div class="mb-0">
     <?= $form->label('allTranslations', t('Translations count')) ?>
 
     <div class="form-check">

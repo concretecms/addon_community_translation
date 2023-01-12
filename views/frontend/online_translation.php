@@ -495,7 +495,7 @@ if ($enableComments) {
                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                         </div>
                         <div class="modal-body">
-                            <div class="form-group">
+                            <div class="mb-3">
                                 <label class="form-label" for="comtra_upload-translations-file"><?= t('File to be imported') ?></label>
                                 <input type="file" class="form-control" name="file" id="comtra_upload-translations-file" required="required" v-bind:disabled="busy" />
                             </div>

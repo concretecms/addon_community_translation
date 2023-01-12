@@ -16,7 +16,7 @@ defined('C5_EXECUTE') or die('Access Denied.');
 $id = preg_replace('/\W+/', '_', $view->field('operation'));
 
 ?>
-<div class="form-group">
+<div class="mb-3">
     <?php
     if ($value !== '') {
         ?>

@@ -19,17 +19,17 @@ defined('C5_EXECUTE') or die('Access Denied.');
 
 ?>
 
-<div class="form-group">
+<div class="mb-3">
     <?= $form->label('resultsPerPage', t('Number of results per page')) ?>
     <?= $form->number('resultsPerPage', $resultsPerPage, ['min' => '1', 'required' => 'required']) ?>
 </div>
 
-<div class="form-group">
+<div class="mb-3">
     <?= $form->label('allowedDownloadFor', t('Allow downloading translations for')) ?>
     <?= $form->select('allowedDownloadFor', $allowedDownloadForList, $allowedDownloadFor, ['required' => 'required']) ?>
 </div>
 
-<div class="form-group mb-0"<?= ($allowedDownloadFor === $ALLOWDOWNLOADFOR_NOBODY) ? ' style="display: none"' : '' ?>>
+<div class="mb-0"<?= ($allowedDownloadFor === $ALLOWDOWNLOADFOR_NOBODY) ? ' style="display: none"' : '' ?>>
     <?= $form->label('allowedDownloadFormats', t('Allowed download formats')) ?>
     <?php
     foreach ($downloadFormats as $df) {
@@ -47,7 +47,7 @@ defined('C5_EXECUTE') or die('Access Denied.');
 
 $('#allowedDownloadFor').on('change', function() {
     var askFormats = $('#allowedDownloadFor').val() !== <?= json_encode($ALLOWDOWNLOADFOR_NOBODY) ?>;
-    $('input[name="allowedDownloadFormats[]"]:first').closest('div.form-group')[askFormats ? 'show' : 'hide']('fast');
+    $('input[name="allowedDownloadFormats[]"]:first').closest('div')[askFormats ? 'show' : 'hide']('fast');
 });
 
 });</script>

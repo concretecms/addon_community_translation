@@ -26,11 +26,11 @@ $menu->render();
 
     <?php $token->output('ct-options-save-translate') ?>
 
-    <div class="form-group">
+    <div class="mb-3">
         <?= $form->label('sourceLocale', t('Source locale')) ?>
         <?= $form->text('sourceLocale', $sourceLocale, ['required' => 'required', 'pattern' => '[a-z]{2,3}(_([A-Z]{2}|[0-9]{3}))?']) ?>
     </div>
-    <div class="form-group">
+    <div class="mb-3">
         <?= $form->label('translatedThreshold', t('Translation threshold')) ?>
         <div class="input-group">
             <?= $form->number('translatedThreshold', $translatedThreshold, ['min' => 0, 'max' => 100, 'required' => 'required']) ?>
@@ -42,15 +42,15 @@ $menu->render();
             <?= t('Translations below this value will be considered as <i>not translated</i>') ?>
         </div>
     </div>
-	<div class="form-group">
+	<div class="mb-3">
         <?= $form->label('parser', t('Strings Parser')) ?>
         <?= $form->select('parser', $parsers, $defaultParser, ['required' => 'required']) ?>
     </div>
 
     <div class="ccm-dashboard-form-actions-wrapper">
         <div class="ccm-dashboard-form-actions">
-            <a href="<?= h($urlResolver->resolve(['/dashboard/community_translation'])) ?>" class="btn btn-secondary float-left"><?= t('Cancel') ?></a>
-            <input type="submit" class="btn btn-primary float-right btn ccm-input-submit" value="<?= t('Save') ?>">
+            <a href="<?= h($urlResolver->resolve(['/dashboard/community_translation'])) ?>" class="btn btn-secondary float-start"><?= t('Cancel') ?></a>
+            <input type="submit" class="btn btn-primary float-end btn ccm-input-submit" value="<?= t('Save') ?>">
         </div>
     </div>
 

@@ -109,12 +109,12 @@ if ($gitRepository->getID() !== null) {
             </div>
         </div>
 
-        <div class="row form-group" id="comtra-tag2verregex" style="display: none">
+        <div class="row mb-3" id="comtra-tag2verregex" style="display: none">
             <label class="form-label" for="tag2verregex" title="<?= t('A regular expression whose first match against the tags should be the version') ?>"><?= t('Tag-to-filter regular expression') ?></label>
             <?= $form->text('tag2verregex', $gitRepository->getTagToVersionRegexp(), ['maxlength' => 255]) ?>
         </div>
 
-        <div class="row form-group">
+        <div class="row mb-3">
             <label class="form-label" title="<?= t('These branches should be fetched periodically in order to extract new strings while the development progresses. The version should start with %s', '<code>' . h(Version::DEV_PREFIX) . '</code>') ?>"><?= t('Development branches') ?></label>
             <div style="max-width: 500px">
                 <comtra-devbranch

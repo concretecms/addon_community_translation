@@ -78,7 +78,7 @@ if ($globalAdmins !== []) {
                             <?php
                             if ($access >= Access::GLOBAL_ADMIN && empty($u['actuallyGlobalAdmin'])) {
                                 ?>
-                                <div class="float-right">
+                                <div class="float-end">
                                     <form class="d-inline" method="POST" action="<?= h($controller->getBlockActionURL('change_access', $locale->getID(), $u['ui']->getUserID(), Access::TRANSLATE)) ?>">
                                         <?php $token->output('comtra_change_access' . $locale->getID() . '#' . $u['ui']->getUserID() . ':' . Access::TRANSLATE) ?>
                                         <input type="submit" class="btn btn-sm btn-warning" value="<?= t('Set as translator') ?>" />
@@ -122,7 +122,7 @@ if ($globalAdmins !== []) {
                             <?php
                             if ($access >= Access::ADMIN) {
                                 ?>
-                                <div class="float-right">
+                                <div class="float-end">
                                     <form class="d-inline" method="POST" action="<?= h($controller->getBlockActionURL('change_access', $locale->getID(), $u['ui']->getUserID(), Access::ADMIN)) ?>">
                                         <?php $token->output('comtra_change_access' . $locale->getID() . '#' . $u['ui']->getUserID() . ':' . Access::ADMIN) ?>
                                         <input type="submit" class="btn btn-sm btn-success" value="<?= t('Set as coordinator') ?>" />
@@ -164,7 +164,7 @@ if ($aspiring !== []) {
                             <?php
                             if ($access >= Access::ADMIN) {
                                 ?>
-                                <div class="float-right">
+                                <div class="float-end">
                                     <form class="d-inline" method="POST" action="<?= h($controller->getBlockActionURL('answer_join_request', $locale->getID(), $u['ui']->getUserID(), 1)) ?>">
                                         <?php $token->output('comtra_answer_join_request' . $locale->getID() . '#' . $u['ui']->getUserID() . ':1') ?>
                                         <input type="submit" class="btn btn-sm btn-success" value="<?= t('Approve') ?>" />
@@ -190,7 +190,7 @@ if ($aspiring !== []) {
     <?php
 }
 ?>
-<div class="text-right mb-3">
+<div class="text-end mb-3">
     <?php
     switch ($access) {
         case Access::NOT_LOGGED_IN:
