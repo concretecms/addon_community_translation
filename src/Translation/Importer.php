@@ -152,7 +152,7 @@ where
                     if (!isset($row['id'])) {
                         break;
                     }
-                    if ($currentTranslation === null && $row['current'] === '1') {
+                    if ($currentTranslation === null && $row['current']) {
                         $currentTranslation = $row;
                     }
                     if ($sameTranslation === null && $this->rowSameAsTranslation($row, $translation, $isPlural, $pluralCount)) {
@@ -240,7 +240,7 @@ where
                     }
                     $translatablesChanged[] = $translatableID;
                     $result->addedAsCurrent++;
-                } elseif ($sameTranslation['current'] === '1') {
+                } elseif ($sameTranslation['current']) {
                     // This translation is already present and it's the current one
                     if ($isFuzzy === false && !$sameTranslation['approved']) {
                         // Let's mark the translation as approved
