@@ -34,6 +34,9 @@ class ConcreteCMSParser extends Parser
      */
     public function parseDirectory(string $packageHandle, string $packageVersion, string $path, string $relDirectory = '', int $searchDictionaryFiles = self::DICTIONARY_ALL): ?Parsed
     {
+        if (!defined('VIEW_CORE_THEME_TEMPLATE_BACKGROUND_IMAGE')) {
+            define('VIEW_CORE_THEME_TEMPLATE_BACKGROUND_IMAGE', 'background_image.php');
+        }
         $sourceLocale = $this->app->make(SourceLocale::class)->getRequiredSourceLocale();
         if (!$this->filesystem->isDirectory($path)) {
             throw new UserMessageException(t('Unable to find the directory %s', $path));

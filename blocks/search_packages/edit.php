@@ -29,7 +29,7 @@ defined('C5_EXECUTE') or die('Access Denied.');
     <?= $form->select('allowedDownloadFor', $allowedDownloadForList, $allowedDownloadFor, ['required' => 'required']) ?>
 </div>
 
-<div class="mb-0"<?= ($allowedDownloadFor === $ALLOWDOWNLOADFOR_NOBODY) ? ' style="display: none"' : '' ?>>
+<div class="mb-0 ct-allowed-formats"<?= ($allowedDownloadFor === $ALLOWDOWNLOADFOR_NOBODY) ? ' style="display: none"' : '' ?>>
     <?= $form->label('allowedDownloadFormats', t('Allowed download formats')) ?>
     <?php
     foreach ($downloadFormats as $df) {
@@ -47,7 +47,7 @@ defined('C5_EXECUTE') or die('Access Denied.');
 
 $('#allowedDownloadFor').on('change', function() {
     var askFormats = $('#allowedDownloadFor').val() !== <?= json_encode($ALLOWDOWNLOADFOR_NOBODY) ?>;
-    $('input[name="allowedDownloadFormats[]"]:first').closest('div')[askFormats ? 'show' : 'hide']('fast');
+    $('input[name="allowedDownloadFormats[]"]:first').closest('div.ct-allowed-formats')[askFormats ? 'show' : 'hide']('fast');
 });
 
 });</script>

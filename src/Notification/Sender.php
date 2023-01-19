@@ -44,7 +44,7 @@ final class Sender
     }
 
     /**
-     * @return \Throwable|null returns NULL if the notification has been sent to at lease one recipient, a throwable otherwise (see also $notification->getDeliveryErrors() for further details).
+     * @return \Throwable|null returns NULL if the notification has been sent to at lease one recipient, a throwable otherwise (see also $notification->getDeliveryErrors() for further details)
      */
     public function send(NotificationEntity $notification): ?Throwable
     {
