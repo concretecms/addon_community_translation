@@ -13,6 +13,7 @@ use Concrete\Core\Config\Repository\Repository;
 use Concrete\Core\Error\UserMessageException;
 use Exception;
 use Illuminate\Filesystem\Filesystem;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 defined('C5_EXECUTE') or die('Access Denied.');
 
@@ -94,6 +95,33 @@ final class FileExporter
         }
 
         return $file;
+    }
+
+    public function buildSerializedTranslationsFileResponse(PackageVersionEntity $packageVersion, LocaleEntity $locale, TranslationsConverter $format): BinaryFileResponse
+    {
+        $serializedTranslationsFile = $this->getSerializedTranslationsFile($packageVersion, $locale, $format);
+        $response = new BinaryFileResponse(
+            // $file
+            $serializedTranslationsFile,
+            // $status
+            BinaryFileResponse::HTTP_OK,
+            // $headers
+            [
+                'Content-Type' => 'application/octet-stream',
+                'Content-Transfer-Encoding' => 'binary',
+            ],
+            // $public
+            false
+        );
+        $response
+            ->setContentDisposition(
+                'attachment',
+                "translations-{$locale->getID()}.{$format->getFileExtension()}"
+            )
+            ->setCache(['no_store' => true])
+        ;
+
+        return $response;
     }
 
     /**

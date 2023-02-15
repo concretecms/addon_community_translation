@@ -12,7 +12,6 @@ use CommunityTranslation\Repository\Package as PackageRepository;
 use CommunityTranslation\Translation\FileExporter as TranslationFileExporter;
 use CommunityTranslation\TranslationsConverter\Provider as TranslationsConverterProvider;
 use Concrete\Core\Error\UserMessageException;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Response;
 
 defined('C5_EXECUTE') or die('Access Denied.');
@@ -51,23 +50,8 @@ class GetPackageVersionTranslations extends EntryPoint
                 if ($format === null) {
                     throw new UserMessageException(t('Unable to find the specified translations format'), Response::HTTP_NOT_FOUND);
                 }
-                $translationsFile = $this->app->make(TranslationFileExporter::class)->getSerializedTranslationsFile($version, $locale, $format);
+                $response = $this->app->make(TranslationFileExporter::class)->buildSerializedTranslationsFileResponse($version, $locale, $format);
                 $this->app->make(DownloadStatsRepository::class)->logDownload($locale, $version);
-                $response = new BinaryFileResponse(
-                    // $file
-                    $translationsFile,
-                    // $status
-                    Response::HTTP_OK,
-                    // $headers
-                    [
-                        'Content-Type' => 'application/octet-stream',
-                        'Content-Transfer-Encoding' => 'binary',
-                    ]
-                );
-                $response->setContentDisposition(
-                    'attachment',
-                    'translations-' . $locale->getID() . '.' . $format->getFileExtension()
-                );
 
                 return $response;
             }

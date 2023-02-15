@@ -20,7 +20,6 @@ use Concrete\Core\Config\Repository\Repository;
 use Concrete\Core\Error\UserMessageException;
 use Concrete\Core\Url\Resolver\Manager\ResolverManagerInterface;
 use Concrete\Package\CommunityTranslation\Controller\Search\Packages as SearchController;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -292,24 +291,8 @@ EOT
             if ($format === null) {
                 throw new UserMessageException(t('Unable to find the specified translations file format'));
             }
-            $serializedTranslationsFile = $this->app->make(TranslationFileExporter::class)->getSerializedTranslationsFile($packageVersion, $locale, $format);
+            $response = $this->app->make(TranslationFileExporter::class)->buildSerializedTranslationsFileResponse($packageVersion, $locale, $format);
             $this->app->make(DownloadStatsRepository::class)->logDownload($locale, $packageVersion);
-
-            $response = new BinaryFileResponse(
-                // $file
-                $serializedTranslationsFile,
-                // $status
-                Response::HTTP_OK,
-                // $headers
-                [
-                    'Content-Type' => 'application/octet-stream',
-                    'Content-Transfer-Encoding' => 'binary',
-                ]
-            );
-            $response->setContentDisposition(
-                'attachment',
-                "translations-{$locale->getID()}.{$format->getFileExtension()}"
-            );
 
             return $response;
         } catch (UserMessageException $x) {
