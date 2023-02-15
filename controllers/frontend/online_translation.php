@@ -49,7 +49,6 @@ use Gettext\Translations as GettextTranslations;
 use Punic\Comparer;
 use Punic\Misc;
 use Symfony\Component\EventDispatcher\GenericEvent;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Throwable;
 
@@ -674,24 +673,8 @@ class OnlineTranslation extends Controller
             if ($packageVersion === null) {
                 throw new UserMessageException(t('Invalid translated package version identifier received'));
             }
-            $serializedTranslationsFile = $this->app->make(TranslationFileExporter::class)->getSerializedTranslationsFile($packageVersion, $locale, $format);
-            $response = new BinaryFileResponse(
-                // $file
-                $serializedTranslationsFile,
-                // $status
-                Response::HTTP_OK,
-                // $headers
-                [
-                    'Content-Type' => 'application/octet-stream',
-                    'Content-Transfer-Encoding' => 'binary',
-                ]
-            );
-            $response->setContentDisposition(
-                'attachment',
-                'translations-' . $locale->getID() . '.' . $format->getFileExtension()
-            );
 
-            return $response;
+            return $this->app->make(TranslationFileExporter::class)->buildSerializedTranslationsFileResponse($packageVersion, $locale, $format);
         } catch (UserMessageException $x) {
             return $rf->error($x->getMessage());
         }
