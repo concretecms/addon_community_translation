@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace CommunityTranslation\RemotePackage;
 
+use CommunityTranslation\Entity\GitRepository;
 use CommunityTranslation\Entity\Package as PackageEntity;
 use CommunityTranslation\Entity\RemotePackage;
 use CommunityTranslation\Entity\RemotePackage as RemotePackageEntity;
@@ -57,6 +58,9 @@ final class Importer
      */
     public function import(RemotePackageEntity $remotePackage): void
     {
+        if ($this->em->getRepository(GitRepository::class)->findOneBy(['packageHandle' => $remotePackage->getHandle()]) !== null) {
+            throw new UserMessageException(sprintf("It's not possible to download a remote package with handle %s, since there's areaady a package fetched from git with such handle.", $remotePackage->getHandle()));
+        }
         $temp = $this->download($remotePackage);
         $rootPath = $this->getRootPath($temp);
         $this->translatableImporter->importDirectory($rootPath, $remotePackage->getHandle(), $remotePackage->getVersion(), '');
