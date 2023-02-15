@@ -221,7 +221,7 @@ class Controller extends BlockController
     public function action_package(string $handle = '', string $version = ''): ?Response
     {
         if ($handle === '') {
-            return $this->buildRedirect($this->action(''));
+            return $this->action_search();
         }
         $package = $this->app->make(PackageRepository::class)->findOneBy(['handle' => $handle]);
         if ($package === null) {
