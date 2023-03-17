@@ -102,12 +102,12 @@ if (($showSuccess ?? '') !== '') {
                             <tr data-locale-id="<?= h($l['id']) ?>" data-locale-name="<?= h(strtolower($l['name'])) ?>">
                                 <td><a href="<?= h($controller->getBlockActionURL('details', $l['id'])) ?>"><?= h($l['name']) ?></a></td>
                                 <td class="d-md-none text-center">
-                                    <?= $l['admins'] ? ('<span class="badge badge-success" title="' . t('Coordinators') . '">' . $l['admins'] . '</span>') : '<span class="badge badge-light" title="' . t('Coordinators') . '">0</span>' ?>
+                                    <?= $l['admins'] ? ('<span class="badge text-bg-success" title="' . t('Coordinators') . '">' . $l['admins'] . '</span>') : '<span class="badge text-bg-light" title="' . t('Coordinators') . '">0</span>' ?>
                                     +
-                                    <?= $l['translators'] ? ('<span class="badge badge-success" title="' . t('Translators') . '">' . $l['translators'] . '</span>') : '<span class="badge badge-light" title="' . t('Translators') . '">0</span>' ?>
-                                <td class="d-none d-md-table-cell text-center"><?= $l['admins'] ? ('<span class="badge badge-success">' . $l['admins'] . '</span>') : '<span class="badge badge-light">0</span>' ?></td>
-                                <td class="d-none d-md-table-cell text-center"><?= $l['translators'] ? ('<span class="badge badge-success">' . $l['translators'] . '</span>') : '<span class="badge badge-light">0</span>' ?></td>
-                                <td class="text-center"><?= $l['aspiring'] ? ('<span class="badge badge-success">' . $l['aspiring'] . '</span>') : '<span class="badge badge-light">0</span>' ?></td>
+                                    <?= $l['translators'] ? ('<span class="badge text-bg-success" title="' . t('Translators') . '">' . $l['translators'] . '</span>') : '<span class="badge text-bg-light" title="' . t('Translators') . '">0</span>' ?>
+                                <td class="d-none d-md-table-cell text-center"><?= $l['admins'] ? ('<span class="badge text-bg-success">' . $l['admins'] . '</span>') : '<span class="badge text-bg-light">0</span>' ?></td>
+                                <td class="d-none d-md-table-cell text-center"><?= $l['translators'] ? ('<span class="badge text-bg-success">' . $l['translators'] . '</span>') : '<span class="badge text-bg-light">0</span>' ?></td>
+                                <td class="text-center"><?= $l['aspiring'] ? ('<span class="badge text-bg-success">' . $l['aspiring'] . '</span>') : '<span class="badge text-bg-light">0</span>' ?></td>
                                 <td class="d-none d-md-table-cell text-end"><?php
                                     switch ($l['access']) {
                                         case Access::GLOBAL_ADMIN:
