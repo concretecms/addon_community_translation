@@ -144,7 +144,7 @@ if (is_string($showWarning ?? null) && $showWarning !== '') {
                                     <span class="d-none d-sm-inline">
                                         <?php
                                         foreach ($localeInfo['downloadFormats'] as $adf) {
-                                            ?><a class="btn btn-sm btn-secondary" href="<?= h($controller->getBlockActionURL('download_translations_file', $packageVersion->getID(), $locale->getID(), $adf->getHandle()) . '?' . $token->getParameter('comtra-download-translations-' . $packageVersion->getID() . '@' . $locale->getID() . '.' . $adf->getHandle())) ?>" title="<?= h(t('Download translations (%s)', $adf->getName())) ?>" style="white-space:nowrap"><i class="fa fa-cloud-download"></i> <?= h($adf->getFileExtension()) ?></a><?php
+                                            ?><a class="btn btn-sm btn-secondary" href="<?= h($controller->getBlockActionURL('download_translations_file', $packageVersion->getID(), $locale->getID(), $adf->getHandle())) ?>" title="<?= h(t('Download translations (%s)', $adf->getName())) ?>" style="white-space:nowrap"><i class="fa fa-cloud-download"></i> <?= h($adf->getFileExtension()) ?></a><?php
                                         }
                                         ?>
                                     </span>
