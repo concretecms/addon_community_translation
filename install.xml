@@ -32,6 +32,11 @@
                 <category handle="user" />
             </categories>
         </attributetype>
+        <attributetype package="community_translation" handle="subscribed_packages" name="Subscribed Packages">
+            <categories>
+                <category handle="user" />
+            </categories>
+        </attributetype>
     </attributetypes>
 
     <attributekeys>
@@ -81,6 +86,22 @@
         >
             <type checked="1" />
         </attributekey>
+        <attributekey
+            package="community_translation"
+            category="user"
+            type="subscribed_packages"
+            handle="subscribed_packages"
+            name="Subscribed Packages"
+            indexed="0"
+            searchable="0"
+            profile-displayed="0"
+            profile-editable="1"
+            profile-required="0"
+            register-editable="0"
+            register-required="0"
+            member-list-displayed="0"
+        >
+        </attributekey>
     </attributekeys>
 
     <attributesets>
@@ -88,6 +109,7 @@
             <attributekey handle="api_token" />
             <attributekey handle="notify_new_packages" />
             <attributekey handle="notify_translatable_messages" />
+            <attributekey handle="subscribed_packages" />
         </attributeset>
     </attributesets>
 
