@@ -59,6 +59,11 @@ class Controller extends BlockController
     public $allowedDownloadFor;
 
     /**
+     * @var bool|int|string|null
+     */
+    public $downloadsTokenProtected;
+
+    /**
      * {@inheritdoc}
      *
      * @see \Concrete\Core\Block\BlockController::$helpers
@@ -159,6 +164,7 @@ class Controller extends BlockController
 
     public function add()
     {
+        $this->downloadsTokenProtected = true;
         $this->edit();
     }
 
@@ -170,6 +176,7 @@ class Controller extends BlockController
         $this->set('allowedDownloadFor', $this->allowedDownloadFor ?: self::ALLOWDOWNLOADFOR_NOBODY);
         $this->set('allowedDownloadForList', $this->getDownloadAccessLevels());
         $this->set('allowedDownloadFormats', $this->allowedDownloadFormats ? explode(',', $this->allowedDownloadFormats) : []);
+        $this->set('downloadsTokenProtected', !empty($this->downloadsTokenProtected));
         $converters = [];
         foreach ($this->app->make(TranslationsConverterProvider::class)->getRegisteredConverters() as $converter) {
             if ($converter->canSerializeTranslations()) {
@@ -274,11 +281,13 @@ EOT
     public function action_download_translations_file(string|int $packageVersionID = '', string $localeID = '', string $formatHandle = ''): ?Response
     {
         try {
-            $token = $this->app->make('token');
-            if (!is_numeric($packageVersionID) || !$token->validate("comtra-download-translations-{$packageVersionID}@{$localeID}.{$formatHandle}")) {
-                throw new UserMessageException($token->getErrorMessage());
+            if ($this->downloadsTokenProtected) {
+                $token = $this->app->make('token');
+                if (!$token->validate("comtra-download-translations-{$packageVersionID}@{$localeID}.{$formatHandle}")) {
+                    throw new UserMessageException($token->getErrorMessage());
+                }
             }
-            $packageVersion = $this->app->make(PackageVersionRepository::class)->find((int) $packageVersionID);
+            $packageVersion = is_numeric($packageVersionID) ? $this->app->make(PackageVersionRepository::class)->find((int) $packageVersionID) : null;
             if ($packageVersion === null) {
                 throw new UserMessageException(t('Unable to find the specified package'));
             }
@@ -353,6 +362,7 @@ EOT
         }
         $normalized['allowedDownloadFormats'] = implode(',', $allowedDownloadFormats);
         $normalized['allowedDownloadFor'] = is_string($args['allowedDownloadFor'] ?? null) ? $args['allowedDownloadFor'] : '';
+        $normalized['downloadsTokenProtected'] = empty($args['downloadsTokenProtected']) ? 0 : 1;
         if (!array_key_exists($normalized['allowedDownloadFor'], $this->getDownloadAccessLevels())) {
             $error->add(t('Please specify who can download the translations'));
         }
