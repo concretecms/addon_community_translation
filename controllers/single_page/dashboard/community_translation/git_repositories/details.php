@@ -16,7 +16,7 @@ defined('C5_EXECUTE') or die('Access Denied.');
 
 class Details extends DashboardPageController
 {
-    public function view(string $gitRepositoryID): ?Response
+    public function view(string $gitRepositoryID = ''): ?Response
     {
         $gitRepository = null;
         if ($gitRepositoryID === 'new') {
