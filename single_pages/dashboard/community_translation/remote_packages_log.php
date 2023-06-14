@@ -41,7 +41,7 @@ defined('C5_EXECUTE') or die('Access Denied.');
                     <td>
                         <span v-if="remotePackage.name !== ''">{{ remotePackage.name }}</span>
                         <span v-if="remotePackage.version !== ''">
-                            <span class="badge bg-secondary text-small p-1"><?= t('v.')?></span>{{ remotePackage.version }}
+                            <span class="badge bg-secondary text-small p-1"><?= t('v.') ?></span>{{ remotePackage.version }}
                         </span>
                         <div v-if="remotePackage.handle !== ''"><code>{{ remotePackage.handle }}</code></div>
                     </td>
@@ -114,12 +114,12 @@ new Vue({
             this.busy = true;
             $.ajax({
                 data: {
-                    <?= json_encode($token::DEFAULT_TOKEN_NAME) ?>: <?= json_encode($token->generate('comtra-repa-refresh1'))?>,
+                    <?= json_encode($token::DEFAULT_TOKEN_NAME) ?>: <?= json_encode($token->generate('comtra-repa-refresh1')) ?>,
                     id: remotePackage.id,
                 },
                 dataType: 'json',
                 method: 'POST',
-                url: <?= json_encode((string) $view->action('refresh_remote_package'))?>
+                url: <?= json_encode((string) $view->action('refresh_remote_package')) ?>
             })
             .always(() => {
                 this.busy = false;
@@ -142,12 +142,12 @@ new Vue({
             this.busy = true;
             $.ajax({
                 data: {
-                    <?= json_encode($token::DEFAULT_TOKEN_NAME) ?>: <?= json_encode($token->generate('comtra-repa-import1'))?>,
+                    <?= json_encode($token::DEFAULT_TOKEN_NAME) ?>: <?= json_encode($token->generate('comtra-repa-import1')) ?>,
                     id: remotePackage.id,
                 },
                 dataType: 'json',
                 method: 'POST',
-                url: <?= json_encode((string) $view->action('import_remote_package'))?>
+                url: <?= json_encode((string) $view->action('import_remote_package')) ?>
             })
             .always(() => {
                 this.busy = false;
@@ -170,13 +170,13 @@ new Vue({
             this.busy = true;
             $.ajax({
                 data: {
-                    <?= json_encode($token::DEFAULT_TOKEN_NAME) ?>: <?= json_encode($token->generate('comtra-repa-nextpage'))?>,
+                    <?= json_encode($token::DEFAULT_TOKEN_NAME) ?>: <?= json_encode($token->generate('comtra-repa-nextpage')) ?>,
                     id: lastRemotePackage.id,
                     createdOnDB: lastRemotePackage.createdOnDB,
                 },
                 dataType: 'json',
                 method: 'POST',
-                url: <?= json_encode((string) $view->action('get_next_page'))?>
+                url: <?= json_encode((string) $view->action('get_next_page')) ?>
             })
             .always(() => {
                 this.busy = false;

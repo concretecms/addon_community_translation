@@ -111,7 +111,7 @@ if ($enableComments) {
                     <select class="form-control" v-on:change="browseTo($event.target.value)" v-bind:disabled="busy">
                         <?php
                         foreach ($allVersions as $u => $n) {
-                            ?><option value="<?= h($u) ?>"<?= $u === '' ? ' selected="selected"' : ''?>><?= h($n) ?></option><?php
+                            ?><option value="<?= h($u) ?>"<?= $u === '' ? ' selected="selected"' : '' ?>><?= h($n) ?></option><?php
                         }
                         ?>
                     </select>
@@ -122,7 +122,7 @@ if ($enableComments) {
                     <select class="form-control" v-on:change="browseTo($event.target.value)" v-bind:disabled="busy">
                         <?php
                         foreach ($allLocales as $u => $n) {
-                            ?><option value="<?= h($u) ?>"<?= $u === '' ? ' selected="selected"' : ''?>><?= h($n) ?></option><?php
+                            ?><option value="<?= h($u) ?>"<?= $u === '' ? ' selected="selected"' : '' ?>><?= h($n) ?></option><?php
                         }
                         ?>
                     </select>
@@ -195,7 +195,7 @@ if ($enableComments) {
 
         <div id="translation-container" class="p-2" v-if="currentTranslation !== null">
             <div class="card">
-                <div class="card-header bg-primary text-white"><?= t('Original string')?></div>
+                <div class="card-header bg-primary text-white"><?= t('Original string') ?></div>
                 <div class="card-body">
                     <div class="container-fluid">
                         <div class="row">
@@ -211,7 +211,7 @@ if ($enableComments) {
                 </div>
             </div>
             <div class="card mt-3">
-                <div class="card-header bg-primary text-white"><?= t('Translation')?></div>
+                <div class="card-header bg-primary text-white"><?= t('Translation') ?></div>
                 <div class="card-body">
                     <ul class="nav nav-tabs" role="tablist" v-if="translating.length !== 1">
                         <li v-for="(ruleName, ruleIndex) in PLURAL_RULE_BYINDEX" class="nav-item">
@@ -233,7 +233,7 @@ if ($enableComments) {
                                 lang="<?= h(str_replace('_', '-', $locale->getID())) ?>"
                                 v-bind:readonly="busy"
                                 ref="translating"
-                                v-on:keypress.ctrl.10.13.prevent="<?= $canApprove ? 'saveTranslation(true, true)' : 'saveTranslation(null, true)'?>"
+                                v-on:keypress.ctrl.10.13.prevent="<?= $canApprove ? 'saveTranslation(true, true)' : 'saveTranslation(null, true)' ?>"
                             ></textarea>
                             <div class="small text-muted text-end" v-if="currentTranslation.currentInfo"
                                 v-html="<?= h('`' . t('Translated by %1$s on %2$s', '${ currentTranslation.currentInfo.createdBy }', '${ currentTranslation.currentInfo.createdOn }') . '`') ?>"
@@ -273,7 +273,7 @@ if ($enableComments) {
                 </div>
             </div>
             <div class="card mt-3">
-                <div class="card-header bg-secondary text-white"><?= t('References')?></div>
+                <div class="card-header bg-secondary text-white"><?= t('References') ?></div>
                 <div class="card-body">
                     <div class="alert alert-info" v-if="currentTranslation.references.length === 0">
                         <?= t('No references found for this string.') ?>
@@ -567,7 +567,7 @@ if ($enableComments) {
                             <div class="form-label"><?= t('Translated state') ?></div>
                             <div class="btn-group" role="group">
                                 <input type="radio" class="btn-check" name="ct-search-translatedstate" id="ct-search-translatedstate-all" v-model="search.translated" v-bind:value="null" v-bind:disabled="busy" />
-                                <label class="btn btn-outline-primary" for="ct-search-translatedstate-all"><?= t('Show all strings')?></label>
+                                <label class="btn btn-outline-primary" for="ct-search-translatedstate-all"><?= t('Show all strings') ?></label>
                                 <input type="radio" class="btn-check" name="ct-search-translatedstate" id="ct-search-translatedstate-translated" v-model="search.translated" v-bind:value="true" v-bind:disabled="busy" />
                                 <label class="btn btn-outline-primary" for="ct-search-translatedstate-translated"><?= t('Show only translated strings') ?></label>
                                 <input type="radio" class="btn-check" name="ct-search-translatedstate" id="ct-search-translatedstate-untranslated" v-model="search.translated" v-bind:value="false" v-bind:disabled="busy" />
@@ -578,7 +578,7 @@ if ($enableComments) {
                             <div class="form-label"><?= t('Approval state') ?></div>
                             <div class="btn-group" role="group">
                                 <input type="radio" class="btn-check" name="ct-search-approvalstate" id="ct-search-approvalstate-all" v-model="search.approved" v-bind:value="null" v-bind:disabled="busy" />
-                                <label class="btn btn-outline-primary" for="ct-search-approvalstate-all"><?= t('Show all strings')?></label>
+                                <label class="btn btn-outline-primary" for="ct-search-approvalstate-all"><?= t('Show all strings') ?></label>
                                 <input type="radio" class="btn-check" name="ct-search-approvalstate" id="ct-search-approvalstate-approved" v-model="search.approved" v-bind:value="true" v-bind:disabled="busy" />
                                 <label class="btn btn-outline-primary" for="ct-search-approvalstate-approved"><?= t('Show only approved strings') ?></label>
                                 <input type="radio" class="btn-check" name="ct-search-approvalstate" id="ct-search-approvalstate-unapproved" v-model="search.approved" v-bind:value="false" v-bind:disabled="busy" />
@@ -589,7 +589,7 @@ if ($enableComments) {
                             <div class="form-label"><?= t('Plural') ?></div>
                             <div class="btn-group" role="group">
                                 <input type="radio" class="btn-check" name="ct-search-plural" id="ct-search-plural-all" v-model="search.plural" v-bind:value="null" v-bind:disabled="busy" />
-                                <label class="btn btn-outline-primary" for="ct-search-plural-all"><?= t('Show all strings')?></label>
+                                <label class="btn btn-outline-primary" for="ct-search-plural-all"><?= t('Show all strings') ?></label>
                                 <input type="radio" class="btn-check" name="ct-search-plural" id="ct-search-plural-yes" v-model="search.plural" v-bind:value="true" v-bind:disabled="busy" />
                                 <label class="btn btn-outline-primary" for="ct-search-plural-yes"><?= t('Show only plural strings') ?></label>
                                 <input type="radio" class="btn-check" name="ct-search-plural" id="ct-search-plural-no" v-model="search.plural" v-bind:value="false" v-bind:disabled="busy" />
@@ -877,7 +877,7 @@ if ($enableComments) {
 
 <div class="d-none" id="comtra-sourcetext-template">
     <div class="source-translation form-control">
-        <div><span v-for="chunk in splitChunks(text)"><code v-if="chunk.copyable" v-on:click.prevent="copyChunk(chunk.text)" title="<?= t('Click to copy')?>">{{ chunk.text }}</code><span v-else>{{ chunk.text}}</span></div>
+        <div><span v-for="chunk in splitChunks(text)"><code v-if="chunk.copyable" v-on:click.prevent="copyChunk(chunk.text)" title="<?= t('Click to copy') ?>">{{ chunk.text }}</code><span v-else>{{ chunk.text}}</span></div>
         <button type="button" class="btn btn-sm btn-outline-secondary" title="<?= t('Copy to translation') ?>" v-on:click.prevent="copyWholeText"><i class="fas fa-copy"></i></button>
     </div>
 </div>
@@ -1118,7 +1118,6 @@ Vue.component('ComtraSourcetext', {
                 }
                 prevChunk = {copyable: true, text: s};
                 chunks.push(prevChunk);
-                
             }
             while (s !== '') {
                 const match = s.match(/^(.*?)(<\/?[A-Za-z]+|%(?:\d+\$)?[\-+ 0']*\d*(?:\.\d*)*[%bcdeEfFgGhHosuxX])/ms);

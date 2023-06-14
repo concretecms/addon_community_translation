@@ -153,12 +153,12 @@ EOT
     private function getRemotePackagesToBeProcesses(): Generator
     {
         $criteria = new Criteria();
-            $criteria
-                ->andWhere($criteria->expr()->eq('approved', true))
-                ->andWhere($criteria->expr()->isNull('processedOn'))
-                ->andWhere($criteria->expr()->lt('failCount', $this->maxFailures))
-                ->orderBy(['createdOn' => 'ASC', 'id' => 'ASC'])
-                ->setMaxResults(1)
+        $criteria
+            ->andWhere($criteria->expr()->eq('approved', true))
+            ->andWhere($criteria->expr()->isNull('processedOn'))
+            ->andWhere($criteria->expr()->lt('failCount', $this->maxFailures))
+            ->orderBy(['createdOn' => 'ASC', 'id' => 'ASC'])
+            ->setMaxResults(1)
         ;
         for (;;) {
             $remotePackage = $this->repo->matching($criteria)->first();

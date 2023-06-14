@@ -16,8 +16,8 @@ defined('C5_EXECUTE') or die('Access Denied.');
  * @var array $devBranches
  */
 
-$buildLabelWithTooltip = function(string $for, string $text, string $tooltipHtml) use($form): string {
-    return $form->label($for, $text .' <i class="far fa-question-circle launch-tooltip small text-muted" title="' . h($tooltipHtml) . '" data-bs-html="true"></i>');
+$buildLabelWithTooltip = function (string $for, string $text, string $tooltipHtml) use ($form): string {
+    return $form->label($for, $text . ' <i class="far fa-question-circle launch-tooltip small text-muted" title="' . h($tooltipHtml) . '" data-bs-html="true"></i>');
 };
 
 ?>

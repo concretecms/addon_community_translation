@@ -132,12 +132,12 @@ new Vue({
             this.busy = true;
             $.ajax({
                 data: {
-                    <?= json_encode($token::DEFAULT_TOKEN_NAME) ?>: <?= json_encode($token->generate('comtra-plru-fix1'))?>,
+                    <?= json_encode($token::DEFAULT_TOKEN_NAME) ?>: <?= json_encode($token->generate('comtra-plru-fix1')) ?>,
                     id: locale.id,
                 },
                 dataType: 'json',
                 method: 'POST',
-                url: <?= json_encode((string) $view->action('fix_locale'))?>
+                url: <?= json_encode((string) $view->action('fix_locale')) ?>
             })
             .always(() => {
                 this.busy = false;

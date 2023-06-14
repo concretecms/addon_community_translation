@@ -52,7 +52,7 @@ if (is_string($showWarning ?? null) && $showWarning !== '') {
                     <div class="input-group mb-3">
                         <div class="input-group-prepend">
                             <label class="input-group-text" for="comtra_search_packages-version"><?= t('Package version') ?></label>
-                        </div>        
+                        </div>
                         <select class="form-control" id="comtra_search_packages-version" onchange="if (this.value) { window.location.href = this.value; this.disabled = true }">
                             <?php
                             foreach ($packageVersions as $pv) {

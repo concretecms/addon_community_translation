@@ -31,7 +31,8 @@ if ($counters === []) {
                 foreach ($translatorIDs as $translatorID) {
                     $users[] = $userService->format($translatorID);
                 }
-                echo Punic\Misc::joinAnd($users); ?>
+                echo Punic\Misc::joinAnd($users);
+                ?>
             </li>
             <?php
         }

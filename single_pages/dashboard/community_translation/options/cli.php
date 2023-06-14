@@ -43,7 +43,7 @@ $menu->render();
         <div v-for="(nto, index) in notifyTo" class="card mt-3">
             <div class="card-header">
                 <input type="hidden" v-bind:name="`notifyTo${index}_handler`" v-bind:value="nto.handler" />
-                <h5><?= t('Notify via %s', '{{ getHandlerName(nto.handler) }}')?></h5>
+                <h5><?= t('Notify via %s', '{{ getHandlerName(nto.handler) }}') ?></h5>
             </div>
             <div class="card-body">
                 <div class="mb-3">
@@ -159,7 +159,7 @@ new Vue({
             })
             .done(function(data) {
                 if (data === true) {
-                    ConcreteAlert.dialog(<?= json_encode(t('Message sent'))?>, <?= json_encode(t('The message should have been sent: please check if you received it.')) ?>);
+                    ConcreteAlert.dialog(<?= json_encode(t('Message sent')) ?>, <?= json_encode(t('The message should have been sent: please check if you received it.')) ?>);
                 } else {
                     ConcreteAlert.dialog(ccmi18n.error, <?= json_encode('Unexpected server response') ?>);
                 }

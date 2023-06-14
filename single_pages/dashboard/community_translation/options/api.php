@@ -38,8 +38,8 @@ $menu->render();
         <?= $form->label('accessControlAllowOrigin', tc(/*i18n: %s is a header name of an HTTP response*/'ResponseHeader', '%s header', 'Access-Control-Allow-Origin')) ?><br />
         <?= $form->text('accessControlAllowOrigin', $accessControlAllowOrigin, ['required' => 'required', 'style' => 'font-family: monospace']) ?>
         <div class="small text-muted">
-        	<?= t(/*i18n: %s is a header name of an HTTP response*/'Set the content of the %s header added to the API request responses', '<code>Access-Control-Allow-Origin</code>') ?>
-		</div>
+            <?= t(/*i18n: %s is a header name of an HTTP response*/'Set the content of the %s header added to the API request responses', '<code>Access-Control-Allow-Origin</code>') ?>
+        </div>
     </div>
     <fieldset>
         <legend><?= t('Authentication') ?></legend>

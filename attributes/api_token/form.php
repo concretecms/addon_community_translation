@@ -25,7 +25,7 @@ $id = preg_replace('/\W+/', '_', $view->field('operation'));
             <input type="hidden" name="<?= h($view->field('current-token-hash')) ?>" value="<?= h($valueHash) ?>" />
             <input type="hidden" name="<?= h($view->field('current-token')) ?>" value="<?= h($value) ?>" />
             <button type="button" class="btn btn-outline-primary" id="<?= $id ?>copy">
-                <?= t('Copy')?>
+                <?= t('Copy') ?>
             </button>
             <?php
         }

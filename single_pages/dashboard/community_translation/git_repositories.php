@@ -52,8 +52,8 @@ if ($repositories === []) {
                     <td><code>/<?= h($repository->getDirectoryToParse()) ?></code></td>
                     <td><?= h($repository->getTagFiltersDisplayName()) ?></td>
                     <td>
-                    	<?php
-                    	$devBranches = $repository->getDevBranches();
+                        <?php
+                        $devBranches = $repository->getDevBranches();
                         if ($devBranches === []) {
                             ?><i><?= tc('Branch', 'none') ?></i><?php
                         } else {
@@ -106,7 +106,7 @@ if ($repositories === []) {
                     })
                     .done(function(data) {
                         if (data === true) {
-                            ConcreteAlert.dialog(<?= json_encode(t('Completed'))?>, <?= json_encode(t('The translatable strings have been imported.')) ?>);
+                            ConcreteAlert.dialog(<?= json_encode(t('Completed')) ?>, <?= json_encode(t('The translatable strings have been imported.')) ?>);
                         } else {
                             ConcreteAlert.dialog(ccmi18n.error, <?= json_encode('Unexpected server response') ?>);
                         }

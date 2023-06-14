@@ -224,7 +224,7 @@ if ($aspiring !== []) {
     }
     if ($access >= Access::GLOBAL_ADMIN) {
         ?>
-        <form class="d-inline" method="POST" action="<?= h($controller->getBlockActionURL('delete_translation_group', $locale->getID())) ?>" data-comtra-warning="<?= h(t("Are you sure you want to PERMANENTLY DELETE this translation group?\n\nWARNING! THIS OPERATION CAN'T BE UNDONE!"))?>" onsubmit="return comtraConfirmPost(this)">
+        <form class="d-inline" method="POST" action="<?= h($controller->getBlockActionURL('delete_translation_group', $locale->getID())) ?>" data-comtra-warning="<?= h(t("Are you sure you want to PERMANENTLY DELETE this translation group?\n\nWARNING! THIS OPERATION CAN'T BE UNDONE!")) ?>" onsubmit="return comtraConfirmPost(this)">
             <?php $token->output('comtra_delete_translation_group' . $locale->getID()) ?>
             <input type="submit" class="btn btn-danger" value="<?= t('Delete') ?>" />
         </form>

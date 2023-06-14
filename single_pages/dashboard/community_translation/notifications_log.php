@@ -32,7 +32,7 @@ defined('C5_EXECUTE') or die('Access Denied.');
             </div>
             <div class="col-auto">
                 <button class="btn btn-primary" v-on:click.prevent="applyFilters" v-bind:disabled="busy"><?= t('Apply') ?></button>
-            </div>        
+            </div>
     </fieldset>
     <div v-if="notifications.length === 0 && busy === false" class="alert alert-info">
         <?= t('No notification found in the database') ?>
@@ -171,12 +171,12 @@ new Vue({
             this.busy = true;
             $.ajax({
                 data: {
-                    <?= json_encode($token::DEFAULT_TOKEN_NAME) ?>: <?= json_encode($token->generate('comtra-notifications-refresh1'))?>,
+                    <?= json_encode($token::DEFAULT_TOKEN_NAME) ?>: <?= json_encode($token->generate('comtra-notifications-refresh1')) ?>,
                     id: notification.id,
                 },
                 dataType: 'json',
                 method: 'POST',
-                url: <?= json_encode((string) $view->action('refresh_notification'))?>
+                url: <?= json_encode((string) $view->action('refresh_notification')) ?>
             })
             .always(() => {
                 this.busy = false;
@@ -199,12 +199,12 @@ new Vue({
             this.busy = true;
             $.ajax({
                 data: {
-                    <?= json_encode($token::DEFAULT_TOKEN_NAME) ?>: <?= json_encode($token->generate('comtra-notifications-send'))?>,
+                    <?= json_encode($token::DEFAULT_TOKEN_NAME) ?>: <?= json_encode($token->generate('comtra-notifications-send')) ?>,
                     id: notification.id,
                 },
                 dataType: 'json',
                 method: 'POST',
-                url: <?= json_encode((string) $view->action('send_notification'))?>
+                url: <?= json_encode((string) $view->action('send_notification')) ?>
             })
             .always(() => {
                 this.busy = false;
@@ -227,14 +227,14 @@ new Vue({
             this.busy = true;
             $.ajax({
                 data: {
-                    <?= json_encode($token::DEFAULT_TOKEN_NAME) ?>: <?= json_encode($token->generate('comtra-notifications-nextpage'))?>,
+                    <?= json_encode($token::DEFAULT_TOKEN_NAME) ?>: <?= json_encode($token->generate('comtra-notifications-nextpage')) ?>,
                     id: lastNotification ? lastNotification.id : '',
                     createdOnDB: lastNotification ? lastNotification.createdOnDB : '',
                     category: this.filterCategory,
                 },
                 dataType: 'json',
                 method: 'POST',
-                url: <?= json_encode((string) $view->action('get_next_page'))?>
+                url: <?= json_encode((string) $view->action('get_next_page')) ?>
             })
             .always(() => {
                 this.busy = false;

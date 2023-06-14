@@ -42,7 +42,7 @@ $menu->render();
             <?= t('Translations below this value will be considered as <i>not translated</i>') ?>
         </div>
     </div>
-	<div class="mb-3">
+    <div class="mb-3">
         <?= $form->label('parser', t('Strings Parser')) ?>
         <?= $form->select('parser', $parsers, $defaultParser, ['required' => 'required']) ?>
     </div>

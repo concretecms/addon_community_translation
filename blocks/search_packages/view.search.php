@@ -50,27 +50,27 @@ if (is_string($sticky['locale'] ?? null) && $sticky['locale'] !== '') {
             <form class="mb-3" action="<?= h($controller->getBlockActionURL('search')) ?>" method="POST">
                 <?php $token->output('communitytranslations-search_packages-' . $bID) ?>
                 <div class="input-group">
-                    <input class="form-control" id="comtra_search_packages-search-text-<?= $bID ?>" type="search" name="keywords" value="<?= isset($sticky['keywords']) && is_string($sticky['keywords']) ? h($sticky['keywords']) : ''?>" placeholder="<?= t('Search by handle or name') ?>" />
+                    <input class="form-control" id="comtra_search_packages-search-text-<?= $bID ?>" type="search" name="keywords" value="<?= isset($sticky['keywords']) && is_string($sticky['keywords']) ? h($sticky['keywords']) : '' ?>" placeholder="<?= t('Search by handle or name') ?>" />
                     <select class="form-control" id="comtra_search_packages-search-locale-<?= $bID ?>" name="locale">
-                        <option value=""<?= $searchLocale === '' ? ' selected="selected"' : ''?>>** <?= tc('Language', 'Show progress for') ?></option>
+                        <option value=""<?= $searchLocale === '' ? ' selected="selected"' : '' ?>>** <?= tc('Language', 'Show progress for') ?></option>
                         <?php
                         if ($suggestedLocales === '') {
                             foreach ($allLocales as $locale) {
-                                ?><option value="<?= h($locale->getID()) ?>"<?= $searchLocale === $locale->getID() ? ' selected="selected"' : ''?>><?= h($locale->getDisplayName()) ?></option><?php
+                                ?><option value="<?= h($locale->getID()) ?>"<?= $searchLocale === $locale->getID() ? ' selected="selected"' : '' ?>><?= h($locale->getDisplayName()) ?></option><?php
                             }
                         } else {
                             ?>
                             <optgroup label="<?= t('My languages') ?>">
                                 <?php
                                 foreach ($suggestedLocales as $locale) {
-                                    ?><option value="<?= h($locale->getID()) ?>"<?= $searchLocale === $locale->getID() ? ' selected="selected"' : ''?>><?= h($locale->getDisplayName()) ?></option><?php
+                                    ?><option value="<?= h($locale->getID()) ?>"<?= $searchLocale === $locale->getID() ? ' selected="selected"' : '' ?>><?= h($locale->getDisplayName()) ?></option><?php
                                 }
                                 ?>
                             </optgroup>
                             <optgroup label="<?= t('Other languages') ?>">
                                 <?php
                                 foreach (array_diff($allLocales, $suggestedLocales) as $locale) {
-                                    ?><option value="<?= h($locale->getID()) ?>"<?= $searchLocale === $locale->getID() ? ' selected="selected"' : ''?>><?= h($locale->getDisplayName()) ?></option><?php
+                                    ?><option value="<?= h($locale->getID()) ?>"<?= $searchLocale === $locale->getID() ? ' selected="selected"' : '' ?>><?= h($locale->getDisplayName()) ?></option><?php
                                 }
                                 ?>
                             </optgroup>

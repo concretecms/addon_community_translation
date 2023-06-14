@@ -10,8 +10,8 @@ use Concrete\Core\Error\UserMessageException;
 use Concrete\Core\Http\ResponseFactoryInterface;
 use Concrete\Core\Page\Controller\DashboardPageController;
 use Concrete\Core\Url\Resolver\Manager\ResolverManagerInterface;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 defined('C5_EXECUTE') or die('Access Denied.');
 
@@ -32,13 +32,13 @@ class GitRepositories extends DashboardPageController
             throw new UserMessageException($this->token->getErrorMessage());
         }
         $id = $this->request->request->get('id');
-        $gitRepository = $id ?  $this->app->make(GitRepository::class)->find((int) $id) : null;
+        $gitRepository = $id ? $this->app->make(GitRepository::class)->find((int) $id) : null;
         if ($gitRepository === null) {
             throw new UserMessageException(t('Failed to find the requested Git repository'));
         }
         $importer = $this->app->make(Importer::class);
         $importer->import($gitRepository);
-        
+
         return $this->app->make(ResponseFactoryInterface::class)->json(true);
     }
 }

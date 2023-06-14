@@ -6,14 +6,14 @@ namespace Concrete\Package\CommunityTranslation\Controller\SinglePage\Dashboard\
 
 use CommunityTranslation\Entity\GitRepository as GitRepositoryEntity;
 use CommunityTranslation\Repository\GitRepository as GitRepositoryRepository;
+use Concrete\Core\Error\UserMessageException;
+use Concrete\Core\Http\ResponseFactoryInterface;
 use Concrete\Core\Page\Controller\DashboardPageController;
 use Concrete\Core\Url\Resolver\Manager\ResolverManagerInterface;
 use Doctrine\ORM\EntityManager;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpFoundation\JsonResponse;
-use Concrete\Core\Error\UserMessageException;
-use Concrete\Core\Http\ResponseFactoryInterface;
 
 defined('C5_EXECUTE') or die('Access Denied.');
 
@@ -69,7 +69,6 @@ class Details extends DashboardPageController
             });
             try {
                 $result = preg_match($rx, $sampleTag, $matches);
-                
             } finally {
                 restore_error_handler();
             }

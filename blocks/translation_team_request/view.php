@@ -117,7 +117,7 @@ $id = 'comtra-translation-team-request-' . uniqid();
                                 </div>
                             </div>
                             <script>$(document).ready(function() {
-                            $(<?= json_encode("#{$id}_noTerritory")?>)
+                            $(<?= json_encode("#{$id}_noTerritory") ?>)
                                 .on('change', function() {
                                     var $territory = $(<?= json_encode("#{$id}_territory") ?>);
                                     if (this.checked) {

@@ -114,13 +114,13 @@ if (($showSuccess ?? '') !== '') {
                                             break;
                                         case Access::ADMIN:
                                         case Access::TRANSLATE:
-                                            ?><form method="POST" action="<?= h($controller->getBlockActionURL('leave_translation_group', $l['id'])) ?>" data-comtra-warning="<?= h(t('Are you sure you want to leave this translation group?'))?>" onsubmit="return comtraConfirmPost(this)">
+                                            ?><form method="POST" action="<?= h($controller->getBlockActionURL('leave_translation_group', $l['id'])) ?>" data-comtra-warning="<?= h(t('Are you sure you want to leave this translation group?')) ?>" onsubmit="return comtraConfirmPost(this)">
                                                 <?php $token->output('comtra_leave_translation_group' . $l['id']) ?>
                                                 <input type="submit" class="btn btn-sm btn-danger float-end" value="<?= h(t('Leave')) ?>" />
                                             </form><?php
                                             break;
                                         case Access::ASPRIRING:
-                                            ?><form method="POST" action="<?= h($controller->getBlockActionURL('leave_translation_group', $l['id'])) ?>" data-comtra-warning="<?= h(t('Are you sure you want to cancel your join request?'))?>" onsubmit="return comtraConfirmPost(this)">
+                                            ?><form method="POST" action="<?= h($controller->getBlockActionURL('leave_translation_group', $l['id'])) ?>" data-comtra-warning="<?= h(t('Are you sure you want to cancel your join request?')) ?>" onsubmit="return comtraConfirmPost(this)">
                                                 <?php $token->output('comtra_leave_translation_group' . $l['id']) ?>
                                                 <input type="submit" class="btn btn-sm btn-warning float-end" value="<?= h(t('Cancel request')) ?>" />
                                             </form><?php
@@ -158,13 +158,13 @@ if ($requested !== []) {
                             </td>
                             <td><?php
                                 if ($l['canApprove']) {
-                                    ?><form method="POST" action="<?= h($controller->getBlockActionURL('approve_new_locale_request', $l['id'])) ?>" data-comtra-warning="<?= h(t('Are you sure you want to approve this new translation group?'))?>" onsubmit="return comtraConfirmPost(this)">
+                                    ?><form method="POST" action="<?= h($controller->getBlockActionURL('approve_new_locale_request', $l['id'])) ?>" data-comtra-warning="<?= h(t('Are you sure you want to approve this new translation group?')) ?>" onsubmit="return comtraConfirmPost(this)">
                                         <?php $token->output('comtra_approve_new_locale_request' . $l['id']) ?>
                                         <input type="submit" class="btn btn-sm btn-success float-end" value="<?= h(t('Approve')) ?>" />
                                     </form><?php
                                 }
                                 if ($l['canCancel']) {
-                                    ?><form method="POST" action="<?= h($controller->getBlockActionURL('cancel_new_locale_request', $l['id'])) ?>" data-comtra-warning="<?= h(t('Are you sure you want to cancel this request?'))?>" onsubmit="return comtraConfirmPost(this)">
+                                    ?><form method="POST" action="<?= h($controller->getBlockActionURL('cancel_new_locale_request', $l['id'])) ?>" data-comtra-warning="<?= h(t('Are you sure you want to cancel this request?')) ?>" onsubmit="return comtraConfirmPost(this)">
                                         <?php $token->output('comtra_cancel_locale_request' . $l['id']) ?>
                                         <input type="submit" class="btn btn-sm btn-danger float-end" value="<?= h($l['canApprove'] ? t('Reject') : t('Cancel')) ?>" />
                                     </form><?php
