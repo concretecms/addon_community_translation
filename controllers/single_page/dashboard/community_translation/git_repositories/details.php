@@ -11,6 +11,9 @@ use Concrete\Core\Url\Resolver\Manager\ResolverManagerInterface;
 use Doctrine\ORM\EntityManager;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Concrete\Core\Error\UserMessageException;
+use Concrete\Core\Http\ResponseFactoryInterface;
 
 defined('C5_EXECUTE') or die('Access Denied.');
 
@@ -42,6 +45,57 @@ class Details extends DashboardPageController
         $this->set('devBranches', $devBranches);
 
         return null;
+    }
+
+    public function testTag2verRegex(): JsonResponse
+    {
+        $rf = $this->app->make(ResponseFactoryInterface::class);
+        try {
+            if (!$this->token->validate('ct-testregex')) {
+                throw new UserMessageException($this->token->getErrorMessage());
+            }
+            $rx = (string) $this->request->request->get('rx', '');
+            if ($rx === '') {
+                throw new UserMessageException(t('Please specify the regular expression'));
+            }
+            $sampleTag = (string) $this->request->request->get('sampleTag', '');
+            if ($sampleTag === '') {
+                throw new UserMessageException(t('Please specify the sample git tag'));
+            }
+            $matches = null;
+            $errorDescription = '';
+            set_error_handler(static function ($errno, $errstr) use (&$errorDescription): void {
+                $errorDescription = is_string($errstr) ? trim($errstr) : '';
+            });
+            try {
+                $result = preg_match($rx, $sampleTag, $matches);
+                
+            } finally {
+                restore_error_handler();
+            }
+            if ($result === false) {
+                if ($errorDescription === '') {
+                    throw new UserMessageException(t('The regular expression is malformed'));
+                }
+                throw new UserMessageException(t('The following error occurred while checking the regular expression: %s', $errorDescription));
+            }
+            switch ($result) {
+                case 0:
+                    throw new UserMessageException(t('The regular expression did not match the tag'));
+                case 1:
+                    break;
+                default:
+                    throw new UserMessageException(t('Too many regular expression matches'));
+            }
+            $match = $matches[1] ?? '';
+            if ($match === '') {
+                throw new UserMessageException(t('The regular expression matched an empty string'));
+            }
+
+            return $rf->json(['resultingVersion' => $match]);
+        } catch (UserMessageException $x) {
+            return $rf->json(['error' => $x->getMessage()]);
+        }
     }
 
     public function save(): ?Response
@@ -146,9 +200,11 @@ class Details extends DashboardPageController
         $directoryForPlaces = is_string($directoryForPlaces) ? trim(str_replace(DIRECTORY_SEPARATOR, '/', trim($directoryForPlaces)), '/') : '';
         $gitRepository->setDirectoryForPlaces($directoryForPlaces);
         $parsetags = $post->get('parsetags');
+        $saveRegex = true;
         switch (is_string($parsetags) || is_int($parsetags) ? (string) $parsetags : '') {
             case '1':
                 $gitRepository->setTagFilters(null);
+                $saveRegex = false;
                 break;
             case '2':
                 $gitRepository->setTagFilters([]);
@@ -167,7 +223,9 @@ class Details extends DashboardPageController
                 $this->error->add(t('Please specify if and how the repository tags should be parsed'));
                 break;
         }
-        $gitRepository->setTagToVersionRegexp($post->get('tag2verregex'));
+        if ($saveRegex) {
+            $gitRepository->setTagToVersionRegexp($post->get('tag2verregex'));
+        }
         $devBranches = $this->processUserInputDevBranches(true);
         if (!$this->error->has()) {
             $gitRepository->setDevBranches($devBranches);

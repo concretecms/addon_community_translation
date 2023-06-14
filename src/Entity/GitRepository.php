@@ -24,6 +24,8 @@ defined('C5_EXECUTE') or die('Access Denied.');
  */
 class GitRepository
 {
+    public const DEFAULT_TAGTOVERSION_REGEXP = '/^(?:v(?:er(?:s(?:ion)?)?)?[.\s]*)?(\d+(?:\.\d+)*)$/';
+
     /**
      * Git repository ID.
      *
@@ -108,7 +110,7 @@ class GitRepository
         $this->directoryToParse = '';
         $this->directoryForPlaces = '';
         $this->detectedVersions = [];
-        $this->tagToVersionRegexp = '/^(?:v(?:er(?:s(?:ion)?)?)?[.\s]*)?(\d+(?:\.\d+)*)$/';
+        $this->tagToVersionRegexp = static::DEFAULT_TAGTOVERSION_REGEXP;
         $this->setTagFilters(null);
     }
 
