@@ -60,7 +60,7 @@ class ImportPackageVersionTranslatables extends EntryPoint
                 }
                 $packageName = $this->request->request->get('packageName', '');
                 $packageName = is_string($packageName) ? trim($packageName) : '';
-                $package = $this->app->make(PackageRepository::class)->findOneBy(['handle' => $packageHandle]);
+                $package = $this->app->make(PackageRepository::class)->getByHandle($packageHandle);
                 $em = $this->app->make(EntityManager::class);
                 if ($package === null) {
                     if ($packageName === '') {

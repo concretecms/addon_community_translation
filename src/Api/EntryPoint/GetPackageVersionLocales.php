@@ -33,7 +33,7 @@ class GetPackageVersionLocales extends EntryPoint
                 if ($minimumLevel < 0 || $minimumLevel > 100) {
                     throw new UserMessageException(t('The minimum level must be between %1$s and %2$s', 0, 100));
                 }
-                $package = $this->app->make(PackageRepository::class)->findOneBy(['handle' => $packageHandle]);
+                $package = $this->app->make(PackageRepository::class)->getByHandle($packageHandle);
                 if ($package === null) {
                     throw new UserMessageException(t('Unable to find the specified package'), Response::HTTP_NOT_FOUND);
                 }

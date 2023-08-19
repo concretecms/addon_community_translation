@@ -20,6 +20,12 @@ class Version extends EntityRepository
         if ($packageHandle === '' || $packageVersion === '') {
             return null;
         }
+        $package = $this->getEntityManager()->getRepository(Package::class)->getByHandle($packageHandle);
+        if ($package === null) {
+            return null;
+        }
+        $packageHandle = $package->getHandle();
+
         $query = $this->createQueryBuilder('v')
             ->innerJoin(Package::class, 'p', Expr\Join::WITH, 'v.package = p.id')
             ->where('p.handle = :handle')->setParameter('handle', $packageHandle)

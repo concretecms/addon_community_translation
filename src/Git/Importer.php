@@ -50,7 +50,7 @@ final class Importer
         $importer = $this->app->make(TranslatableImporter::class);
         $fetcher = $this->app->make(Fetcher::class, ['gitRepository' => $gitRepository]);
         $packagesRepo = $this->app->make(PackageRepository::class);
-        $package = $packagesRepo->findOneBy(['handle' => $gitRepository->getPackageHandle()]);
+        $package = $packagesRepo->getByHandle($gitRepository->getPackageHandle());
         if ($package === null) {
             $this->logger->notice(t('Creating new package with handle %s', $gitRepository->getPackageHandle()));
             $package = new PackageEntity($gitRepository->getPackageHandle());

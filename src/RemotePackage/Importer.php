@@ -64,7 +64,7 @@ final class Importer
         $temp = $this->download($remotePackage);
         $rootPath = $this->getRootPath($temp);
         $this->translatableImporter->importDirectory($rootPath, $remotePackage->getHandle(), $remotePackage->getVersion(), '');
-        $package = $this->packageRepo->findOneBy(['handle' => $remotePackage->getHandle()]);
+        $package = $this->packageRepo->getByHandle($remotePackage->getHandle());
         if ($package === null) {
             return;
         }

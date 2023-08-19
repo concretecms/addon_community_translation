@@ -222,7 +222,7 @@ class Controller extends BlockController
         if ($handle === '') {
             return $this->action_search();
         }
-        $package = $this->app->make(PackageRepository::class)->findOneBy(['handle' => $handle]);
+        $package = $this->app->make(PackageRepository::class)->getByHandle($handle);
         if ($package === null) {
             $this->set('showWarning', h(t('Unable to find a package with handle "%s"', $handle)));
 

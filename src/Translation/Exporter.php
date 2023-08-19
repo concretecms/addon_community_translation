@@ -7,6 +7,7 @@ namespace CommunityTranslation\Translation;
 use CommunityTranslation\Entity\Locale as LocaleEntity;
 use CommunityTranslation\Entity\Package\Version as PackageVersionEntity;
 use CommunityTranslation\Entity\Translatable as TranslatableEntity;
+use CommunityTranslation\Repository\Package as PackageRepository;
 use CommunityTranslation\Repository\Package\Version as PackageVersionRepository;
 use Concrete\Core\Error\UserMessageException;
 use Doctrine\DBAL\Result;
@@ -20,12 +21,15 @@ class Exporter
 {
     private EntityManagerInterface $entityManager;
 
+    private PackageRepository $packageRepository;
+
     private PackageVersionRepository $packageVersionRepository;
 
-    public function __construct(EntityManagerInterface $entityManager, PackageVersionRepository $packageVersionRepository)
+    public function __construct(EntityManagerInterface $entityManager, PackageRepository $packageRepository, PackageVersionRepository $packageVersionRepository)
     {
-        $this->packageVersionRepository = $packageVersionRepository;
         $this->entityManager = $entityManager;
+        $this->packageRepository = $packageRepository;
+        $this->packageVersionRepository = $packageVersionRepository;
     }
 
     /**
@@ -149,13 +153,15 @@ EOT
         if ($packageOrHandleVersion instanceof PackageVersionEntity) {
             $packageVersion = $packageOrHandleVersion;
         } elseif (is_array($packageOrHandleVersion) && isset($packageOrHandleVersion['handle'], $packageOrHandleVersion['version'])) {
-            $packageVersion = $this->packageVersionRepository->findOneBy([
-                'handle' => $packageOrHandleVersion['handle'],
+            $package = $this->packageRepository->getByHandle($packageOrHandleVersion['handle']);
+            $packageVersion = $package === null ? null : $this->packageVersionRepository->findOneBy([
+                'package' => $package,
                 'version' => $packageOrHandleVersion['version'],
             ]);
         } elseif (is_array($packageOrHandleVersion) && isset($packageOrHandleVersion[0], $packageOrHandleVersion[1])) {
-            $packageVersion = $this->packageVersionRepository->findOneBy([
-                'handle' => $packageOrHandleVersion[0],
+            $package = $this->packageRepository->getByHandle($packageOrHandleVersion[0]);
+            $packageVersion = $package === null ? null : $this->packageVersionRepository->findOneBy([
+                'package' => $package,
                 'version' => $packageOrHandleVersion[1],
             ]);
         } else {
