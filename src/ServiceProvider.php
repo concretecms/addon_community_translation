@@ -58,6 +58,7 @@ class ServiceProvider extends Provider
             'LocaleStats',
             'Notification',
             'Package',
+            'Package\Alias',
             'Package\Version',
             'PackageSubscription',
             'PackageVersionSubscription',

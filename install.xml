@@ -129,6 +129,8 @@
         </page>
         <page package="community_translation" name="Check Plural Rules" description="" pagetype="" path="/dashboard/community_translation/check_plural_rules">
         </page>
+        <page package="community_translation" name="Package Aliases" description="" pagetype="" path="/dashboard/community_translation/package_aliases">
+        </page>
         <page package="community_translation" name="Community Translation Options" description="" pagetype="" path="/dashboard/community_translation/options">
         </page>
         <page package="community_translation" name="API" description="" pagetype="" path="/dashboard/community_translation/options/api">

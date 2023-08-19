@@ -223,7 +223,7 @@ class Controller extends BlockController
         $threshold = (int) $this->app->make(Repository::class)->get('community_translation::translate.translatedThreshold', 90);
         $statsForVersion = null;
         if ((string) $this->statsFromPackage !== '') {
-            $package = $this->app->make(PackageRepository::class)->findOneBy(['handle' => $this->statsFromPackage]);
+            $package = $this->app->make(PackageRepository::class)->getByHandle($this->statsFromPackage);
             if ($package !== null) {
                 $statsForVersion = $package->getLatestVersion();
             }
@@ -467,11 +467,14 @@ EOT
         if (is_string($args['statsFromPackage'] ?? null)) {
             $normalized['statsFromPackage'] = trim($args['statsFromPackage']);
             if ($normalized['statsFromPackage'] !== '') {
-                $package = $this->app->make(PackageRepository::class)->findOneBy(['handle' => $normalized['statsFromPackage']]);
+                $package = $this->app->make(PackageRepository::class)->getByHandle($normalized['statsFromPackage']);
                 if ($package === null) {
                     $error->add(t('Unable to find a package with handle "%s"', $normalized['statsFromPackage']));
-                } elseif ($package->getLatestVersion() === null) {
-                    $error->add(t('The package with handle "%s" does not have a latest version', $normalized['statsFromPackage']));
+                } else {
+                    $normalized['statsFromPackage'] = $package->getHandle();
+                    if ($package->getLatestVersion() === null) {
+                        $error->add(t('The package with handle "%s" does not have a latest version', $normalized['statsFromPackage']));
+                    }
                 }
             }
         }

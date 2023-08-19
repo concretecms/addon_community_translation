@@ -79,7 +79,7 @@ final class Importer
         $version = null;
         $this->em->getConnection()->transactional(function (Connection $connection) use ($translations, $packageHandle, $packageVersion, & $packageIsNew, & $someStringChanged, & $numStringsAdded, & $version) {
             $packageRepo = $this->em->getRepository(PackageEntity::class);
-            $package = $packageRepo->findOneBy(['handle' => $packageHandle]);
+            $package = $packageRepo->getByHandle($packageHandle);
             $version = null;
             if ($package === null) {
                 $package = new PackageEntity($packageHandle);

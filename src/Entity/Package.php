@@ -82,6 +82,13 @@ class Package
      */
     protected Collection $versions;
 
+    /**
+     * Package aliases.
+     *
+     * @Doctrine\ORM\Mapping\OneToMany(targetEntity="CommunityTranslation\Entity\Package\Alias", mappedBy="package")
+     */
+    protected Collection $aliases;
+
     public function __construct(string $handle, string $name = '', string $url = '')
     {
         $this->id = null;
@@ -91,6 +98,7 @@ class Package
         $this->latestVersion = null;
         $this->createdOn = new DateTimeImmutable();
         $this->versions = new ArrayCollection();
+        $this->aliases = new ArrayCollection();
     }
 
     /**
@@ -222,6 +230,16 @@ class Package
     public function getVersions(): Collection
     {
         return $this->versions;
+    }
+
+    /**
+     * Get the package aliases.
+     *
+     * @return \CommunityTranslation\Entity\Package\Alias[]
+     */
+    public function getAliases(): Collection
+    {
+        return $this->aliases;
     }
 
     /**

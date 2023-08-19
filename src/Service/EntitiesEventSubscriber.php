@@ -9,7 +9,9 @@ use CommunityTranslation\Entity\Package\Version as PackageVersionEntity;
 use Doctrine\Common\EventSubscriber;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Event\LifecycleEventArgs;
+use Doctrine\ORM\Event\PrePersistEventArgs;
 use Doctrine\ORM\Events;
+use RuntimeException;
 
 defined('C5_EXECUTE') or die('Access Denied.');
 
@@ -23,10 +25,37 @@ class EntitiesEventSubscriber implements EventSubscriber
     public function getSubscribedEvents()
     {
         return [
+            Events::prePersist,
             Events::postPersist,
             Events::postUpdate,
             Events::postRemove,
         ];
+    }
+
+    /**
+     * Callback method called when a new entity is going to be persisted.
+     */
+    public function prePersist(PrePersistEventArgs $args): void
+    {
+        $entity = $args->getObject();
+        if ($entity instanceof PackageEntity) {
+            $alias = $args->getObjectManager()->getRepository(PackageEntity\Alias::class)->findOneBy(['handle' => $entity->getHandle()]);
+            if ($alias !== null) {
+                throw new RuntimeException(t(
+                    "You can't create a package with handle '%1\$s', since it's an alias of the package with handle '%22\$s'",
+                    $entity->getHandle(),
+                    $alias->getPackage()->getHandle(),
+                ));
+            }
+        } elseif ($entity instanceof PackageEntity\Alias) {
+            $package = $args->getObjectManager()->getRepository(PackageEntity::class)->findOneBy(['handle' => $entity->getHandle()]);
+            if ($package !== null) {
+                throw new RuntimeException(t(
+                    "You can't create an alias for the package with handle '%s', since there's already a package with this handle",
+                    $entity->getHandle(),
+                ));
+            }
+        }
     }
 
     /**

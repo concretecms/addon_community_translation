@@ -26,7 +26,7 @@ class GetPackageVersions extends EntryPoint
         return $this->handle(
             function () use ($packageHandle): Response {
                 $this->userControl->checkGenericAccess(static::ACCESS_KEY);
-                $package = $this->app->make(PackageRepository::class)->findOneBy(['handle' => $packageHandle]);
+                $package = $this->app->make(PackageRepository::class)->getByHandle($packageHandle);
                 if ($package === null) {
                     throw new UserMessageException(t('Unable to find the specified package'), Response::HTTP_NOT_FOUND);
                 }

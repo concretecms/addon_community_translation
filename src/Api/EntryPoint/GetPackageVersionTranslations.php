@@ -38,7 +38,7 @@ class GetPackageVersionTranslations extends EntryPoint
                 if (!in_array($locale, $accessibleLocales, true)) {
                     throw new AccessDeniedException(t('Access denied to the specified locale'));
                 }
-                $package = $this->app->make(PackageRepository::class)->findOneBy(['handle' => $packageHandle]);
+                $package = $this->app->make(PackageRepository::class)->getByHandle($packageHandle);
                 if ($package === null) {
                     throw new UserMessageException(t('Unable to find the specified package'), Response::HTTP_NOT_FOUND);
                 }
