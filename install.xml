@@ -123,6 +123,8 @@
                 <attributekey handle="exclude_nav"><value>1</value></attributekey>
             </attributes>
         </page>
+        <page package="community_translation" name="Development Versions" description="" pagetype="" path="/dashboard/community_translation/development_versions">
+        </page>
         <page package="community_translation" name="Remote Packages Log" description="" pagetype="" path="/dashboard/community_translation/remote_packages_log">
         </page>
         <page package="community_translation" name="Notifications Log" description="" pagetype="" path="/dashboard/community_translation/notifications_log">
