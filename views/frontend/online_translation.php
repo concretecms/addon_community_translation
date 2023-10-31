@@ -877,7 +877,7 @@ if ($enableComments) {
 
 <div class="d-none" id="comtra-sourcetext-template">
     <div class="source-translation form-control">
-        <div><span v-for="chunk in splitChunks(text)"><code v-if="chunk.copyable" v-on:click.prevent="copyChunk(chunk.text)" title="<?= t('Click to copy') ?>">{{ chunk.text }}</code><span v-else>{{ chunk.text}}</span></div>
+        <div><span v-for="chunk in splitChunks(text)"><code v-if="chunk.copyable" v-on:click.prevent="copyChunk(chunk.text)" title="<?= t('Click to copy') ?>">{{ chunk.text }}</code><span v-else>{{ chunk.text}}</span></span></div>
         <button type="button" class="btn btn-sm btn-outline-secondary" title="<?= t('Copy to translation') ?>" v-on:click.prevent="copyWholeText"><i class="fas fa-copy"></i></button>
     </div>
 </div>
