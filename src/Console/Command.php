@@ -19,6 +19,8 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Throwable;
 use Symfony\Component\Console\Input\InputInterface;
+use Monolog\Handler\PsrHandler;
+use Monolog\Logger;
 
 defined('C5_EXECUTE') or die('Access Denied.');
 
@@ -41,7 +43,7 @@ abstract class Command extends ConcreteCommand
         $this->logger = $this->createLogger($input, $output);
         $mutexReleaser = null;
         try {
-            $mutexReleaser = $this->getMutexKey();
+            $mutexReleaser = $this->acquireMutex();
             $rc = parent::execute($input, $output);
         } catch (Throwable $error) {
             $this->logger->error($this->formatThrowable($error));
@@ -100,7 +102,7 @@ abstract class Command extends ConcreteCommand
     private function buildNonInteractiveLogHandlers(): Generator
     {
         $app = app();
-        yield $app->make(AppLogger::class, ['command' => $this]);
+        yield new PsrHandler($app->make(LoggerInterface::class), Logger::NOTICE);
         $config = $app->make(Repository::class);
         if (!$config->get('community_translation::cli.notify')) {
             return;
