@@ -14,7 +14,6 @@ use CommunityTranslation\Repository\Glossary\Entry as GlossaryEntryRepository;
 use Concrete\Core\Error\UserMessageException;
 use Doctrine\ORM\EntityManager;
 use Generator;
-use Throwable;
 
 defined('C5_EXECUTE') or die('Access Denied.');
 
@@ -37,25 +36,19 @@ EOT
 
     public function handle(EntityManager $em): int
     {
+        $this->em = $em;
+        $locales = $this->em->getRepository(LocaleEntity::class)->findBy(['isSource' => null]);
+        $this->entryRepo = $this->em->getRepository(GlossaryEntryEntity::class);
+        $glossaryFile = $this->input->getArgument('file');
+        $fd = $this->openGlossaryFile($glossaryFile);
         try {
-            $this->em = $em;
-            $locales = $this->em->getRepository(LocaleEntity::class)->findBy(['isSource' => null]);
-            $this->entryRepo = $this->em->getRepository(GlossaryEntryEntity::class);
-            $glossaryFile = $this->input->getArgument('file');
-            $fd = $this->openGlossaryFile($glossaryFile);
-            try {
-                $state = new State($locales);
-                $this->parseGlossaryFile($state, $fd);
-            } finally {
-                fclose($fd);
-            }
-
-            return 0;
-        } catch (Throwable $x) {
-            $this->output->writeln($this->formatThrowable($x));
-
-            return 1;
+            $state = new State($locales);
+            $this->parseGlossaryFile($state, $fd);
+        } finally {
+            fclose($fd);
         }
+
+        return static::SUCCESS;
     }
 
     /**

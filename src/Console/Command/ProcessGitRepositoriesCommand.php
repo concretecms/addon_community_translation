@@ -37,45 +37,22 @@ EOT
 
     public function handle(EntityManager $em, Importer $importer): int
     {
-        $someError = false;
-        $someSuccess = true;
-        $mutexReleaser = null;
-        $this->createLogger();
-        try {
-            $mutexReleaser = $this->acquireMutex();
-            $this->em = $em;
-            $this->importer = $importer;
-            $importer->setLogger($this->logger);
-            $this->readOptions();
-            foreach ($this->gitRepositories as $gitRepository) {
-                try {
-                    $this->importGitRepository($gitRepository);
-                    $someSuccess = true;
-                } catch (Throwable $x) {
-                    $this->logger->error($this->formatThrowable($x));
-                    $someError = true;
-                }
-            }
-            $this->logger->info('Processing completed');
-        } catch (Throwable $x) {
-            $this->logger->error($this->formatThrowable($x));
-            $someError = true;
-        } finally {
-            if ($mutexReleaser !== null) {
-                try {
-                    $mutexReleaser();
-                } catch (Throwable $x) {
-                }
+        $errorsOccurred = false;
+        $this->em = $em;
+        $this->importer = $importer;
+        $importer->setLogger($this->logger);
+        $this->readOptions();
+        foreach ($this->gitRepositories as $gitRepository) {
+            try {
+                $this->importGitRepository($gitRepository);
+            } catch (Throwable $x) {
+                $this->logger->error($this->formatThrowable($x));
+                $errorsOccurred = true;
             }
         }
-        if ($someError && $someSuccess) {
-            return 1;
-        }
-        if ($someError) {
-            return 2;
-        }
+        $this->logger->info('Processing completed');
 
-        return 0;
+        return $errorsOccurred ? static::FAILURE : static::SUCCESS;
     }
 
     /**

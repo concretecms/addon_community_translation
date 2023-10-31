@@ -18,6 +18,7 @@ use Monolog\Logger as MonologLogger;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Throwable;
+use Symfony\Component\Console\Input\InputInterface;
 
 defined('C5_EXECUTE') or die('Access Denied.');
 
@@ -25,18 +26,9 @@ abstract class Command extends ConcreteCommand
 {
     protected LoggerInterface $logger;
 
-    protected function createLogger(): void
-    {
-        $logger = new MonologLogger('CommunityTranslation');
-        if (!$this->input->isInteractive()) {
-            foreach ($this->buildNonInteractiveLogHandlers() as $handler) {
-                $logger->pushHandler($handler);
-            }
-        }
-        $logger->pushHandler(new ConsoleHandler($this->output));
-        $this->logger = $logger;
-    }
-
+    /**
+     * Override this method returning a string if this command can be execute more than once at a time.
+     */
     protected function getMutexKey(): string
     {
         $chunks = explode('\\', get_class($this));
@@ -44,17 +36,23 @@ abstract class Command extends ConcreteCommand
         return 'CommunityTranslation.' . array_pop($chunks);
     }
 
-    protected function acquireMutex(string $key = ''): Closure
+    final protected function execute(InputInterface $input, OutputInterface $output)
     {
-        if ($key === '') {
-            $key = $this->getMutexKey();
+        $this->logger = $this->createLogger($input, $output);
+        $mutexReleaser = null;
+        try {
+            $mutexReleaser = $this->getMutexKey();
+            $rc = parent::execute($input, $output);
+        } catch (Throwable $error) {
+            $this->logger->error($this->formatThrowable($error));
+            $rc = self::FAILURE;
+        } finally {
+            if ($mutexReleaser !== null) {
+                $mutexReleaser();
+            }
         }
-        $mutex = app(MutexInterface::class);
-        $mutex->acquire($key);
 
-        return static function () use ($mutex, $key): void {
-            $mutex->release($key);
-        };
+        return $rc;
     }
 
     protected function formatThrowable(Throwable $error): string
@@ -83,12 +81,26 @@ abstract class Command extends ConcreteCommand
         return $message;
     }
 
+    private function createLogger(InputInterface $input, OutputInterface $output): LoggerInterface
+    {
+        $logger = new MonologLogger('CommunityTranslation');
+        if (!$input->isInteractive()) {
+            foreach ($this->buildNonInteractiveLogHandlers() as $handler) {
+                $logger->pushHandler($handler);
+            }
+        }
+        $logger->pushHandler(new ConsoleHandler($output));
+
+        return $logger;
+    }
+
     /**
-     * @return \Monolog\Handler\HandlerInterface[]|\Generator
+     * @return \Generator<\Monolog\Handler\HandlerInterface>
      */
-    protected function buildNonInteractiveLogHandlers(): Generator
+    private function buildNonInteractiveLogHandlers(): Generator
     {
         $app = app();
+        yield $app->make(AppLogger::class, ['command' => $this]);
         $config = $app->make(Repository::class);
         if (!$config->get('community_translation::cli.notify')) {
             return;
@@ -99,10 +111,7 @@ abstract class Command extends ConcreteCommand
         }
         $site = $app->make('site')->getSite()->getSiteName();
         foreach ($to as $toConfig) {
-            if (!is_array($toConfig) || !is_string($toConfig['handler'] ?? null)) {
-                continue;
-            }
-            if (!($config['enabled'] ?? true)) {
+            if (!is_array($toConfig) || empty($toConfig['enabled']) || !is_string($toConfig['handler'] ?? null)) {
                 continue;
             }
             $level = is_int($toConfig['level'] ?? null) ? $toConfig['level'] : MonologLogger::ERROR;
@@ -128,8 +137,8 @@ abstract class Command extends ConcreteCommand
                             $lineFormatter->allowInlineLineBreaks(true);
                         }
                         $handler->setFormatter($lineFormatter);
+                        yield $handler;
                     }
-                    yield $handler;
                     break;
                 case 'telegram':
                     if (is_string($toConfig['botToken'] ?? null) && $toConfig['botToken'] !== '' && is_scalar($toConfig['chatID'] ?? []) && (string) $toConfig['chatID'] !== '') {
@@ -138,5 +147,19 @@ abstract class Command extends ConcreteCommand
                     break;
             }
         }
+    }
+
+    private function acquireMutex(): ?Closure
+    {
+        $key = $this->getMutexKey();
+        if ($key === '') {
+            return null;
+        }
+        $mutex = app(MutexInterface::class);
+        $mutex->acquire($key);
+
+        return static function () use ($mutex, $key): void {
+            $mutex->release($key);
+        };
     }
 }
