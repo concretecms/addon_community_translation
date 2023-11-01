@@ -46,6 +46,8 @@ class DevelopmentVersions extends DashboardPageController
         if ($version === null || !$version->isDevVersion()) {
             throw new UserMessageException(t('Unable to find the specified package version'));
         }
+        $em->remove($version);
+        $em->flush();
 
         return $this->app->make(ResponseFactoryInterface::class)->json(true);
     }
