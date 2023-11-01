@@ -271,7 +271,7 @@ EOT
         return null;
     }
 
-    public function action_download_translations_file(string $packageVersionID = '', string $localeID = '', string $formatHandle = ''): ?Response
+    public function action_download_translations_file(string|int $packageVersionID = '', string $localeID = '', string $formatHandle = ''): ?Response
     {
         try {
             $token = $this->app->make('token');

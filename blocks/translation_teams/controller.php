@@ -324,7 +324,7 @@ class Controller extends BlockController
         }
     }
 
-    public function action_answer_join_request(string $localeID, string $userID, string $approve): Response
+    public function action_answer_join_request(string $localeID, string|int $userID, string $approve): Response
     {
         $gotoLocale = null;
         try {
@@ -376,7 +376,7 @@ class Controller extends BlockController
         }
     }
 
-    public function action_change_access(string $localeID, string $userID, string $newAccess): Response
+    public function action_change_access(string $localeID, string|int $userID, string $newAccess): Response
     {
         $gotoLocale = null;
         try {

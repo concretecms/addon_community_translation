@@ -146,7 +146,7 @@ class Details extends DashboardPageController
         return $this->buildRedirect('/dashboard/community_translation/git_repositories');
     }
 
-    public function deleteRepository(string $gitRepositoryID): ?Response
+    public function deleteRepository(string|int $gitRepositoryID): ?Response
     {
         if (empty($gitRepositoryID)) {
             return $this->buildRedirect('/dashboard/community_translation/git_repositories');
