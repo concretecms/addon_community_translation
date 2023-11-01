@@ -140,11 +140,6 @@
                 <attributekey handle="exclude_nav"><value>1</value></attributekey>
             </attributes>
         </page>
-        <page package="community_translation" name="CLI" description="" pagetype="" path="/dashboard/community_translation/options/cli">
-            <attributes>
-                <attributekey handle="exclude_nav"><value>1</value></attributekey>
-            </attributes>
-        </page>
         <page package="community_translation" name="Notifications" description="" pagetype="" path="/dashboard/community_translation/options/notifications">
             <attributes>
                 <attributekey handle="exclude_nav"><value>1</value></attributekey>

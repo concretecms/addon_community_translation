@@ -26,6 +26,7 @@ use Gettext\Translations;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use ReflectionClass;
+use Concrete\Core\Page\Page;
 
 defined('C5_EXECUTE') or die('Access Denied.');
 
@@ -143,6 +144,7 @@ class Controller extends Package implements ProviderAggregateInterface
             }
             if (version_compare($this->upgradingFromVersion, '1.6.0') < 0) {
                 $this->updatePackageNamesAndSources();
+                $this->deletePage('/dashboard/community_translation/options/cli');
             }
         }
     }
@@ -253,6 +255,14 @@ SET CommunityTranslationPackages.name = CommunityTranslationGitRepositories.name
 WHERE CommunityTranslationPackages.name = ''
 EOT
         );
+    }
+
+    private function deletePage(string $path): void
+    {
+        $page = Page::getByPath($path);
+        if ($page && !$page->isError()) {
+            $page->delete();
+        }
     }
 
     /**
