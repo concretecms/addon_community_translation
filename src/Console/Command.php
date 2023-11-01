@@ -60,7 +60,7 @@ abstract class Command extends ConcreteCommand
     protected function formatThrowable(Throwable $error): string
     {
         $message = trim($error->getMessage()) . "\n";
-        if ($error instanceof UserMessageException || $this->output->getVerbosity() < OutputInterface::VERBOSITY_VERBOSE) {
+        if ($error instanceof UserMessageException) {
             return $message;
         }
         $file = (string) $error->getFile();
