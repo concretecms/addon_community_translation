@@ -446,7 +446,7 @@ EOT
         return $translations;
     }
 
-    private function translationsNeedsPluralFix(Translations $translations, LocaleEntity $locale, &$translationsPluralCount): bool
+    private function translationsNeedsPluralFix(Translations $translations, LocaleEntity $locale, & $translationsPluralCount): bool
     {
         $txPlurals = $translations->getPluralForms();
         $translationsPluralCount = isset($txPlurals) ? $txPlurals[0] : null;
