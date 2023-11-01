@@ -15,6 +15,7 @@ defined('C5_EXECUTE') or die('Access Denied.');
  * @var array $allowedDownloadForList
  * @var string[] $allowedDownloadFormats
  * @var CommunityTranslation\TranslationsConverter\ConverterInterface[] $downloadFormats
+ * @var bool $downloadsTokenProtected
  */
 
 ?>
@@ -27,6 +28,13 @@ defined('C5_EXECUTE') or die('Access Denied.');
 <div class="mb-3">
     <?= $form->label('allowedDownloadFor', t('Allow downloading translations for')) ?>
     <?= $form->select('allowedDownloadFor', $allowedDownloadForList, $allowedDownloadFor, ['required' => 'required']) ?>
+</div>
+
+<div class="mb-3">
+    <div class="form-check">
+        <?= $form->checkbox('downloadsTokenProtected', '1', $downloadsTokenProtected) ?>
+        <?= $form->label('downloadsTokenProtected', t('Protect downloads with a token')) ?>
+    </div>
 </div>
 
 <div class="mb-0 ct-allowed-formats"<?= ($allowedDownloadFor === $ALLOWDOWNLOADFOR_NOBODY) ? ' style="display: none"' : '' ?>>

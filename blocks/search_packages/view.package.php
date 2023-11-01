@@ -20,6 +20,7 @@ defined('C5_EXECUTE') or die('Access Denied.');
  * @var array $localeInfos
  * @var bool $userIsLoggedIn
  * @var string $onlineTranslationPath
+ * @var bool|int|string $downloadsTokenProtected
  */
 
 // When there's a warning:
@@ -141,13 +142,26 @@ if (is_string($showWarning ?? null) && $showWarning !== '') {
                                     </div>
                                 </td>
                                 <td class="text-nowrap">
-                                    <span class="d-none d-sm-inline">
+                                    <div class="d-none d-sm-inline">
                                         <?php
                                         foreach ($localeInfo['downloadFormats'] as $adf) {
-                                            ?><a class="btn btn-sm btn-secondary" href="<?= h($controller->getBlockActionURL('download_translations_file', $packageVersion->getID(), $locale->getID(), $adf->getHandle()) . '?' . $token->getParameter('comtra-download-translations-' . $packageVersion->getID() . '@' . $locale->getID() . '.' . $adf->getHandle())) ?>" title="<?= h(t('Download translations (%s)', $adf->getName())) ?>" style="white-space:nowrap"><i class="fa fa-cloud-download"></i> <?= h($adf->getFileExtension()) ?></a><?php
+                                            $downloadUrl = (string) $controller->getBlockActionURL('download_translations_file', $packageVersion->getID(), $locale->getID(), $adf->getHandle());
+                                            $title = t('Download translations (%s)', $adf->getName());
+                                            if ($downloadsTokenProtected) {
+                                                ?>
+                                                <form method="POST" action="<?= h($downloadUrl) ?>" class="d-inline">
+                                                    <?php $token->output('comtra-download-translations-' . $packageVersion->getID() . '@' . $locale->getID() . '.' . $adf->getHandle()) ?>
+                                                    <button type="submit" class="btn btn-sm btn-secondary" title="<?= h($title) ?>" style="white-space:nowrap"><i class="fa fa-cloud-download"></i> <?= h($adf->getFileExtension()) ?></button>
+                                                </form>
+                                                <?php
+                                            } else {
+                                                ?>
+                                                <a rel="nofollow" class="btn btn-sm btn-secondary" href="<?= h($downloadUrl) ?>" title="<?= h($title) ?>" style="white-space:nowrap"><i class="fa fa-cloud-download"></i> <?= h($adf->getFileExtension()) ?></a>
+                                                <?php
+                                            }
                                         }
                                         ?>
-                                    </span>
+                                    </div>
                                     <a class="btn btn-sm <?= $translateClass ?>" href="<?= h($translateLink) ?>"<?= $translateOnclick ?>><?= t('Translate') ?></a>
                                     <?php
                                     if ($localeInfo['totalStrings']) {

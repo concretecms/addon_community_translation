@@ -20,6 +20,9 @@
         <field name="allowedDownloadFor" type="string" size="30">
             <notnull/>
         </field>
+        <field name="downloadsTokenProtected" type="boolean">
+            <notnull/>
+        </field>
     </table>
 
 </schema>
