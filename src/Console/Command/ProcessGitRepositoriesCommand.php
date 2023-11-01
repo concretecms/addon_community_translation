@@ -50,7 +50,7 @@ EOT
                 $errorsOccurred = true;
             }
         }
-        $this->logger->info('Processing completed');
+        $this->logger->info($errorsOccurred ? 'Processing completed with failures' : 'Processing completed');
 
         return $errorsOccurred ? static::FAILURE : static::SUCCESS;
     }
