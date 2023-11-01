@@ -68,6 +68,27 @@ class Package
     protected DateTimeImmutable $createdOn;
 
     /**
+     * Is this package created/updated from a remote package?
+     *
+     * @Doctrine\ORM\Mapping\Column(type="boolean", nullable=false, options={"comment": "Is this package created/updated from a remote package?"}))
+     */
+    protected bool $fromRemotePackage;
+
+    /**
+     * Is this package created/updated from a git repository?
+     *
+     * @Doctrine\ORM\Mapping\Column(type="boolean", nullable=false, options={"comment": "Is this package created/updated from a git repository?"}))
+     */
+    protected bool $fromGitRepository;
+
+    /**
+     * Is this package created/updated from an API request?
+     *
+     * @Doctrine\ORM\Mapping\Column(type="boolean", nullable=false, options={"comment": "Is this package created/updated from an API request?"}))
+     */
+    protected bool $fromApiRequest;
+
+    /**
      * Latest package version.
      *
      * @Doctrine\ORM\Mapping\ManyToOne(targetEntity="CommunityTranslation\Entity\Package\Version", inversedBy="package")
@@ -89,12 +110,15 @@ class Package
      */
     protected Collection $aliases;
 
-    public function __construct(string $handle, string $name = '', string $url = '')
+    public function __construct(string $handle, string $name, string $url = '')
     {
         $this->id = null;
         $this->handle = $handle;
         $this->name = $name;
         $this->url = $url;
+        $this->fromRemotePackage = false;
+        $this->fromGitRepository = false;
+        $this->fromApiRequest = false;
         $this->latestVersion = null;
         $this->createdOn = new DateTimeImmutable();
         $this->versions = new ArrayCollection();
@@ -203,6 +227,68 @@ class Package
     }
 
     /**
+     * Is this package created/updated from a remote package?
+     */
+    public function isFromRemotePackage(): bool
+    {
+        return $this->fromRemotePackage;
+    }
+
+    /**
+     * Is this package created/updated from a remote package?
+     *
+     * @return $this
+     */
+    public function setFromRemotePackage(bool $value): self
+    {
+        $this->fromRemotePackage = $value;
+
+        return $this;
+    }
+
+    /**
+     * Is this package created/updated from a git repository?
+     */
+    public function isFromGitRepository()
+    {
+        return $this->fromGitRepository;
+    }
+
+    /**
+     * Is this package created/updated from a git repository?
+     *
+     * @return $this
+     */
+    public function setFromGitRepository(bool $value): self
+    {
+        $this->fromGitRepository = $value;
+
+        return $this;
+    }
+
+    /**
+     * Is this package created/updated from a git repository?
+     */
+    public function isFromApiRequest()
+    {
+        return $this->fromApiRequest;
+    }
+
+    /**
+     * Is this package created/updated from an API request?
+     *
+     * @return $this
+     */
+    public function setFromApiRequest(bool $value): self
+    {
+        $this->fromApiRequest = $value;
+
+        return $this;
+    }
+
+    /**
+     * Is this package created/updated from an API request?
+     *
      * Get the latest package version.
      */
     public function getLatestVersion(): ?Version

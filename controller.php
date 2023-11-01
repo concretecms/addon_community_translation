@@ -137,8 +137,13 @@ class Controller extends Package implements ProviderAggregateInterface
     {
         parent::upgrade();
         $this->installXml();
-        if ($this->upgradingFromVersion !== '' && version_compare($this->upgradingFromVersion, '0.4.0') < 0) {
-            $this->refreshLatestPackageVersions();
+        if ($this->upgradingFromVersion !== '') {
+            if (version_compare($this->upgradingFromVersion, '0.4.0') < 0) {
+                $this->refreshLatestPackageVersions();
+            }
+            if (version_compare($this->upgradingFromVersion, '1.6.0') < 0) {
+                $this->updatePackageNamesAndSources();
+            }
         }
     }
 
@@ -221,6 +226,30 @@ class Controller extends Package implements ProviderAggregateInterface
         foreach ($packageRepo->findAll() as $package) {
             $ees->refreshPackageLatestVersion($em, $package);
         }
+    }
+
+    private function updatePackageNamesAndSources(): void
+    {
+        $cn = $this->app->make(EntityManager::class)->getConnection();
+        $cn->executeStatement(<<<'EOT'
+UPDATE CommunityTranslationPackages
+INNER JOIN CommunityTranslationRemotePackages ON CommunityTranslationPackages.handle = CommunityTranslationRemotePackages.handle
+SET CommunityTranslationPackages.fromRemotePackage = 1
+EOT
+        );
+        $cn->executeStatement(<<<'EOT'
+UPDATE CommunityTranslationPackages
+INNER JOIN CommunityTranslationGitRepositories ON CommunityTranslationPackages.handle = CommunityTranslationGitRepositories.packageHandle
+SET CommunityTranslationPackages.fromGitRepository = 1
+EOT
+        );
+        $cn->executeStatement(<<<'EOT'
+UPDATE CommunityTranslationPackages
+INNER JOIN CommunityTranslationGitRepositories ON CommunityTranslationPackages.handle = CommunityTranslationGitRepositories.packageHandle
+SET CommunityTranslationPackages.name = CommunityTranslationGitRepositories.name
+WHERE CommunityTranslationPackages.name = ''
+EOT
+        );
     }
 
     /**

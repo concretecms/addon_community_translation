@@ -68,19 +68,14 @@ final class Importer
         if ($package === null) {
             return;
         }
-        $persist = false;
-        if ($remotePackage->getName() !== '' && $remotePackage->getName() !== $package->getName()) {
+        $package->setFromRemotePackage(true);
+        if ($remotePackage->getName() !== '') {
             $package->setName($remotePackage->getName());
-            $persist = true;
         }
-        if ($remotePackage->getUrl() !== '' && $remotePackage->getUrl() !== $package->getUrl()) {
+        if ($remotePackage->getUrl() !== '') {
             $package->setUrl($remotePackage->getUrl());
-            $persist = true;
         }
-        if ($persist) {
-            $this->em->persist($package);
-            $this->em->flush($package);
-        }
+        $this->em->flush();
     }
 
     /**
