@@ -62,7 +62,9 @@ class DevelopmentVersions extends DashboardPageController
                 'package' => $version->getPackage()->getDisplayName(),
                 'name' => $version->getDisplayVersion(),
                 'version' => $version->getVersion(),
-                'gitRepositories' => $this->getGitRepositories($version),
+                'fromRemotePackage' => $version->getPackage()->isFromRemotePackage(),
+                'fromGitRepositories' => $this->getGitRepositories($version),
+                'fromApiRequest' => $version->getPackage()->isFromApiRequest(),
             ];
         }
 
@@ -93,8 +95,11 @@ class DevelopmentVersions extends DashboardPageController
     /**
      * @return \CommunityTranslation\Entity\Package\[]
      */
-    private function getGitRepositories(Version $version): array
+    private function getGitRepositories(Version $version): ?array
     {
+        if (!$version->getPackage()->isFromGitRepository()) {
+            return null;
+        }
         $result = [];
         foreach ($this->listGitRepositories($version) as $gitRepository) {
             $result[] = [

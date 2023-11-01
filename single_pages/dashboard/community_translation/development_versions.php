@@ -24,10 +24,12 @@ defined('C5_EXECUTE') or die('Access Denied.');
                     <th rowspan="2"></th>
                     <th rowspan="2"><?= t('Package') ?></th>
                     <th rowspan="2"><?= t('Development Version') ?></th>
-                    <th colspan="1"><?= t('Usage') ?></th>
+                    <th colspan="3" class="text-center"><?= t('Package Source') ?></th>
                 </tr>
                 <tr>
-                    <th><?= t('Git Repositories') ?></th>
+                    <th class="text-center"><?= t('Remote Package') ?></th>
+                    <th class="text-center"><?= t('Git Repository') ?></th>
+                    <th class="text-center"><?= t('API Request') ?></th>
                 </tr>
             </thead>
             <tbody>
@@ -38,14 +40,23 @@ defined('C5_EXECUTE') or die('Access Denied.');
                         {{ devVersion.name }}<br />
                         <code>{{ devVersion.version }}</code>
                     </td>
+                    <td class="text-center">
+                        <span class="text-success" v-if="devVersion.fromRemotePackage">&check;</span>
+                        <span class="text-danger" v-if="devVersion.fromRemotePackage === false">&times;</span>
+                    </td>
                     <td>
-                        <i v-if="devVersion.gitRepositories.length === 0"><?= tc('Repository', 'none') ?></i>
+                        <div class="text-center text-danger" v-if="devVersion.fromGitRepositories === null">&times;</div>
+                        <i v-else-if="devVersion.fromGitRepositories.length === 0"><?= tc('Repository', 'none') ?></i>
                         <ul v-else class="my-0">
-                            <li v-for="gitRepository in devVersion.gitRepositories">
+                            <li v-for="gitRepository in devVersion.fromGitRepositories">
                                 <span v-if="gitRepository.detailsUrl.length === 0">{{ gitRepository.name }}</span>
                                 <a v-else v-bind:href="gitRepository.detailsUrl" target="_blank">{{ gitRepository.name }}</a>
                             </li> 
                         </ul>
+                    </td>
+                    <td class="text-center">
+                        <span class="text-success" v-if="devVersion.fromApiRequest">&check;</span>
+                        <span class="text-danger" v-if="devVersion.fromApiRequest === false">&times;</span>
                     </td>
                 </tr>
             </tbody>
