@@ -74,6 +74,16 @@ EOT
 
     private string $transifexResource;
 
+    /**
+     * {@inheritdoc}
+     *
+     * @see \CommunityTranslation\Console\Command::getMutexKey()
+     */
+    protected function getMutexKey(): string
+    {
+        return '';
+    }
+
     public function handle(EntityManager $em, Client $client, Importer $translationsImporter, SourceLocale $sourceLocaleService): int
     {
         $this->em = $em;
