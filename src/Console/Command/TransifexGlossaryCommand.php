@@ -34,16 +34,6 @@ EOT
 
     private GlossaryEntryRepository $entryRepo;
 
-    /**
-     * {@inheritdoc}
-     *
-     * @see \CommunityTranslation\Console\Command::getMutexKey()
-     */
-    protected function getMutexKey(): string
-    {
-        return '';
-    }
-
     public function handle(EntityManager $em): int
     {
         $this->em = $em;
@@ -59,6 +49,16 @@ EOT
         }
 
         return static::SUCCESS;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \CommunityTranslation\Console\Command::getMutexKey()
+     */
+    protected function getMutexKey(): string
+    {
+        return '';
     }
 
     /**

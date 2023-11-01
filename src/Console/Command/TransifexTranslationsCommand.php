@@ -74,16 +74,6 @@ EOT
 
     private string $transifexResource;
 
-    /**
-     * {@inheritdoc}
-     *
-     * @see \CommunityTranslation\Console\Command::getMutexKey()
-     */
-    protected function getMutexKey(): string
-    {
-        return '';
-    }
-
     public function handle(EntityManager $em, Client $client, Importer $translationsImporter, SourceLocale $sourceLocaleService): int
     {
         $this->em = $em;
@@ -111,6 +101,16 @@ EOT
         $this->output->writeln("<info>Total number of processes translations: {$count}</info>");
 
         return static::SUCCESS;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \CommunityTranslation\Console\Command::getMutexKey()
+     */
+    protected function getMutexKey(): string
+    {
+        return '';
     }
 
     /**

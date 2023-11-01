@@ -14,6 +14,7 @@ defined('C5_EXECUTE') or die('Access Denied.');
  * @var Concrete\Core\Form\Service\Form $form
  * @var CommunityTranslation\Entity\GitRepository $gitRepository
  * @var array $devBranches
+ * @var bool $otherGitRepositoriesWithSameHandleExist
  */
 
 $buildLabelWithTooltip = function (string $for, string $text, string $tooltipHtml) use ($form): string {
@@ -61,7 +62,7 @@ $buildLabelWithTooltip = function (string $for, string $text, string $tooltipHtm
 </div>
 
 <div id="comtra-app" v-cloak>
-    <form method="post" class="form-horizontal" action="<?= h($view->action('save')) ?>" onsubmit="if (this.already) return false; this.already = true" v-cloak id="comtra-app">
+    <form method="post" ref="form" class="form-horizontal" action="<?= h($view->action('save')) ?>" onsubmit="if (this.already) return false; this.already = true" v-cloak id="comtra-app">
         <?= $token->output('comtra-repository-save') ?>
         <input type="hidden" name="repositoryID" value="<?= $gitRepository->getID() === null ? 'new' : $gitRepository->getID() ?>" />
 
@@ -76,7 +77,15 @@ $buildLabelWithTooltip = function (string $for, string $text, string $tooltipHtm
         <div class="mb-3">
             <?= $form->label('packageHandle', t('Package handle')) ?>
             <div class="input-group">
-                <?= $form->text('packageHandle', $gitRepository->getPackageHandle(), ['required' => 'required', 'maxlength' => 64, 'spellcheck' => 'false', 'class' => 'font-monospace']) ?>
+                <?= $form->text('packageHandle', $gitRepository->getPackageHandle(), ['required' => 'required', 'maxlength' => 64, 'spellcheck' => 'false', 'class' => 'font-monospace', 'ref' => 'packageHandle']) ?>
+                <span class="input-group-text"><i class="fa fa-asterisk"></i></span>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <?= $form->label('packageName', t('Package name')) ?>
+            <div class="input-group">
+                <?= $form->text('packageName', $gitRepository->getPackageName(), ['required' => 'required', 'maxlength' => 255, 'spellcheck' => 'false', 'ref' => 'packageName']) ?>
                 <span class="input-group-text"><i class="fa fa-asterisk"></i></span>
             </div>
         </div>
@@ -317,6 +326,9 @@ new Vue({
     el: '#comtra-app',
     data() {
         return {
+            otherGitRepositoriesWithSameHandleExist: <?= json_encode($otherGitRepositoriesWithSameHandleExist) ?>,
+            originalPackageHandle: <?= json_encode($gitRepository->getPackageHandle()) ?>,
+            originalPackageName: <?= json_encode($gitRepository->getPackageName()) ?>,
             parsetags: null,
             parsetagsAnd2: false,
             tag2verregex: '',
@@ -329,6 +341,26 @@ new Vue({
         this.tag2verregex = document.querySelector('input[name="tag2verregex"]').value;
     },
     mounted() {
+        if (this.otherGitRepositoriesWithSameHandleExist) {
+            this.$refs.form.addEventListener('submit', (e) => {
+                if (this.originalPackageHandle.toLowerCase() !== this.$refs.packageHandle.value.replace(/^\s+|\s+$/, '').toLowerCase()) {
+                    return;
+                }
+                if (this.originalPackageName === this.$refs.packageName.value.replace(/^\s+|\s+$/, '')) {
+                    return;
+                }
+                e.preventDefault();
+                ConcreteAlert.confirm(
+                    <?= json_encode(t('If you change the package name, all the other git repositories with the same handle will have their package name updated.')) ?>,
+                    () => {
+                        $.fn.dialog.closeTop();
+                        this.$refs.form.submit();
+                    },
+                    'btn-warning',
+                    <?= json_encode(t('Proceed')) ?>
+                );
+            });
+        }
         this.checkNewBranch();
     },
     computed: {

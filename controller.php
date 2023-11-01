@@ -20,13 +20,13 @@ use Concrete\Core\Config\Repository\Repository;
 use Concrete\Core\Database\EntityManager\Provider\ProviderAggregateInterface;
 use Concrete\Core\Database\EntityManager\Provider\StandardPackageProvider;
 use Concrete\Core\Package\Package;
+use Concrete\Core\Page\Page;
 use Concrete\Core\Routing\Router;
 use Doctrine\ORM\EntityManager;
 use Gettext\Translations;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use ReflectionClass;
-use Concrete\Core\Page\Page;
 
 defined('C5_EXECUTE') or die('Access Denied.');
 
@@ -247,14 +247,35 @@ INNER JOIN CommunityTranslationGitRepositories ON CommunityTranslationPackages.h
 SET CommunityTranslationPackages.fromGitRepository = 1
 EOT
         );
-        $cn->executeStatement(
+        $rs = $cn->executeQuery(
             <<<'EOT'
-UPDATE CommunityTranslationPackages
-INNER JOIN CommunityTranslationGitRepositories ON CommunityTranslationPackages.handle = CommunityTranslationGitRepositories.packageHandle
-SET CommunityTranslationPackages.name = CommunityTranslationGitRepositories.name
-WHERE CommunityTranslationPackages.name = ''
+SELECT
+    id,
+    packageHandle
+FROM
+    CommunityTranslationGitRepositories
+WHERE
+    packageName = ''
 EOT
         );
+        while (($row = $rs->fetchAssociative()) !== false) {
+            $segments = preg_split('/[_-]+/', $row['packageHandle'], -1, PREG_SPLIT_NO_EMPTY);
+            if ($segments === []) {
+                $packageName = $row['packageHandle'];
+            } else {
+                $parts = [];
+                foreach ($segments as $segment) {
+                    $len = mb_strlen($segment);
+                    if ($len === 1) {
+                        $parts[] = mb_strtoupper($segment);
+                    } else {
+                        $parts[] = mb_strtoupper(mb_substr($segment, 0, 1)) . mb_substr($segment, 1);
+                    }
+                }
+                $packageName = implode(' ', $parts);
+            }
+            $cn->update('CommunityTranslationGitRepositories', ['packageName' => $packageName], ['id' => $row['id']]);
+        }
     }
 
     private function deletePage(string $path): void

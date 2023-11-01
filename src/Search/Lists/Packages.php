@@ -91,9 +91,9 @@ class Packages extends ItemList implements ApplicationAwareInterface
     public function createQuery()
     {
         $this->query
-            ->select('p.id, coalesce(p.name, p.handle) as sortBy')
+            ->select('p.id')
             ->from('CommunityTranslationPackages', 'p')
-            ->orderBy('sortBy', 'asc')
+            ->orderBy('p.name', 'asc')
         ;
     }
 

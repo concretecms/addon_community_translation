@@ -50,6 +50,13 @@ class GitRepository
     protected string $packageHandle;
 
     /**
+     * Package name.
+     *
+     * @Doctrine\ORM\Mapping\Column(type="string", length=255, nullable=false, options={"comment": "Package name"})
+     */
+    protected string $packageName;
+
+    /**
      * Repository remote URL.
      *
      * @Doctrine\ORM\Mapping\Column(type="string", length=255, nullable=false, options={"comment": "Repository remote URL"})
@@ -105,6 +112,7 @@ class GitRepository
         $this->id = null;
         $this->name = '';
         $this->packageHandle = '';
+        $this->packageName = '';
         $this->url = '';
         $this->devBranches = [];
         $this->directoryToParse = '';
@@ -160,6 +168,26 @@ class GitRepository
     public function getPackageHandle(): string
     {
         return $this->packageHandle;
+    }
+
+    /**
+     * Set the package name.
+     *
+     * @return $this
+     */
+    public function setPackageName(string $value): self
+    {
+        $this->packageName = $value;
+
+        return $this;
+    }
+
+    /**
+     * Get the package name.
+     */
+    public function getPackageName(): string
+    {
+        return $this->packageName;
     }
 
     /**

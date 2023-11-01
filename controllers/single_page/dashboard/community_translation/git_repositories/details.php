@@ -19,11 +19,12 @@ defined('C5_EXECUTE') or die('Access Denied.');
 
 class Details extends DashboardPageController
 {
-    public function view(string $gitRepositoryID = ''): ?Response
+    public function view(string|int $gitRepositoryID = ''): ?Response
     {
         $gitRepository = null;
         if ($gitRepositoryID === 'new') {
             $gitRepository = new GitRepositoryEntity();
+            $this->set('otherGitRepositoriesWithSameHandleExist', false);
         } else {
             $gitRepository = $gitRepositoryID && is_numeric($gitRepositoryID) ? $this->entityManager->find(GitRepositoryEntity::class, (int) $gitRepositoryID) : null;
             if ($gitRepository === null) {
@@ -31,6 +32,7 @@ class Details extends DashboardPageController
 
                 return $this->buildRedirect('/dashboard/community_translation/git_repositories');
             }
+            $this->set('otherGitRepositoriesWithSameHandleExist', $this->getOtherGitRepositoriesWithSameHandle($gitRepository, 1) !== []);
         }
         $this->set('urlResolver', $this->app->make(ResolverManagerInterface::class));
         $this->set('gitRepository', $gitRepository);
@@ -132,6 +134,12 @@ class Details extends DashboardPageController
         if ($gitRepository->getID() === null) {
             $this->entityManager->persist($gitRepository);
         }
+        $this->entityManager->createQueryBuilder()
+            ->update(GitRepositoryEntity::class, 'gr')
+            ->where('gr.packageHandle = :packageHandle')->setParameter('packageHandle', $gitRepository->getPackageHandle())
+            ->set('gr.packageName', ':packageName')->setParameter('packageName', $gitRepository->getPackageName())
+            ->getQuery()->execute()
+        ;
         $this->entityManager->flush();
         $this->flash('message', ($gitRepositoryID === 'new') ? t('The Git Repository has been created') : t('The Git Repository has been updated'));
 
@@ -173,7 +181,7 @@ class Details extends DashboardPageController
         } else {
             $already = $this->app->make(GitRepositoryRepository::class)->findOneBy(['name' => $name]);
             if ($already !== null && $already->getID() !== $gitRepository->getID()) {
-                $this->error->add(t("There's already another repository named '%s'", $gitRepository->getName()));
+                $this->error->add(t("There's already another repository named '%s'", $already->getName()));
             } else {
                 $gitRepository->setName($name);
             }
@@ -184,6 +192,13 @@ class Details extends DashboardPageController
             $this->error->add(t('Please specify the package handle'));
         } else {
             $gitRepository->setPackageHandle($packageHandle);
+        }
+        $packageName = $post->get('packageName');
+        $packageName = is_string($packageName) ? trim($packageName) : '';
+        if ($packageName === '') {
+            $this->error->add(t('Please specify the package name'));
+        } else {
+            $gitRepository->setPackageName($packageName);
         }
         $url = $post->get('url');
         $url = is_string($url) ? trim($url) : '';
@@ -265,5 +280,24 @@ class Details extends DashboardPageController
         }
 
         return $result;
+    }
+
+    /**
+     * @return \CommunityTranslation\Entity\GitRepository[]
+     */
+    private function getOtherGitRepositoriesWithSameHandle(GitRepositoryEntity $gitRepository, ?int $maxResults = null): array
+    {
+        $qb = $this->entityManager->createQueryBuilder();
+        $qb
+            ->from(GitRepositoryEntity::class, 'gr')
+            ->select('gr')
+            ->andWhere('gr.packageHandle = :packageHandle')
+            ->setParameter('packageHandle', $gitRepository->getPackageHandle())
+            ->andWhere('gr.id <> :id')
+            ->setParameter('id', $gitRepository->getID())
+            ->setMaxResults($maxResults)
+        ;
+
+        return $qb->getQuery()->execute();
     }
 }
