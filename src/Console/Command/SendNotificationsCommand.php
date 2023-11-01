@@ -14,7 +14,6 @@ use DateTimeImmutable;
 use Doctrine\Common\Collections\Criteria;
 use Doctrine\ORM\EntityManager;
 use Generator;
-use Throwable;
 
 defined('C5_EXECUTE') or die('Access Denied.');
 
@@ -41,40 +40,19 @@ EOT
 
     public function handle(Sender $sender, SiteService $siteService, EntityManager $entityManager): int
     {
-        $someNotificationsSent = false;
-        $someErrorsOccurred = false;
-        $mutexReleaser = null;
-        $this->createLogger();
-        try {
-            $mutexReleaser = $this->acquireMutex();
-            $this->readOptions();
-            $this->checkCanonicalURL($siteService);
-            foreach ($this->listNotifications($entityManager->getRepository(NotificationEntity::class)) as $notification) {
-                $this->logger->debug(sprintf('Processing notification %s', $notification->getID()));
-                $sendError = $sender->send($notification);
-                if ($sendError === null) {
-                    $someNotificationsSent = true;
-                } else {
-                    $someErrorsOccurred = true;
-                    $this->logger->error($this->formatThrowable($sendError));
-                }
+        $errorsOccurred = false;
+        $this->readOptions();
+        $this->checkCanonicalURL($siteService);
+        foreach ($this->listNotifications($entityManager->getRepository(NotificationEntity::class)) as $notification) {
+            $this->logger->debug(sprintf('Processing notification %s', $notification->getID()));
+            $sendError = $sender->send($notification);
+            if ($sendError !== null) {
+                $this->logger->error($this->formatThrowable($sendError));
+                $errorsOccurred = true;
             }
-        } catch (Throwable $x) {
-            $this->logger->error($this->formatThrowable($x));
-            $someErrorsOccurred = true;
-        } finally {
-            if ($mutexReleaser !== null) {
-                try {
-                    $mutexReleaser();
-                } catch (Throwable $x) {
-                }
-            }
-        }
-        if ($someErrorsOccurred) {
-            return $someNotificationsSent ? 2 : 3;
         }
 
-        return $someNotificationsSent ? 1 : 0;
+        return $errorsOccurred ? static::FAILURE : static::SUCCESS;
     }
 
     /**

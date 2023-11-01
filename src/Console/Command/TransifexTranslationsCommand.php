@@ -76,37 +76,41 @@ EOT
 
     public function handle(EntityManager $em, Client $client, Importer $translationsImporter, SourceLocale $sourceLocaleService): int
     {
-        try {
-            $this->em = $em;
-            $this->translator = $this->em->find(UserEntity::class, USER_SUPER_ID);
-            $this->localeRepo = $this->em->getRepository(LocaleEntity::class);
-            $this->client = $client;
-            $this->translationsImporter = $translationsImporter;
-            $this->sourceLocale = $sourceLocaleService->getRequiredSourceLocale();
-            $this->readOptions();
-            $this->output->write('Retrieve list of available Transifex locales... ');
-            $availableTransifexLocales = $this->fetchTransifexLocales();
-            $this->output->writeln('<info>done (' . count($availableTransifexLocales) . ' found)</info>');
-            $transifexLocales = $this->filterTransifexLocales($availableTransifexLocales);
-            if ($this->transifexResource === '') {
-                $this->output->write('Retrieve list of available Transifex resources... ');
-                $transifexResources = $this->fetchTransifexResources();
-                $this->output->writeln('<info>done (' . count($transifexResources) . ' found)</info>');
-            } else {
-                $transifexResources = [$this->transifexResource];
-            }
-            $count = 0;
-            foreach ($transifexLocales as $transifexLocaleID => $localeCode) {
-                $count += $this->processTransifexLocale($transifexLocaleID, $localeCode, $transifexResources);
-            }
-            $this->output->writeln("<info>Total number of processes translations: {$count}</info>");
-
-            return 0;
-        } catch (Throwable $x) {
-            $this->output->writeln($this->formatThrowable($x));
-
-            return 1;
+        $this->em = $em;
+        $this->translator = $this->em->find(UserEntity::class, USER_SUPER_ID);
+        $this->localeRepo = $this->em->getRepository(LocaleEntity::class);
+        $this->client = $client;
+        $this->translationsImporter = $translationsImporter;
+        $this->sourceLocale = $sourceLocaleService->getRequiredSourceLocale();
+        $this->readOptions();
+        $this->output->write('Retrieve list of available Transifex locales... ');
+        $availableTransifexLocales = $this->fetchTransifexLocales();
+        $this->output->writeln('<info>done (' . count($availableTransifexLocales) . ' found)</info>');
+        $transifexLocales = $this->filterTransifexLocales($availableTransifexLocales);
+        if ($this->transifexResource === '') {
+            $this->output->write('Retrieve list of available Transifex resources... ');
+            $transifexResources = $this->fetchTransifexResources();
+            $this->output->writeln('<info>done (' . count($transifexResources) . ' found)</info>');
+        } else {
+            $transifexResources = [$this->transifexResource];
         }
+        $count = 0;
+        foreach ($transifexLocales as $transifexLocaleID => $localeCode) {
+            $count += $this->processTransifexLocale($transifexLocaleID, $localeCode, $transifexResources);
+        }
+        $this->output->writeln("<info>Total number of processes translations: {$count}</info>");
+
+        return static::SUCCESS;
+    }
+
+    /**
+     * {@inheritdoc}
+     *
+     * @see \CommunityTranslation\Console\Command::getMutexKey()
+     */
+    protected function getMutexKey(): string
+    {
+        return '';
     }
 
     /**

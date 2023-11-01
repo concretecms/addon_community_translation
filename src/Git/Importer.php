@@ -53,10 +53,11 @@ final class Importer
         $package = $packagesRepo->getByHandle($gitRepository->getPackageHandle());
         if ($package === null) {
             $this->logger->notice(t('Creating new package with handle %s', $gitRepository->getPackageHandle()));
-            $package = new PackageEntity($gitRepository->getPackageHandle());
+            $package = new PackageEntity($gitRepository->getPackageHandle(), $gitRepository->getPackageName());
             $this->em->persist($package);
-            $this->em->flush($package);
         }
+        $package->setFromGitRepository(true);
+        $this->em->flush();
         $this->logger->debug(t('Cloning/fetching repository'));
         $fetcher->update();
         $this->logger->debug(t('Listing tags'));

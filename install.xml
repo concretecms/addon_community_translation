@@ -123,6 +123,8 @@
                 <attributekey handle="exclude_nav"><value>1</value></attributekey>
             </attributes>
         </page>
+        <page package="community_translation" name="Development Versions" description="" pagetype="" path="/dashboard/community_translation/development_versions">
+        </page>
         <page package="community_translation" name="Remote Packages Log" description="" pagetype="" path="/dashboard/community_translation/remote_packages_log">
         </page>
         <page package="community_translation" name="Notifications Log" description="" pagetype="" path="/dashboard/community_translation/notifications_log">
@@ -134,11 +136,6 @@
         <page package="community_translation" name="Community Translation Options" description="" pagetype="" path="/dashboard/community_translation/options">
         </page>
         <page package="community_translation" name="API" description="" pagetype="" path="/dashboard/community_translation/options/api">
-            <attributes>
-                <attributekey handle="exclude_nav"><value>1</value></attributekey>
-            </attributes>
-        </page>
-        <page package="community_translation" name="CLI" description="" pagetype="" path="/dashboard/community_translation/options/cli">
             <attributes>
                 <attributekey handle="exclude_nav"><value>1</value></attributekey>
             </attributes>

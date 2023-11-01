@@ -33,6 +33,7 @@ defined('C5_EXECUTE') or die('Access Denied.');
             <div class="col-auto">
                 <button class="btn btn-primary" v-on:click.prevent="applyFilters" v-bind:disabled="busy"><?= t('Apply') ?></button>
             </div>
+        </div>
     </fieldset>
     <div v-if="notifications.length === 0 && busy === false" class="alert alert-info">
         <?= t('No notification found in the database') ?>

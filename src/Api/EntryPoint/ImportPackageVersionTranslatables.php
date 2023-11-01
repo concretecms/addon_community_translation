@@ -68,16 +68,15 @@ class ImportPackageVersionTranslatables extends EntryPoint
                     }
                     $package = new PackageEntity($packageHandle, $packageName);
                     $em->persist($package);
-                    $em->flush($package);
                     $version = null;
                 } else {
-                    if ($packageName !== '' && $package->getName() !== $packageName) {
+                    if ($packageName !== '') {
                         $package->setName($packageName);
-                        $em->persist($package);
-                        $em->flush($package);
                     }
                     $version = $this->app->make(PackageVersionRepository::class)->findByOneBy(['package' => $package, 'version' => $packageVersion]);
                 }
+                $package->setFromApiRequest(true);
+                $em->flush();
                 if ($version === null) {
                     $version = new PackageVersionEntity($package, $packageVersion);
                     $em->persist($version);

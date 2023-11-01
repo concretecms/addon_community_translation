@@ -54,43 +54,24 @@ EOT
      */
     public function handle(EntityManager $em, GroupService $groupService, AccessService $accessService): int
     {
-        $someErrors = false;
-        $totalAcceptedUsers = 0;
-        $mutexReleaser = null;
-        $this->createLogger();
-        try {
-            $mutexReleaser = $this->acquireMutex();
-            $this->em = $em;
-            $this->groupService = $groupService;
-            $this->accessService = $accessService;
-            $this->notificationRepository = $em->getRepository(Notification::class);
-            $this->readOptions();
-            $this->logger->info(($this->dateLimit === null) ? 'Accepting all the pending join requests' : sprintf('Accepting the pending join requests made before %s', $this->dateLimit->format('r')));
-            foreach ($this->locales as $locale) {
-                try {
-                    $totalAcceptedUsers += $this->processLocale($locale);
-                } catch (Throwable $x) {
-                    $this->logger->error($this->formatThrowable($x));
-                    $someErrors = true;
-                }
-            }
-            $this->logger->info(sprintf('All done. %d locales processed, %d requests accepted.', count($this->locales), $totalAcceptedUsers));
-        } catch (Throwable $x) {
-            $this->logger->error($this->formatThrowable($x));
-            $someErrors = true;
-        } finally {
-            if ($mutexReleaser !== null) {
-                try {
-                    $mutexReleaser();
-                } catch (Throwable $x) {
-                }
+        $this->em = $em;
+        $this->groupService = $groupService;
+        $this->accessService = $accessService;
+        $this->notificationRepository = $em->getRepository(Notification::class);
+        $this->readOptions();
+        $this->logger->info(($this->dateLimit === null) ? 'Accepting all the pending join requests' : sprintf('Accepting the pending join requests made before %s', $this->dateLimit->format('r')));
+        $errorsOccurred = false;
+        foreach ($this->locales as $locale) {
+            try {
+                $totalAcceptedUsers += $this->processLocale($locale);
+            } catch (Throwable $x) {
+                $this->logger->error($this->formatThrowable($x));
+                $errorsOccurred = true;
             }
         }
-        if ($someErrors) {
-            return $totalAcceptedUsers === 0 ? 3 : 2;
-        }
+        $this->logger->info(sprintf('All done. %d locales processed, %d requests accepted.', count($this->locales), $totalAcceptedUsers));
 
-        return $totalAcceptedUsers === 0 ? 0 : 1;
+        return $errorsOccurred ? static::FAILURE : static::SUCCESS;
     }
 
     /**

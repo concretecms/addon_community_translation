@@ -255,12 +255,14 @@ final class Fetcher
         if ($setDirectories) {
             $line .= ' -C ' . escapeshellarg(str_replace('/', DIRECTORY_SEPARATOR, $this->getWorktreeDirectory()));
         }
-        $line .= ' ' . $cmd . ' 2>&1';
+        $line .= ' ' . $cmd;
         $rc = 1;
         $output = [];
-        exec($line, $output, $rc);
+        exec($line . ' 2>&1', $output, $rc);
         if ($rc !== 0) {
-            throw new UserMessageException(t('Command failed with return code %1$s: %2$s', $rc, implode("\n", $output)));
+            $message = t('Command failed with return code %1$s: %2$s', $rc, trim(implode("\n", $output)));
+            $message .= "\n\n" . t('Command executed: %s', $line);
+            throw new UserMessageException($message);
         }
 
         return $output;

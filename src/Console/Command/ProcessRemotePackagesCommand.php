@@ -47,63 +47,39 @@ EOT
 
     public function handle(EntityManager $em, RemotePackageImporter $remotePackageImporter): int
     {
-        $someSuccess = false;
-        $someError = false;
-        $mutexReleaser = null;
-        $this->createLogger();
-        try {
-            $mutexReleaser = $this->acquireMutex();
-            $this->em = $em;
-            $this->repo = $this->em->getRepository(RemotePackageEntity::class);
-            $this->connection = $this->em->getConnection();
-            $this->remotePackageImporter = $remotePackageImporter;
-            $this->readOptions();
+        $errorsOccurred = false;
+        $this->em = $em;
+        $this->repo = $this->em->getRepository(RemotePackageEntity::class);
+        $this->connection = $this->em->getConnection();
+        $this->remotePackageImporter = $remotePackageImporter;
+        $this->readOptions();
+        $numProcessed = 0;
+        foreach ($this->getRemotePackagesToBeProcesses() as $remotePackage) {
+            try {
+                $this->processRemotePackage($remotePackage, true);
+                $numProcessed++;
+            } catch (Throwable $x) {
+                $this->logger->error($this->formatThrowable($x));
+                $errorsOccurred = true;
+            }
+        }
+        $this->logger->debug(sprintf('Number of approved packages processed: %d', $numProcessed));
+        if ($this->tryUnapprovedDateLimit !== null) {
             $numProcessed = 0;
-            foreach ($this->getRemotePackagesToBeProcesses() as $remotePackage) {
+            foreach ($this->getUnapprovedRemotePackageHandlesToTry() as $tryPackageHandle) {
                 try {
-                    $this->processRemotePackage($remotePackage, true);
-                    $someSuccess = true;
-                    $numProcessed++;
+                    if ($this->tryProcessRemotePackage($tryPackageHandle) === true) {
+                        $numProcessed++;
+                    }
                 } catch (Throwable $x) {
                     $this->logger->error($this->formatThrowable($x));
-                    $someError++;
+                    $errorsOccurred = true;
                 }
             }
-            $this->logger->debug(sprintf('Number of approved packages processed: %d', $numProcessed));
-            if ($this->tryUnapprovedDateLimit !== null) {
-                $numProcessed = 0;
-                foreach ($this->getUnapprovedRemotePackageHandlesToTry() as $tryPackageHandle) {
-                    try {
-                        if ($this->tryProcessRemotePackage($tryPackageHandle) === true) {
-                            $someSuccess = true;
-                            $numProcessed++;
-                        }
-                    } catch (Throwable $x) {
-                        $this->logger->error($this->formatThrowable($x));
-                        $someError++;
-                    }
-                }
-                $this->logger->debug(sprintf('Number of unapproved packages processed: %d', $numProcessed));
-            }
-        } catch (Throwable $x) {
-            $this->logger->error($this->formatThrowable($x));
-            $someError = true;
-        } finally {
-            if ($mutexReleaser !== null) {
-                try {
-                    $mutexReleaser();
-                } catch (Throwable $x) {
-                }
-            }
-        }
-        if ($someError && $someSuccess) {
-            return 1;
-        }
-        if ($someError) {
-            return 2;
+            $this->logger->debug(sprintf('Number of unapproved packages processed: %d', $numProcessed));
         }
 
-        return 0;
+        return $errorsOccurred ? static::FAILURE : static::SUCCESS;
     }
 
     /**

@@ -47,7 +47,10 @@ if ($repositories === []) {
                 <tr>
                     <td><button v-bind:disabled="busy" type="button" class="btn btn-sm btn-secondary" title="<?= t('Import strings') ?>" v-on:click.prevent="importGit(<?= $repository->getID() ?>)"><i class="fas fa-sync-alt" v-bind:class="{'fa-spin': importingID === <?= $repository->getID() ?>}"></i></button></td>
                     <td><a v-bind:disabled="busy" href="<?= h($urlResolver->resolve(['/dashboard/community_translation/git_repositories/details', $repository->getID()])) ?>"><?= h($repository->getName()) ?></a></td>
-                    <td><?= h($repository->getPackageHandle()) ?></td>
+                    <td>
+                        <?= h($repository->getPackageName()) ?><br />
+                        <code><?= h($repository->getPackageHandle()) ?></code>
+                    </td>
                     <td><a href="<?= h($repository->getURL()) ?>" target="_blank"><?= h($repository->getURL()) ?></a></td>
                     <td><code>/<?= h($repository->getDirectoryToParse()) ?></code></td>
                     <td><?= h($repository->getTagFiltersDisplayName()) ?></td>

@@ -20,7 +20,6 @@ use DateTimeImmutable;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Query;
 use Generator;
-use Throwable;
 
 defined('C5_EXECUTE') or die('Access Denied.');
 
@@ -50,39 +49,23 @@ EOT
 
     public function handle(EntityManager $em, UserInfoRepository $userInfoRepository): int
     {
-        $this->createLogger();
-        $mutexReleaser = null;
-        try {
-            $mutexReleaser = $this->acquireMutex();
-            $this->em = $em;
-            $this->userInfoRepository = $userInfoRepository;
-            $this->packageRepository = $em->getRepository(PackageEntity::class);
-            $this->notificationRepository = $em->getRepository(NotificationEntity::class);
-            $this->readParameters();
-            $this->em->transactional(function () {
-                $start = time();
-                $newPackagesCount = $this->notifyNewPackages();
-                $elapsed = time() - $start;
-                $start = time();
-                $this->logger->info("{$newPackagesCount} notifications created for new packages (time required: {$elapsed} seconds}");
-                [$newVersionsCount, $updatedVersionsCount] = $this->notifyPackageVersions();
-                $elapsed = time() - $start;
-                $this->logger->info("{$newVersionsCount} notifications created for new package versions, {$updatedVersionsCount} notifications created for updated package versions (time required: {$elapsed} seconds}");
-            });
+        $this->em = $em;
+        $this->userInfoRepository = $userInfoRepository;
+        $this->packageRepository = $em->getRepository(PackageEntity::class);
+        $this->notificationRepository = $em->getRepository(NotificationEntity::class);
+        $this->readParameters();
+        $this->em->transactional(function () {
+            $start = time();
+            $newPackagesCount = $this->notifyNewPackages();
+            $elapsed = time() - $start;
+            $start = time();
+            $this->logger->info("{$newPackagesCount} notifications created for new packages (time required: {$elapsed} seconds}");
+            [$newVersionsCount, $updatedVersionsCount] = $this->notifyPackageVersions();
+            $elapsed = time() - $start;
+            $this->logger->info("{$newVersionsCount} notifications created for new package versions, {$updatedVersionsCount} notifications created for updated package versions (time required: {$elapsed} seconds}");
+        });
 
-            return static::SUCCESS;
-        } catch (Throwable $x) {
-            $this->logger->error($this->formatThrowable($x));
-
-            return static::FAILURE;
-        } finally {
-            if ($mutexReleaser !== null) {
-                try {
-                    $mutexReleaser();
-                } catch (Throwable $x) {
-                }
-            }
-        }
+        return static::SUCCESS;
     }
 
     /**

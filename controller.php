@@ -20,6 +20,7 @@ use Concrete\Core\Config\Repository\Repository;
 use Concrete\Core\Database\EntityManager\Provider\ProviderAggregateInterface;
 use Concrete\Core\Database\EntityManager\Provider\StandardPackageProvider;
 use Concrete\Core\Package\Package;
+use Concrete\Core\Page\Page;
 use Concrete\Core\Routing\Router;
 use Doctrine\ORM\EntityManager;
 use Gettext\Translations;
@@ -55,7 +56,7 @@ class Controller extends Package implements ProviderAggregateInterface
      *
      * @var string
      */
-    protected $pkgVersion = '1.5.0';
+    protected $pkgVersion = '1.6.0';
 
     /**
      * {@inheritdoc}
@@ -137,8 +138,14 @@ class Controller extends Package implements ProviderAggregateInterface
     {
         parent::upgrade();
         $this->installXml();
-        if ($this->upgradingFromVersion !== '' && version_compare($this->upgradingFromVersion, '0.4.0') < 0) {
-            $this->refreshLatestPackageVersions();
+        if ($this->upgradingFromVersion !== '') {
+            if (version_compare($this->upgradingFromVersion, '0.4.0') < 0) {
+                $this->refreshLatestPackageVersions();
+            }
+            if (version_compare($this->upgradingFromVersion, '1.6.0') < 0) {
+                $this->updatePackageNamesAndSources();
+                $this->deletePage('/dashboard/community_translation/options/cli');
+            }
         }
     }
 
@@ -220,6 +227,62 @@ class Controller extends Package implements ProviderAggregateInterface
         $em = $this->app->make(EntityManager::class);
         foreach ($packageRepo->findAll() as $package) {
             $ees->refreshPackageLatestVersion($em, $package);
+        }
+    }
+
+    private function updatePackageNamesAndSources(): void
+    {
+        $cn = $this->app->make(EntityManager::class)->getConnection();
+        $cn->executeStatement(
+            <<<'EOT'
+UPDATE CommunityTranslationPackages
+INNER JOIN CommunityTranslationRemotePackages ON CommunityTranslationPackages.handle = CommunityTranslationRemotePackages.handle
+SET CommunityTranslationPackages.fromRemotePackage = 1
+EOT
+        );
+        $cn->executeStatement(
+            <<<'EOT'
+UPDATE CommunityTranslationPackages
+INNER JOIN CommunityTranslationGitRepositories ON CommunityTranslationPackages.handle = CommunityTranslationGitRepositories.packageHandle
+SET CommunityTranslationPackages.fromGitRepository = 1
+EOT
+        );
+        $rs = $cn->executeQuery(
+            <<<'EOT'
+SELECT
+    id,
+    packageHandle
+FROM
+    CommunityTranslationGitRepositories
+WHERE
+    packageName = ''
+EOT
+        );
+        while (($row = $rs->fetchAssociative()) !== false) {
+            $segments = preg_split('/[_-]+/', $row['packageHandle'], -1, PREG_SPLIT_NO_EMPTY);
+            if ($segments === []) {
+                $packageName = $row['packageHandle'];
+            } else {
+                $parts = [];
+                foreach ($segments as $segment) {
+                    $len = mb_strlen($segment);
+                    if ($len === 1) {
+                        $parts[] = mb_strtoupper($segment);
+                    } else {
+                        $parts[] = mb_strtoupper(mb_substr($segment, 0, 1)) . mb_substr($segment, 1);
+                    }
+                }
+                $packageName = implode(' ', $parts);
+            }
+            $cn->update('CommunityTranslationGitRepositories', ['packageName' => $packageName], ['id' => $row['id']]);
+        }
+    }
+
+    private function deletePage(string $path): void
+    {
+        $page = Page::getByPath($path);
+        if ($page && !$page->isError()) {
+            $page->delete();
         }
     }
 
