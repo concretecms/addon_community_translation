@@ -228,7 +228,7 @@ class Cli extends DashboardPageController
         return $result;
     }
 
-    private function parseOneNotifyTo(string $prefix, bool $setError, ?Closure & $testCallback = null): array
+    private function parseOneNotifyTo(string $prefix, bool $setError, ?Closure &$testCallback = null): array
     {
         $testCallback = null;
         $result = [];

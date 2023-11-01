@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace Concrete\Package\CommunityTranslation\Controller\SinglePage\Dashboard\CommunityTranslation;
 
-use Concrete\Core\Page\Controller\DashboardPageController;
-use Symfony\Component\HttpFoundation\Response;
-use Doctrine\ORM\EntityManagerInterface;
-use CommunityTranslation\Entity\Package\Version;
 use CommunityTranslation\Entity\GitRepository;
+use CommunityTranslation\Entity\Package\Version;
+use Concrete\Core\Error\UserMessageException;
+use Concrete\Core\Http\ResponseFactoryInterface;
+use Concrete\Core\Page\Controller\DashboardPageController;
 use Concrete\Core\Page\Page;
 use Concrete\Core\Permission\Checker;
 use Concrete\Core\Url\Resolver\Manager\ResolverManagerInterface;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Concrete\Core\Error\UserMessageException;
-use Concrete\Core\Http\ResponseFactoryInterface;
+use Symfony\Component\HttpFoundation\Response;
 
 defined('C5_EXECUTE') or die('Access Denied.');
 
@@ -32,6 +32,7 @@ class DevelopmentVersions extends DashboardPageController
             }
         }
         $this->set('devVersions', $this->getDevVersions());
+
         return null;
     }
 

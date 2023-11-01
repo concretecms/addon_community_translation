@@ -134,7 +134,7 @@ abstract class EntryPoint extends AbstractController
      *
      * @throws \Concrete\Core\Error\UserMessageException
      */
-    protected function getPackageVersion(PackageEntity $package, string $packageVersion, ?bool & $isBastMatch = null): ?PackageVersionEntity
+    protected function getPackageVersion(PackageEntity $package, string $packageVersion, ?bool &$isBastMatch = null): ?PackageVersionEntity
     {
         if ($packageVersion === 'best-match-version') {
             $isBastMatch = true;

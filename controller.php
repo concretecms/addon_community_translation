@@ -231,19 +231,22 @@ class Controller extends Package implements ProviderAggregateInterface
     private function updatePackageNamesAndSources(): void
     {
         $cn = $this->app->make(EntityManager::class)->getConnection();
-        $cn->executeStatement(<<<'EOT'
+        $cn->executeStatement(
+            <<<'EOT'
 UPDATE CommunityTranslationPackages
 INNER JOIN CommunityTranslationRemotePackages ON CommunityTranslationPackages.handle = CommunityTranslationRemotePackages.handle
 SET CommunityTranslationPackages.fromRemotePackage = 1
 EOT
         );
-        $cn->executeStatement(<<<'EOT'
+        $cn->executeStatement(
+            <<<'EOT'
 UPDATE CommunityTranslationPackages
 INNER JOIN CommunityTranslationGitRepositories ON CommunityTranslationPackages.handle = CommunityTranslationGitRepositories.packageHandle
 SET CommunityTranslationPackages.fromGitRepository = 1
 EOT
         );
-        $cn->executeStatement(<<<'EOT'
+        $cn->executeStatement(
+            <<<'EOT'
 UPDATE CommunityTranslationPackages
 INNER JOIN CommunityTranslationGitRepositories ON CommunityTranslationPackages.handle = CommunityTranslationGitRepositories.packageHandle
 SET CommunityTranslationPackages.name = CommunityTranslationGitRepositories.name
