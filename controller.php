@@ -67,7 +67,10 @@ class Controller extends Package implements ProviderAggregateInterface
         'src' => 'CommunityTranslation',
     ];
 
-    private string $upgradingFromVersion = '';
+    /**
+     * This needs to be static because the core may use different instances of this controller class while upgrading.
+     */
+    protected static string $upgradingFromVersion = '';
 
     /**
      * {@inheritdoc}
@@ -124,7 +127,7 @@ class Controller extends Package implements ProviderAggregateInterface
     {
         $e = $this->getPackageEntity();
         if ($e !== null) {
-            $this->upgradingFromVersion = (string) $e->getPackageVersion();
+            self::$upgradingFromVersion = (string) $e->getPackageVersion();
         }
         parent::upgradeCoreData();
     }
@@ -138,11 +141,11 @@ class Controller extends Package implements ProviderAggregateInterface
     {
         parent::upgrade();
         $this->installXml();
-        if ($this->upgradingFromVersion !== '') {
-            if (version_compare($this->upgradingFromVersion, '0.4.0') < 0) {
+        if (self::$upgradingFromVersion !== '') {
+            if (version_compare(self::$upgradingFromVersion, '0.4.0') < 0) {
                 $this->refreshLatestPackageVersions();
             }
-            if (version_compare($this->upgradingFromVersion, '1.6.0') < 0) {
+            if (version_compare(self::$upgradingFromVersion, '1.6.0') < 0) {
                 $this->updatePackageNamesAndSources();
                 $this->deletePage('/dashboard/community_translation/options/cli');
             }
