@@ -61,6 +61,7 @@ EOT
         $this->readOptions();
         $this->logger->info(($this->dateLimit === null) ? 'Accepting all the pending join requests' : sprintf('Accepting the pending join requests made before %s', $this->dateLimit->format('r')));
         $errorsOccurred = false;
+        $totalAcceptedUsers = 0;
         foreach ($this->locales as $locale) {
             try {
                 $totalAcceptedUsers += $this->processLocale($locale);
