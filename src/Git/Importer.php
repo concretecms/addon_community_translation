@@ -55,6 +55,8 @@ final class Importer
             $this->logger->notice(t('Creating new package with handle %s', $gitRepository->getPackageHandle()));
             $package = new PackageEntity($gitRepository->getPackageHandle(), $gitRepository->getPackageName());
             $this->em->persist($package);
+        } else {
+            $package->setName($gitRepository->getPackageName());
         }
         $package->setFromGitRepository(true);
         $this->em->flush();
