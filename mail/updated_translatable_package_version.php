@@ -31,7 +31,7 @@ if (count($packageVersions) === 1) {
     $bodyHTML .= '</ul>';
 }
 
-$bodyHTML .= '<p>You can disable notifications about new translatable package versions in the online editor.</p';
+$bodyHTML .= '<p>You can disable notifications about new translatable package versions in the online editor.</p>';
 
 // Let's avoid IDE warnings
 if (false) return [$subject, $bodyHTML];
