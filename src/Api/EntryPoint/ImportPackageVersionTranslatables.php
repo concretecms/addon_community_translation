@@ -83,7 +83,7 @@ class ImportPackageVersionTranslatables extends EntryPoint
                     $em->flush($version);
                 }
                 $importer = $this->app->make(TranslatableImporter::class);
-                $changed = $importer->importTranslations($translations, $package->getHandle(), $packageVersion->getVersion());
+                $changed = $importer->importTranslations($translations, $package->getHandle(), $package->getName(), $packageVersion->getVersion());
 
                 return $this->buildJsonResponse(['changed' => $changed]);
             }
