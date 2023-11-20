@@ -63,15 +63,12 @@ final class Importer
         }
         $temp = $this->download($remotePackage);
         $rootPath = $this->getRootPath($temp);
-        $this->translatableImporter->importDirectory($rootPath, $remotePackage->getHandle(), $remotePackage->getVersion(), '');
+        $this->translatableImporter->importDirectory($rootPath, $remotePackage->getHandle(), $remotePackage->getName(), $remotePackage->getVersion(), '');
         $package = $this->packageRepo->getByHandle($remotePackage->getHandle());
         if ($package === null) {
             return;
         }
         $package->setFromRemotePackage(true);
-        if ($remotePackage->getName() !== '') {
-            $package->setName($remotePackage->getName());
-        }
         if ($remotePackage->getUrl() !== '') {
             $package->setUrl($remotePackage->getUrl());
         }

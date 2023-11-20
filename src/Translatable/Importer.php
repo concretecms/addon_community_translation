@@ -47,7 +47,7 @@ final class Importer
      *
      * @return bool returns true if some translatable strings changed, false otherwise
      */
-    public function importDirectory(string $directory, string $packageHandle, string $packageVersion, string $basePlacesDirectory): bool
+    public function importDirectory(string $directory, string $packageHandle, string $packageName, string $packageVersion, string $basePlacesDirectory): bool
     {
         $parsed = $this->parser->parseDirectory($packageHandle, $packageVersion, $directory, $basePlacesDirectory, ParserInterface::DICTIONARY_NONE);
         $translations = $parsed ? $parsed->getSourceStrings() : null;
@@ -58,7 +58,7 @@ final class Importer
             $translations->setPluralForms($sourceLocale->getPluralCount(), $sourceLocale->getPluralFormula());
         }
 
-        return $this->importTranslations($translations, $packageHandle, $packageVersion);
+        return $this->importTranslations($translations, $packageHandle, $packageName, $packageVersion);
     }
 
     /**
@@ -71,21 +71,25 @@ final class Importer
      *
      * @return bool returns true if some translatable strings changed, false otherwise
      */
-    public function importTranslations(Translations $translations, string $packageHandle, string $packageVersion): bool
+    public function importTranslations(Translations $translations, string $packageHandle, string $packageName, string $packageVersion): bool
     {
         $packageIsNew = true;
         $someStringChanged = false;
         $numStringsAdded = 0;
         $version = null;
-        $this->em->getConnection()->transactional(function (Connection $connection) use ($translations, $packageHandle, $packageVersion, &$packageIsNew, &$someStringChanged, &$numStringsAdded, &$version) {
+        $this->em->getConnection()->transactional(function (Connection $connection) use ($translations, $packageHandle, $packageName, $packageVersion, &$packageIsNew, &$someStringChanged, &$numStringsAdded, &$version) {
             $packageRepo = $this->em->getRepository(PackageEntity::class);
             $package = $packageRepo->getByHandle($packageHandle);
             $version = null;
             if ($package === null) {
-                $package = new PackageEntity($packageHandle);
+                $package = new PackageEntity($packageHandle, $packageName);
                 $this->em->persist($package);
                 $this->em->flush($package);
             } else {
+                if ($packageName !== '') {
+                    $package->setName($packageName);
+                    $this->em->flush($package);
+                }
                 foreach ($package->getVersions() as $pv) {
                     $packageIsNew = false;
                     if (version_compare($pv->getVersion(), $packageVersion) === 0) {
