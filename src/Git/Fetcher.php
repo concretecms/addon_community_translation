@@ -166,7 +166,7 @@ final class Fetcher
     public function update(): void
     {
         if ($this->filesystem->isDirectory($this->getGitDirectory())) {
-            $this->runGit('fetch origin --tags');
+            $this->runGit('fetch origin --tags --force');
         } else {
             $this->initialize();
         }
