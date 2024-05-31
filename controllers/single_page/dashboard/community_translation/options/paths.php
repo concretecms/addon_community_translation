@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace Concrete\Package\CommunityTranslation\Controller\SinglePage\Dashboard\CommunityTranslation\Options;
 
+use CommunityTranslation\Translation\FileExporter;
 use Concrete\Core\Config\Repository\Repository;
+use Concrete\Core\Error\UserMessageException;
+use Concrete\Core\Http\ResponseFactoryInterface;
 use Concrete\Core\Page\Controller\DashboardPageController;
 use Concrete\Core\Url\Resolver\Manager\ResolverManagerInterface;
 use Illuminate\Filesystem\Filesystem;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 
 defined('C5_EXECUTE') or die('Access Denied.');
@@ -24,6 +28,16 @@ class Paths extends DashboardPageController
         $this->set('defaultTempDir', str_replace('/', DIRECTORY_SEPARATOR, (string) $this->app->make('helper/file')->getTemporaryDirectory()));
 
         return null;
+    }
+
+    public function clearTranslationsCache(): JsonResponse
+    {
+        if (!$this->token->validate('ct-clear-trca')) {
+            throw new UserMessageException($this->token->getErrorMessage());
+        }
+        $this->app->make(FileExporter::class)->clearCacheDirectory();
+
+        return $this->app->make(ResponseFactoryInterface::class)->json(true);
     }
 
     public function submit(): ?Response

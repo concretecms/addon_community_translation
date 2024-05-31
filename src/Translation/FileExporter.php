@@ -139,6 +139,20 @@ final class FileExporter
         return $result;
     }
 
+    public function clearCacheDirectory(): void
+    {
+        $dir = $this->getRootCacheDirectory();
+        if (!$this->fs->isDirectory($dir)) {
+            return;
+        }
+        if (!$this->fs->isWritable($dir)) {
+            throw new UserMessageException(t('The cache directory is not writable'));
+        }
+        if ($this->fs->cleanDirectory($dir) === false) {
+            throw new UserMessageException(t('Failed to empty the cache directory'));
+        }
+    }
+
     private function getCacheDirectory(PackageVersionEntity $packageVersion, LocaleEntity $locale, bool $create = true): string
     {
         $fullInt = str_pad((string) $packageVersion->getID(), strlen((string) PHP_INT_MAX), '0', STR_PAD_LEFT);
