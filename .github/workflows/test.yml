@@ -8,21 +8,21 @@ jobs:
   docker:
     name: Tests in docker
     runs-on: ubuntu-latest
-    container: ghcr.io/concrete5-community/docker5:develop
+    container: ghcr.io/concrete5-community/docker5:9
     steps:
       -
         name: Prepare enviro
         run: switch-composer 2
       -
         name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       -
         name: Check composer.json
         run: composer --ansi --no-interaction validate --strict
-#     Step required when using a release version of Concrete, not "develop"
-#     - 
-#       name: Install Composer dependencies
-#       run: composer --ansi --no-interaction install --optimize-autoloader --working-dir=/app
+      -
+        # Step required when using a release version of Concrete, not a development one
+        name: Install Composer dependencies
+        run: composer --ansi --no-interaction install --optimize-autoloader --working-dir=/app
       -
         name: Prepare package
         run: ln -s "$GITHUB_WORKSPACE" /app/packages/community_translation
