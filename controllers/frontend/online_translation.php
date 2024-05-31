@@ -1122,22 +1122,21 @@ class OnlineTranslation extends Controller
         $t = $translations->insert($translatable->getContext(), $translatable->getText(), $translatable->getPlural());
         $t->setTranslation($translation->getText0());
         if ($translatable->getPlural() !== '') {
-            switch ($locale->getPluralCount()) {
-                case 6:
-                    $t->setPluralTranslation($translation->getText5(), 4);
-                    // no break
-                case 5:
-                    $t->setPluralTranslation($translation->getText4(), 3);
-                    // no break
-                case 4:
-                    $t->setPluralTranslation($translation->getText3(), 2);
-                    // no break
-                case 3:
+            $numPlurals = $locale->getPluralCount();
+            if ($numPlurals >= 2) {
+                $t->setPluralTranslation($translation->getText1(), 0);
+                if ($numPlurals >= 3) {
                     $t->setPluralTranslation($translation->getText2(), 1);
-                    // no break
-                case 2:
-                    $t->setPluralTranslation($translation->getText1(), 0);
-                    break;
+                    if ($numPlurals >= 4) {
+                        $t->setPluralTranslation($translation->getText3(), 2);
+                        if ($numPlurals >= 5) {
+                            $t->setPluralTranslation($translation->getText4(), 3);
+                            if ($numPlurals >= 6) {
+                                $t->setPluralTranslation($translation->getText5(), 4);
+                            }
+                        }
+                    }
+                }
             }
         }
         if ($markAsFuzzy) {

@@ -69,22 +69,8 @@ EOT
             }
             $translation->setTranslation($row['text0']);
             if ($plural !== '') {
-                switch ($numPlurals) {
-                    case 6:
-                        $translation->setPluralTranslation($row['text5'], 4);
-                        // no break
-                    case 5:
-                        $translation->setPluralTranslation($row['text4'], 3);
-                        // no break
-                    case 4:
-                        $translation->setPluralTranslation($row['text3'], 2);
-                        // no break
-                    case 3:
-                        $translation->setPluralTranslation($row['text2'], 1);
-                        // no break
-                    case 2:
-                        $translation->setPluralTranslation($row['text1'], 0);
-                        break;
+                for ($index = 1; $index < $numPlurals; $index++) {
+                    $translation->setPluralTranslation($row['text' . $index], $index - 1);
                 }
             }
         }
@@ -304,22 +290,8 @@ EOT
                 }
                 $translation->setTranslation($row['text0']);
                 if ($translation->hasPlural()) {
-                    switch ($numPlurals) {
-                        case 6:
-                            $translation->setPluralTranslation($row['text5'], 4);
-                            // no break
-                        case 5:
-                            $translation->setPluralTranslation($row['text4'], 3);
-                            // no break
-                        case 4:
-                            $translation->setPluralTranslation($row['text3'], 2);
-                            // no break
-                        case 3:
-                            $translation->setPluralTranslation($row['text2'], 1);
-                            // no break
-                        case 2:
-                            $translation->setPluralTranslation($row['text1'], 0);
-                            break;
+                    for ($index = 1; $index < $numPlurals; $index++) {
+                        $translation->setPluralTranslation($row['text' . $index], $index - 1);
                     }
                 }
             }
