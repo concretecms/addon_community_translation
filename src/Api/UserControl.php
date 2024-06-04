@@ -128,6 +128,7 @@ class UserControl
                 return;
             case self::ACCESSOPTION_MARKET:
                 $this->validateMarketToken();
+
                 return;
             case self::ACCESSOPTION_ROOT:
                 $user = $this->getRequestUser();
@@ -202,7 +203,6 @@ class UserControl
                 }
 
                 return $this->getApprovedLocales();
-
             case self::ACCESSOPTION_MARKET:
                 throw new AccessDeniedException();
             case self::ACCESSOPTION_ROOT:
@@ -412,7 +412,7 @@ class UserControl
     /**
      * @throws AccessDeniedException
      */
-    public function validateMarketToken(): void
+    private function validateMarketToken(): void
     {
         // Extract the JWT from the request if one exists
         try {
@@ -427,7 +427,6 @@ class UserControl
 
         // Validate the token was signed with valid OIDC, is valid now, and is permitted for translate
         try {
-
             // Use service locator to load SignedWithOidc so that we don't load expensive cache / config when not needed
             $signedWithOidc = $this->app->make(SignedWithOidc::class);
             (new Validator())->assert(

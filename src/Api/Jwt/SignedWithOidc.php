@@ -23,8 +23,8 @@ use Stash\Interfaces\ItemInterface;
 
 class SignedWithOidc implements SignedWith, LoggerAwareInterface
 {
-
     use LoggerAwareTrait;
+
     public function __construct(
         protected ExpensiveCache $cache,
         protected Client $client,
@@ -65,6 +65,11 @@ class SignedWithOidc implements SignedWith, LoggerAwareInterface
         (new JwtSignedWith($signer, InMemory::plainText($key)))->assert($token);
     }
 
+    public function getLoggerChannel(): string
+    {
+        return Channels::CHANNEL_API;
+    }
+
     protected function getKey(string $issuer, string $kid): ?string
     {
         $jwks = $this->getJwkUri($issuer);
@@ -93,6 +98,7 @@ class SignedWithOidc implements SignedWith, LoggerAwareInterface
             }
         } catch (\Throwable $e) {
             $this->logger?->warning('Unable to load OIDC JWKs: ' . $e->getMessage());
+
             return null;
         }
 
@@ -103,6 +109,7 @@ class SignedWithOidc implements SignedWith, LoggerAwareInterface
 
                 if ($e === '' || $n === '') {
                     $this->logger?->warning('Unable to load OIDC JWK, invalid base64');
+
                     return null;
                 }
 
@@ -113,6 +120,7 @@ class SignedWithOidc implements SignedWith, LoggerAwareInterface
                     ]);
                 } catch (\Throwable $e) {
                     $this->logger?->warning('Unable to load OIDC key: ' . $e->getMessage());
+
                     return null;
                 }
             }
@@ -149,15 +157,11 @@ class SignedWithOidc implements SignedWith, LoggerAwareInterface
             }
         } catch (\Throwable $e) {
             $this->logger?->warning('Unable to load OIDC configuration: ' . $e->getMessage());
+
             return null;
         }
 
         return $data['jwks_uri'] ?? null;
-    }
-
-    public function getLoggerChannel(): string
-    {
-        return Channels::CHANNEL_API;
     }
 
     private function cacheResponse(ItemInterface $cacheItem, string $json, ResponseInterface $response): void
