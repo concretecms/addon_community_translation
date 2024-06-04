@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace CommunityTranslation\Api;
 
+use CommunityTranslation\Api\Jwt\SignedWithOidc;
 use CommunityTranslation\Repository\Locale as LocaleRepository;
 use CommunityTranslation\Service\Access;
 use Concrete\Core\Application\Application;
@@ -18,6 +19,14 @@ use Concrete\Core\User\User;
 use Concrete\Core\User\UserList;
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityManagerInterface;
+use Lcobucci\Clock\FrozenClock;
+use Lcobucci\JWT\Encoding\JoseEncoder;
+use Lcobucci\JWT\Exception as JwtException;
+use Lcobucci\JWT\Token\Parser;
+use Lcobucci\JWT\Validation\Constraint\PermittedFor;
+use Lcobucci\JWT\Validation\Constraint\StrictValidAt;
+use Lcobucci\JWT\Validation\RequiredConstraintsViolated;
+use Lcobucci\JWT\Validation\Validator;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -44,6 +53,8 @@ class UserControl
     public const ACCESSOPTION_GLOBALADMINS = 'globaladmins';
 
     public const ACCESSOPTION_SITEADMINS = 'siteadmins';
+
+    public const ACCESSOPTION_MARKET = 'market';
 
     public const ACCESSOPTION_ROOT = 'root';
 
@@ -114,6 +125,9 @@ class UserControl
                     }
                 }
 
+                return;
+            case self::ACCESSOPTION_MARKET:
+                $this->validateMarketToken();
                 return;
             case self::ACCESSOPTION_ROOT:
                 $user = $this->getRequestUser();
@@ -188,6 +202,9 @@ class UserControl
                 }
 
                 return $this->getApprovedLocales();
+
+            case self::ACCESSOPTION_MARKET:
+                throw new AccessDeniedException();
             case self::ACCESSOPTION_ROOT:
                 $user = $this->getRequestUser();
                 if (!$user->isSuperUser()) {
@@ -390,5 +407,39 @@ class UserControl
         $level = $config->get("community_translation::api.access.{$configKey}");
 
         return is_string($level) ? $level : '';
+    }
+
+    /**
+     * @throws AccessDeniedException
+     */
+    public function validateMarketToken(): void
+    {
+        // Extract the JWT from the request if one exists
+        try {
+            $bearer = (string) $this->request->headers->get('authorization');
+            $jwt = substr($bearer, 7);
+            $token = (new Parser(new JoseEncoder()))->parse($jwt);
+        } catch (JwtException $e) {
+            throw new AccessDeniedException(t('Access denied, invalid token.'));
+        } catch (\Throwable) {
+            throw new AccessDeniedException(t('Access denied, unable to process token.'));
+        }
+
+        // Validate the token was signed with valid OIDC, is valid now, and is permitted for translate
+        try {
+
+            // Use service locator to load SignedWithOidc so that we don't load expensive cache / config when not needed
+            $signedWithOidc = $this->app->make(SignedWithOidc::class);
+            (new Validator())->assert(
+                $token,
+                $signedWithOidc,
+                new StrictValidAt(new FrozenClock(new \DateTimeImmutable())),
+                new PermittedFor('https://translate.concretecms.org'),
+            );
+        } catch (RequiredConstraintsViolated $e) {
+            throw new AccessDeniedException(t('Access denied, %s', $e->getMessage()));
+        } catch (\Throwable) {
+            throw new AccessDeniedException(t('Access denied, unable to validate token.'));
+        }
     }
 }
