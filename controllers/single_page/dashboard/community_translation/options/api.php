@@ -123,6 +123,7 @@ class Api extends DashboardPageController
                 UserControl::ACCESSOPTION_GLOBALADMINS => t('Global localization administrators'),
                 UserControl::ACCESSOPTION_SITEADMINS => t('Site administrators'),
                 UserControl::ACCESSOPTION_ROOT => t('Site administrator'),
+                UserControl::ACCESSOPTION_MARKET => t('Concrete Marketplace'),
                 UserControl::ACCESSOPTION_NOBODY => t('Nobody'),
             ]
             :
@@ -134,6 +135,7 @@ class Api extends DashboardPageController
                 UserControl::ACCESSOPTION_GLOBALADMINS => t('Global localization administrators'),
                 UserControl::ACCESSOPTION_SITEADMINS => t('Site administrators'),
                 UserControl::ACCESSOPTION_ROOT => t('Site administrator'),
+                UserControl::ACCESSOPTION_MARKET => t('Concrete Marketplace'),
                 UserControl::ACCESSOPTION_NOBODY => t('Nobody'),
             ]
         ;

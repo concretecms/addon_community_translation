@@ -16,7 +16,7 @@ return [
         Api\EntryPoint\GetPackageVersionLocales::ACCESS_KEY => Api\UserControl::ACCESSOPTION_EVERYBODY,
         Api\EntryPoint\GetPackageVersionTranslations::ACCESS_KEY => Api\UserControl::ACCESSOPTION_EVERYBODY,
         Api\EntryPoint\FillTranslations::ACCESS_KEY => Api\UserControl::ACCESSOPTION_EVERYBODY,
-        Api\EntryPoint\ImportPackage::ACCESS_KEY => Api\UserControl::ACCESSOPTION_GLOBALADMINS,
+        Api\EntryPoint\ImportPackage::ACCESS_KEY => Api\UserControl::ACCESSOPTION_MARKET,
         Api\EntryPoint\ImportPackageVersionTranslatables::ACCESS_KEY => Api\UserControl::ACCESSOPTION_GLOBALADMINS,
         Api\EntryPoint\ImportTranslations::ACCESS_KEY_WITHOUTAPPROVE => Api\UserControl::ACCESSOPTION_TRANSLATORS_OWNLOCALES,
         Api\EntryPoint\ImportTranslations::ACCESS_KEY_WITHAPPROVE => Api\UserControl::ACCESSOPTION_LOCALEADMINS_OWNLOCALES,
