@@ -5,6 +5,26 @@ on:
   - push
 
 jobs:
+
+  check-php-syntax:
+    name: Check PHP Syntax
+    runs-on: ubuntu-latest
+    steps:
+      -
+        name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: opcache
+          coverage: none
+          tools: none
+      -
+        name: Checkout
+        uses: actions/checkout@v4
+      -
+        name: Check syntax
+        uses: mlocati/check-php-syntax@v1
+
   docker:
     name: Tests in docker
     runs-on: ubuntu-latest
@@ -13,8 +33,10 @@ jobs:
       -
         name: Prepare enviro
         run: |
-        	switch-composer 2
-        	switch-php 8.1
+          switch-composer 2
+          composer --version
+          switch-php 8.1
+          php --version
       -
         name: Checkout
         uses: actions/checkout@v4
