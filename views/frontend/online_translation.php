@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use CommunityTranslation\Glossary\EntryType as GlossaryEntryType;
+use CommunityTranslation\Translatable\StringFormat;
 use Concrete\Core\Localization\Localization;
 use Concrete\Core\View\View;
 
@@ -200,11 +201,21 @@ if ($enableComments) {
                     <div class="container-fluid">
                         <div class="row">
                             <label class="form-label" v-if="currentTranslation.isPlural"><b><?= t('Singular') ?></b></label>
-                            <comtra-sourcetext v-bind:text="currentTranslation.original" v-on:copy-whole="setTranslatingString($event, null, true)" v-on:copy-chunk="setTranslatingString($event, null, false)"></comtra-sourcetext>
+                            <comtra-sourcetext
+                                v-bind:format="currentTranslation.format"
+                                v-bind:text="currentTranslation.original"
+                                v-on:copy-whole="setTranslatingString($event, null, true)"
+                                v-on:copy-chunk="setTranslatingString($event, null, false)"
+                            ></comtra-sourcetext>
                         </div>
                         <div class="row mt-3" v-if="currentTranslation.isPlural">
                             <label class="form-label"><b><?= t('Plural') ?></b></label>
-                            <comtra-sourcetext v-bind:text="currentTranslation.originalPlural" v-on:copy-whole="setTranslatingString($event, null, true)" v-on:copy-chunk="setTranslatingString($event, null, false)"></comtra-sourcetext>
+                            <comtra-sourcetext
+                                v-bind:format="currentTranslation.format"
+                                v-bind:text="currentTranslation.originalPlural"
+                                v-on:copy-whole="setTranslatingString($event, null, true)"
+                                v-on:copy-chunk="setTranslatingString($event, null, false)"
+                            ></comtra-sourcetext>
                         </div>
                     </div>
                     <div class="small text-muted" v-if="currentTranslation.context !== ''"><?= t('Context: %s', '<code>{{ currentTranslation.context }}</code>') ?></div>
@@ -877,7 +888,7 @@ if ($enableComments) {
 
 <div class="d-none" id="comtra-sourcetext-template">
     <div class="source-translation form-control">
-        <div><span v-for="chunk in splitChunks(text)"><code v-if="chunk.copyable" v-on:click.prevent="copyChunk(chunk.text)" title="<?= t('Click to copy') ?>">{{ chunk.text }}</code><span v-else>{{ chunk.text}}</span></span></div>
+        <div><span v-for="chunk in getChunks()"><code v-if="chunk.copyable" v-on:click.prevent="copyChunk(chunk.text)" title="<?= t('Click to copy') ?>">{{ chunk.text }}</code><span v-else>{{ chunk.text}}</span></span></div>
         <button type="button" class="btn btn-sm btn-outline-secondary" title="<?= t('Copy to translation') ?>" v-on:click.prevent="copyWholeText"><i class="fas fa-copy"></i></button>
     </div>
 </div>
@@ -1083,10 +1094,14 @@ const ajax = (function() {
 Vue.component('ComtraSourcetext', {
     template: document.getElementById('comtra-sourcetext-template').innerHTML,
     props: {
+        format: {
+            type: String,
+            required: true,
+        },
         text: {
             type: String,
             required: true,
-        }
+        },
     },
     methods: {
         copyWholeText: function() {
@@ -1095,8 +1110,20 @@ Vue.component('ComtraSourcetext', {
         copyChunk: function(s) {
             this.$emit('copy-chunk', s);
         },
-        splitChunks: function(s) {
-            if (typeof s !== 'string') {
+        getChunks() {
+            if (typeof this.text !== 'string' || this.text === '') {
+                return [];
+            }
+            switch (this.format) {
+                case <?= json_encode(StringFormat::PHP) ?>:
+                    return this.getPHPChunks();
+                default:
+                    return [{copyable: false, text: this.text}];
+            }
+        },
+        getPHPChunks() {
+            let s = this.text;
+            if (typeof s !== 'string' || s === '') {
                 return [];
             }
             const chunks = [];
@@ -1375,6 +1402,7 @@ new Vue({
                     } else {
                         translation.currentInfo = null;
                     }
+                    translation.format = data.format;
                     translation.otherTranslations = data.translations.others;
                     translation.extractedComments = data.extractedComments;
                     translation.references = data.references;

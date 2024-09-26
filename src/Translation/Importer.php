@@ -6,6 +6,7 @@ namespace CommunityTranslation\Translation;
 
 use CommunityTranslation\Entity\Locale as LocaleEntity;
 use CommunityTranslation\Entity\Translatable as TranslatableEntity;
+use CommunityTranslation\Translatable\StringFormat;
 use Concrete\Core\Database\Connection\Connection;
 use Concrete\Core\Entity\User\User as UserEntity;
 use Concrete\Core\Error\UserMessageException;
@@ -450,6 +451,16 @@ where
      * @throws \Concrete\Core\Error\UserMessageException
      */
     private function checkFormat(GettextTranslation $translation): void
+    {
+        $format = StringFormat::fromStrings($translation->getOriginal(), $translation->getPlural());
+        switch ($format) {
+            case StringFormat::PHP:
+                $this->checkPHPFormat($translation);
+                break;
+        }
+    }
+
+    private function checkPHPFormat(GettextTranslation $translation): void
     {
         $sourcePlaceholdersList = $this->extractSourcePlaceholders($translation);
         $translatedTexts = [$translation->getTranslation()];

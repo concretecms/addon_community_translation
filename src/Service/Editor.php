@@ -13,6 +13,7 @@ use CommunityTranslation\Repository\Translatable\Comment as TranslatableCommentR
 use CommunityTranslation\Repository\Translatable\Place as TranslatablePlaceRepository;
 use CommunityTranslation\Repository\Translation as TranslationRepository;
 use CommunityTranslation\Service\User as UserService;
+use CommunityTranslation\Translatable\StringFormat;
 use CommunityTranslation\Translation\Exporter as TranslationExporter;
 use Concrete\Core\Application\Application;
 use Concrete\Core\User\User as UserObject;
@@ -70,24 +71,20 @@ class Editor
      * @param \CommunityTranslation\Entity\Package\Version|null $packageVersion the package version where this string is used (if applicable)
      * @param bool $initial set to true when a string is first loaded, false after it has been saved
      */
-    public function getTranslatableData(LocaleEntity $locale, TranslatableEntity $translatable, ?PackageVersionEntity $packageVersion = null, bool $initial = false): array
+    public function getTranslatableData(LocaleEntity $locale, TranslatableEntity $translatable, ?PackageVersionEntity $packageVersion = null): array
     {
-        $result = [
-            'id' => $translatable->getID(),
-            'translations' => $this->getTranslations($locale, $translatable),
-        ];
-        if ($initial) {
-            $place = $packageVersion === null ? null : $this->app->make(TranslatablePlaceRepository::class)->findOneBy(['packageVersion' => $packageVersion, 'translatable' => $translatable]);
-            $result += [
-                'extractedComments' => $place === null ? [] : $place->getComments(),
-                'references' => $place === null ? [] : $this->expandReferences($place->getLocations(), $packageVersion),
-                'comments' => $this->getComments($locale, $translatable),
-                'suggestions' => $this->getSuggestions($locale, $translatable),
-                'glossary' => $this->getGlossaryTerms($locale, $translatable),
-            ];
-        }
+        $place = $packageVersion === null ? null : $this->app->make(TranslatablePlaceRepository::class)->findOneBy(['packageVersion' => $packageVersion, 'translatable' => $translatable]);
 
-        return $result;
+        return [
+            'id' => $translatable->getID(),
+            'format' => StringFormat::fromTranslatable($translatable),
+            'translations' => $this->getTranslations($locale, $translatable),
+            'extractedComments' => $place === null ? [] : $place->getComments(),
+            'references' => $place === null ? [] : $this->expandReferences($place->getLocations(), $packageVersion),
+            'comments' => $this->getComments($locale, $translatable),
+            'suggestions' => $this->getSuggestions($locale, $translatable),
+            'glossary' => $this->getGlossaryTerms($locale, $translatable),
+        ];
     }
 
     /**

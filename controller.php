@@ -326,6 +326,9 @@ EOT
     private function registerAssets(): void
     {
         $al = AssetList::getInstance();
+        if (!empty($_ENV['COMTRA_VUE_DEBUG'])) {
+            $al->register('javascript', 'vue', 'js/vue.unminified.js', ['minify' => false, 'combine' => false, 'version' => '2.999.999'], $this);
+        }
         $al->registerMultiple([
             'community_translation/table-sortable' => [
                 ['css', 'css/table-sortable.css', ['minify' => false, 'combine' => true], $this],

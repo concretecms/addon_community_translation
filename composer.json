@@ -10,7 +10,7 @@
         "source" : "https://github.com/concretecms/addon_community_translation"
     },
     "require": {
-        "php": "^7.4 || ^8",
+        "php": "^8.1",
 		"concrete5/core": "^9.0.3a1"
     },
     "config": {

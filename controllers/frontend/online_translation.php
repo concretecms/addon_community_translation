@@ -219,7 +219,7 @@ class OnlineTranslation extends Controller
             }
 
             return $rf->json(
-                $this->app->make(Editor::class)->getTranslatableData($locale, $translatable, $packageVersion, true)
+                $this->app->make(Editor::class)->getTranslatableData($locale, $translatable, $packageVersion)
             );
         } catch (UserMessageException $x) {
             return $rf->json(
