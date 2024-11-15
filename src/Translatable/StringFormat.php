@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace CommunityTranslation\Translatable;
 
-use ValueError;
 use CommunityTranslation\Entity\Translatable;
+use RuntimeException;
+use Throwable;
+use ValueError;
 
 enum StringFormat: string
 {
@@ -23,6 +25,10 @@ enum StringFormat: string
             sprintf($string, ... $samples);
         } catch (ValueError $_) {
             return self::Raw;
+        } catch (Throwable $x) {
+            $xClass = get_class($x);
+
+            throw new RuntimeException("Error checking the following string: {$string}\nThrowable class: {$xClass}\nMessaeg: {$x->getMessage()}");
         }
 
         return self::PHP;
