@@ -37,6 +37,11 @@ class Controller extends BlockController
     public $askNewTeamLink;
 
     /**
+     * @var bool|int|string|null
+     */
+    public $displayLastOnline;
+
+    /**
      * {@inheritdoc}
      *
      * @see \Concrete\Core\Block\BlockController::$helpers
@@ -464,6 +469,7 @@ class Controller extends BlockController
         $normalized = [
             'askNewTeamCID' => $askNewTeamHandle === 'page' ? $askNewTeamValue : null,
             'askNewTeamLink' => $askNewTeamHandle === 'external_url' ? $askNewTeamValue : '',
+            'displayLastOnline' => empty($args['displayLastOnline']) ? 0 : 1,
         ];
 
         return $error->has() ? $error : $normalized;

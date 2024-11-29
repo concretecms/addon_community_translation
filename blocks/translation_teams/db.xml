@@ -16,6 +16,10 @@
         <field name="askNewTeamLink" type="string" size="255">
             <notnull/>
         </field>
+        <field name="displayLastOnline" type="boolean">
+            <default value="0" />
+            <notnull />
+        </field>
     </table>
 
 </schema>

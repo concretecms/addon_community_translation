@@ -24,6 +24,7 @@ defined('C5_EXECUTE') or die('Access Denied.');
  * @var array[] $admins
  * @var array[] $translators
  * @var array[] $aspiring
+ * @var bool|int|string|null $displayLastOnline
  */
 
 if (($showError ?? '') !== '') {
@@ -94,6 +95,15 @@ if ($globalAdmins !== []) {
                             <?= $userService->format($u['ui']) ?>
                             <div class="small text-muted"><?= t2('%1$s translation (currently approved: %2$s)', '%1$s translations (currently approved: %2$s)', $u['totalTranslations'], $u['approvedTranslations']) ?></div>
                             <div class="small text-muted"><?= t('Coordinator since: %s', $dh->formatPrettyDateTime($u['since'], true)) ?></div>
+                            <?php
+                            if (!empty($displayLastOnline)) {
+                                $lastLoginTimestamp = $u['ui']->getLastOnline() ?: $u['ui']->getLastLogin();
+                                $lastLogin = $lastLoginTimestamp ? $dh->formatPrettyDateTime($lastLoginTimestamp, true) : t('never');
+                                ?>
+                                <div class="small text-muted"><?= t('Last seen online: %s', $lastLogin) ?></div>
+                                <?php
+                            }
+                            ?>
                         </li>
                         <?php
                     }
@@ -138,6 +148,15 @@ if ($globalAdmins !== []) {
                             <?= $userService->format($u['ui']) ?>
                             <div class="small text-muted"><?= t2('%1$s translation (currently approved: %2$s)', '%1$s translations (currently approved: %2$s)', $u['totalTranslations'], $u['approvedTranslations']) ?></div>
                             <div class="small text-muted"><?= t('Translator since: %s', $dh->formatPrettyDateTime($u['since'], true)) ?></div>
+                            <?php
+                            if (!empty($displayLastOnline)) {
+                                $lastLoginTimestamp = $u['ui']->getLastOnline() ?: $u['ui']->getLastLogin();
+                                $lastLogin = $lastLoginTimestamp ? $dh->formatPrettyDateTime($lastLoginTimestamp, true) : t('never');
+                                ?>
+                                <div class="small text-muted"><?= t('Last seen online: %s', $lastLogin) ?></div>
+                                <?php
+                            }
+                            ?>
                         </li>
                         <?php
                     }
@@ -179,6 +198,15 @@ if ($aspiring !== []) {
                             ?>
                             <?= $userService->format($u['ui']) ?>
                             <div class="text-muted"><?= t('Request date: %s', $dh->formatPrettyDateTime($u['since'], true)) ?></div>
+                            <?php
+                            if (!empty($displayLastOnline)) {
+                                $lastLoginTimestamp = $u['ui']->getLastOnline() ?: $u['ui']->getLastLogin();
+                                $lastLogin = $lastLoginTimestamp ? $dh->formatPrettyDateTime($lastLoginTimestamp, true) : t('never');
+                                ?>
+                                <div class="small text-muted"><?= t('Last seen online: %s', $lastLogin) ?></div>
+                                <?php
+                            }
+                            ?>
                         </li>
                         <?php
                     }
