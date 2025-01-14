@@ -27,7 +27,7 @@ enum StringFormat: string
         } catch (ValueError $_) {
             return self::Raw;
         } catch (ArgumentCountError $_) {
-            // Good
+            // Good - occurs for example translating 'Test %2$s'
         } catch (Throwable $x) {
             $xClass = get_class($x);
 
