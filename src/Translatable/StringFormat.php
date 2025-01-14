@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace CommunityTranslation\Translatable;
 
+use ArgumentCountError;
 use CommunityTranslation\Entity\Translatable;
 use RuntimeException;
 use Throwable;
@@ -25,10 +26,12 @@ enum StringFormat: string
             sprintf($string, ... $samples);
         } catch (ValueError $_) {
             return self::Raw;
+        } catch (ArgumentCountError $_) {
+            // Good
         } catch (Throwable $x) {
             $xClass = get_class($x);
 
-            throw new RuntimeException("Error checking the following string: {$string}\nThrowable class: {$xClass}\nMessaeg: {$x->getMessage()}");
+            throw new RuntimeException("Error checking the following string: {$string}\nThrowable class: {$xClass}\nMessage: {$x->getMessage()}");
         }
 
         return self::PHP;
