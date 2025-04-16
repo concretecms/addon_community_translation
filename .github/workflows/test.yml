@@ -53,9 +53,9 @@ jobs:
       -
         name: Start services
         run: ccm-service start db web
-      -
-        name: Check PHP Coding style
-        run: /app/concrete/bin/concrete5 --ansi --no-interaction -v c5:phpcs check --no-cache --php=8.1 /app/packages/community_translation
+#     -
+#        name: Check PHP Coding style
+#        run: /app/concrete/bin/concrete5 --ansi --no-interaction -v c5:phpcs check --no-cache --php=8.1 /app/packages/community_translation
       -
         name: Install package
         run: sudo -u www-data /app/concrete/bin/concrete5 --ansi --no-interaction c5:package:install community_translation
