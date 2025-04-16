@@ -116,6 +116,8 @@
     <singlepages>
         <page package="community_translation" name="Community Translation" description="" pagetype="" path="/dashboard/community_translation">
         </page>
+        <page package="community_translation" name="Packages" description="" pagetype="" path="/dashboard/community_translation/packages">
+        </page>
         <page package="community_translation" name="Strings from Git Repositories" description="" pagetype="" path="/dashboard/community_translation/git_repositories">
         </page>
         <page package="community_translation" name="Git Repository details" description="" pagetype="" path="/dashboard/community_translation/git_repositories/details">
