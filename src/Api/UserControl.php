@@ -437,8 +437,8 @@ class UserControl
             );
         } catch (RequiredConstraintsViolated $e) {
             throw new AccessDeniedException(t('Access denied, %s', $e->getMessage()));
-        } catch (\Throwable) {
-            throw new AccessDeniedException(t('Access denied, unable to validate token.'));
+        } catch (\Throwable $e) {
+            throw new AccessDeniedException(t('Access denied, unable to validate token. %s', $e->getMessage()));
         }
     }
 }
